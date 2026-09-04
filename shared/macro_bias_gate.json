@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-09-04 22:33:25",
+  "primary_regime": "Late-Cycle Overheating with Global Divergence",
+  "volatility_risk_score": 0.42,
+  "capital_preservation_mode": false,
+  "btc_decoupling_active": false,
+  "hysteresis_active": true,
+  "recommended_risk_multiplier": 0.5,
+  "execution_bias_gates": {
+    "XAUUSD": "LONG_ONLY",
+    "BTC": "LONG_ONLY",
+    "EURUSD": "NEUTRAL_RANGE"
+  },
+  "asset_biases": {
+    "XAUUSD": "Strong Bullish",
+    "BTC": "Bullish",
+    "DXY": "Neutral",
+    "EURUSD": "Neutral",
+    "US10Y": "Bullish",
+    "SPX": "Neutral"
+  },
+  "regime_state": {
+    "energy_penalty_active": true,
+    "capital_preservation_active": false,
+    "fast_stress_override": false,
+    "btc_decoupling_active": false,
+    "vix_pct_60d": 1.7,
+    "brent_pct_60d": 96.7
+  },
+  "macro_rationale": "Makro çerçeve, ABD iç talebinin dirençli kaldığı (NFP 190K, İşsizlik %4.1, ICSA 218K) 'Late-Cycle Overheating' ve küresel yavaşlama arasındaki 'US Exceptionalism' ayrışmasını teyit etmektedir. Brent petrolün $96 seviyesinde kalması enerji ithalatçısı Euro Bölgesi ticaret hadlerini baskılarken, +238.4 bps Transatlantik faiz makası Dolar lehine getiri avantajını korumakta ve zayıf DXY ortamında dahi EURUSD üzerinde yapısal tavan oluşturmaktadır (Histeresis gereği NEUTRAL_RANGE). Kredi piyasasında stres (HY OAS %3.28) ve tahvil oynaklığı düşük seyrettiğinden BTC ayrışması tetiklenmemiş, kurumsal debasement temasıyla BTC'de 0.50x kontrollü risk ile LONG_ONLY korunmuştur. Reel getirilerin %1.95 ve 'Higher for Longer' beklentilerinin sürmesi nedeniyle SPX değerlemelerine tavan konularak Neutral bias atanmış, fiziki talep ve egemen borç korumasıyla XAUUSD Strong Bullish/LONG_ONLY olarak konumlandırılmıştır."
+}

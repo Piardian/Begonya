@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      margin: 0;
+      background-color: #131722;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    #chart {
+      width: 1000px;
+      height: 600px;
+      position: relative;
+    }
+    #canvas-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1000px;
+      height: 600px;
+      pointer-events: none;
+      z-index: 10;
+    }
+  </style>
+  <script id="tv-lib-script"></script>
+</head>
+<body>
+  <div id="chart">
+    <canvas id="canvas-overlay" width="1000" height="600"></canvas>
+  </div>
+  <script>
+    window.chartData = null;
+    window.ENABLE_TV_PRIMITIVES = window.ENABLE_TV_PRIMITIVES === true;
+    window.TV_PRIMITIVE_SPIKE_RESULTS = null;
+    window.TV_CHART_METADATA = null;
+
+    function initChart() {
+      const data = window.chartData;
+      const chartWidth = data.chartWidth || 1000;
+      const chartHeight = data.chartHeight || 600;
+      const chartElement = document.getElementById('chart');
+      const overlay = document.getElementById('canvas-overlay');
+      chartElement.style.width = `${chartWidth}px`;
+      chartElement.style.height = `${chartHeight}px`;
+      overlay.style.width = `${chartWidth}px`;
+      overlay.style.height = `${chartHeight}px`;
+      overlay.width = chartWidth;
+      overlay.height = chartHeight;
+
+      const chartOptions = {
+        width: chartWidth,
+        height: chartHeight,
+        layout: {
+          background: { type: 'solid', color: '#131722' },
+          textColor: '#d1d4dc',
+          fontSize: 12,
+        },
+        grid: {
+          vertLines: { color: '#2b2e3a' },
+          horzLines: { color: '#2b2e3a' },
+        },
+        crosshair: {
+          mode: 1,
+        },
+        timeScale: {
+          timeVisible: true,
+          secondsVisible: false,
+        },
+      };
+
+      const chart = LightweightCharts.createChart(document.getElementById('chart'), chartOptions);
+      const candlestickSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {
+        upColor: '#26a69a',
+        downColor: '#ef5350',
+        borderVisible: false,
+        wickUpColor: '#26a69a',
+        wickDownColor: '#ef5350',
+      });
+
+      // Map candles timestamp (ms) to UNIX seconds expected by Lightweight Charts
+      const formattedCandles = data.candles.map(c => ({
+        time: Math.floor(c.timestamp / 1000),
+        open: c.open,
+        high: c.high,
+        low: c.low,
+        close: c.close
+      }));
+      candlestickSeries.setData(formattedCandles);
+
+      // Keep the entry zone and current signal price inside the real chart
+      // price scale. The external overlay renderer cannot be readable when
+      // Lightweight Charts autoscales candles while ignoring off-candle POIs.
+      const poi = data.poi || {};
+      const zoneHigh = data.poiType === 'OB' ? poi.high : poi.gapHigh;
+      const zoneLow = data.poiType === 'OB' ? poi.low : poi.gapLow;
+      const storyPrices = [zoneLow, zoneHigh, data.currentPrice].filter(Number.isFinite);
+      if (formattedCandles.length && storyPrices.length) {
+        const invisibleScaleOptions = {
+          color: 'rgba(0,0,0,0)',
+          lineVisible: false,
+          pointMarkersVisible: false,
+          lastValueVisible: false,
+          priceLineVisible: false,
+          crosshairMarkerVisible: false,
+        };
+        const scaleMinSeries = chart.addSeries(LightweightCharts.LineSeries, invisibleScaleOptions);
+        const scaleMaxSeries = chart.addSeries(LightweightCharts.LineSeries, invisibleScaleOptions);
+        const storyMin = Math.min(...storyPrices);
+        const storyMax = Math.max(...storyPrices);
+        scaleMinSeries.setData(formattedCandles.map(candle => ({ time: candle.time, value: storyMin })));
+        scaleMaxSeries.setData(formattedCandles.map(candle => ({ time: candle.time, value: storyMax })));
+      }
+
+      // Fit content
+      if (data.visibleLogicalRange) {
+        chart.timeScale().setVisibleLogicalRange(data.visibleLogicalRange);
+      } else {
+        chart.timeScale().fitContent();
+      }
+
+      // Wait a moment for time scale to compute coordinates
+      setTimeout(() => {
+        window.TV_CHART_METADATA = readChartMetadata(chart, candlestickSeries, formattedCandles, chartWidth, chartHeight);
+
+        if (window.ENABLE_TV_PRIMITIVES) {
+          runPrimitiveSpike(chart, candlestickSeries, data, formattedCandles);
+          return;
+        }
+
+        if (data.disableTemplateOverlay) {
+          clearOverlay();
+          return;
+        }
+
+        drawOverlay(chart, candlestickSeries, data);
+      }, 500);
+    }
+
+    function readChartMetadata(chart, series, formattedCandles, chartWidth, chartHeight) {
+      const timeScale = chart.timeScale();
+      const paneSize = chart.paneSize(0);
+      const timeScaleWidth = timeScale.width();
+      const rightPriceScaleWidth = chartWidth - paneSize.width;
+      const plotLeft = chartWidth - rightPriceScaleWidth - paneSize.width;
+      const visibleLogicalRange = timeScale.getVisibleLogicalRange();
+      const firstVisibleLogical = visibleLogicalRange ? visibleLogicalRange.from : 0;
+      const lastVisibleLogical = visibleLogicalRange ? visibleLogicalRange.to : formattedCandles.length - 1;
+      const topPrice = series.coordinateToPrice(0);
+      const bottomPrice = series.coordinateToPrice(Math.max(0, paneSize.height - 1));
+      const visiblePriceRange = {
+        min: Math.min(topPrice, bottomPrice),
+        max: Math.max(topPrice, bottomPrice),
+      };
+
+      return {
+        imageWidth: chartWidth,
+        imageHeight: chartHeight,
+        timeframe: window.chartData.timeframe || '15m',
+        firstVisibleLogical,
+        lastVisibleLogical,
+        visiblePriceRange,
+        plotLeft,
+        plotTop: 0,
+        plotWidth: paneSize.width,
+        plotHeight: paneSize.height,
+        devicePixelRatio: window.devicePixelRatio,
+        rightPriceScaleWidth,
+        barSpacing: timeScale.options().barSpacing,
+        timeScaleWidth,
+      };
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    //
+    // Primitive SPIKE
+    //
+    // Experimental Lightweight Charts v5 public API validation. This block
+    // must stay behind ENABLE_TV_PRIMITIVES and must not affect production
+    // rendering while the flag is false.
+    //
+    ////////////////////////////////////////////////////////////////////////
+
+    const SPIKE_LOGICAL_DELTAS = [-1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1];
+
+    function runPrimitiveSpike(chart, series, data, formattedCandles) {
+      clearOverlay();
+
+      const formedIndex = data.candles.findIndex(c => c.timestamp === data.poiFormedTimestamp);
+      const sampleIndex = selectSpikeSampleIndex(formattedCandles, formedIndex);
+      const scenarios = buildSpikeScenarios(formattedCandles, sampleIndex);
+      const results = {
+        lightweightChartsVersion: LightweightCharts.version ? LightweightCharts.version() : 'unknown',
+        generatedAt: new Date().toISOString(),
+        symbol: data.symbol,
+        poiType: data.poiType,
+        sampleIndex,
+        scenarios: [],
+        capabilityMatrix: {},
+        decision: 'undetermined',
+      };
+
+      runScenarioSequence(chart, series, formattedCandles, scenarios, 0, results, () => {
+        results.capabilityMatrix = buildCapabilityMatrix(results);
+        results.decision = decideSpikeOutcome(results);
+        window.TV_PRIMITIVE_SPIKE_RESULTS = results;
+        console.log('[TV Primitive SPIKE]', results);
+
+        if (results.decision === 'continue-to-order-block') {
+          attachSingleOrderBlockPrimitive(chart, series, data, formattedCandles);
+        }
+      });
+    }
+
+    function clearOverlay() {
+      const canvas = document.getElementById('canvas-overlay');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function selectSpikeSampleIndex(formattedCandles, formedIndex) {
+      if (formedIndex >= 1 && formedIndex < formattedCandles.length - 1) return formedIndex;
+      return Math.max(1, Math.min(formattedCandles.length - 2, Math.floor(formattedCandles.length / 2)));
+    }
+
+    function buildSpikeScenarios(formattedCandles, sampleIndex) {
+      const lastIndex = formattedCandles.length - 1;
+      const ranges = {
+        normalZoom: { from: Math.max(0, sampleIndex - 35), to: Math.min(lastIndex, sampleIndex + 35) },
+        zoomOut: { from: Math.max(0, sampleIndex - 75), to: Math.min(lastIndex, sampleIndex + 75) },
+        maximumZoomOut: { from: 0, to: lastIndex },
+        panLeft: { from: Math.max(0, sampleIndex - 95), to: Math.min(lastIndex, sampleIndex - 20) },
+        panRight: { from: Math.max(0, sampleIndex + 20), to: Math.min(lastIndex, sampleIndex + 95) },
+        resize: { from: Math.max(0, sampleIndex - 35), to: Math.min(lastIndex, sampleIndex + 35) },
+        hiDPIProbe: { from: Math.max(0, sampleIndex - 35), to: Math.min(lastIndex, sampleIndex + 35) },
+      };
+
+      return [
+        { name: 'normalZoom', width: 1000, height: 600, range: ranges.normalZoom },
+        { name: 'zoomOut', width: 1000, height: 600, range: ranges.zoomOut },
+        { name: 'maximumZoomOut', width: 1000, height: 600, range: ranges.maximumZoomOut },
+        { name: 'panLeft', width: 1000, height: 600, range: ranges.panLeft },
+        { name: 'panRight', width: 1000, height: 600, range: ranges.panRight },
+        { name: 'resize', width: 1280, height: 720, range: ranges.resize },
+        { name: 'hiDPIProbe', width: 1000, height: 600, range: ranges.hiDPIProbe },
+      ];
+    }
+
+    function runScenarioSequence(chart, series, formattedCandles, scenarios, index, results, done) {
+      if (index >= scenarios.length) {
+        done();
+        return;
+      }
+
+      const scenario = scenarios[index];
+      applyScenario(chart, scenario);
+      setTimeout(() => {
+        results.scenarios.push(measureScenario(chart, series, formattedCandles, results.sampleIndex, scenario));
+        runScenarioSequence(chart, series, formattedCandles, scenarios, index + 1, results, done);
+      }, 120);
+    }
+
+    function applyScenario(chart, scenario) {
+      const chartElement = document.getElementById('chart');
+      const overlay = document.getElementById('canvas-overlay');
+      chartElement.style.width = `${scenario.width}px`;
+      chartElement.style.height = `${scenario.height}px`;
+      overlay.style.width = `${scenario.width}px`;
+      overlay.style.height = `${scenario.height}px`;
+      overlay.width = scenario.width;
+      overlay.height = scenario.height;
+      chart.applyOptions({ width: scenario.width, height: scenario.height });
+      chart.timeScale().setVisibleLogicalRange(scenario.range);
+    }
+
+    function measureScenario(chart, series, formattedCandles, sampleIndex, scenario) {
+      const timeScale = chart.timeScale();
+      const sample = formattedCandles[sampleIndex];
+      const timeCoordinate = timeScale.timeToCoordinate(sample.time);
+      const timeIndex = timeScale.timeToIndex(sample.time, false);
+      const visibleLogicalRange = timeScale.getVisibleLogicalRange();
+      const timeScaleOptions = timeScale.options();
+      const priceCoordinate = series.priceToCoordinate(sample.close);
+      const logicalSamples = SPIKE_LOGICAL_DELTAS.map(delta => {
+        const logical = sampleIndex + delta;
+        const coordinate = timeScale.logicalToCoordinate(logical);
+        const roundTripLogical = coordinate === null ? null : timeScale.coordinateToLogical(coordinate);
+        const roundTripCoordinate = roundTripLogical === null ? null : timeScale.logicalToCoordinate(roundTripLogical);
+        const roundTripError = coordinate === null || roundTripCoordinate === null
+          ? null
+          : Math.abs(coordinate - roundTripCoordinate);
+
+        return {
+          delta,
+          logical,
+          coordinate,
+          roundTripLogical,
+          roundTripCoordinate,
+          roundTripError,
+        };
+      });
+
+      return {
+        name: scenario.name,
+        width: scenario.width,
+        height: scenario.height,
+        devicePixelRatio: window.devicePixelRatio,
+        visibleLogicalRange,
+        barSpacing: timeScaleOptions.barSpacing,
+        sampleIndex,
+        sampleTime: sample.time,
+        timeToCoordinate: timeCoordinate,
+        timeToIndex: timeIndex,
+        priceToCoordinate: priceCoordinate,
+        logicalSamples,
+        linearity: measureLinearity(logicalSamples),
+        maxRoundTripError: maxRoundTripError(logicalSamples),
+      };
+    }
+
+    function measureLinearity(logicalSamples) {
+      const valid = logicalSamples.filter(s => s.coordinate !== null);
+      if (valid.length < 2) return { isLinear: false, maxStepDeviation: null, averageStep: null };
+
+      const steps = [];
+      for (let i = 1; i < valid.length; i++) {
+        steps.push((valid[i].coordinate - valid[i - 1].coordinate) / (valid[i].logical - valid[i - 1].logical));
+      }
+
+      const averageStep = steps.reduce((sum, step) => sum + step, 0) / steps.length;
+      const maxStepDeviation = Math.max(...steps.map(step => Math.abs(step - averageStep)));
+      return {
+        isLinear: maxStepDeviation <= 0.000001,
+        maxStepDeviation,
+        averageStep,
+      };
+    }
+
+    function maxRoundTripError(logicalSamples) {
+      const errors = logicalSamples
+        .map(sample => sample.roundTripError)
+        .filter(error => error !== null && Number.isFinite(error));
+
+      return errors.length === 0 ? null : Math.max(...errors);
+    }
+
+    function buildCapabilityMatrix(results) {
+      const scenarios = results.scenarios;
+      const allScenarios = predicate => scenarios.length > 0 && scenarios.every(predicate);
+      const hasStableFractionalLogical = allScenarios(s =>
+        s.logicalSamples.every(sample => sample.coordinate !== null && sample.roundTripError !== null && sample.roundTripError <= 0.000001)
+      );
+      const hasLinearLogicalSpace = allScenarios(s => s.linearity.isLinear);
+      const hasUsableBoundaryCoordinates = hasStableFractionalLogical && hasLinearLogicalSpace;
+
+      return {
+        timeCoordinate: allScenarios(s => s.timeToCoordinate !== null),
+        priceCoordinate: allScenarios(s => s.priceToCoordinate !== null),
+        logicalCoordinate: allScenarios(s => s.logicalSamples.some(sample => sample.delta === 0 && sample.coordinate !== null)),
+        fractionalLogicalCoordinate: hasStableFractionalLogical,
+        coordinateRoundTripStability: allScenarios(s => s.maxRoundTripError !== null && s.maxRoundTripError <= 0.000001),
+        stableUnderZoom: scenarioIsUsable(scenarios, 'normalZoom') && scenarioIsUsable(scenarios, 'zoomOut') && scenarioIsUsable(scenarios, 'maximumZoomOut'),
+        stableUnderPan: scenarioIsUsable(scenarios, 'panLeft') && scenarioIsUsable(scenarios, 'panRight'),
+        stableUnderResize: scenarioIsUsable(scenarios, 'resize'),
+        hiDPICompatible: scenarioIsUsable(scenarios, 'hiDPIProbe'),
+        barBoundaryDerivableViaPublicApi: hasUsableBoundaryCoordinates,
+        rectangleEdgeApi: false,
+        publicWidthApi: false,
+      };
+    }
+
+    function scenarioIsUsable(scenarios, name) {
+      const scenario = scenarios.find(s => s.name === name);
+      return Boolean(scenario && scenario.linearity.isLinear && scenario.maxRoundTripError !== null && scenario.maxRoundTripError <= 0.000001);
+    }
+
+    function decideSpikeOutcome(results) {
+      const matrix = results.capabilityMatrix;
+      const canContinue = matrix.timeCoordinate
+        && matrix.priceCoordinate
+        && matrix.logicalCoordinate
+        && matrix.fractionalLogicalCoordinate
+        && matrix.coordinateRoundTripStability
+        && matrix.stableUnderZoom
+        && matrix.stableUnderPan
+        && matrix.stableUnderResize
+        && matrix.hiDPICompatible
+        && matrix.barBoundaryDerivableViaPublicApi;
+
+      return canContinue ? 'continue-to-order-block' : 'rollback-no-drawing';
+    }
+
+    function attachSingleOrderBlockPrimitive(chart, series, data, formattedCandles) {
+      if (data.poiType !== 'OB' || !data.poi) return;
+
+      const formedIndex = data.candles.findIndex(c => c.timestamp === data.poiFormedTimestamp);
+      if (formedIndex === -1) return;
+
+      const endIndex = resolveOrderBlockEndIndex(data, formedIndex);
+      const primitive = new OrderBlockPrimitive({
+        startLogical: formedIndex - 0.5,
+        endLogical: endIndex + 0.5,
+        high: data.poi.high,
+        low: data.poi.low,
+        direction: data.tradeDirection,
+        label: 'OB',
+      });
+
+      series.attachPrimitive(primitive);
+      window.TV_PRIMITIVE_SPIKE_RESULTS.orderBlockPrimitive = {
+        attached: true,
+        startLogical: primitive.options.startLogical,
+        endLogical: primitive.options.endLogical,
+        high: primitive.options.high,
+        low: primitive.options.low,
+      };
+    }
+
+    function resolveOrderBlockEndIndex(data, formedIndex) {
+      const zoneHigh = data.poi.high;
+      const zoneLow = data.poi.low;
+
+      if (data.poiTestCount > 0) {
+        for (let i = formedIndex + 1; i < data.candles.length; i++) {
+          const c = data.candles[i];
+          if (c.low <= zoneHigh && c.high >= zoneLow) return i;
+        }
+      }
+
+      return Math.min(data.candles.length - 1, formedIndex + 15);
+    }
+
+    class OrderBlockPrimitive {
+      constructor(options) {
+        this.options = options;
+        this.view = new OrderBlockPaneView(options);
+        this.requestUpdate = null;
+      }
+
+      attached(param) {
+        this.chart = param.chart;
+        this.series = param.series;
+        this.requestUpdate = param.requestUpdate;
+        this.view.attach(param.chart, param.series);
+        this.requestUpdate();
+      }
+
+      detached() {
+        this.chart = null;
+        this.series = null;
+        this.requestUpdate = null;
+        this.view.detach();
+      }
+
+      updateAllViews() {
+        this.view.update(this.options);
+      }
+
+      paneViews() {
+        return [this.view];
+      }
+    }
+
+    class OrderBlockPaneView {
+      constructor(options) {
+        this.options = options;
+        this.chart = null;
+        this.series = null;
+      }
+
+      attach(chart, series) {
+        this.chart = chart;
+        this.series = series;
+      }
+
+      detach() {
+        this.chart = null;
+        this.series = null;
+      }
+
+      update(options) {
+        this.options = options;
+      }
+
+      zOrder() {
+        return 'normal';
+      }
+
+      renderer() {
+        if (!this.chart || !this.series) return null;
+        const timeScale = this.chart.timeScale();
+        const x1 = timeScale.logicalToCoordinate(this.options.startLogical);
+        const x2 = timeScale.logicalToCoordinate(this.options.endLogical);
+        const y1 = this.series.priceToCoordinate(this.options.high);
+        const y2 = this.series.priceToCoordinate(this.options.low);
+
+        if ([x1, x2, y1, y2].some(value => value === null)) return null;
+        return new OrderBlockRenderer({
+          x1,
+          x2,
+          y1,
+          y2,
+          fillColor: this.options.direction === 'long' ? 'rgba(38, 166, 154, 0.16)' : 'rgba(239, 83, 80, 0.16)',
+          strokeColor: this.options.direction === 'long' ? '#26a69a' : '#ef5350',
+        });
+      }
+    }
+
+    class OrderBlockRenderer {
+      constructor(data) {
+        this.data = data;
+      }
+
+      draw(target) {
+        target.useMediaCoordinateSpace(({ context }) => {
+          const left = Math.min(this.data.x1, this.data.x2);
+          const right = Math.max(this.data.x1, this.data.x2);
+          const top = Math.min(this.data.y1, this.data.y2);
+          const bottom = Math.max(this.data.y1, this.data.y2);
+
+          context.save();
+          context.fillStyle = this.data.fillColor;
+          context.strokeStyle = this.data.strokeColor;
+          context.lineWidth = 1;
+          context.fillRect(left, top, right - left, bottom - top);
+          context.strokeRect(left, top, right - left, bottom - top);
+          context.restore();
+        });
+      }
+    }
+
+    function drawOverlay(chart, series, data) {
+      const canvas = document.getElementById('canvas-overlay');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, 1000, 600);
+
+      const poi = data.poi;
+      if (!poi) return;
+
+      const zoneHigh = data.poiType === 'OB' ? poi.high : poi.gapHigh;
+      const zoneLow = data.poiType === 'OB' ? poi.low : poi.gapLow;
+
+      const formedIdx = data.candles.findIndex(c => c.timestamp === data.poiFormedTimestamp);
+      const boxStartIdx = data.poiType === 'FVG' ? Math.max(0, formedIdx - 1) : formedIdx;
+
+      // Get precise pixel coordinates from TradingView engine APIs
+      const startX = chart.timeScale().timeToCoordinate(Math.floor(data.candles[boxStartIdx].timestamp / 1000));
+      const breakTimeSec = Math.floor(poi.relatedEvent.breakTimestamp / 1000);
+      const breakX = chart.timeScale().timeToCoordinate(breakTimeSec);
+      const yHigh = series.priceToCoordinate(zoneHigh);
+      const yLow = series.priceToCoordinate(zoneLow);
+
+      const lastCandleSec = Math.floor(data.candles[data.candles.length - 1].timestamp / 1000);
+      let endX = chart.timeScale().timeToCoordinate(lastCandleSec);
+
+      // Bounding box width calculation
+      if (data.poiTestCount > 0) {
+        let testTimeSec = -1;
+        if (formedIdx !== -1) {
+          for (let i = formedIdx + 1; i < data.candles.length; i++) {
+            const c = data.candles[i];
+            if (c.low <= zoneHigh && c.high >= zoneLow) {
+              testTimeSec = Math.floor(c.timestamp / 1000);
+              break;
+            }
+          }
+        }
+        if (testTimeSec !== -1) {
+          endX = chart.timeScale().timeToCoordinate(testTimeSec);
+        }
+      } else {
+        const formedIdx = data.candles.findIndex(c => c.timestamp === data.poiFormedTimestamp);
+        if (formedIdx !== -1) {
+          const targetEndIdx = Math.min(data.candles.length - 1, formedIdx + 15);
+          endX = chart.timeScale().timeToCoordinate(Math.floor(data.candles[targetEndIdx].timestamp / 1000));
+        }
+      }
+
+      // Draw POI Box
+      if (startX !== null && endX !== null && yHigh !== null && yLow !== null) {
+        ctx.fillStyle = data.poiType === 'OB' ? 'rgba(38, 166, 154, 0.15)' : 'rgba(171, 71, 188, 0.15)';
+        ctx.fillRect(startX, yHigh, endX - startX, yLow - yHigh);
+
+        ctx.strokeStyle = data.poiType === 'OB' ? '#26a69a' : '#ab47bc';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(startX, yHigh, endX - startX, yLow - yHigh);
+
+        // Label POI Box
+        ctx.fillStyle = data.poiType === 'OB' ? '#26a69a' : '#ab47bc';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText(data.poiType, startX + 5, yHigh - 6);
+      }
+
+      // Draw BOS/CHoCH dashed line
+      if (breakX !== null) {
+        ctx.strokeStyle = '#f1c40f';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(breakX, 50); // Start below title
+        ctx.lineTo(breakX, 550); // End above status line
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Label
+        ctx.fillStyle = '#f1c40f';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText(poi.relatedEvent.type, breakX - 15, 65);
+      }
+
+      // Draw Title text
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.fillText(`${data.symbol} — ${data.tradeDirection.toUpperCase()} — Grade ${data.grade}`, 30, 40);
+    }
+
+    // Call initChart directly to run on load
+    initChart();
+  </script>
+</body>
+</html>

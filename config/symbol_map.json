@@ -1,0 +1,67 @@
+{
+  "mappings": {
+    "EURUSD": {
+      "macro_key": "EURUSD",
+      "base_currency": "EUR",
+      "quote_currency": "USD"
+    },
+    "GBPUSD": {
+      "macro_key": "EURUSD",
+      "proxy": "DXY_INVERSE",
+      "base_currency": "GBP",
+      "quote_currency": "USD"
+    },
+    "AUDUSD": {
+      "macro_key": "COPPER_GOLD",
+      "proxy": "DXY_INVERSE",
+      "base_currency": "AUD",
+      "quote_currency": "USD"
+    },
+    "NZDUSD": {
+      "macro_key": "COPPER_GOLD",
+      "proxy": "DXY_INVERSE",
+      "base_currency": "NZD",
+      "quote_currency": "USD"
+    },
+    "USDCAD": {
+      "macro_key": "BRENT",
+      "proxy": "DXY_DIRECT",
+      "base_currency": "USD",
+      "quote_currency": "CAD"
+    },
+    "USDJPY": {
+      "macro_key": "US10Y",
+      "proxy": "DXY_DIRECT",
+      "base_currency": "USD",
+      "quote_currency": "JPY"
+    },
+    "USDCHF": {
+      "macro_key": "DXY",
+      "proxy": "DXY_DIRECT",
+      "base_currency": "USD",
+      "quote_currency": "CHF"
+    },
+    "XAUUSD": {
+      "macro_key": "XAUUSD",
+      "base_currency": "XAU",
+      "quote_currency": "USD"
+    },
+    "NAS100": {
+      "macro_key": "SPX",
+      "base_currency": "NAS",
+      "quote_currency": "USD"
+    },
+    "BTCUSD": {
+      "macro_key": "BTC",
+      "base_currency": "BTC",
+      "quote_currency": "USD"
+    },
+    "ETHUSD": {
+      "macro_key": "BTC",
+      "base_currency": "ETH",
+      "quote_currency": "USD"
+    }
+  },
+  "default_risk_multiplier": 1,
+  "max_gate_staleness_hours": 36
+}

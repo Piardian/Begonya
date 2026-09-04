@@ -1,0 +1,235 @@
+import logging
+from typing import Dict, Any
+from core.key_manager import DualCascadeRouter
+from agents.schemas import LiquidityOutput, GrowthOutput, MacroStrategistOutput
+
+logger = logging.getLogger("MacroSpecialistAgents")
+
+class MacroSpecialists:
+    def __init__(self):
+        self.router = DualCascadeRouter()
+
+    def analyze_liquidity(self, metrics: Dict[str, Any]) -> LiquidityOutput:
+        """
+        Ajan 1: Likidite, Kredi ve Finansal Koşullar Analisti
+        Getiri eğrisi trendi, Net Likidite Deltası (Δ4W), HY OAS Kredi Makası, NFCI ve DXY analiz edilir.
+        """
+        yc = metrics.get('yield_curve', {})
+        liq_dyn = metrics.get('liquidity_dynamics', {})
+        ry = metrics.get('real_yield_info', {})
+        credit = metrics.get('credit_spread_analysis', {})
+        nfci_data = metrics.get('financial_conditions_analysis', {})
+        dxy_trend = metrics.get('dxy_trend_analysis', {})
+        t0_stress = metrics.get('t0_fast_stress_analysis', {})
+
+        prompt = f"""
+        Aşağıdaki dinamik ve delta destekli likidite metriklerini kurumsal bir tahvil/likidite uzmanı olarak değerlendir:
+        
+        [T-0 ANLIK PİYASA STRESİ DEVRE KESİCİSİ (FAST STRESS OVERRIDE)]:
+        - Fast Stress Devrede mi?: {t0_stress.get('fast_stress_override')}
+        - Tetikleyiciler: {t0_stress.get('triggers')}
+        - HYG / LQD Kredi Oranı: {t0_stress.get('hyg_lqd_ratio')} (1G: %{t0_stress.get('hyg_lqd_delta_1d_pct')}, 5G: %{t0_stress.get('hyg_lqd_delta_5d_pct')})
+        - VIX Seviyesi & Değişimi: {t0_stress.get('vix_level')} (1G: %{t0_stress.get('vix_delta_1d_pct')}, 5G: %{t0_stress.get('vix_delta_5d_pct')})
+        - Uyarı: {t0_stress.get('warning')}
+        
+        [GETİRİ EĞRİSİ VE ÇOKLU ZAMAN DİLİMLİ SLOPE TRENDİ]:
+        - Eğri Rejimi: {yc.get('regime')} ({yc.get('spread_bps')} bps)
+        - Risk Kategorisi: {yc.get('risk_category')}
+        - 5 Günlük Spread Değişimi (ΔSpread_5D): {yc.get('delta_spread_5d_bps')} bps
+        - 20 Günlük Spread Değişimi (ΔSpread_20D): {yc.get('delta_spread_20d_bps')} bps
+        - 1 Günlük Mikro Değişim (Gürültü): {yc.get('delta_spread_1d_bps')} bps
+        - 10Y 5G Değişimi: {yc.get('delta_10y_5d_bps')} bps | 2Y 5G Değişimi: {yc.get('delta_02y_5d_bps')} bps
+        - Teknik Tanım: {yc.get('description')}
+        - 10Y Doğrudan Reel Getiri: %{ry.get('real_yield_pct')} [{ry.get('yield_source')}] ({ry.get('pressure_on_gold')})
+        
+        [HAFTALIK ÖNCÜ İSTİHDAM (FRED ICSA)]:
+        - Haftalık İlk İşsizlik Başvuruları: {metrics.get('jobless_claims_analysis', {}).get('initial_claims_k')}K
+        - İstihdam Öncü Durumu: {metrics.get('jobless_claims_analysis', {}).get('status')}
+        - Sinyal: {metrics.get('jobless_claims_analysis', {}).get('leading_signal')}
+        
+        [KREDİ PİYASASI & ŞİRKET TAHVİL MAKASI (HY OAS)]:
+        - ABD Yüksek Getirili Şirket Makası (BAMLH0A0HYM2): %{credit.get('hy_oas_spread_pct')}
+        - Kredi Stres Seviyesi: {credit.get('stress_level')}
+        - Kredi Piyasası Mesajı: {credit.get('equity_implication')}
+        
+        [FİNANSAL KOŞULLAR ENDEKSİ (CHICAGO FED NFCI)]:
+        - NFCI Değeri: {nfci_data.get('nfci_value')} ({nfci_data.get('regime')})
+        - Likidite Tamponu: {nfci_data.get('buffer_effect')}
+        
+        [LİKİDİTE AKIŞ HIZI (DELTA LIQUIDITY)]:
+        - Güncel Net Likidite: ${liq_dyn.get('current_net_liquidity_billion'):,.1f}B
+        - 4 Haftalık Net Likidite Değişimi (Δ): ${liq_dyn.get('delta_liquidity_billion'):,.1f}B (%{liq_dyn.get('delta_liquidity_pct_4w')})
+        - Akış Yönü: {liq_dyn.get('flow_direction')}
+        
+        [DÖVİZ VE DXY MOMENTUMU]:
+        - DXY Seviyesi: {dxy_trend.get('level')} | 20G Momentum: %{dxy_trend.get('delta_20d_pct')} ({dxy_trend.get('momentum_regime')})
+        - Uyarı Notu: {dxy_trend.get('warning')}
+        
+        KATİ ANALİZ KURALLARI:
+        1. T-0 PİYASA STRESİ: Eğer fast_stress_override True ise, haftalık gecikmeli FRED sakinliğini (NFCI/OAS) geçersiz kıl ve fast_stress_override alanını True yap!
+        2. DXY 100'ün altında ve negatif momentumdaysa Dolar Baskısı 'High' DEĞİL; 'Low' veya 'Neutral'dir.
+        3. Kredi Makası (HY OAS) %3.8'in altındaysa ve HYG/LQD sakinse kredi stresi 'Low / Benign'dir; piyasa likidite krizi yaşamamaktadır.
+        4. ICSA 218K seviyesindeyken istihdam piyasası sağlamdır; NFP'nin gücü haftalık olarak teyitlidir.
+        """
+        system_instruction = (
+            "Sen Wall Street düzeyinde çalışan bir Baş Likidite, Kredi ve Tahvil Piyasası Analistisin. "
+            "Fed bilançosuna, T-0 anlık piyasa stresine (HYG/LQD, VIX), haftalık ICSA istihdamına ve Chicago Fed NFCI endeksine bakarsın."
+        )
+
+        logger.info("🌊 [Ajan 1: Likidite Analisti] Çalışıyor...")
+        return self.router.execute_structured(
+            role="analyst",
+            prompt=prompt,
+            schema=LiquidityOutput,
+            system_instruction=system_instruction
+        )
+
+    def analyze_growth_and_commodities(self, metrics: Dict[str, Any]) -> GrowthOutput:
+        """
+        Ajan 2: Büyüme ve Emtia Analisti
+        ABD İstisnacılığı ile Küresel İmalat Yavaşlaması ve Transatlantik Faiz Makasını modeller.
+        """
+        cg = metrics.get('copper_gold_analysis', {})
+        cycle = metrics.get('cycle_diagnosis', {})
+        energy_tot = metrics.get('terms_of_trade_energy_analysis', {})
+        transatlantic = metrics.get('transatlantic_analysis', {})
+
+        prompt = f"""
+        Aşağıdaki büyüme, emtia ve döngü ayrışması verilerini değerlendir:
+        
+        [ABD İSTİSNACILIĞI VS KÜRESEL DÖNGÜ AYRIŞMASI]:
+        - ABD İç Piyasası: {cycle.get('us_domestic_cycle')} (İşsizlik: %{cycle.get('unemployment_rate')}, NFP: {cycle.get('nfp_value')}K, ICSA: {cycle.get('icsa_claims')}K)
+        - Küresel Sanayi Döngüsü: {cycle.get('global_macro_cycle')} (Bakır/Altın 4H Δ: %{cg.get('delta_4w_pct')})
+        - Döngü Teşhisi: {cycle.get('regime_diagnosis')}
+        - Rasyonel: {cycle.get('rationale')}
+        
+        [TRANSATLANTİK FAİZ MAKASI (US10Y - ALMANYA 10Y BUND)]:
+        - US 10Y: %{transatlantic.get('us10y')} | Almanya 10Y Bund: %{transatlantic.get('de10y_bund')}
+        - Makas: +{transatlantic.get('spread_bps')} bps (20G Δ: {transatlantic.get('delta_spread_20d_bps')} bps)
+        - Yön: {transatlantic.get('direction')}
+        - İma: {transatlantic.get('implication')}
+        
+        [DIŞ TİCARET HADLERİ & ENERJİ ŞOKU (HİSTERESİS KORUMALI)]:
+        - Brent Petrol: ${metrics.get('brent_level')}
+        - EURUSD Enerji Cezası: {'VAR' if energy_tot.get('eurusd_energy_penalty') else 'YOK'}
+        - Histeresis Durumu: {energy_tot.get('hysteresis_note')}
+        - Enerji Analizi: {energy_tot.get('rationale')}
+        
+        [STANDARTLAŞTIRILMIŞ SÜRPRİZLER (Z-SCORES)]:
+        {metrics.get('surprises')}
+        
+        KATİ ANALİZ KURALLARI:
+        1. İKTİSADİ TANIM: İşsizlik %4.1 ve NFP 190K iken kesinlikle 'Stagflation' DEME! ABD tarafında 'Late-Cycle Overheating' vardır. macro_quadrant olarak 'Late-Cycle Overheating' seç.
+        2. KÜRESEL AYRIŞMA: us_vs_global_divergence alanında ABD iç pazarının güçlü olduğunu, ancak düşen Bakır/Altın rasyosu ve yüksek petrol nedeniyle Avrupa ve Asya imalatının ezildiğini (US Exceptionalism vs Global Slowdown) açıkça belirt.
+        3. TRANSATLANTİK MAKAS: transatlantic_spread_bps değerini ({transatlantic.get('spread_bps')}) aktar; eurusd_terms_of_trade_penalty değerini {energy_tot.get('eurusd_energy_penalty')} olarak set et.
+        """
+        system_instruction = (
+            "Sen Bridgewater Associates standartlarında çalışan bir Kıdemli Makro Dörtgen ve Emtia Analistisin. "
+            "ABD İstisnacılığı ile küresel sanayi yavaşlaması arasındaki makası ve Transatlantik faiz makasını teşhis edersin."
+        )
+
+        logger.info("📈 [Ajan 2: Büyüme & Emtia Analisti] Çalışıyor...")
+        return self.router.execute_structured(
+            role="analyst",
+            prompt=prompt,
+            schema=GrowthOutput,
+            system_instruction=system_instruction
+        )
+
+    def synthesize_macro_regime(
+        self,
+        liquidity: LiquidityOutput,
+        growth: GrowthOutput,
+        metrics: Dict[str, Any]
+    ) -> MacroStrategistOutput:
+        """
+        Ajan 3: Baş Makro Stratejist & Karar Motoru
+        Ajan 1 ve Ajan 2 çıktılarını çapraz kontrol eder; BTC decoupling, histeresis, EURUSD enerji tuzağı ve Fed reaksiyon fonksiyonunu yansıtır.
+        """
+        yc = metrics.get('yield_curve', {})
+        ry = metrics.get('real_yield_info', {})
+        liq_dyn = metrics.get('liquidity_dynamics', {})
+        cg = metrics.get('copper_gold_analysis', {})
+        credit = metrics.get('credit_spread_analysis', {})
+        nfci_data = metrics.get('financial_conditions_analysis', {})
+        dxy_trend = metrics.get('dxy_trend_analysis', {})
+        cycle = metrics.get('cycle_diagnosis', {})
+        claims = metrics.get('jobless_claims_analysis', {})
+        tot_energy = metrics.get('terms_of_trade_energy_analysis', {})
+        transatlantic = metrics.get('transatlantic_analysis', {})
+        t0_stress = metrics.get('t0_fast_stress_analysis', {})
+        btc_dec = metrics.get('btc_decoupling_analysis', {})
+        regime_st = metrics.get('regime_state', {})
+        fed_rf = metrics.get('fed_reaction_function', {})
+
+        prompt = f"""
+        Aşağıdaki iki uzman analist raporunu ve çapraz piyasa metriklerini değerlendirip portföy yönelimlerini sentezle:
+        
+        [AJAN 1 - LİKİDİTE, KREDİ VE TAHVİL]:
+        - Likidite Rejimi: {liquidity.liquidity_regime}
+        - Getiri Eğrisi Dinamiği: {liquidity.yield_curve_dynamic}
+        - T-0 Fast Stress Override: {liquidity.fast_stress_override}
+        - Kredi Stresi (HY OAS): {liquidity.credit_stress} (%{credit.get('hy_oas_spread_pct')})
+        - Finansal Koşullar (NFCI): {liquidity.financial_conditions_state} ({nfci_data.get('nfci_value')})
+        - Dolar Baskısı: {liquidity.dollar_pressure}
+        - Özet: {liquidity.summary}
+        
+        [AJAN 2 - BÜYÜME VE EMTİA]:
+        - Makro Dörtgen: {growth.macro_quadrant}
+        - ABD vs Küresel Ayrışma: {growth.us_vs_global_divergence}
+        - Enerji Şoku Riski: {growth.energy_shock_risk}
+        - Transatlantik Faiz Makası (US-DE Bund): +{growth.transatlantic_spread_bps} bps
+        - EURUSD Enerji Cezası: {growth.eurusd_terms_of_trade_penalty}
+        - Büyüme İvmesi: {growth.growth_momentum}
+        - Enflasyon Riski: {growth.inflation_risk}
+        - Özet: {growth.summary}
+        
+        [KRİTİK DOĞRULAMA VE HİPOTEZ TESTİ METRİKLERİ]:
+        - Gerçek Döngü Teşhisi: {cycle.get('regime_diagnosis')} (İşsizlik: %{cycle.get('unemployment_rate')}, NFP: {cycle.get('nfp_value')}K, ICSA: {claims.get('initial_claims_k')}K)
+        - DXY Durumu: Seviye {dxy_trend.get('level')}, 20G: %{dxy_trend.get('delta_20d_pct')} ({dxy_trend.get('momentum_regime')})
+        - Transatlantik Faiz Makası: +{transatlantic.get('spread_bps')} bps ({transatlantic.get('direction')})
+        - EURUSD Enerji Şoku / Dış Ticaret Hadleri: {tot_energy.get('rationale')}
+        - Önerilen EURUSD Kapısı: {tot_energy.get('recommended_eurusd_gate')}
+        - BTC vs Altın Ayrışması (Decoupling): {btc_dec.get('btc_decoupling_active')} | Önerilen BTC Kapısı: {btc_dec.get('recommended_btc_gate')}
+        - BTC Ayrışma Nedeni: {btc_dec.get('rationale')}
+        - T-0 Hızlı Piyasa Stresi: {t0_stress.get('warning')}
+        - Fed Tepki Fonksiyonu: {fed_rf.get('rate_path_expectation')} | {fed_rf.get('equity_multiple_cap')}
+        - Kredi Makası (HY OAS): %{credit.get('hy_oas_spread_pct')} ({credit.get('stress_level')})
+        - 10Y Reel Getiri: %{ry.get('real_yield_pct')} [{ry.get('yield_source')}]
+        - 4H Net Likidite Deltası (Δ): ${liq_dyn.get('delta_liquidity_billion')}B (%{liq_dyn.get('delta_liquidity_pct_4w')})
+        - Bakır/Altın Momentum Deltası: %{cg.get('delta_4w_pct')}
+        
+        🚨 ZORUNLU KURUMSAL PORTFÖY VE RİSK YÖNETİMİ KURALLARI:
+        1. BTC VE ALTIN AYRIŞMASI (BEAR STEEPENING & VOLATİLİTE ŞOKU):
+           - Altın (XAUUSD): Egemen borç debasement'ı ve merkez bankalarının fiziki rezerv talebiyle korunur $\\rightarrow$ 'Strong Bullish / LONG_ONLY'.
+           - BTC: Kurumsal bilançolarda 7/24 nakde dönebilen en likit yüksek beta varlıktır. Tahvil faizlerindeki yükseliş ve oynaklıkta margin call satışlarıyla ezilir.
+           - Eğer btc_decoupling_active True ise: BTC'ye ASLA 'LONG_ONLY' verme! BTC bias'ını 'Neutral', execution gate'ini 'DEFENSIVE_HOLD' yap.
+           - Eğer btc_decoupling_active False ise: BTC 'Bullish / LONG_ONLY (0.50x risk)' değerlendirilebilir.
+        2. EURUSD VE ENERJİ ŞOKU + TRANSATLANTİK MAKAS (İKİ TARAFLI DENGE):
+           - Brent > $85 üzerindeyken Euro Bölgesi enerji ithalatçısıdır ve ticaret hadleri çöker.
+           - Transatlantik makas (+{transatlantic.get('spread_bps')} bps) ABD lehine açık kaldıkça sermaye Dolar'a akar.
+           - Bu sebeple EURUSD'ye ASLA körlemesine 'LONG_ONLY' verme! EURUSD için bias 'Neutral', işlem kapısı 'NEUTRAL_RANGE' olarak sınırlandırılmalıdır.
+        3. FED TEPKİ FONKSİYONU VE HİSSE SENEDİ (SPX) TAVANI:
+           - İstihdam canlı (%4.1, 190K, 218K ICSA) ve enflasyon yüksekken Fed faiz indirimlerini öteler (Higher for Longer).
+           - Kredi makası (%3.28) sakin olduğu için çöküş olmasa bile SPX ralli yapamaz; SPX tavanı 'Neutral' olarak korunmalıdır.
+        4. T-0 FAST STRESS & SERMAYE KORUMA MODU:
+           - Eğer fast_stress_override True ise: capital_preservation_mode = True yap, recommended_risk_multiplier = 0.25'e düşür!
+           - Aksi halde risk multiplier = 0.50 veya 1.0 olarak belirle.
+        5. EXECUTION BIAS GATES:
+           - XAUUSD: LONG_ONLY
+           - EURUSD: NEUTRAL_RANGE (Enerji şoku ve faiz makası kısıtı)
+           - BTC: DEFENSIVE_HOLD (Eğer decoupling aktifse) veya LONG_ONLY (Sakinse)
+        """
+        system_instruction = (
+            "Sen Küresel Bir Makro Hedge Fonunun Baş Yatırım Komitesi Başkanısın (CIO). "
+            "Bear Steepening'de BTC'yi altından ayırmayı, Transatlantik faiz makası ve enerji şokunda Euro tuzağına düşmemeyi, "
+            "Higher for Longer ortamında hisseye tavan koymayı ve histeresis ile piyasa titremesini (flickering) engellemeyi bilirsin."
+        )
+
+        logger.info("🧠 [Ajan 3: Baş Makro Stratejist] Asimetrik Rejim Sentezi Üretiyor...")
+        return self.router.execute_structured(
+            role="strategist",
+            prompt=prompt,
+            schema=MacroStrategistOutput,
+            system_instruction=system_instruction
+        )
