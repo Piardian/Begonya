@@ -119,8 +119,9 @@ export async function pollAndProcess(
             console.log(`[Begonya Score: ${macroGate.begonyaScore}/100 - ${macroGate.scoreTier}] [Signal: ${signalId}] ${symbol} ${candidate.tradeDirection.toUpperCase()} -> ${macroGate.gateStatusMessage}`);
             if (!macroGate.allowed) {
               console.log(`[Signal: ${signalId}] 🛑 SUPPRESSED BY BEGONYA MACRO GATE: ${macroGate.gateStatusMessage}`);
-              recordPipelineFilterTelemetry('MACRO_GATE_VETO', symbol);
-              notifiedStore.clearPending(pendingKeys);
+              for (const k of pendingKeys) {
+                notifiedStore.clearPending(k);
+              }
               continue;
             }
 

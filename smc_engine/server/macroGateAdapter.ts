@@ -58,6 +58,19 @@ interface SymbolMapConfig {
   max_gate_staleness_hours: number;
 }
 
+function findBegonyaRoot(startDir: string): string {
+  let curr = startDir;
+  for (let i = 0; i < 5; i++) {
+    if (fs.existsSync(path.join(curr, 'macro_engine')) && fs.existsSync(path.join(curr, 'smc_engine'))) {
+      return curr;
+    }
+    const parent = path.dirname(curr);
+    if (parent === curr) break;
+    curr = parent;
+  }
+  return path.resolve(startDir, '../..');
+}
+
 export class MacroGateAdapter {
   private static instance: MacroGateAdapter | null = null;
   private readonly sharedGatePath: string;
@@ -66,9 +79,10 @@ export class MacroGateAdapter {
   private cachedSymbolMap: SymbolMapConfig | null = null;
 
   private constructor() {
-    this.sharedGatePath = path.resolve(__dirname, '../../shared/macro_bias_gate.json');
-    this.fallbackGatePath = path.resolve(__dirname, '../../macro_engine/gateways/macro_bias_gate.json');
-    this.configPath = path.resolve(__dirname, '../../config/symbol_map.json');
+    const root = findBegonyaRoot(__dirname);
+    this.sharedGatePath = path.resolve(root, 'shared/macro_bias_gate.json');
+    this.fallbackGatePath = path.resolve(root, 'macro_engine/gateways/macro_bias_gate.json');
+    this.configPath = path.resolve(root, 'config/symbol_map.json');
   }
 
   public static getInstance(): MacroGateAdapter {

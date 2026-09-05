@@ -35,6 +35,19 @@ export interface NewsFreezeStatus {
   reason?: string;
 }
 
+function findBegonyaRoot(startDir: string): string {
+  let curr = startDir;
+  for (let i = 0; i < 5; i++) {
+    if (fs.existsSync(path.join(curr, 'macro_engine')) && fs.existsSync(path.join(curr, 'smc_engine'))) {
+      return curr;
+    }
+    const parent = path.dirname(curr);
+    if (parent === curr) break;
+    curr = parent;
+  }
+  return path.resolve(startDir, '../..');
+}
+
 export class NewsGuard {
   private static instance: NewsGuard | null = null;
   private readonly configPath: string;
@@ -43,8 +56,9 @@ export class NewsGuard {
   private cachedConfig: NewsConfigFile | null = null;
 
   private constructor() {
-    this.configPath = path.resolve(__dirname, '../../config/news_events.json');
-    this.sharedEventsPath = path.resolve(__dirname, '../../shared/economic_events.json');
+    const root = findBegonyaRoot(__dirname);
+    this.configPath = path.resolve(root, 'config/news_events.json');
+    this.sharedEventsPath = path.resolve(root, 'shared/economic_events.json');
   }
 
   public static getInstance(): NewsGuard {
