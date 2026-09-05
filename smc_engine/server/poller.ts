@@ -64,7 +64,7 @@ export async function pollAndProcess(
     pollSuccess = true;
 
     if (timeframe === '15m') {
-      const kz = evaluateKillzoneFilter();
+      const kz = evaluateKillzoneFilter(symbol);
       if (!kz.active) {
         console.log(`[Killzone] ${symbol} 15m taraması atlandı. Sebep: ${kz.reason}`);
         return { success: pollSuccess, fetchedCount, failureReason: pollFailureReason };

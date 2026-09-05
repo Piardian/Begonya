@@ -75,8 +75,37 @@ export type KillzoneFilterMode = {
   filter: 'ACTIVE' | 'BYPASSED';
 };
 
-export function evaluateKillzoneFilter(now: Date = new Date()): KillzoneFilterMode {
-  const marketWindow = evaluateHardMarketWindow(now);
+export function isCryptoSymbol(symbol?: string): boolean {
+  if (!symbol) return false;
+  const s = symbol.toUpperCase();
+  return s.includes('BTC') || s.includes('ETH') || s.includes('SOL') || s.includes('LTC');
+}
+
+export function evaluateKillzoneFilter(
+  nowOrSymbol?: Date | string,
+  maybeSymbol?: string
+): KillzoneFilterMode {
+  let now = new Date();
+  let symbol: string | undefined;
+
+  if (nowOrSymbol instanceof Date) {
+    now = nowOrSymbol;
+    symbol = maybeSymbol;
+  } else if (typeof nowOrSymbol === 'string') {
+    symbol = nowOrSymbol;
+  }
+
+  // Kripto Varlıklar (BTCUSD, ETHUSD, SOLUSD, LTCUSD) 7/24 Kesintisiz Açıktır
+  if (isCryptoSymbol(symbol)) {
+    return {
+      active: true,
+      reason: 'crypto_24_7_trading',
+      profile: 'PRODUCTION',
+      filter: 'BYPASSED',
+    };
+  }
+
+  const marketWindow = evaluateHardMarketWindow(now, symbol);
   if (!marketWindow.active) {
     return {
       ...marketWindow,
@@ -106,7 +135,11 @@ export function evaluateKillzoneFilter(now: Date = new Date()): KillzoneFilterMo
  * killzones, but it must never create Friday-close/weekend/Monday-pre-open
  * notifications from stale or synthetic candles.
  */
-export function evaluateHardMarketWindow(now: Date = new Date()): { active: boolean; reason: string } {
+export function evaluateHardMarketWindow(now: Date = new Date(), symbol?: string): { active: boolean; reason: string } {
+  if (isCryptoSymbol(symbol)) {
+    return { active: true, reason: 'crypto_24_7_open' };
+  }
+
   const newYork = zonedParts(now, 'America/New_York');
   if (newYork.weekday === 'Fri' && newYork.hour >= 17) {
     return { active: false, reason: 'friday_new_york_closed' };
