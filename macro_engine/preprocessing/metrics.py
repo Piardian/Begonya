@@ -525,11 +525,11 @@ class MacroMetricsCalculator:
             "vix_pct_60d": vix_pct_60d,
             "vix_5d_delta_pct": vix_delta_5d_pct,
             "us10y_5d_delta_bps": delta_10y_5d,
-            "recommended_btc_gate": "DEFENSIVE_HOLD" if btc_decoupling_active else "LONG_ONLY_ALLOWED_IF_DEBASEMENT",
+            "recommended_btc_gate": "SHORT_ONLY" if btc_decoupling_active else "LONG_ONLY_ALLOWED_IF_DEBASEMENT",
             "rationale": (
                 f"Bear Steepening esnasında 10Y faiz sıçraması ({delta_10y_5d:+.1f} bps) ve oynaklık (VIX: {vix_val:.1f}, 60G Dilim: %{vix_pct_60d:.1f}) fonlarda teminat tamamlama (margin call) dalgası başlatır. "
                 "Altın merkez bankalarının fiziki rezerv talebiyle korunurken, BTC hafta sonu da nakde dönebilen en likit yüksek beta varlık olarak ilk satılan enstrümandır. "
-                "Bu sebeple BTC, Altın ile aynı sepete koyulamaz; DEFENSIVE_HOLD moduna çekilmeli ve risk çarpanı düşürülmelidir."
+                "Bu sebeple BTC'de Long yönlü işlemler yüksek risk barındırır; fonların tasfiye dalgasıyla SHORT_ONLY yönlü kırılımlar desteklenir."
                 if btc_decoupling_active
                 else f"Tahvil oynaklığı sakin (VIX 60G Dilim: %{vix_pct_60d:.1f}); BTC'de egemen borç debasement tezi 0.50x risk ile geçerli."
             )

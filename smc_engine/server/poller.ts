@@ -109,10 +109,14 @@ export async function pollAndProcess(
               continue;
             }
 
-            // Begonya Kurumsal Makro Rejim Kapısı Denetimi
-            const macroGate = MacroGateAdapter.getInstance().evaluateCandidate(symbol, candidate.tradeDirection);
+            // Begonya Kurumsal Makro Rejim Kapısı & 1-100 Puanlama Denetimi
+            const macroGate = MacroGateAdapter.getInstance().evaluateCandidate(
+              symbol,
+              candidate.tradeDirection,
+              candidate.gradeResult.totalScore
+            );
             candidate.macroEvaluation = macroGate;
-            console.log(`[Begonya Macro Gate] [Signal: ${signalId}] ${symbol} ${candidate.tradeDirection.toUpperCase()} -> ${macroGate.gateStatusMessage}`);
+            console.log(`[Begonya Score: ${macroGate.begonyaScore}/100 - ${macroGate.scoreTier}] [Signal: ${signalId}] ${symbol} ${candidate.tradeDirection.toUpperCase()} -> ${macroGate.gateStatusMessage}`);
             if (!macroGate.allowed) {
               console.log(`[Signal: ${signalId}] 🛑 SUPPRESSED BY BEGONYA MACRO GATE: ${macroGate.gateStatusMessage}`);
               recordPipelineFilterTelemetry('MACRO_GATE_VETO', symbol);

@@ -201,9 +201,9 @@ class MacroSpecialists:
         
         🚨 ZORUNLU KURUMSAL PORTFÖY VE RİSK YÖNETİMİ KURALLARI:
         1. BTC VE ALTIN AYRIŞMASI (BEAR STEEPENING & VOLATİLİTE ŞOKU):
-           - Altın (XAUUSD): Egemen borç debasement'ı ve merkez bankalarının fiziki rezerv talebiyle korunur $\\rightarrow$ 'Strong Bullish / LONG_ONLY'.
+           - Altın (XAUUSD): Egemen borç debasement'ı ve merkez bankalarının fiziki rezerv talebiyle korunur $\rightarrow$ 'Strong Bullish / LONG_ONLY'.
            - BTC: Kurumsal bilançolarda 7/24 nakde dönebilen en likit yüksek beta varlıktır. Tahvil faizlerindeki yükseliş ve oynaklıkta margin call satışlarıyla ezilir.
-           - Eğer btc_decoupling_active True ise: BTC'ye ASLA 'LONG_ONLY' verme! BTC bias'ını 'Neutral', execution gate'ini 'DEFENSIVE_HOLD' yap.
+           - Eğer btc_decoupling_active True ise: BTC'ye ASLA 'LONG_ONLY' verme! BTC bias'ını 'Bearish', execution gate'ini 'SHORT_ONLY' yap (Hedge fon tasfiyeleri yüksek olasılıklı düşüş dalgası yaratır).
            - Eğer btc_decoupling_active False ise: BTC 'Bullish / LONG_ONLY (0.50x risk)' değerlendirilebilir.
         2. EURUSD VE ENERJİ ŞOKU + TRANSATLANTİK MAKAS (İKİ TARAFLI DENGE):
            - Brent > $85 üzerindeyken Euro Bölgesi enerji ithalatçısıdır ve ticaret hadleri çöker.
@@ -218,7 +218,7 @@ class MacroSpecialists:
         5. EXECUTION BIAS GATES:
            - XAUUSD: LONG_ONLY
            - EURUSD: NEUTRAL_RANGE (Enerji şoku ve faiz makası kısıtı)
-           - BTC: DEFENSIVE_HOLD (Eğer decoupling aktifse) veya LONG_ONLY (Sakinse)
+           - BTC: SHORT_ONLY (Eğer decoupling aktifse) veya LONG_ONLY (Sakinse)
         """
         system_instruction = (
             "Sen Küresel Bir Makro Hedge Fonunun Baş Yatırım Komitesi Başkanısın (CIO). "

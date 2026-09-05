@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+﻿import * as fs from 'fs';
 import * as path from 'path';
 
 export interface MacroGatePayload {
@@ -22,6 +22,8 @@ export interface MacroGatePayload {
   macro_rationale?: string;
 }
 
+export type BegonyaScoreTier = 'A+' | 'A' | 'B' | 'C' | 'D';
+
 export interface MacroGateEvaluation {
   allowed: boolean;
   action: 'PROCEED' | 'VETO' | 'DEFENSIVE_REDUCE' | 'NEUTRAL_CAUTION';
@@ -37,6 +39,13 @@ export interface MacroGateEvaluation {
   gateStatusMessage: string;
   stalenessHours?: number;
   isStale?: boolean;
+
+  // 🌺 Begonya 1-100 Hibrit Güven Skoru
+  begonyaScore: number;           // 1 - 100
+  smcTechnicalScore: number;       // 0 - 50
+  macroAlignmentScore: number;     // 0 - 50
+  scoreTier: BegonyaScoreTier;
+  tierRationale: string;
 }
 
 interface SymbolMapConfig {
@@ -104,7 +113,11 @@ export class MacroGateAdapter {
     return null;
   }
 
-  public evaluateCandidate(symbol: string, tradeDirection: 'long' | 'short'): MacroGateEvaluation {
+  public evaluateCandidate(
+    symbol: string,
+    tradeDirection: 'long' | 'short',
+    smcGradeScore?: number
+  ): MacroGateEvaluation {
     const symbolMap = this.loadSymbolMap();
     const payload = this.loadGatePayload();
     const cleanSym = symbol.toUpperCase();
@@ -121,11 +134,16 @@ export class MacroGateAdapter {
         tradeDirection,
         macroBias: 'NO_DATA',
         primaryRegime: 'Uninitialized Regime',
-        riskMultiplier: 0.5,
+        riskMultiplier: 0.50,
         capitalPreservationMode: false,
         btcDecouplingActive: false,
-        macroRationale: 'Makro kapı verisi bulunamadı. Failsafe 0.5x risk ile devam ediliyor.',
-        gateStatusMessage: '⚠️ Makro kapı verisi henüz aktif değil (Failsafe 0.50x)',
+        macroRationale: 'Makro kapı verisi bulunamadı. Failsafe 0.50x risk ile devam ediliyor.',
+        gateStatusMessage: '⚠️ Makro veri aktif değil (Failsafe 0.50x)',
+        begonyaScore: 60,
+        smcTechnicalScore: 35,
+        macroAlignmentScore: 25,
+        scoreTier: 'B',
+        tierRationale: 'Veri yok; nötr 60 puan (0.50x risk)',
       };
     }
 
@@ -133,15 +151,14 @@ export class MacroGateAdapter {
     const riskScore = payload.volatility_risk_score ?? 0.40;
     const capitalPreservation = payload.capital_preservation_mode ?? false;
     const btcDecoupling = payload.btc_decoupling_active ?? false;
-    const recommendedRisk = payload.recommended_risk_multiplier ?? 1.0;
     const rationale = payload.macro_rationale ?? '';
 
     // Kapı yönü sorgula
     const gates = payload.execution_bias_gates ?? {};
     const macroBias = (gates[macroKey] || gates[cleanSym] || 'NEUTRAL_ALL').toUpperCase();
 
-    // 1. KURAL: Aşırı Kriz / Sermaye Koruma Modu (T-0 Devre Kesici veya Risk >= 0.90)
-    if (capitalPreservation || riskScore >= 0.90) {
+    // 1. KURAL: Nükleer Yangın Sigortası (Sadece Sistemik Donma / Kriz Anında Devrede)
+    if (capitalPreservation || riskScore >= 0.95) {
       return {
         allowed: false,
         action: 'VETO',
@@ -154,115 +171,112 @@ export class MacroGateAdapter {
         capitalPreservationMode: true,
         btcDecouplingActive: btcDecoupling,
         macroRationale: rationale,
-        gateStatusMessage: `🛑 VETO: Sistemik Kriz / Sermaye Koruma Modu Aktif (Risk Skoru: ${riskScore.toFixed(2)})`,
+        gateStatusMessage: `🛑 VETO: Sistemik Kriz & Sermaye Koruma Kalkanı Devrede (Risk Skoru: ${riskScore.toFixed(2)})`,
+        begonyaScore: 5,
+        smcTechnicalScore: 0,
+        macroAlignmentScore: 5,
+        scoreTier: 'D',
+        tierRationale: 'Sistemik Kriz: Tüm yönlü işlemler kilitlendi.',
       };
     }
 
-    // 2. KURAL: BTC / Kripto Ayrışması Savunması (Bear Steepening & Margin Call Kalkanı)
-    if ((cleanSym.includes('BTC') || cleanSym.includes('ETH')) && btcDecoupling) {
-      if (tradeDirection === 'long') {
-        return {
-          allowed: false,
-          action: 'VETO',
-          symbol: cleanSym,
-          mappedMacroKey: macroKey,
-          tradeDirection,
-          macroBias: 'DEFENSIVE_HOLD',
-          primaryRegime: regime,
-          riskMultiplier: 0.0,
-          capitalPreservationMode: false,
-          btcDecouplingActive: true,
-          macroRationale: rationale,
-          gateStatusMessage: '🛑 VETO: Tahvil Şoku Kaynaklı BTC Decoupling Aktif (Margin Call & Likidite Savunması)',
-        };
+    // 2. ADIM: 1-100 BEGONYA HİBRİT PUAN HESAPLAMA MOTORU
+    // A) SMC Teknik Kalite Skoru (0 - 50 Puan)
+    let smcScore = 40; // Varsayılan güçlü teknik taban
+    if (typeof smcGradeScore === 'number' && !isNaN(smcGradeScore)) {
+      smcScore = Math.min(50, Math.max(10, Math.round(smcGradeScore * 0.5)));
+    }
+
+    // B) Makro Rejim & Yön Uyum Skoru (0 - 50 Puan)
+    let macroScore = 30; // Nötr başlangıç
+
+    const isCrypto = cleanSym.includes('BTC') || cleanSym.includes('ETH');
+
+    if (isCrypto && btcDecoupling) {
+      // 🚀 GELİŞTİRME 1: Tahvil Şokunda Fon Tasfiye Dalgasından SHORT ile Kâr Sağlama
+      if (tradeDirection === 'short') {
+        macroScore = 48; // Fon tasfiyeleri mükemmel düşüş rüzgarı sağlar!
+      } else {
+        macroScore = 8;  // Long yönünde margin call dalgası büyük tehlikedir
+      }
+    } else {
+      // Standart Yön Uyumu Hesaplaması
+      const isPerfectLong = tradeDirection === 'long' && (macroBias === 'LONG_ONLY' || macroBias.includes('BULL'));
+      const isPerfectShort = tradeDirection === 'short' && (macroBias === 'SHORT_ONLY' || macroBias.includes('BEAR'));
+      const isOpposingLong = tradeDirection === 'long' && (macroBias === 'SHORT_ONLY' || macroBias.includes('BEAR'));
+      const isOpposingShort = tradeDirection === 'short' && (macroBias === 'LONG_ONLY' || macroBias.includes('BULL'));
+
+      if (isPerfectLong || isPerfectShort) {
+        macroScore = 46; // Mükemmel Çift Teyit
+      } else if (isOpposingLong || isOpposingShort) {
+        macroScore = 12; // Ters rüzgar (Veto edilmez, puanı düşürür)
+      } else if (macroBias === 'NEUTRAL_RANGE') {
+        macroScore = 32; // Kontrollü bant işlemi
+      } else {
+        macroScore = 30; // Nötr piyasa
       }
     }
 
-    // 3. KURAL: Yönlü Uyumsuzluk Filtresi (Macro Bias Gate)
-    if (macroBias === 'DEFENSIVE_HOLD') {
-      return {
-        allowed: false,
-        action: 'VETO',
-        symbol: cleanSym,
-        mappedMacroKey: macroKey,
-        tradeDirection,
-        macroBias,
-        primaryRegime: regime,
-        riskMultiplier: 0.0,
-        capitalPreservationMode: false,
-        btcDecouplingActive: btcDecoupling,
-        macroRationale: rationale,
-        gateStatusMessage: `🛑 VETO: Makro rejim (${regime}) bu varlık için DEFENSIVE_HOLD modunda.`,
-      };
+    // Oynaklık baskısı cezası
+    if (riskScore > 0.65) {
+      macroScore = Math.max(5, macroScore - Math.round((riskScore - 0.65) * 25));
     }
 
-    if (tradeDirection === 'long' && macroBias === 'SHORT_ONLY') {
-      return {
-        allowed: false,
-        action: 'VETO',
-        symbol: cleanSym,
-        mappedMacroKey: macroKey,
-        tradeDirection,
-        macroBias,
-        primaryRegime: regime,
-        riskMultiplier: 0.0,
-        capitalPreservationMode: false,
-        btcDecouplingActive: btcDecoupling,
-        macroRationale: rationale,
-        gateStatusMessage: `🛑 VETO: SMC Long sinyali, Makro SHORT_ONLY (${regime}) yönüyle taban tabana zıt.`,
-      };
+    // Toplam Begonya Puanı (1 - 100)
+    const begonyaScore = Math.min(100, Math.max(1, smcScore + macroScore));
+
+    // C) Kademeli Derecelendirme (Tiers) ve Dinamik Risk Belirleme
+    let scoreTier: BegonyaScoreTier;
+    let riskMultiplier: number;
+    let action: MacroGateEvaluation['action'];
+    let tierRationale: string;
+    let gateStatusMessage: string;
+
+    if (begonyaScore >= 85) {
+      scoreTier = 'A+';
+      riskMultiplier = 1.00;
+      action = 'PROCEED';
+      tierRationale = 'Elit Kurumsal Çift Teyit (Tam Lot - 1.00x)';
+      gateStatusMessage = `🌟 A+ KUSURSUZ UYUM (Skor: ${begonyaScore}/100) -> 1.00x Tam Risk`;
+    } else if (begonyaScore >= 70) {
+      scoreTier = 'A';
+      riskMultiplier = 0.75;
+      action = 'PROCEED';
+      tierRationale = 'Güçlü Uyumlu Kurumsal Sinyal (0.75x Lot)';
+      gateStatusMessage = `✅ A GÜÇLÜ UYUM (Skor: ${begonyaScore}/100) -> 0.75x Risk`;
+    } else if (begonyaScore >= 50) {
+      scoreTier = 'B';
+      riskMultiplier = 0.40;
+      action = 'NEUTRAL_CAUTION';
+      tierRationale = 'Orta Seviye / Dikkatli İşlem (0.40x Lot)';
+      gateStatusMessage = `⚠️ B KONTROLLÜ SEVİYE (Skor: ${begonyaScore}/100) -> 0.40x Risk`;
+    } else {
+      scoreTier = 'C';
+      riskMultiplier = 0.15;
+      action = 'DEFENSIVE_REDUCE';
+      tierRationale = 'Zayıf / Yüksek Risk (Pas Geçilmesi Önerilir - 0.15x)';
+      gateStatusMessage = `⚠️ DÜŞÜK SKOR (Skor: ${begonyaScore}/100) -> Yüksek Risk / Pas Geç Önerisi (0.15x)`;
     }
 
-    if (tradeDirection === 'short' && macroBias === 'LONG_ONLY') {
-      return {
-        allowed: false,
-        action: 'VETO',
-        symbol: cleanSym,
-        mappedMacroKey: macroKey,
-        tradeDirection,
-        macroBias,
-        primaryRegime: regime,
-        riskMultiplier: 0.0,
-        capitalPreservationMode: false,
-        btcDecouplingActive: btcDecoupling,
-        macroRationale: rationale,
-        gateStatusMessage: `🛑 VETO: SMC Short sinyali, Makro LONG_ONLY (${regime}) yönüyle taban tabana zıt.`,
-      };
-    }
-
-    // 4. KURAL: NEUTRAL_RANGE (Enerji / Ticaret Hadleri Baskısı - EURUSD örneği)
-    if (macroBias === 'NEUTRAL_RANGE') {
-      const adjustedRisk = Math.min(recommendedRisk, 0.75);
-      return {
-        allowed: true,
-        action: 'NEUTRAL_CAUTION',
-        symbol: cleanSym,
-        mappedMacroKey: macroKey,
-        tradeDirection,
-        macroBias,
-        primaryRegime: regime,
-        riskMultiplier: adjustedRisk,
-        capitalPreservationMode: false,
-        btcDecouplingActive: btcDecoupling,
-        macroRationale: rationale,
-        gateStatusMessage: `⚠️ KONTROLLÜ: Makro NEUTRAL_RANGE (${regime}) - Bant/Range işlemi onaylandı (${adjustedRisk}x risk).`,
-      };
-    }
-
-    // 5. KURAL: Tam Makro Onayı (Confluence)
+    // Veto edilmez (Allowed = True), trader bilgilendirilir ve risk küçültülür
     return {
       allowed: true,
-      action: 'PROCEED',
+      action,
       symbol: cleanSym,
       mappedMacroKey: macroKey,
       tradeDirection,
       macroBias,
       primaryRegime: regime,
-      riskMultiplier: recommendedRisk,
+      riskMultiplier,
       capitalPreservationMode: false,
       btcDecouplingActive: btcDecoupling,
       macroRationale: rationale,
-      gateStatusMessage: `✅ MAKRO ONAYLI: ${macroBias} (${regime}) ile tam yön uyumu (${recommendedRisk}x risk).`,
+      gateStatusMessage,
+      begonyaScore,
+      smcTechnicalScore: smcScore,
+      macroAlignmentScore: macroScore,
+      scoreTier,
+      tierRationale,
     };
   }
 }

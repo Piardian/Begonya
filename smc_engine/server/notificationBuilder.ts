@@ -91,13 +91,16 @@ function reasonForExecution(
   if (candidate?.macroEvaluation && !candidate.macroEvaluation.allowed) {
     return candidate.macroEvaluation.gateStatusMessage;
   }
+  const prefix = candidate?.macroEvaluation
+    ? `[Begonya Skor: ${candidate.macroEvaluation.begonyaScore}/100 - ${candidate.macroEvaluation.scoreTier}] ${candidate.macroEvaluation.tierRationale}. `
+    : '';
   if (!riskAccepted) {
-    return execution.riskResult.items[0]?.evaluation.reason.message ?? execution.decisionCalibration.reason.message;
+    return prefix + (execution.riskResult.items[0]?.evaluation.reason.message ?? execution.decisionCalibration.reason.message);
   }
   if (execution.decisionCalibration.status !== 'ELIGIBLE') {
-    return execution.decisionCalibration.reason.message;
+    return prefix + execution.decisionCalibration.reason.message;
   }
-  return 'Execution eligibility and policy-level risk gates passed. Manual execution confirmation is still required.';
+  return prefix + 'Execution eligibility and policy-level risk gates passed. Manual execution confirmation is still required.';
 }
 
 function requiredActionForStatus(
@@ -121,8 +124,9 @@ function resolveMacroStatus(candidate: NotificationCandidate): ChecklistStatus {
   const gate = candidate.macroEvaluation;
   if (!gate) return 'PASS';
   if (!gate.allowed) return 'FAIL';
-  if (gate.action === 'NEUTRAL_CAUTION') return 'WAITING';
-  return 'PASS';
+  if (gate.begonyaScore >= 70) return 'PASS';
+  if (gate.begonyaScore >= 50) return 'WAITING';
+  return 'FAIL';
 }
 
 function buildChecklist(

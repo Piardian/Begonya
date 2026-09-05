@@ -138,11 +138,12 @@ def main():
     stress1 = r1['t0_fast_stress_analysis']
     print(f"  • Getiri Eğrisi : {yc1['regime']} ({yc1['spread_bps']} bps) | Kategori: {yc1['risk_category']}")
     print(f"  • T-0 Fast Stres: {'⚠️ AKTİF' if stress1['fast_stress_override'] else 'Sakin'}")
-    print(f"  • BTC Decoupling: {'⚠️ AKTİF (DEFENSIVE_HOLD)' if btc1['btc_decoupling_active'] else 'Normal'}")
+    print(f"  • BTC Decoupling: {'⚠️ AKTİF (SHORT_ONLY)' if btc1['btc_decoupling_active'] else 'Normal'}")
     print(f"  • Gerekçe       : {btc1['rationale']}")
     assert yc1['regime'] in ["Bear Steepening", "Inverted"], "Ekim 2023 getiri eğrisi dikleşmesi doğru tespit edilmeli!"
     assert btc1['btc_decoupling_active'], "Ekim 2023 VIX > 20 ve 10Y şokunda BTC ayrışmalı!"
-    print("  -> ✅ TEST 1 BAŞARILI: Model Bear Steepening arz şokunu ve BTC savunmasını doğru yakaladı.")
+    assert btc1['recommended_btc_gate'] == "SHORT_ONLY", "BTC decoupling kapısı SHORT_ONLY olmalı!"
+    print("  -> ✅ TEST 1 BAŞARILI: Model Bear Steepening arz şokunu ve BTC SHORT fırsatını doğru yakaladı.")
 
     # 2. Mart 2023 (SVB)
     print("\n[TEST 2] MART 2023: SVB Bankacılık İflası & 100 bps Bull Steepening Çöküşü")
