@@ -18,6 +18,9 @@ export interface MacroGatePayload {
     btc_decoupling_active?: boolean;
     vix_pct_60d?: number;
     brent_pct_60d?: number;
+    equity_short_allowed?: boolean;
+    gold_short_allowed?: boolean;
+    vix_complacent?: boolean;
   };
   macro_rationale?: string;
 }
@@ -40,10 +43,10 @@ export interface MacroGateEvaluation {
   stalenessHours?: number;
   isStale?: boolean;
 
-  // 🌺 Begonya 1-100 Hibrit Güven Skoru
-  begonyaScore: number;           // 1 - 100
-  smcTechnicalScore: number;       // 0 - 50
-  macroAlignmentScore: number;     // 0 - 50
+  // 🌺 Begonya Çarpımsal Kapı & SMC Puanlama Çerçevesi
+  macroGateMultiplier: 0 | 1;      // G_macro: 0 (VETO / KİLİT) veya 1 (ONAY)
+  smcTechnicalScore: number;       // 0 - 100 SMC Teknik Kalite Skoru
+  begonyaScore: number;           // Nihai Skor = G_macro * smcTechnicalScore (0 veya 1-100)
   scoreTier: BegonyaScoreTier;
   tierRationale: string;
 }
@@ -126,6 +129,7 @@ export class MacroGateAdapter {
 
     // Failsafe: Eğer makro veri henüz üretilmemişse
     if (!payload) {
+      const smcScore = typeof smcGradeScore === 'number' ? Math.min(100, Math.max(10, smcGradeScore)) : 75;
       return {
         allowed: true,
         action: 'NEUTRAL_CAUTION',
@@ -139,11 +143,11 @@ export class MacroGateAdapter {
         btcDecouplingActive: false,
         macroRationale: 'Makro kapı verisi bulunamadı. Failsafe 0.50x risk ile devam ediliyor.',
         gateStatusMessage: '⚠️ Makro veri aktif değil (Failsafe 0.50x)',
-        begonyaScore: 60,
-        smcTechnicalScore: 35,
-        macroAlignmentScore: 25,
+        macroGateMultiplier: 1,
+        smcTechnicalScore: smcScore,
+        begonyaScore: Math.round(smcScore * 0.7),
         scoreTier: 'B',
-        tierRationale: 'Veri yok; nötr 60 puan (0.50x risk)',
+        tierRationale: 'Veri yok; kontrollü nötr işlem (0.50x risk)',
       };
     }
 
@@ -152,13 +156,78 @@ export class MacroGateAdapter {
     const capitalPreservation = payload.capital_preservation_mode ?? false;
     const btcDecoupling = payload.btc_decoupling_active ?? false;
     const rationale = payload.macro_rationale ?? '';
+    const regimeState = payload.regime_state ?? {};
 
     // Kapı yönü sorgula
     const gates = payload.execution_bias_gates ?? {};
     const macroBias = (gates[macroKey] || gates[cleanSym] || 'NEUTRAL_ALL').toUpperCase();
 
-    // 1. KURAL: Nükleer Yangın Sigortası (Sadece Sistemik Donma / Kriz Anında Devrede)
+    // ──────────────────────────────────────────────────────────────────────────
+    // 1. ADIM: MAKRO İZİN ANAHTARI (G_macro: 0 veya 1) - ASİMETRİK PİYASA KURALLARI
+    // ──────────────────────────────────────────────────────────────────────────
+    let gMacro: 0 | 1 = 1;
+    let gateVetoReason = '';
+
+    // A) Sistemik Donma / Küresel Kriz (Nükleer Yangın Sigortası)
     if (capitalPreservation || riskScore >= 0.95) {
+      gMacro = 0;
+      gateVetoReason = `🛑 VETO: Sistemik Kriz & Sermaye Koruma Kalkanı Devrede (Risk Skoru: ${riskScore.toFixed(2)})`;
+    }
+
+    // B) ALTIN (XAUUSD) SHORT KURALI: Mali Hakimiyet & Egemen Borç Kalkanı
+    else if (cleanSym.includes('XAU') || cleanSym.includes('GOLD')) {
+      if (tradeDirection === 'short') {
+        const isCashDash = riskScore >= 0.90 && regime.includes('Deflationary');
+        if (!isCashDash) {
+          gMacro = 0;
+          gateVetoReason = '🛑 VETO: Mali Hakimiyet Çağında Altında SHORT Kesinlikle Yasaktır (Merkez Bankası Fiziki Talebi / Egemen Borç Kalkanı)';
+        }
+      }
+    }
+
+    // C) BORSA ENDEKSLERİ (NAS100 / SPX) SHORT KURALI: VIX Gecikme & Short Squeeze Kalkanı
+    else if (cleanSym.includes('NAS') || cleanSym.includes('SPX') || cleanSym.includes('US100') || cleanSym.includes('US500')) {
+      if (tradeDirection === 'short') {
+        // VIX >= 22 ise borsa zaten çökmüştür; short covering rallisi riski vardır!
+        if (riskScore >= 0.65 || (regimeState.vix_pct_60d ?? 50) >= 80) {
+          gMacro = 0;
+          gateVetoReason = '🛑 VETO: Endekslerde VIX Yüksek (Gecikildi / Ayı Piyasası Rallisi ve Short Squeeze Riski Nedeniyle Short Yasak!)';
+        }
+      }
+    }
+
+    // D) KRİPTO (BTCUSD / ETHUSD) SHORT KURALI: Fon Tasfiye Dalgası vs Squeeze Riski
+    else if (cleanSym.includes('BTC') || cleanSym.includes('ETH')) {
+      if (tradeDirection === 'long' && btcDecoupling) {
+        gMacro = 0;
+        gateVetoReason = '🛑 VETO: Tahvil Şoku Kaynaklı Fon Tasfiye Dalgası (Margin Call) Devrede; Kripto Long İntihardır!';
+      }
+    }
+
+    // E) DÖVİZ (EURUSD): Transatlantik Makas & Makro Rüzgar Kalkanı
+    else if (cleanSym.includes('EURUSD')) {
+      if (tradeDirection === 'long' && macroBias === 'SHORT_ONLY') {
+        gMacro = 0;
+        gateVetoReason = '🛑 VETO: Makro Rüzgar Ters (Faiz Makası ABD Lehine ve DXY Güçlü; Euro Almak Tuzaktır)';
+      }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 2. ADIM: SMC TEKNİK KALİTE PUANLAMASI (0 - 100)
+    // ──────────────────────────────────────────────────────────────────────────
+    // SMC Skoru: Sweep (30) + Displacement (30) + Retest (25) + RR/Hedef (15)
+    let smcScore = 80; // Varsayılan kurumsal A kalite kurulum
+    if (typeof smcGradeScore === 'number' && !isNaN(smcGradeScore)) {
+      smcScore = Math.min(100, Math.max(10, Math.round(smcGradeScore)));
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 3. ADIM: ÇAR PIMSAL NİHAİ SKOR (Nihai = G_macro * smcScore)
+    // ──────────────────────────────────────────────────────────────────────────
+    const begonyaScore = gMacro === 0 ? 0 : smcScore;
+
+    // Eğer Makro İzin Vermediyse: KESİN VETO (Nihai Skor = 0)
+    if (gMacro === 0) {
       return {
         allowed: false,
         action: 'VETO',
@@ -168,64 +237,19 @@ export class MacroGateAdapter {
         macroBias,
         primaryRegime: regime,
         riskMultiplier: 0.0,
-        capitalPreservationMode: true,
+        capitalPreservationMode: capitalPreservation,
         btcDecouplingActive: btcDecoupling,
         macroRationale: rationale,
-        gateStatusMessage: `🛑 VETO: Sistemik Kriz & Sermaye Koruma Kalkanı Devrede (Risk Skoru: ${riskScore.toFixed(2)})`,
-        begonyaScore: 5,
-        smcTechnicalScore: 0,
-        macroAlignmentScore: 5,
+        gateStatusMessage: gateVetoReason,
+        macroGateMultiplier: 0,
+        smcTechnicalScore: smcScore,
+        begonyaScore: 0,
         scoreTier: 'D',
-        tierRationale: 'Sistemik Kriz: Tüm yönlü işlemler kilitlendi.',
+        tierRationale: 'Makro Kapı Kilitli (G_macro = 0). Teknik ne kadar iyi olursa olsun işlem açılmaz.',
       };
     }
 
-    // 2. ADIM: 1-100 BEGONYA HİBRİT PUAN HESAPLAMA MOTORU
-    // A) SMC Teknik Kalite Skoru (0 - 50 Puan)
-    let smcScore = 40; // Varsayılan güçlü teknik taban
-    if (typeof smcGradeScore === 'number' && !isNaN(smcGradeScore)) {
-      smcScore = Math.min(50, Math.max(10, Math.round(smcGradeScore * 0.5)));
-    }
-
-    // B) Makro Rejim & Yön Uyum Skoru (0 - 50 Puan)
-    let macroScore = 30; // Nötr başlangıç
-
-    const isCrypto = cleanSym.includes('BTC') || cleanSym.includes('ETH');
-
-    if (isCrypto && btcDecoupling) {
-      // 🚀 GELİŞTİRME 1: Tahvil Şokunda Fon Tasfiye Dalgasından SHORT ile Kâr Sağlama
-      if (tradeDirection === 'short') {
-        macroScore = 48; // Fon tasfiyeleri mükemmel düşüş rüzgarı sağlar!
-      } else {
-        macroScore = 8;  // Long yönünde margin call dalgası büyük tehlikedir
-      }
-    } else {
-      // Standart Yön Uyumu Hesaplaması
-      const isPerfectLong = tradeDirection === 'long' && (macroBias === 'LONG_ONLY' || macroBias.includes('BULL'));
-      const isPerfectShort = tradeDirection === 'short' && (macroBias === 'SHORT_ONLY' || macroBias.includes('BEAR'));
-      const isOpposingLong = tradeDirection === 'long' && (macroBias === 'SHORT_ONLY' || macroBias.includes('BEAR'));
-      const isOpposingShort = tradeDirection === 'short' && (macroBias === 'LONG_ONLY' || macroBias.includes('BULL'));
-
-      if (isPerfectLong || isPerfectShort) {
-        macroScore = 46; // Mükemmel Çift Teyit
-      } else if (isOpposingLong || isOpposingShort) {
-        macroScore = 12; // Ters rüzgar (Veto edilmez, puanı düşürür)
-      } else if (macroBias === 'NEUTRAL_RANGE') {
-        macroScore = 32; // Kontrollü bant işlemi
-      } else {
-        macroScore = 30; // Nötr piyasa
-      }
-    }
-
-    // Oynaklık baskısı cezası
-    if (riskScore > 0.65) {
-      macroScore = Math.max(5, macroScore - Math.round((riskScore - 0.65) * 25));
-    }
-
-    // Toplam Begonya Puanı (1 - 100)
-    const begonyaScore = Math.min(100, Math.max(1, smcScore + macroScore));
-
-    // C) Kademeli Derecelendirme (Tiers) ve Dinamik Risk Belirleme
+    // Makro İzin Verdi (G_macro = 1) -> Sinyal SMC Puanına göre derecelendirilir
     let scoreTier: BegonyaScoreTier;
     let riskMultiplier: number;
     let action: MacroGateEvaluation['action'];
@@ -237,28 +261,27 @@ export class MacroGateAdapter {
       riskMultiplier = 1.00;
       action = 'PROCEED';
       tierRationale = 'Elit Kurumsal Çift Teyit (Tam Lot - 1.00x)';
-      gateStatusMessage = `🌟 A+ KUSURSUZ UYUM (Skor: ${begonyaScore}/100) -> 1.00x Tam Risk`;
+      gateStatusMessage = `🌟 A+ ELİT İŞLEM (Skor: ${begonyaScore}/100) -> 1.00x Tam Lot ile Uygula`;
     } else if (begonyaScore >= 70) {
       scoreTier = 'A';
       riskMultiplier = 0.75;
       action = 'PROCEED';
-      tierRationale = 'Güçlü Uyumlu Kurumsal Sinyal (0.75x Lot)';
-      gateStatusMessage = `✅ A GÜÇLÜ UYUM (Skor: ${begonyaScore}/100) -> 0.75x Risk`;
+      tierRationale = 'Güçlü Kurumsal Kurulum (0.75x Lot)';
+      gateStatusMessage = `✅ A GÜÇLÜ İŞLEM (Skor: ${begonyaScore}/100) -> 0.75x Lot ile Uygula`;
     } else if (begonyaScore >= 50) {
       scoreTier = 'B';
       riskMultiplier = 0.40;
       action = 'NEUTRAL_CAUTION';
-      tierRationale = 'Orta Seviye / Dikkatli İşlem (0.40x Lot)';
-      gateStatusMessage = `⚠️ B KONTROLLÜ SEVİYE (Skor: ${begonyaScore}/100) -> 0.40x Risk`;
+      tierRationale = 'Orta Seviye / M1 Manuel Teyit Bekle (0.40x Lot)';
+      gateStatusMessage = `⚠️ B ORTA SEVİYE (Skor: ${begonyaScore}/100) -> 0.40x Kontrollü Lot`;
     } else {
       scoreTier = 'C';
       riskMultiplier = 0.15;
       action = 'DEFENSIVE_REDUCE';
-      tierRationale = 'Zayıf / Yüksek Risk (Pas Geçilmesi Önerilir - 0.15x)';
-      gateStatusMessage = `⚠️ DÜŞÜK SKOR (Skor: ${begonyaScore}/100) -> Yüksek Risk / Pas Geç Önerisi (0.15x)`;
+      tierRationale = 'Zayıf Kurulum (Pas Geçilmesi Önerilir - 0.15x)';
+      gateStatusMessage = `⚠️ ZAYIF KURULUM (Skor: ${begonyaScore}/100) -> Pas Geç Önerisi`;
     }
 
-    // Veto edilmez (Allowed = True), trader bilgilendirilir ve risk küçültülür
     return {
       allowed: true,
       action,
@@ -272,9 +295,9 @@ export class MacroGateAdapter {
       btcDecouplingActive: btcDecoupling,
       macroRationale: rationale,
       gateStatusMessage,
-      begonyaScore,
+      macroGateMultiplier: 1,
       smcTechnicalScore: smcScore,
-      macroAlignmentScore: macroScore,
+      begonyaScore,
       scoreTier,
       tierRationale,
     };

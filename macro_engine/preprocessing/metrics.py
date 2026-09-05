@@ -604,6 +604,39 @@ class MacroMetricsCalculator:
             )
         }
 
+        # 18. Kurumsal Asimetrik SHORT Kuralları (Borsa & Altın Kalkanı)
+        # A) Endeksler (NAS100/SPX): VIX > 22 iken Short YASAK (Geç kalındı, tepki rallisi).
+        # Short sadece VIX < 18 (Rehavet) ve Net Likidite Daralması varken aranır!
+        is_equity_complacent = (vix_val < 18.0)
+        is_liquidity_draining = (delta_liq_b < -30.0)
+        equity_short_gate_allowed = (is_equity_complacent and is_liquidity_draining)
+        equity_short_regime = {
+            "vix_level": vix_val,
+            "is_equity_complacent": is_equity_complacent,
+            "is_liquidity_draining": is_liquidity_draining,
+            "equity_short_allowed": equity_short_gate_allowed,
+            "status_message": (
+                f"✅ ENDEKS SHORT ONAYI: VIX rehavette ({vix_val:.1f} < 18) ve Fed likiditesi daralıyor (${delta_liq_b:+.1f}B). Zirve dönüşü short aranabilir."
+                if equity_short_gate_allowed
+                else f"🛑 ENDEKS SHORT YASAK: VIX ({vix_val:.1f} >= 22.0) seviyesinde ayı piyasası rallisi (short squeeze) riski nedeniyle gecikmiş short intihardır!"
+                if vix_val >= 22.0
+                else "Nötr endeks rejimi (Rehavet veya likidite daralması henüz olgunlaşmadı)."
+            )
+        }
+
+        # B) Altın (XAUUSD): Mali Hakimiyet (Fiscal Dominance) ve Merkez Bankası Alımları Kalkanı
+        is_cash_dash = (vix_val >= 40.0 and credit_spread_analysis.get("stress_level") == "Distress")
+        gold_short_allowed = is_cash_dash
+        gold_fiscal_dominance = {
+            "gold_short_allowed": gold_short_allowed,
+            "is_cash_dash": is_cash_dash,
+            "status_message": (
+                "⚠️ SİSTEMİK NAKİT YARIŞI: Dolar likidite donması nedeniyle geçici Altın Short izni aktif."
+                if is_cash_dash
+                else "🛑 ALTINDA SHORT KESİNLİKLE YASAK: Mali Hakimiyet ve merkez bankası fiziki rezerv talebi nedeniyle Altında SHORT istatistiksel intihardır (LONG_ONLY / HOLD)."
+            )
+        }
+
         # Histeresis Durumu Hafızası
         regime_state = {
             "energy_penalty_active": eurusd_energy_penalty,
@@ -611,7 +644,10 @@ class MacroMetricsCalculator:
             "fast_stress_override": fast_stress_override,
             "btc_decoupling_active": btc_decoupling_active,
             "vix_pct_60d": vix_pct_60d,
-            "brent_pct_60d": brent_pct_60d
+            "brent_pct_60d": brent_pct_60d,
+            "equity_short_allowed": equity_short_gate_allowed,
+            "gold_short_allowed": gold_short_allowed,
+            "vix_complacent": is_equity_complacent
         }
 
         processed = {
@@ -625,6 +661,8 @@ class MacroMetricsCalculator:
             "transatlantic_analysis": transatlantic_analysis,
             "t0_fast_stress_analysis": t0_fast_stress_analysis,
             "btc_decoupling_analysis": btc_decoupling_analysis,
+            "equity_short_regime": equity_short_regime,
+            "gold_fiscal_dominance": gold_fiscal_dominance,
             "regime_state": regime_state,
             "fed_forward_path_analysis": fed_forward_path_analysis,
             "fed_reaction_function": fed_reaction_function,

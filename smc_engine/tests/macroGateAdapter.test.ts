@@ -1,8 +1,8 @@
-import { MacroGateAdapter, MacroGatePayload } from '../server/macroGateAdapter';
+﻿import { MacroGateAdapter, MacroGatePayload } from '../server/macroGateAdapter';
 import * as fs from 'fs';
 import * as path from 'path';
 
-describe('Begonya Macro Gate & 1-100 Confluence Scoring Tests', () => {
+describe('Begonya Asymmetric Short & Multiplicative Gating Tests', () => {
   const sharedGatePath = path.resolve(__dirname, '../../shared/macro_bias_gate.json');
   let originalGateContent: string | null = null;
 
@@ -20,23 +20,27 @@ describe('Begonya Macro Gate & 1-100 Confluence Scoring Tests', () => {
 
   function writeMockGate(payload: Partial<MacroGatePayload>) {
     const fullPayload: MacroGatePayload = {
-      timestamp: '2026-09-05 08:30:00',
+      timestamp: '2026-09-05 08:45:00',
       primary_regime: 'Late-Cycle Overheating',
-      volatility_risk_score: 0.40,
+      volatility_risk_score: 0.35,
       capital_preservation_mode: false,
       btc_decoupling_active: false,
       recommended_risk_multiplier: 1.0,
       execution_bias_gates: {
         XAUUSD: 'LONG_ONLY',
         BTC: 'SHORT_ONLY',
-        EURUSD: 'NEUTRAL_RANGE',
+        EURUSD: 'SHORT_ONLY',
         SPX: 'SHORT_ONLY'
       },
       asset_biases: {
         XAUUSD: 'Strong Bullish',
         BTC: 'Bearish',
-        EURUSD: 'Neutral',
+        EURUSD: 'Bearish',
         SPX: 'Bearish'
+      },
+      regime_state: {
+        vix_pct_60d: 40.0,
+        brent_pct_60d: 85.0
       },
       macro_rationale: 'Test mock rationale',
       ...payload
@@ -44,21 +48,95 @@ describe('Begonya Macro Gate & 1-100 Confluence Scoring Tests', () => {
     fs.writeFileSync(sharedGatePath, JSON.stringify(fullPayload, null, 2), 'utf-8');
   }
 
-  it('assigns Tier A+ (85-100) and 1.0x risk to Long on XAUUSD when Macro Gate is LONG_ONLY', () => {
+  it('1. XAUUSD SHORT YASAĞI: Mali hakimiyet çağında altında short kesinlikle kilitlenir (G_macro = 0)', () => {
     writeMockGate({
       execution_bias_gates: { XAUUSD: 'LONG_ONLY' }
     });
     const adapter = MacroGateAdapter.getInstance();
-    const result = adapter.evaluateCandidate('XAUUSD', 'long', 90);
+    // SMC teknik skoru 95 (mükemmel) bile olsa makro kapalıysa skor 0 olmalı!
+    const result = adapter.evaluateCandidate('XAUUSD', 'short', 95);
+
+    expect(result.allowed).toBe(false);
+    expect(result.macroGateMultiplier).toBe(0);
+    expect(result.begonyaScore).toBe(0);
+    expect(result.riskMultiplier).toBe(0.0);
+    expect(result.action).toBe('VETO');
+    expect(result.gateStatusMessage).toContain('Mali Hakimiyet');
+  });
+
+  it('2. XAUUSD LONG ONAYI: Altında Long yönünde makro kapı açıktır (G_macro = 1)', () => {
+    writeMockGate({
+      execution_bias_gates: { XAUUSD: 'LONG_ONLY' }
+    });
+    const adapter = MacroGateAdapter.getInstance();
+    const result = adapter.evaluateCandidate('XAUUSD', 'long', 92);
 
     expect(result.allowed).toBe(true);
-    expect(result.action).toBe('PROCEED');
+    expect(result.macroGateMultiplier).toBe(1);
+    expect(result.begonyaScore).toBe(92);
     expect(result.scoreTier).toBe('A+');
-    expect(result.begonyaScore).toBeGreaterThanOrEqual(85);
     expect(result.riskMultiplier).toBe(1.00);
   });
 
-  it('assigns high score and PROCEED to Short on BTCUSD during Bear Steepening decoupling', () => {
+  it('3. BORSA GECİKME TUZAĞI: VIX yüksekken endekste gecikmiş short VETO edilir (G_macro = 0)', () => {
+    writeMockGate({
+      volatility_risk_score: 0.75, // VIX yüksek
+      regime_state: { vix_pct_60d: 88.0 }
+    });
+    const adapter = MacroGateAdapter.getInstance();
+    const result = adapter.evaluateCandidate('NAS100', 'short', 90);
+
+    expect(result.allowed).toBe(false);
+    expect(result.macroGateMultiplier).toBe(0);
+    expect(result.begonyaScore).toBe(0);
+    expect(result.gateStatusMessage).toContain('Short Squeeze Riski');
+  });
+
+  it('4. BORSA REHAVET SHORTU: Sakin piyasada zirve dönüşü endeks shortuna izin verilir (G_macro = 1)', () => {
+    writeMockGate({
+      volatility_risk_score: 0.35, // VIX sakin / rehavet
+      regime_state: { vix_pct_60d: 35.0 },
+      execution_bias_gates: { SPX: 'SHORT_ONLY' }
+    });
+    const adapter = MacroGateAdapter.getInstance();
+    const result = adapter.evaluateCandidate('NAS100', 'short', 86);
+
+    expect(result.allowed).toBe(true);
+    expect(result.macroGateMultiplier).toBe(1);
+    expect(result.begonyaScore).toBe(86);
+    expect(result.scoreTier).toBe('A+');
+    expect(result.riskMultiplier).toBe(1.00);
+  });
+
+  it('5. ÇARPIMSAL KAPI DOĞRULAMASI: EURUSD makro SHORT_ONLY iken gelen Long sinyali 0 puan alır', () => {
+    writeMockGate({
+      execution_bias_gates: { EURUSD: 'SHORT_ONLY' }
+    });
+    const adapter = MacroGateAdapter.getInstance();
+    // SMC'den 98 gelse dahi toplamsal saçmalık bitti, G_macro = 0 ile sonuç 0 çıkmalı!
+    const result = adapter.evaluateCandidate('EURUSD', 'long', 98);
+
+    expect(result.allowed).toBe(false);
+    expect(result.macroGateMultiplier).toBe(0);
+    expect(result.begonyaScore).toBe(0);
+    expect(result.action).toBe('VETO');
+  });
+
+  it('6. EURUSD POZİTİF CARRY SHORT: Faiz makası Dolar lehindeyken EURUSD SHORT onaylanır (G_macro = 1)', () => {
+    writeMockGate({
+      execution_bias_gates: { EURUSD: 'SHORT_ONLY' }
+    });
+    const adapter = MacroGateAdapter.getInstance();
+    const result = adapter.evaluateCandidate('EURUSD', 'short', 88);
+
+    expect(result.allowed).toBe(true);
+    expect(result.macroGateMultiplier).toBe(1);
+    expect(result.begonyaScore).toBe(88);
+    expect(result.scoreTier).toBe('A+');
+    expect(result.riskMultiplier).toBe(1.00);
+  });
+
+  it('7. BTC TAHVİL ŞOKU TASFİYE SHORTU: Fon tasfiye dalgasında BTC SHORT onaylanır (G_macro = 1)', () => {
     writeMockGate({
       btc_decoupling_active: true,
       execution_bias_gates: { BTC: 'SHORT_ONLY' }
@@ -67,66 +145,22 @@ describe('Begonya Macro Gate & 1-100 Confluence Scoring Tests', () => {
     const result = adapter.evaluateCandidate('BTCUSD', 'short', 85);
 
     expect(result.allowed).toBe(true);
-    expect(result.action).toBe('PROCEED');
+    expect(result.macroGateMultiplier).toBe(1);
+    expect(result.begonyaScore).toBe(85);
     expect(result.scoreTier).toBe('A+');
-    expect(result.begonyaScore).toBeGreaterThanOrEqual(85);
-    expect(result.riskMultiplier).toBe(1.00);
-    expect(result.gateStatusMessage).toContain('1.00x');
   });
 
-  it('penalizes Long on BTCUSD during Bear Steepening decoupling with Tier C/D and 0.15x risk', () => {
+  it('8. BTC TAHVİL ŞOKUNDA LONG İNTİHARI: Fonlar satarken BTC Long doğrudan VETO edilir (G_macro = 0)', () => {
     writeMockGate({
       btc_decoupling_active: true,
       execution_bias_gates: { BTC: 'SHORT_ONLY' }
     });
     const adapter = MacroGateAdapter.getInstance();
-    const result = adapter.evaluateCandidate('BTCUSD', 'long', 70);
-
-    expect(result.allowed).toBe(true); // Artık katı veto yok; düşük puan ve düşük risk ile uyarır!
-    expect(result.action).toBe('DEFENSIVE_REDUCE');
-    expect(result.scoreTier).toBe('C');
-    expect(result.begonyaScore).toBeLessThan(50);
-    expect(result.riskMultiplier).toBeLessThanOrEqual(0.20);
-  });
-
-  it('handles NEUTRAL_RANGE with controlled risk and Tier B', () => {
-    writeMockGate({
-      execution_bias_gates: { EURUSD: 'NEUTRAL_RANGE' }
-    });
-    const adapter = MacroGateAdapter.getInstance();
-    const result = adapter.evaluateCandidate('EURUSD', 'long', 70);
-
-    expect(result.allowed).toBe(true);
-    expect(result.scoreTier).toBe('B');
-    expect(result.begonyaScore).toBeGreaterThanOrEqual(65);
-  });
-
-  it('triggers Nuclear Emergency Circuit Breaker (VETO) when capital_preservation_mode is true', () => {
-    writeMockGate({
-      capital_preservation_mode: true,
-      volatility_risk_score: 0.98
-    });
-    const adapter = MacroGateAdapter.getInstance();
-    const result = adapter.evaluateCandidate('XAUUSD', 'long', 95);
+    const result = adapter.evaluateCandidate('BTCUSD', 'long', 90);
 
     expect(result.allowed).toBe(false);
-    expect(result.action).toBe('VETO');
-    expect(result.riskMultiplier).toBe(0.0);
-    expect(result.begonyaScore).toBeLessThanOrEqual(10);
-    expect(result.gateStatusMessage).toContain('Sermaye Koruma Kalkanı');
-  });
-
-  it('correctly maps NAS100 to SPX and evaluates Short direction', () => {
-    writeMockGate({
-      execution_bias_gates: { SPX: 'SHORT_ONLY' }
-    });
-    const adapter = MacroGateAdapter.getInstance();
-    const resultShort = adapter.evaluateCandidate('NAS100', 'short', 85);
-    const resultLong = adapter.evaluateCandidate('NAS100', 'long', 70);
-
-    expect(resultShort.mappedMacroKey).toBe('SPX');
-    expect(resultShort.begonyaScore).toBeGreaterThan(resultLong.begonyaScore);
-    expect(resultShort.scoreTier).toBe('A+');
-    expect(resultLong.scoreTier).toBe('C');
+    expect(result.macroGateMultiplier).toBe(0);
+    expect(result.begonyaScore).toBe(0);
+    expect(result.gateStatusMessage).toContain('Margin Call');
   });
 });

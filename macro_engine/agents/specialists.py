@@ -200,25 +200,25 @@ class MacroSpecialists:
         - Bakır/Altın Momentum Deltası: %{cg.get('delta_4w_pct')}
         
         🚨 ZORUNLU KURUMSAL PORTFÖY VE RİSK YÖNETİMİ KURALLARI:
-        1. BTC VE ALTIN AYRIŞMASI (BEAR STEEPENING & VOLATİLİTE ŞOKU):
-           - Altın (XAUUSD): Egemen borç debasement'ı ve merkez bankalarının fiziki rezerv talebiyle korunur $\rightarrow$ 'Strong Bullish / LONG_ONLY'.
-           - BTC: Kurumsal bilançolarda 7/24 nakde dönebilen en likit yüksek beta varlıktır. Tahvil faizlerindeki yükseliş ve oynaklıkta margin call satışlarıyla ezilir.
-           - Eğer btc_decoupling_active True ise: BTC'ye ASLA 'LONG_ONLY' verme! BTC bias'ını 'Bearish', execution gate'ini 'SHORT_ONLY' yap (Hedge fon tasfiyeleri yüksek olasılıklı düşüş dalgası yaratır).
+        1. ALTIN (XAUUSD) VE MALİ HAKİMİYET (FISCAL DOMINANCE):
+           - ABD bütçe açıkları, egemen borç riski ve küresel merkez bankalarının dolarsızlaşma fiziki alımları nedeniyle Altın'a ASLA 'SHORT_ONLY' verme!
+           - Altın kapısı daima 'LONG_ONLY' veya sakin dönemlerde 'NEUTRAL_RANGE' olarak belirlenmelidir.
+        2. BORSA ENDEKSLERİ (SPX/NAS100) VE VIX GECİKME TUZAĞI:
+           - VIX >= 22.0 olduğunda borsa zaten düşmüştür; kurumsal short cover ve ayı piyasası rallisi riski nedeniyle hisselerde 'SHORT_ONLY' YASAKTIR!
+           - Endekslerde SHORT izni sadece fırtına öncesi sessizlikte verilebilir: VIX < 18.0 (Rehavet) ve Net Likidite daralırken.
+        3. BTC VE AYRIŞMA (BEAR STEEPENING ŞOKU):
+           - Eğer btc_decoupling_active True ise: BTC 'SHORT_ONLY' olmalı (Fon tasfiyeleri yüksek olasılıklı düşüş dalgası yaratır).
            - Eğer btc_decoupling_active False ise: BTC 'Bullish / LONG_ONLY (0.50x risk)' değerlendirilebilir.
-        2. EURUSD VE ENERJİ ŞOKU + TRANSATLANTİK MAKAS (İKİ TARAFLI DENGE):
+        4. EURUSD VE ENERJİ ŞOKU + TRANSATLANTİK MAKAS (İKİ TARAFLI DENGE):
            - Brent > $85 üzerindeyken Euro Bölgesi enerji ithalatçısıdır ve ticaret hadleri çöker.
-           - Transatlantik makas (+{transatlantic.get('spread_bps')} bps) ABD lehine açık kaldıkça sermaye Dolar'a akar.
-           - Bu sebeple EURUSD'ye ASLA körlemesine 'LONG_ONLY' verme! EURUSD için bias 'Neutral', işlem kapısı 'NEUTRAL_RANGE' olarak sınırlandırılmalıdır.
-        3. FED TEPKİ FONKSİYONU VE HİSSE SENEDİ (SPX) TAVANI:
-           - İstihdam canlı (%4.1, 190K, 218K ICSA) ve enflasyon yüksekken Fed faiz indirimlerini öteler (Higher for Longer).
-           - Kredi makası (%3.28) sakin olduğu için çöküş olmasa bile SPX ralli yapamaz; SPX tavanı 'Neutral' olarak korunmalıdır.
-        4. T-0 FAST STRESS & SERMAYE KORUMA MODU:
+           - Transatlantik makas (+{transatlantic.get('spread_bps')} bps) ABD lehine açık kaldıkça sermaye Dolar'a akar ve pozitif swap (carry) avantajı EURUSD SHORT'u destekler.
+        5. T-0 FAST STRESS & SERMAYE KORUMA MODU:
            - Eğer fast_stress_override True ise: capital_preservation_mode = True yap, recommended_risk_multiplier = 0.25'e düşür!
-           - Aksi halde risk multiplier = 0.50 veya 1.0 olarak belirle.
-        5. EXECUTION BIAS GATES:
-           - XAUUSD: LONG_ONLY
-           - EURUSD: NEUTRAL_RANGE (Enerji şoku ve faiz makası kısıtı)
+        6. EXECUTION BIAS GATES:
+           - XAUUSD: LONG_ONLY (Mali hakimiyet kalkanı)
+           - EURUSD: SHORT_ONLY (Eğer makas > +180 bps ve Brent yüksekse) veya NEUTRAL_RANGE
            - BTC: SHORT_ONLY (Eğer decoupling aktifse) veya LONG_ONLY (Sakinse)
+           - SPX: NEUTRAL_RANGE (VIX yüksekse) veya SHORT_ONLY (Rehavet + Likidite daralması varsa)
         """
         system_instruction = (
             "Sen Küresel Bir Makro Hedge Fonunun Baş Yatırım Komitesi Başkanısın (CIO). "
