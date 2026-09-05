@@ -82,7 +82,7 @@ export function buildCommunicationLayer(input: CommunicationLayerInput): Communi
 
 export function renderCommunicationMessage(message: CommunicationMessage): string {
   const lines: string[] = [];
-  lines.push(line(), 'SİNYAL ÖZETİ', line());
+  lines.push(line(), '🌺 BEGONYA | SİNYAL ÖZETİ', line());
   for (const section of message.sections) {
     lines.push(section.title);
     for (const entry of section.lines) {
@@ -429,6 +429,7 @@ function renderChecklistStatus(status: 'PASS' | 'FAIL' | 'WAITING' | 'NOT_REQUIR
 
 function normalizeChecklist(checklist: readonly { label: string; status: 'PASS' | 'FAIL' | 'WAITING' | 'NOT_REQUIRED' }[]): readonly { label: string; status: 'PASS' | 'FAIL' | 'WAITING' | 'NOT_REQUIRED' }[] {
   const required = [
+    'Makro Rejim Kapısı',
     'HTF Bias',
     'Structure',
     'Sweep',
