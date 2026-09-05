@@ -215,7 +215,24 @@ export class MacroGateAdapter {
     // ──────────────────────────────────────────────────────────────────────────
     let smcScore = 80; // Varsayılan kurumsal A kalite kurulum
     if (typeof smcGradeScore === 'number' && !isNaN(smcGradeScore)) {
-      smcScore = Math.min(100, Math.max(10, Math.round(smcGradeScore)));
+      if (smcGradeScore <= 9) {
+        // 0-9 SMC Grade ölçeğini (6=A, 8=A+, 9=A+) 0-100 kurumsal Begonya ölçeğine dönüştür
+        const mapping: Record<number, number> = {
+          9: 98,
+          8: 90,
+          7: 82,
+          6: 75,
+          5: 65,
+          4: 50,
+          3: 40,
+          2: 30,
+          1: 20,
+          0: 10,
+        };
+        smcScore = mapping[Math.round(smcGradeScore)] ?? Math.min(100, Math.max(10, Math.round((smcGradeScore / 9) * 100)));
+      } else {
+        smcScore = Math.min(100, Math.max(10, Math.round(smcGradeScore)));
+      }
     }
 
     // ──────────────────────────────────────────────────────────────────────────

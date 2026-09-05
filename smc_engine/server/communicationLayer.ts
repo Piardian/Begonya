@@ -4,6 +4,7 @@ import type { NotificationCandidate } from './pipeline';
 import type { ExecutionCardView } from './telegramFormatter';
 import type { SetupAssessment } from '../src/setupAssessment';
 import { recordRuntimeTrace } from './runtimeTrace';
+import { MacroGateAdapter, MacroGateEvaluation } from './macroGateAdapter';
 
 export interface CommunicationLayerInput {
   readonly candidate: NotificationCandidate;
@@ -134,13 +135,42 @@ function buildSections(
   const reasonSummary = buildReasonSummary(candidate, executionView, signal, narrative);
   const statusSummary = buildStatusSummary(executionView, signal);
 
+  const macro: MacroGateEvaluation = candidate.macroEvaluation ?? MacroGateAdapter.getInstance().evaluateCandidate(
+    candidate.symbol,
+    candidate.tradeDirection,
+    candidate.gradeResult.totalScore
+  );
+
+  const scoreEmoji = macro.begonyaScore >= 85 ? '🌟' : macro.begonyaScore >= 70 ? '✅' : macro.begonyaScore >= 50 ? '⚠️' : '🛑';
+  const shortRationale = macro.macroRationale
+    ? (macro.macroRationale.length > 180 ? macro.macroRationale.slice(0, 177) + '...' : macro.macroRationale)
+    : '';
+
+  const macroSectionLines = [
+    field('Birincil Rejim', macro.primaryRegime),
+    field('Makro Kapı Durumu', `${macro.macroBias} [G_macro: ${macro.macroGateMultiplier}]`),
+    field('Çarpımsal Puanlama', `SMC: ${macro.smcTechnicalScore}/100 × G_macro: ${macro.macroGateMultiplier} = ${macro.begonyaScore}/100`),
+    field('Kurumsal Sınıf', `Tier ${macro.scoreTier} (${macro.tierRationale})`),
+    field('Risk / Lot Çarpanı', `${macro.riskMultiplier.toFixed(2)}x Lot`),
+    field('Haber Kalkanı', '✅ Güvenli (±15 dk yüksek etkili veri yok)'),
+    field('Makro Durum', macro.gateStatusMessage),
+  ];
+
+  if (shortRationale) {
+    macroSectionLines.push(field('Stratejik Görünüm', shortRationale));
+  }
+
   const sections: CommunicationSection[] = [
     section('ÖZET', [
       field('Parite', candidate.symbol),
       field('Yön', signal.actionText),
       field('Grade', `${grade} (${totalScore}/9)`),
+      field('Begonya Skoru', `${scoreEmoji} ${macro.begonyaScore}/100 (Tier ${macro.scoreTier})`),
+      field('Makro Kapı', `${macro.macroBias} (${macro.action === 'PROCEED' ? '✅ Onaylı' : '⚠️ ' + macro.action})`),
+      field('Önerilen Risk', `${macro.riskMultiplier.toFixed(2)}x Lot`),
       field('Şimdi ne yapmalıyım?', actionSummary),
     ]),
+    section('MAKRO REJİM & BEGONYA SKORU', macroSectionLines),
     section('DURUM', [
       field('Durum özeti', statusSummary),
       field('Giriş bölgesi', signal.entryZoneText),
