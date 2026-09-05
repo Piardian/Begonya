@@ -1,4 +1,4 @@
-﻿import { MacroGateAdapter, MacroGatePayload } from '../server/macroGateAdapter';
+import { MacroGateAdapter, MacroGatePayload } from '../server/macroGateAdapter';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -50,7 +50,7 @@ describe('Begonya Asymmetric Short & Multiplicative Gating Tests', () => {
 
   it('1. XAUUSD SHORT YASAĞI: Mali hakimiyet çağında altında short kesinlikle kilitlenir (G_macro = 0)', () => {
     writeMockGate({
-      execution_bias_gates: { XAUUSD: 'LONG_ONLY' }
+      execution_bias_gates: { XAUUSD: 'NEUTRAL_RANGE' }
     });
     const adapter = MacroGateAdapter.getInstance();
     // SMC teknik skoru 95 (mükemmel) bile olsa makro kapalıysa skor 0 olmalı!
@@ -81,7 +81,8 @@ describe('Begonya Asymmetric Short & Multiplicative Gating Tests', () => {
   it('3. BORSA GECİKME TUZAĞI: VIX yüksekken endekste gecikmiş short VETO edilir (G_macro = 0)', () => {
     writeMockGate({
       volatility_risk_score: 0.75, // VIX yüksek
-      regime_state: { vix_pct_60d: 88.0 }
+      regime_state: { vix_pct_60d: 88.0 },
+      execution_bias_gates: { SPX: 'SHORT_ONLY' }
     });
     const adapter = MacroGateAdapter.getInstance();
     const result = adapter.evaluateCandidate('NAS100', 'short', 90);
@@ -120,6 +121,7 @@ describe('Begonya Asymmetric Short & Multiplicative Gating Tests', () => {
     expect(result.macroGateMultiplier).toBe(0);
     expect(result.begonyaScore).toBe(0);
     expect(result.action).toBe('VETO');
+    expect(result.gateStatusMessage).toContain('SHORT_ONLY iken LONG Açılamaz');
   });
 
   it('6. EURUSD POZİTİF CARRY SHORT: Faiz makası Dolar lehindeyken EURUSD SHORT onaylanır (G_macro = 1)', () => {
@@ -153,7 +155,7 @@ describe('Begonya Asymmetric Short & Multiplicative Gating Tests', () => {
   it('8. BTC TAHVİL ŞOKUNDA LONG İNTİHARI: Fonlar satarken BTC Long doğrudan VETO edilir (G_macro = 0)', () => {
     writeMockGate({
       btc_decoupling_active: true,
-      execution_bias_gates: { BTC: 'SHORT_ONLY' }
+      execution_bias_gates: { BTC: 'NEUTRAL_RANGE' }
     });
     const adapter = MacroGateAdapter.getInstance();
     const result = adapter.evaluateCandidate('BTCUSD', 'long', 90);
@@ -163,4 +165,47 @@ describe('Begonya Asymmetric Short & Multiplicative Gating Tests', () => {
     expect(result.begonyaScore).toBe(0);
     expect(result.gateStatusMessage).toContain('Margin Call');
   });
+
+  it('9. AÇIK 1 ÇÖZÜMÜ - TERS YÖN KONTROLÜ: EURUSD LONG_ONLY iken SMC Short üretirse 1. Katmanda VETO edilir', () => {
+    writeMockGate({
+      execution_bias_gates: { EURUSD: 'LONG_ONLY' }
+    });
+    const adapter = MacroGateAdapter.getInstance();
+    const result = adapter.evaluateCandidate('EURUSD', 'short', 94);
+
+    expect(result.allowed).toBe(false);
+    expect(result.macroGateMultiplier).toBe(0);
+    expect(result.begonyaScore).toBe(0);
+    expect(result.action).toBe('VETO');
+    expect(result.gateStatusMessage).toContain('LONG_ONLY iken SHORT Açılamaz');
+  });
+
+  it('10. AÇIK 2 ÇÖZÜMÜ - DEFENSIVE_HOLD KONTROLÜ: Makro savunma modundaki varlık 1. Katmanda VETO edilir', () => {
+    writeMockGate({
+      execution_bias_gates: { SPX: 'DEFENSIVE_HOLD' }
+    });
+    const adapter = MacroGateAdapter.getInstance();
+    const result = adapter.evaluateCandidate('NAS100', 'short', 90);
+
+    expect(result.allowed).toBe(false);
+    expect(result.macroGateMultiplier).toBe(0);
+    expect(result.begonyaScore).toBe(0);
+    expect(result.action).toBe('VETO');
+    expect(result.gateStatusMessage).toContain('DEFENSIVE_HOLD');
+  });
+
+  it('11. AÇIK 3 ÇÖZÜMÜ - GENEL VARLIK KORUMASI: GBPUSD SHORT_ONLY iken gelen LONG sinyali boşluğa düşmeden VETO edilir', () => {
+    writeMockGate({
+      execution_bias_gates: { GBPUSD: 'SHORT_ONLY' }
+    });
+    const adapter = MacroGateAdapter.getInstance();
+    const result = adapter.evaluateCandidate('GBPUSD', 'long', 89);
+
+    expect(result.allowed).toBe(false);
+    expect(result.macroGateMultiplier).toBe(0);
+    expect(result.begonyaScore).toBe(0);
+    expect(result.action).toBe('VETO');
+    expect(result.gateStatusMessage).toContain('SHORT_ONLY iken LONG Açılamaz');
+  });
 });
+

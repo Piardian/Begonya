@@ -1,5 +1,6 @@
-﻿import * as fs from 'fs';
+import * as fs from 'fs';
 import * as path from 'path';
+import { NewsGuard } from './newsGuard';
 
 export interface MacroGatePayload {
   timestamp?: string;
@@ -116,6 +117,39 @@ export class MacroGateAdapter {
     return null;
   }
 
+  private buildVetoResult(
+    symbol: string,
+    mappedMacroKey: string,
+    tradeDirection: 'long' | 'short',
+    macroBias: string,
+    primaryRegime: string,
+    capitalPreservation: boolean,
+    btcDecoupling: boolean,
+    macroRationale: string,
+    smcTechnicalScore: number,
+    gateStatusMessage: string
+  ): MacroGateEvaluation {
+    return {
+      allowed: false,
+      action: 'VETO',
+      symbol,
+      mappedMacroKey,
+      tradeDirection,
+      macroBias,
+      primaryRegime,
+      riskMultiplier: 0.0,
+      capitalPreservationMode: capitalPreservation,
+      btcDecouplingActive: btcDecoupling,
+      macroRationale,
+      gateStatusMessage,
+      macroGateMultiplier: 0,
+      smcTechnicalScore,
+      begonyaScore: 0,
+      scoreTier: 'D',
+      tierRationale: 'Makro Kapı Kilitli (G_macro = 0). Teknik ne kadar iyi olursa olsun işlem açılmaz.',
+    };
+  }
+
   public evaluateCandidate(
     symbol: string,
     tradeDirection: 'long' | 'short',
@@ -163,91 +197,159 @@ export class MacroGateAdapter {
     const macroBias = (gates[macroKey] || gates[cleanSym] || 'NEUTRAL_ALL').toUpperCase();
 
     // ──────────────────────────────────────────────────────────────────────────
-    // 1. ADIM: MAKRO İZİN ANAHTARI (G_macro: 0 veya 1) - ASİMETRİK PİYASA KURALLARI
+    // SMC TEKNİK KALİTE PUANLAMASI (0 - 100)
     // ──────────────────────────────────────────────────────────────────────────
-    let gMacro: 0 | 1 = 1;
-    let gateVetoReason = '';
-
-    // A) Sistemik Donma / Küresel Kriz (Nükleer Yangın Sigortası)
-    if (capitalPreservation || riskScore >= 0.95) {
-      gMacro = 0;
-      gateVetoReason = `🛑 VETO: Sistemik Kriz & Sermaye Koruma Kalkanı Devrede (Risk Skoru: ${riskScore.toFixed(2)})`;
-    }
-
-    // B) ALTIN (XAUUSD) SHORT KURALI: Mali Hakimiyet & Egemen Borç Kalkanı
-    else if (cleanSym.includes('XAU') || cleanSym.includes('GOLD')) {
-      if (tradeDirection === 'short') {
-        const isCashDash = riskScore >= 0.90 && regime.includes('Deflationary');
-        if (!isCashDash) {
-          gMacro = 0;
-          gateVetoReason = '🛑 VETO: Mali Hakimiyet Çağında Altında SHORT Kesinlikle Yasaktır (Merkez Bankası Fiziki Talebi / Egemen Borç Kalkanı)';
-        }
-      }
-    }
-
-    // C) BORSA ENDEKSLERİ (NAS100 / SPX) SHORT KURALI: VIX Gecikme & Short Squeeze Kalkanı
-    else if (cleanSym.includes('NAS') || cleanSym.includes('SPX') || cleanSym.includes('US100') || cleanSym.includes('US500')) {
-      if (tradeDirection === 'short') {
-        // VIX >= 22 ise borsa zaten çökmüştür; short covering rallisi riski vardır!
-        if (riskScore >= 0.65 || (regimeState.vix_pct_60d ?? 50) >= 80) {
-          gMacro = 0;
-          gateVetoReason = '🛑 VETO: Endekslerde VIX Yüksek (Gecikildi / Ayı Piyasası Rallisi ve Short Squeeze Riski Nedeniyle Short Yasak!)';
-        }
-      }
-    }
-
-    // D) KRİPTO (BTCUSD / ETHUSD) SHORT KURALI: Fon Tasfiye Dalgası vs Squeeze Riski
-    else if (cleanSym.includes('BTC') || cleanSym.includes('ETH')) {
-      if (tradeDirection === 'long' && btcDecoupling) {
-        gMacro = 0;
-        gateVetoReason = '🛑 VETO: Tahvil Şoku Kaynaklı Fon Tasfiye Dalgası (Margin Call) Devrede; Kripto Long İntihardır!';
-      }
-    }
-
-    // E) DÖVİZ (EURUSD): Transatlantik Makas & Makro Rüzgar Kalkanı
-    else if (cleanSym.includes('EURUSD')) {
-      if (tradeDirection === 'long' && macroBias === 'SHORT_ONLY') {
-        gMacro = 0;
-        gateVetoReason = '🛑 VETO: Makro Rüzgar Ters (Faiz Makası ABD Lehine ve DXY Güçlü; Euro Almak Tuzaktır)';
-      }
-    }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // 2. ADIM: SMC TEKNİK KALİTE PUANLAMASI (0 - 100)
-    // ──────────────────────────────────────────────────────────────────────────
-    // SMC Skoru: Sweep (30) + Displacement (30) + Retest (25) + RR/Hedef (15)
     let smcScore = 80; // Varsayılan kurumsal A kalite kurulum
     if (typeof smcGradeScore === 'number' && !isNaN(smcGradeScore)) {
       smcScore = Math.min(100, Math.max(10, Math.round(smcGradeScore)));
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // 3. ADIM: ÇAR PIMSAL NİHAİ SKOR (Nihai = G_macro * smcScore)
+    // 0. KATMAN: MAKRO HABER KALKANI (NEWS FREEZE GUARD - ±15 DK DONDURMA)
     // ──────────────────────────────────────────────────────────────────────────
-    const begonyaScore = gMacro === 0 ? 0 : smcScore;
-
-    // Eğer Makro İzin Vermediyse: KESİN VETO (Nihai Skor = 0)
-    if (gMacro === 0) {
-      return {
-        allowed: false,
-        action: 'VETO',
-        symbol: cleanSym,
-        mappedMacroKey: macroKey,
+    const newsFreeze = NewsGuard.getInstance().checkNewsFreeze(cleanSym);
+    if (newsFreeze.isFrozen) {
+      return this.buildVetoResult(
+        cleanSym,
+        macroKey,
         tradeDirection,
         macroBias,
-        primaryRegime: regime,
-        riskMultiplier: 0.0,
-        capitalPreservationMode: capitalPreservation,
-        btcDecouplingActive: btcDecoupling,
-        macroRationale: rationale,
-        gateStatusMessage: gateVetoReason,
-        macroGateMultiplier: 0,
-        smcTechnicalScore: smcScore,
-        begonyaScore: 0,
-        scoreTier: 'D',
-        tierRationale: 'Makro Kapı Kilitli (G_macro = 0). Teknik ne kadar iyi olursa olsun işlem açılmaz.',
-      };
+        regime,
+        capitalPreservation,
+        btcDecoupling,
+        rationale,
+        smcScore,
+        `🛡️ VETO: Makro Haber Kalkanı Devrede! ${newsFreeze.reason}`
+      );
     }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 1. KATMAN: GENEL MAKRO YÖN VE DEFENSIVE_HOLD KONTROLÜ
+    // ──────────────────────────────────────────────────────────────────────────
+    // A) Sistemik Donma / Küresel Kriz (Sermaye Koruma Kalkanı)
+    if (capitalPreservation || riskScore >= 0.90) {
+      return this.buildVetoResult(
+        cleanSym,
+        macroKey,
+        tradeDirection,
+        macroBias,
+        regime,
+        capitalPreservation,
+        btcDecoupling,
+        rationale,
+        smcScore,
+        `🛑 VETO: Sistemik Kriz / Sermaye Koruma Kalkanı Devrede (Risk Skoru: ${riskScore.toFixed(2)})`
+      );
+    }
+
+    // B) DEFENSIVE_HOLD Kontrolü (Genel Savunma Modu)
+    if (macroBias === 'DEFENSIVE_HOLD') {
+      return this.buildVetoResult(
+        cleanSym,
+        macroKey,
+        tradeDirection,
+        macroBias,
+        regime,
+        capitalPreservation,
+        btcDecoupling,
+        rationale,
+        smcScore,
+        `🛑 VETO: ${cleanSym} Makro Savunma Modunda (DEFENSIVE_HOLD) - Yeni İşlem Açılamaz!`
+      );
+    }
+
+    // C) Temel Yön Uyumu (Directional Compatibility)
+    if (tradeDirection === 'short' && macroBias === 'LONG_ONLY') {
+      return this.buildVetoResult(
+        cleanSym,
+        macroKey,
+        tradeDirection,
+        macroBias,
+        regime,
+        capitalPreservation,
+        btcDecoupling,
+        rationale,
+        smcScore,
+        `🛑 VETO: ${cleanSym} Makro Yönü LONG_ONLY iken SHORT Açılamaz!`
+      );
+    }
+
+    if (tradeDirection === 'long' && macroBias === 'SHORT_ONLY') {
+      return this.buildVetoResult(
+        cleanSym,
+        macroKey,
+        tradeDirection,
+        macroBias,
+        regime,
+        capitalPreservation,
+        btcDecoupling,
+        rationale,
+        smcScore,
+        `🛑 VETO: ${cleanSym} Makro Yönü SHORT_ONLY iken LONG Açılamaz!`
+      );
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 2. KATMAN: ASİMETRİK PİYASA VE ENSTRÜMAN İSTİSNALARI
+    // ──────────────────────────────────────────────────────────────────────────
+    // A) ALTIN (XAUUSD / GOLD) SHORT KURALI: Mali Hakimiyet & Egemen Borç Kalkanı
+    if ((cleanSym.includes('XAU') || cleanSym.includes('GOLD')) && tradeDirection === 'short') {
+      const isCashDash = riskScore >= 0.90 && regime.includes('Deflationary');
+      if (!isCashDash) {
+        return this.buildVetoResult(
+          cleanSym,
+          macroKey,
+          tradeDirection,
+          macroBias,
+          regime,
+          capitalPreservation,
+          btcDecoupling,
+          rationale,
+          smcScore,
+          '🛑 VETO: Mali Hakimiyet Çağında Altında SHORT Kesinlikle Yasaktır (Fiziki Rezerv Talebi / Egemen Borç Kalkanı)'
+        );
+      }
+    }
+
+    // B) BORSA ENDEKSLERİ (NAS100 / SPX / US100 / US500) SHORT KURALI: VIX Gecikme & Short Squeeze Kalkanı
+    if ((cleanSym.includes('NAS') || cleanSym.includes('SPX') || cleanSym.includes('US100') || cleanSym.includes('US500')) && tradeDirection === 'short') {
+      if (riskScore >= 0.65 || (regimeState.vix_pct_60d ?? 50) >= 80) {
+        return this.buildVetoResult(
+          cleanSym,
+          macroKey,
+          tradeDirection,
+          macroBias,
+          regime,
+          capitalPreservation,
+          btcDecoupling,
+          rationale,
+          smcScore,
+          '🛑 VETO: Endekslerde VIX Yüksek (Gecikildi / Ayı Piyasası Rallisi ve Short Squeeze Riski Nedeniyle Short Yasak!)'
+        );
+      }
+    }
+
+    // C) KRİPTO (BTCUSD / ETHUSD) LONG KURALI: Fon Tasfiye Dalgası (Margin Call) Kalkanı
+    if ((cleanSym.includes('BTC') || cleanSym.includes('ETH')) && tradeDirection === 'long' && btcDecoupling) {
+      return this.buildVetoResult(
+        cleanSym,
+        macroKey,
+        tradeDirection,
+        macroBias,
+        regime,
+        capitalPreservation,
+        btcDecoupling,
+        rationale,
+        smcScore,
+        '🛑 VETO: Tahvil Şoku Kaynaklı Fon Tasfiye Dalgası (Margin Call) Devrede; Long Yasak!'
+      );
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 3. ADIM: MAKRO ONAYI (G_macro = 1) & ÇARPIMSAL NİHAİ SKOR
+    // ──────────────────────────────────────────────────────────────────────────
+    const begonyaScore = smcScore;
+
 
     // Makro İzin Verdi (G_macro = 1) -> Sinyal SMC Puanına göre derecelendirilir
     let scoreTier: BegonyaScoreTier;
