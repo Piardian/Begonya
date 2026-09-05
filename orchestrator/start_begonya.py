@@ -45,7 +45,7 @@ def main():
         processes.append(("Macro Daemon", p_daemon))
 
         print("\n[Begonya Orchestrator] 🎯 3. SMC Poller / Execution Servisi Başlatılıyor...")
-        smc_cmd = ["cmd", "/c", "npm", "start"]
+        smc_cmd = ["cmd", "/c", "npm.cmd", "start"]
         p_smc = subprocess.Popen(smc_cmd, cwd=str(SMC_DIR))
         processes.append(("SMC Engine", p_smc))
 
