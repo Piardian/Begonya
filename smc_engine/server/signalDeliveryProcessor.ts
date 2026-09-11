@@ -88,6 +88,20 @@ async function refreshCandidate(item: QueuedSignalDelivery, candleStore: CandleS
   };
 }
 
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
+  let timer: NodeJS.Timeout | null = null;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new Error(errorMessage));
+    }, timeoutMs);
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 async function deliverSignalScreenshots(candidate: QueuedSignalDelivery['candidate'], candleStore: CandleStore): Promise<boolean> {
   const signalId = candidate.signalId ?? candidate.uniqueKey;
   const candles15m = candleStore.getCandles(candidate.symbol, '15m');
@@ -103,34 +117,37 @@ async function deliverSignalScreenshots(candidate: QueuedSignalDelivery['candida
 
   if (process.env.ENABLE_RC5_1_MTF === 'true') {
     try {
-      const candles1m = await loadExecutionCandles1m(candidate.symbol, candleStore);
-      const charts = await captureMultiTimeframeCharts(
-        {
-          '1m': candles1m,
-          '4h': candleStore.getCandles(candidate.symbol, '4h'),
-          '1h': candleStore.getCandles(candidate.symbol, '1h'),
-          '15m': candles15m,
-        },
-        candidate,
-        1000,
-        600,
-        100,
-        1,
-        ['1m', '15m', '1h']
-      );
-      let allOk = true;
-      for (const item of charts.sort((a, b) => ({ '1m': 0, '15m': 1, '1h': 2, '4h': 3 }[a.timeframe] ?? 99) - ({ '1m': 0, '15m': 1, '1h': 2, '4h': 3 }[b.timeframe] ?? 99))) {
-        const ok = await deliverRenderedChart(candidate.symbol, signalId, item.timeframe, item.chart.screenshotPng, item.chart.metadata, item.candidate === candidate ? candles15m : candleStore.getCandles(candidate.symbol, item.timeframe), item.candidate);
-        allOk = allOk && ok;
-      }
-      return allOk;
+      const mtfWork = async () => {
+        const candles1m = await loadExecutionCandles1m(candidate.symbol, candleStore);
+        const charts = await captureMultiTimeframeCharts(
+          {
+            '1m': candles1m,
+            '4h': candleStore.getCandles(candidate.symbol, '4h'),
+            '1h': candleStore.getCandles(candidate.symbol, '1h'),
+            '15m': candles15m,
+          },
+          candidate,
+          1000,
+          600,
+          100,
+          1,
+          ['1m', '15m', '1h']
+        );
+        let allOk = true;
+        for (const item of charts.sort((a, b) => ({ '1m': 0, '15m': 1, '1h': 2, '4h': 3 }[a.timeframe] ?? 99) - ({ '1m': 0, '15m': 1, '1h': 2, '4h': 3 }[b.timeframe] ?? 99))) {
+          const ok = await deliverRenderedChart(candidate.symbol, signalId, item.timeframe, item.chart.screenshotPng, item.chart.metadata, item.candidate === candidate ? candles15m : candleStore.getCandles(candidate.symbol, item.timeframe), item.candidate);
+          allOk = allOk && ok;
+        }
+        return allOk;
+      };
+
+      return await withTimeout(mtfWork(), 12000, `Multi-timeframe screenshot capture timed out after 12000ms for ${candidate.symbol}`);
     } catch (mtfError) {
-      console.warn(`[SignalDelivery] Multi-timeframe screenshot capture failed for ${candidate.symbol}, falling back to 15m screenshot:`, mtfError);
+      console.warn(`[SignalDelivery] Multi-timeframe screenshot capture failed/timed out for ${candidate.symbol}, falling back immediately to 15m screenshot:`, mtfError);
     }
   }
 
   return deliverRenderedChart(candidate.symbol, signalId, '15m', capturedChart.screenshotPng, capturedChart.metadata, candles15m, candidate);
-
 }
 
 async function deliverRenderedChart(

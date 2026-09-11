@@ -52,11 +52,11 @@ export class SetupFamilyGuard {
     for (const recent of recentMatching) {
       // 1. Same or older impulse origin event
       if (breakTimestamp <= recent.breakTimestamp) {
-        // If a higher or equal score was already notified for this or a newer move, block it
-        if (score <= recent.score) {
+        const isGenuineTierUpgrade = recent.grade !== 'A+' && grade === 'A+' && score > recent.score;
+        if (!isGenuineTierUpgrade) {
           return {
             allowed: false,
-            reason: `Duplicate setup family: An equal or higher grade (${recent.grade}) zone from impulse (${recent.breakTimestamp}) was already notified recently.`,
+            reason: `Duplicate setup family: Impulse (${recent.breakTimestamp}) was already notified recently (${recent.grade}, score ${recent.score}).`,
           };
         }
       }
@@ -64,10 +64,11 @@ export class SetupFamilyGuard {
       // 2. Overlapping price zone within cooldown window
       const overlap = calculateOverlapRatio(zone, { low: recent.zoneLow, high: recent.zoneHigh });
       if (overlap >= this.overlapThreshold) {
-        if (score <= recent.score) {
+        const isGenuineTierUpgrade = recent.grade !== 'A+' && grade === 'A+' && score > recent.score;
+        if (!isGenuineTierUpgrade) {
           return {
             allowed: false,
-            reason: `Duplicate zone overlap: Similar zone (%${Math.round(overlap * 100)} overlap) was notified within cooldown.`,
+            reason: `Duplicate zone overlap: Similar zone (%${Math.round(overlap * 100)} overlap) was notified within cooldown (${recent.grade}, score ${recent.score}).`,
           };
         }
       }

@@ -16,12 +16,41 @@ export interface StoredCandle {
 export class CandleStore {
   private dataDir: string;
 
-  constructor(dataDir = 'data') {
-    this.dataDir = dataDir;
+  constructor(dataDir?: string) {
+    const rawDir = dataDir ?? process.env.CANDLE_DATA_DIR ?? 'data';
+    this.dataDir = path.isAbsolute(rawDir) ? rawDir : path.resolve(process.cwd(), rawDir);
   }
 
-  private getFilePath(symbol: Symbol, timeframe: Timeframe): string {
+  getDataDir(): string {
+    return this.dataDir;
+  }
+
+  getFilePath(symbol: Symbol, timeframe: Timeframe): string {
     return path.join(this.dataDir, `${symbol}_${timeframe}.json`);
+  }
+
+  getFileMtime(symbol: Symbol, timeframe: Timeframe): number | null {
+    const filePath = this.getFilePath(symbol, timeframe);
+    if (!fs.existsSync(filePath)) {
+      return null;
+    }
+    try {
+      return fs.statSync(filePath).mtimeMs;
+    } catch {
+      return null;
+    }
+  }
+
+  isFresh(symbol: Symbol, timeframe: Timeframe, maxAgeMs: number, minCandles = 20): boolean {
+    if (maxAgeMs <= 0) return false;
+    const mtime = this.getFileMtime(symbol, timeframe);
+    if (!mtime) return false;
+    const now = Date.now();
+    const age = Math.max(0, now - mtime);
+    if (age >= maxAgeMs) return false;
+
+    const candles = this.getCandles(symbol, timeframe);
+    return candles.length >= minCandles;
   }
 
   appendCandle(symbol: Symbol, timeframe: Timeframe, candle: StoredCandle): void {

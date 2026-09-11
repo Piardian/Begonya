@@ -187,6 +187,12 @@ function buildSections(
       field('HTF uyumu', `${formatTrendTr(candidate.bias4H)} / ${formatTrendTr(candidate.bias1H)}`),
       field('Bölge tipi', `${formatPoiTypeTr(signal.typeText)} (${signal.polarText})`),
       field('P/D', `4H ${formatPdTr(candidate.pd4H)} | 1H ${formatPdTr(candidate.pd1H)} | 15M ${formatPdTr(candidate.pd15M)}`),
+      ...(candidate.liquidityMagnet && candidate.liquidityMagnet.isActive
+        ? [field('Mıknatıs', candidate.liquidityMagnet.description)]
+        : []),
+      ...(candidate.opposingObstacle && candidate.opposingObstacle.hasObstacle
+        ? [field('Karşı Engel', candidate.opposingObstacle.warningText)]
+        : []),
     ]),
     section('KISA ÖZET', [reasonSummary]),
   ];

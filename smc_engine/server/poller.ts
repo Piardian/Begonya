@@ -41,6 +41,13 @@ export interface PollAndProcessResult {
   readonly failureReason: string | null;
 }
 
+export const CANDLE_FRESHNESS_THRESHOLDS_MS: Readonly<Record<Timeframe, number>> = Object.freeze({
+  '15m': 13 * 60 * 1000,
+  '1h': 55 * 60 * 1000,
+  '4h': 230 * 60 * 1000,
+  '1m': 50 * 1000,
+});
+
 export async function pollAndProcess(
   symbol: Symbol,
   timeframe: Timeframe,
@@ -53,15 +60,25 @@ export async function pollAndProcess(
   let fetchedCount = 0;
   let pollFailureReason: string | null = null;
   try {
-    const existing = candleStore.getCandles(symbol, timeframe);
-    const outputSize = existing.length === 0 ? 100 : 10;
+    const thresholdMs = CANDLE_FRESHNESS_THRESHOLDS_MS[timeframe] ?? (13 * 60 * 1000);
+    const forcePoll = process.env.FORCE_POLL === 'true';
+    const isCacheFresh = !forcePoll && candleStore.isFresh(symbol, timeframe, thresholdMs);
 
-    const fetched = await fetchCandles(symbol, timeframe, outputSize);
-    fetchedCount = fetched.length;
-    for (const candle of fetched) {
-      candleStore.appendCandle(symbol, timeframe, candle);
+    if (isCacheFresh) {
+      console.log(`[SharedCache] ${symbol} (${timeframe}) is fresh in shared cache. Skipping Twelve Data fetch.`);
+      pollSuccess = true;
+      fetchedCount = 0;
+    } else {
+      const existing = candleStore.getCandles(symbol, timeframe);
+      const outputSize = existing.length === 0 ? 100 : 10;
+
+      const fetched = await fetchCandles(symbol, timeframe, outputSize);
+      fetchedCount = fetched.length;
+      for (const candle of fetched) {
+        candleStore.appendCandle(symbol, timeframe, candle);
+      }
+      pollSuccess = true;
     }
-    pollSuccess = true;
 
     if (timeframe === '15m') {
       const kz = evaluateKillzoneFilter(symbol);

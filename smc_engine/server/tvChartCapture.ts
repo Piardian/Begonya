@@ -166,17 +166,19 @@ export async function captureLightweightChartWithMetadata(
 
   try {
     const page = await browser.newPage();
-    await page.setViewport({ width, height, deviceScaleFactor });
-    await page.setContent(html, { waitUntil: 'load' });
-    await page.waitForFunction(() => (globalThis as any).TV_CHART_METADATA !== null, { timeout: 10000 });
-    const metadata = await page.evaluate(() => (globalThis as any).TV_CHART_METADATA) as ChartMetadata;
-    const chart = await page.$('#chart');
-    if (!chart) throw new Error('Chart element not found');
-    const screenshotPng = await chart.screenshot({ type: 'png' }) as Buffer;
-    await page.close();
-
-    return { screenshotPng, metadata, smartScreenshotPlan };
+    try {
+      await page.setViewport({ width, height, deviceScaleFactor });
+      await page.setContent(html, { waitUntil: 'load' });
+      await page.waitForFunction(() => (globalThis as any).TV_CHART_METADATA !== null, { timeout: 5000 });
+      const metadata = await page.evaluate(() => (globalThis as any).TV_CHART_METADATA) as ChartMetadata;
+      const chart = await page.$('#chart');
+      if (!chart) throw new Error('Chart element not found');
+      const screenshotPng = await chart.screenshot({ type: 'png' }) as Buffer;
+      return { screenshotPng, metadata, smartScreenshotPlan };
+    } finally {
+      await page.close().catch(() => {});
+    }
   } finally {
-    await browser.close();
+    await browser.close().catch(() => {});
   }
 }

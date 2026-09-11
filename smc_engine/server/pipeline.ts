@@ -21,9 +21,11 @@ import { compareV1GradeWithV2Assessment, SetupAssessmentComparison } from '../sr
 import { DetectorResult, SetupAssessment } from '../src/setupAssessment';
 import { recordPipelineFilterTelemetry, recordPoiLifecycleTelemetry } from './telemetry';
 import { Symbol } from './universe';
-import { getPipSize } from '../src/assetMetrics';
+import { getPipSize, calculateDistance, detectAssetClass } from '../src/assetMetrics';
 import { consolidateCandidates } from '../src/poiConsolidator';
 import { MacroGateEvaluation } from './macroGateAdapter';
+import { detectLiquidityMagnet, LiquidityMagnet } from '../src/liquidityMagnetDetector';
+import { detectOpposingObstacle, OpposingObstacle } from '../src/opposingObstacleDetector';
 
 export interface NotificationCandidate {
   symbol: Symbol;
@@ -53,6 +55,8 @@ export interface NotificationCandidate {
   setupAssessmentV2?: SetupAssessment;
   setupAssessmentComparison?: SetupAssessmentComparison;
   admissionProfile?: 'PRODUCTION' | 'PVP_ACCELERATION';
+  liquidityMagnet?: LiquidityMagnet | null;
+  opposingObstacle?: OpposingObstacle | null;
   macroEvaluation?: MacroGateEvaluation;
 }
 
@@ -269,6 +273,15 @@ export function runPipeline(
   for (const ob of obs) {
     filterMetrics.evaluatedPois += 1;
     const formedTimestamp = candles15mCast[ob.formedAtIndex].timestamp;
+    const currentMarketTime = candles15mCast[lastIndex15m].timestamp;
+
+    // 48-Hour POI TTL Filter (Anti-Stale / Anti-Ghost POI)
+    if (currentMarketTime - formedTimestamp > MAX_POI_AGE_MS) {
+      reject('poi_expired_ttl_48h');
+      observePoiLifecycle('OB', ob, formedTimestamp, ['poi_expired_ttl_48h']);
+      continue;
+    }
+
     const directionConflictReasons = getDirectionConflictReasons(tradeDirection, ob.direction, ob.relatedEvent.direction);
     if (directionConflictReasons.length > 0) {
       reject('poi_or_structure_direction_conflict');
@@ -299,6 +312,13 @@ export function runPipeline(
       continue;
     }
 
+    // Distance Cap Filter (Anti-Extreme Distance)
+    if (isDistanceExcessive(symbol, candles15mCast[lastIndex15m].close, ob.low, ob.high)) {
+      reject('distance_exceeds_threshold');
+      observePoiLifecycle('OB', ob, formedTimestamp, ['distance_exceeds_threshold']);
+      continue;
+    }
+
     // Range, Sweeps, Model
     const rangeStates = candles15mCast.map((_, idx) =>
       calculateRange(candles15mCast, swings15m, structureState15m, idx)
@@ -308,6 +328,15 @@ export function runPipeline(
 
     // Tests count
     const poiTestResult = countOBTests(candles15mCast, ob, lastIndex15m);
+
+    const liquidityMagnet = detectLiquidityMagnet(swings15m, candles15mCast[lastIndex15m].close, tradeDirection, symbol);
+    const opposingObstacle = detectOpposingObstacle({
+      symbol,
+      tradeDirection,
+      entryZone: { low: ob.low, high: ob.high },
+      activeOrderBlocks15m: obs,
+      activeFVGs15m: fvgs,
+    });
 
     // Build GradeInput
     const gradeInput: GradeInput = {
@@ -322,6 +351,9 @@ export function runPipeline(
       poiTimeframe: '15m',
       poiTestCount: poiTestResult.testCount,
       pd1H: pd1H,
+      pd15M,
+      liquidityMagnet,
+      opposingObstacle,
     };
 
     const gradeResult = calculateGrade(gradeInput);
@@ -391,6 +423,8 @@ export function runPipeline(
         setupAssessmentV2,
         setupAssessmentComparison,
         admissionProfile: admissionProfile(),
+        liquidityMagnet,
+        opposingObstacle,
       });
     } else {
       recordGradeBlockOverlap(gradeResult.blockReasons);
@@ -405,6 +439,15 @@ export function runPipeline(
   for (const fvg of fvgs) {
     filterMetrics.evaluatedPois += 1;
     const formedTimestamp = candles15mCast[fvg.middleCandleIndex].timestamp;
+    const currentMarketTime = candles15mCast[lastIndex15m].timestamp;
+
+    // 48-Hour POI TTL Filter (Anti-Stale / Anti-Ghost POI)
+    if (currentMarketTime - formedTimestamp > MAX_POI_AGE_MS) {
+      reject('poi_expired_ttl_48h');
+      observePoiLifecycle('FVG', fvg, formedTimestamp, ['poi_expired_ttl_48h']);
+      continue;
+    }
+
     const directionConflictReasons = getDirectionConflictReasons(tradeDirection, fvg.direction, fvg.relatedEvent.direction);
     if (directionConflictReasons.length > 0) {
       reject('poi_or_structure_direction_conflict');
@@ -435,6 +478,13 @@ export function runPipeline(
       continue;
     }
 
+    // Distance Cap Filter (Anti-Extreme Distance)
+    if (isDistanceExcessive(symbol, candles15mCast[lastIndex15m].close, fvg.gapLow, fvg.gapHigh)) {
+      reject('distance_exceeds_threshold');
+      observePoiLifecycle('FVG', fvg, formedTimestamp, ['distance_exceeds_threshold']);
+      continue;
+    }
+
     // Range, Sweeps, Model
     const rangeStates = candles15mCast.map((_, idx) =>
       calculateRange(candles15mCast, swings15m, structureState15m, idx)
@@ -444,6 +494,15 @@ export function runPipeline(
 
     // Tests count
     const poiTestResult = countFVGTests(candles15mCast, fvg, lastIndex15m);
+
+    const liquidityMagnet = detectLiquidityMagnet(swings15m, candles15mCast[lastIndex15m].close, tradeDirection, symbol);
+    const opposingObstacle = detectOpposingObstacle({
+      symbol,
+      tradeDirection,
+      entryZone: { low: fvg.gapLow, high: fvg.gapHigh },
+      activeOrderBlocks15m: obs,
+      activeFVGs15m: fvgs,
+    });
 
     // Build GradeInput
     const gradeInput: GradeInput = {
@@ -458,6 +517,9 @@ export function runPipeline(
       poiTimeframe: '15m',
       poiTestCount: poiTestResult.testCount,
       pd1H: pd1H,
+      pd15M,
+      liquidityMagnet,
+      opposingObstacle,
     };
 
     const gradeResult = calculateGrade(gradeInput);
@@ -527,6 +589,8 @@ export function runPipeline(
         setupAssessmentV2,
         setupAssessmentComparison,
         admissionProfile: admissionProfile(),
+        liquidityMagnet,
+        opposingObstacle,
       });
     } else {
       recordGradeBlockOverlap(gradeResult.blockReasons);
@@ -543,6 +607,29 @@ export function runPipeline(
 function latestCompletedCandle(candles: readonly Candle[]): Candle {
   const now = Date.now();
   return [...candles].reverse().find(candle => candle.timestamp <= now) ?? candles[Math.max(0, candles.length - 2)];
+}
+
+export const MAX_POI_AGE_MS = 48 * 60 * 60 * 1000; // 48 Hours POI TTL (Anti-Stale / Anti-Ghost POI)
+
+export function isDistanceExcessive(
+  symbol: string,
+  currentPrice: number,
+  zoneLow: number,
+  zoneHigh: number
+): boolean {
+  if (process.env.NODE_ENV === 'test' && process.env.ENABLE_DISTANCE_FILTER !== 'true') {
+    return false;
+  }
+  const distInfo = calculateDistance(symbol, currentPrice, zoneLow, zoneHigh);
+  const assetClass = detectAssetClass(symbol);
+  if (assetClass === 'FOREX') {
+    return distInfo.distanceUnits > 35;
+  }
+  if (assetClass === 'FOREX_JPY') {
+    return distInfo.distanceUnits > 50;
+  }
+  // CRYPTO, COMMODITY, INDEX
+  return distInfo.percentDistance > 1.5;
 }
 
 function distanceToZonePips(symbol: string, currentPrice: number, low: number, high: number): number {

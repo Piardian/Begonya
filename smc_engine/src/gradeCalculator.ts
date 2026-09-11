@@ -1,6 +1,8 @@
 import { PremiumDiscountState, DisplacementQuality } from './types';
 import { ModelState } from './modelDeterminer';
 import { POITestResult } from './poiTestCounter';
+import { LiquidityMagnet } from './liquidityMagnetDetector';
+import { OpposingObstacle } from './opposingObstacleDetector';
 
 export interface GradeInput {
   tradeDirection: 'long' | 'short';
@@ -15,6 +17,8 @@ export interface GradeInput {
   poiTestCount: number;
   pd1H: PremiumDiscountState;
   pd15M?: PremiumDiscountState;
+  liquidityMagnet?: LiquidityMagnet | null;
+  opposingObstacle?: OpposingObstacle | null;
 }
 
 export interface GradeResult {
@@ -34,6 +38,8 @@ export interface GradeResult {
     decision: 'PASS' | 'FAIL';
     contributingReasons: readonly string[];
   }>;
+  liquidityMagnet?: LiquidityMagnet | null;
+  opposingObstacle?: OpposingObstacle | null;
 }
 
 /**
@@ -188,6 +194,11 @@ export function calculateGrade(input: GradeInput): GradeResult {
     }
   }
 
+  // Liquidity Magnet Bonus (+1) if active
+  if (input.liquidityMagnet && input.liquidityMagnet.isActive && totalScore < 9) {
+    totalScore += 1;
+  }
+
   let grade: 'A+' | 'A' | 'B+' | 'B' | 'C';
   if (totalScore >= 8) {
     grade = 'A+';
@@ -203,14 +214,32 @@ export function calculateGrade(input: GradeInput): GradeResult {
 
   const expected4HBias = input.tradeDirection === 'long' ? 'bullish' : 'bearish';
 
+  const is4HPDDirectlyOpposite = (input.tradeDirection === 'long' && input.pd4H.status === 'premium') ||
+                                (input.tradeDirection === 'short' && input.pd4H.status === 'discount');
+
+  const is1HPDDirectlyOpposite = (input.tradeDirection === 'long' && input.pd1H.status === 'premium') ||
+                                (input.tradeDirection === 'short' && input.pd1H.status === 'discount');
+
+  const is15MPDOpposite = Boolean(
+    input.pd15M &&
+    ((input.tradeDirection === 'long' && input.pd15M.status === 'premium') ||
+     (input.tradeDirection === 'short' && input.pd15M.status === 'discount'))
+  );
+
   // Tiered Grade A+ vs Grade A Calibration:
   // 1. Grade A+ Requirements (Elite Pinnacle):
-  // Must have: 0 tests, güçlü displacement, 4H+1H full alignment, and no 4H equilibrium.
+  // Must have: 0 tests, güçlü displacement, 4H+1H full directional alignment, no 4H/1H equilibrium, no opposite PD on 4H/1H/15M, and confirmed liquidity sweep.
   if (grade === 'A+') {
+    const isSweepConfirmed = sweep > 0 || (input.modelState.triggeringSweep !== undefined && input.modelState.triggeringSweep !== null);
     if (input.pd4H.status === 'eq' ||
+        input.pd1H.status === 'eq' ||
+        is4HPDDirectlyOpposite ||
+        is1HPDDirectlyOpposite ||
+        is15MPDOpposite ||
         input.displacementQuality15m?.quality !== 'güçlü' ||
         input.poiTestCount > 0 ||
-        input.bias1H !== expected4HBias) {
+        input.bias1H !== expected4HBias ||
+        !isSweepConfirmed) {
       grade = 'A';
     }
   }
@@ -230,18 +259,38 @@ export function calculateGrade(input: GradeInput): GradeResult {
   if (is1HOpposite && input.modelState.model === 'model2_continuation') {
     if (grade === 'A+' || grade === 'A') grade = 'B+';
   }
+  // - Double Intraday P/D Conflict (Both 1H and 15M opposite): Cap at B+ (no entry)
+  if (is1HPDDirectlyOpposite && is15MPDOpposite) {
+    if (grade === 'A+' || grade === 'A') grade = 'B+';
+  }
+  // - 1H opposite with 4H Equilibrium: Cap at B+ (no entry)
+  if (is1HPDDirectlyOpposite && input.pd4H.status === 'eq') {
+    if (grade === 'A+' || grade === 'A') grade = 'B+';
+  }
+
+  // - Opposing Obstacle Check: If immediate obstacle (<= 15 pips), cap at B+
+  if (input.opposingObstacle && input.opposingObstacle.hasObstacle && input.opposingObstacle.distancePips <= 15) {
+    if (grade === 'A+' || grade === 'A') grade = 'B+';
+  }
 
   const blockReasons: string[] = [];
+  if (input.opposingObstacle && input.opposingObstacle.hasObstacle && input.opposingObstacle.distancePips <= 15) {
+    blockReasons.push(input.opposingObstacle.warningText);
+  }
   if (input.bias4H !== expected4HBias) {
     blockReasons.push('4H bias is not directional or conflicts with the trade');
   }
   if (is1HOpposite && input.modelState.model === 'model2_continuation') {
     blockReasons.push('1H bias is not aligned with 4H bias for continuation model');
   }
-  const is4HPDDirectlyOpposite = (input.tradeDirection === 'long' && input.pd4H.status === 'premium') ||
-                                (input.tradeDirection === 'short' && input.pd4H.status === 'discount');
   if (is4HPDDirectlyOpposite) {
     blockReasons.push('4H premium/discount context conflicts with the trade');
+  }
+  if (is1HPDDirectlyOpposite && (input.pd4H.status === 'eq' || is4HPDDirectlyOpposite)) {
+    blockReasons.push('1H and HTF premium/discount context conflicts with the trade');
+  }
+  if (is1HPDDirectlyOpposite && is15MPDOpposite) {
+    blockReasons.push('15M and 1H intraday premium/discount context conflicts with the trade');
   }
   if (!input.has15mEvent) {
     blockReasons.push('15M structure confirmation is missing');
@@ -262,11 +311,14 @@ export function calculateGrade(input: GradeInput): GradeResult {
   // Category minimums check for entryAllowed
   const meetsCategoryMinimums =
     !is4HPDDirectlyOpposite &&
+    !(is1HPDDirectlyOpposite && (input.pd4H.status === 'eq' || is4HPDDirectlyOpposite)) &&
+    !(is1HPDDirectlyOpposite && is15MPDOpposite) &&
     input.bias4H === expected4HBias &&
     input.modelState.model !== 'none' &&
     (input.displacementQuality15m !== null && input.displacementQuality15m.gradePoints >= 1) &&
     input.poiTestCount <= 1 &&
-    input.has15mEvent;
+    input.has15mEvent &&
+    !(input.opposingObstacle && input.opposingObstacle.hasObstacle && input.opposingObstacle.distancePips <= 15);
 
   const entryAllowed = blockReasons.length === 0 && (grade === 'A+' || grade === 'A') && meetsCategoryMinimums;
 
@@ -286,5 +338,7 @@ export function calculateGrade(input: GradeInput): GradeResult {
       decision: poiIntegrityReasons.length === 0 ? 'PASS' : 'FAIL',
       contributingReasons: poiIntegrityReasons,
     },
+    liquidityMagnet: input.liquidityMagnet ?? null,
+    opposingObstacle: input.opposingObstacle ?? null,
   };
 }

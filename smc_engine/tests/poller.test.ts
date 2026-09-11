@@ -15,6 +15,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 import * as killzone from '../server/killzone';
+import { MacroGateAdapter } from '../server/macroGateAdapter';
 
 describe('Poller', () => {
   const testDir = path.join(__dirname, 'temp_poller_test');
@@ -32,6 +33,25 @@ describe('Poller', () => {
     setupFamilyGuard.clear();
 
     jest.resetAllMocks();
+    jest.spyOn(MacroGateAdapter.prototype, 'evaluateCandidate').mockReturnValue({
+      allowed: true,
+      action: 'PROCEED',
+      symbol: 'EURUSD',
+      mappedMacroKey: 'EURUSD',
+      tradeDirection: 'long',
+      macroBias: 'Bullish',
+      primaryRegime: 'Test Regime',
+      riskMultiplier: 1.0,
+      capitalPreservationMode: false,
+      btcDecouplingActive: false,
+      macroRationale: 'Test',
+      gateStatusMessage: 'APPROVED',
+      macroGateMultiplier: 1,
+      smcTechnicalScore: 90,
+      begonyaScore: 90,
+      scoreTier: 'A+',
+      tierRationale: 'Approved for test',
+    });
     jest.spyOn(killzone, 'evaluateKillzoneFilter').mockReturnValue({
       active: true,
       reason: 'test_open',

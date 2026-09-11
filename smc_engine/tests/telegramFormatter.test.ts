@@ -105,7 +105,7 @@ describe('Telegram Formatter', () => {
   test('keeps the message concise and removes internal dumps', () => {
     const msg = formatNotificationMessage(dummyCandidate('OB'));
 
-    expect(msg.length).toBeLessThan(1800);
+    expect(msg.length).toBeLessThan(2500);
     expect(msg).not.toContain('Signal Delivery');
     expect(msg).not.toContain('Lifecycle');
     expect(msg).not.toContain('Readability');
