@@ -117,30 +117,54 @@ class MacroMetricsCalculator:
             )
         elif delta_spread_5d >= 5.0 or delta_spread_20d >= 8.0:
             # Eğri DİKLEŞİYOR (Steepening) - Ters eğriden çıkış veya pozitif eğride dikleşme
-            if delta_02y_5d < 0 and delta_02y_5d < delta_10y_5d:
-                regime = "Bull Steepening"
-                risk_category = "Recessionary Easing (Panik/Kriz İndirimi)"
-                description = (
-                    f"Bull Steepening ({spread_bps} bps | 5G ΔSpread: {delta_spread_5d:+.1f} bps | 2Y 5G Δ: {delta_02y_5d:+.1f} bps). "
-                    f"DİKKAT: 2Y faizlerindeki çöküş Fed acil resesyon indirimine işaret eder; hisse senedi (SPX) için ralli değil düzeltme/çöküş riskidir!"
-                )
-            else:
+            # Dominant uç analizi: Dikleşmeyi 10Y faiz sıçraması mı (Bear Steepening) yoksa 2Y faiz çöküşü mü (Bull Steepening) sürüyor?
+            if delta_10y_5d > 0 and delta_10y_5d >= abs(delta_02y_5d):
                 regime = "Bear Steepening"
                 risk_category = "Term Premium / Fiscal Supply or Inflation Risk"
                 description = (
                     f"Bear Steepening ({spread_bps} bps | 5G ΔSpread: {delta_spread_5d:+.1f} bps | 10Y 5G Δ: {delta_10y_5d:+.1f} bps). "
                     f"Uzun vadeli faizler vade primi (term premium), Hazine tahvil arzı baskısı veya yapışkan enflasyon riskiyle yükseliyor."
                 )
+            elif delta_02y_5d < 0 and abs(delta_02y_5d) > delta_10y_5d:
+                regime = "Bull Steepening"
+                risk_category = "Recessionary Easing (Panik/Kriz İndirimi)"
+                description = (
+                    f"Bull Steepening ({spread_bps} bps | 5G ΔSpread: {delta_spread_5d:+.1f} bps | 2Y 5G Δ: {delta_02y_5d:+.1f} bps). "
+                    f"DİKKAT: 2Y faizlerindeki çöküş Fed acil resesyon indirimine işaret eder; hisse senedi (SPX) için ralli değil düzeltme/çöküş riskidir!"
+                )
+            elif delta_10y_5d >= 0:
+                regime = "Bear Steepening"
+                risk_category = "Term Premium / Fiscal Supply or Inflation Risk"
+                description = (
+                    f"Bear Steepening ({spread_bps} bps | 5G ΔSpread: {delta_spread_5d:+.1f} bps | 10Y 5G Δ: {delta_10y_5d:+.1f} bps). "
+                    f"Uzun vadeli faiz artışı getiri eğrisini dikleştiriyor."
+                )
+            else:
+                regime = "Bull Steepening"
+                risk_category = "Recessionary Easing (Panik/Kriz İndirimi)"
+                description = (
+                    f"Bull Steepening ({spread_bps} bps | 5G ΔSpread: {delta_spread_5d:+.1f} bps | 2Y 5G Δ: {delta_02y_5d:+.1f} bps). "
+                    f"Kısa vadeli faiz düşüşü getiri eğrisini dikleştiriyor."
+                )
         else:
             # Eğri YATIKLAŞIYOR (Flattening)
-            if delta_02y_5d > 0:
+            # Dominant uç analizi: Yatıklaşmayı 2Y yükselişi mi (Bear Flattening) yoksa 10Y düşüşü mü (Bull Flattening) sürüyor?
+            if delta_02y_5d > 0 and delta_02y_5d >= abs(delta_10y_5d):
                 regime = "Bear Flattening"
                 risk_category = "Monetary Tightening"
-                description = f"Bear Flattening ({spread_bps} bps | 5G ΔSpread: {delta_spread_5d:+.1f} bps). Kısa vadeli faizler Fed sıkılaşmasıyla yükseliyor."
+                description = f"Bear Flattening ({spread_bps} bps | 5G ΔSpread: {delta_spread_5d:+.1f} bps | 2Y 5G Δ: {delta_02y_5d:+.1f} bps). Kısa vadeli faizler Fed sıkılaşmasıyla yükseliyor."
+            elif delta_10y_5d < 0 and abs(delta_10y_5d) > delta_02y_5d:
+                regime = "Bull Flattening"
+                risk_category = "Disinflation"
+                description = f"Bull Flattening ({spread_bps} bps | 5G ΔSpread: {delta_spread_5d:+.1f} bps | 10Y 5G Δ: {delta_10y_5d:+.1f} bps). Uzun vadeli tahvillere güvenli liman girişi."
+            elif delta_02y_5d >= 0:
+                regime = "Bear Flattening"
+                risk_category = "Monetary Tightening"
+                description = f"Bear Flattening ({spread_bps} bps | 5G ΔSpread: {delta_spread_5d:+.1f} bps). Kısa uç faiz baskısı."
             else:
                 regime = "Bull Flattening"
                 risk_category = "Disinflation"
-                description = f"Bull Flattening ({spread_bps} bps | 5G ΔSpread: {delta_spread_5d:+.1f} bps). Uzun vadeli tahvillere güvenli liman girişi."
+                description = f"Bull Flattening ({spread_bps} bps | 5G ΔSpread: {delta_spread_5d:+.1f} bps). Uzun uç getiri düşüşü."
 
         return {
             "spread_bps": spread_bps,
@@ -176,13 +200,15 @@ class MacroMetricsCalculator:
             real_yield = round(us10y - be, 3)
             source = f"Sentetik (US10Y {us10y}% - Breakeven {be}%)"
 
-        pressure_on_gold = (
-            "High Fırsat Maliyeti (Stagflasyon / Jeopolitik Şokta Decoupling İstisnası Vardır)"
-            if real_yield > 2.0
-            else "Low (Destekleyici)"
-            if real_yield < 1.0
-            else "Moderate (Stagflasyon ve Güvenli Liman Talebi Ön Planda)"
-        )
+        if real_yield >= 1.90:
+            pressure_on_gold = (
+                "High Fırsat Maliyeti (Reel Faiz >= %1.90; Pozitif Taşıma Maliyeti & Süre Riski - "
+                "Altında 'NEUTRAL_RANGE' Önerilir, Faiz Baskısı Bitene Dek Yeni Long Kısıtlanır)"
+            )
+        elif real_yield < 1.0:
+            pressure_on_gold = "Low (Destekleyici; Negatif/Düşük Reel Faiz Altını Besler)"
+        else:
+            pressure_on_gold = "Moderate (Dengeli; Mali Hakimiyet ve Jeopolitik Talep Ön Planda)"
 
         return {
             "real_yield_pct": real_yield,
@@ -515,7 +541,7 @@ class MacroMetricsCalculator:
         # Mutlak VIX > 20 veya 60 günlük pencerede %80'in üzerinde oynaklık şoku
         is_volatility_shock = (vix_val > 20.0 or vix_pct_60d >= 80.0 or vix_delta_5d_pct > 10.0)
         btc_decoupling_active = (
-            is_bear_steepening and (is_volatility_shock or delta_10y_5d > 15.0)
+            is_bear_steepening and (is_volatility_shock or delta_10y_5d >= 10.0 or fast_stress_override)
         )
 
         btc_decoupling_analysis = {

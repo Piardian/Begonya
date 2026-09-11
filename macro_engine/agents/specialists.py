@@ -200,25 +200,27 @@ class MacroSpecialists:
         - Bakır/Altın Momentum Deltası: %{cg.get('delta_4w_pct')}
         
         🚨 ZORUNLU KURUMSAL PORTFÖY VE RİSK YÖNETİMİ KURALLARI:
-        1. ALTIN (XAUUSD) VE MALİ HAKİMİYET (FISCAL DOMINANCE):
-           - ABD bütçe açıkları, egemen borç riski ve küresel merkez bankalarının dolarsızlaşma fiziki alımları nedeniyle Altın'a ASLA 'SHORT_ONLY' verme!
-           - Altın kapısı daima 'LONG_ONLY' veya sakin dönemlerde 'NEUTRAL_RANGE' olarak belirlenmelidir.
-        2. BORSA ENDEKSLERİ (SPX/NAS100) VE VIX GECİKME TUZAĞI:
+        1. ALTIN (XAUUSD) - DİNAMİK MAKRO REJİM VE MALİ HAKİMİYET:
+           - Secular (Uzun Vadeli): ABD bütçe açıkları, egemen borç riski ve küresel merkez bankalarının dolarsızlaşma fiziki alımları nedeniyle Altın'a 'SHORT_ONLY' VERİLMEZ (yapısal kalkan).
+           - Taktik (Kısa Vadeli Getiri Şoku): Eğer 10Y Reel Getiri >= %1.90 ise veya Bear Steepening ile 10Y faizler sıçrıyorsa (Δ10Y_5d >= 10 bps), artan fırsat maliyeti ve süre riski nedeniyle Altın kapısı 'NEUTRAL_RANGE' (veya DEFENSIVE_HOLD) olarak belirlenmelidir. Böylece düşen bıçak tutulmaz, getiri baskısı bitene dek yeni Long kilitlenir.
+           - Yalnızca reel getiriler sakin (< %1.90) ve faiz şoku yokken 'LONG_ONLY' izni verilir.
+        2. BORSA ENDEKSLERİ (SPX/NAS100) VE ÇARPAN BASKISI:
            - VIX >= 22.0 olduğunda borsa zaten düşmüştür; kurumsal short cover ve ayı piyasası rallisi riski nedeniyle hisselerde 'SHORT_ONLY' YASAKTIR!
            - Endekslerde SHORT izni sadece fırtına öncesi sessizlikte verilebilir: VIX < 18.0 (Rehavet) ve Net Likidite daralırken.
+           - Bear Steepening veya 10Y getiri sıçramasında (Δ10Y >= 10 bps), teknoloji/büyüme hisselerinin (NAS100) iskonto çarpanları daralır (değerleme şoku). Bu durumda SPX kapısı 'NEUTRAL_RANGE' veya likidite çekiliyorsa 'SHORT_ONLY' olmalıdır.
         3. BTC VE AYRIŞMA (BEAR STEEPENING ŞOKU):
-           - Eğer btc_decoupling_active True ise: BTC 'SHORT_ONLY' olmalı (Fon tasfiyeleri yüksek olasılıklı düşüş dalgası yaratır).
+           - Eğer btc_decoupling_active True ise: BTC 'SHORT_ONLY' veya 'DEFENSIVE_HOLD' olmalı (Fon teminat tamamlama tasfiyeleri yüksek olasılıklı düşüş dalgası yaratır; Long yasaktır).
            - Eğer btc_decoupling_active False ise: BTC 'Bullish / LONG_ONLY (0.50x risk)' değerlendirilebilir.
         4. EURUSD VE ENERJİ ŞOKU + TRANSATLANTİK MAKAS (İKİ TARAFLI DENGE):
            - Brent > $85 üzerindeyken Euro Bölgesi enerji ithalatçısıdır ve ticaret hadleri çöker.
-           - Transatlantik makas (+{transatlantic.get('spread_bps')} bps) ABD lehine açık kaldıkça sermaye Dolar'a akar ve pozitif swap (carry) avantajı EURUSD SHORT'u destekler.
+           - Transatlantik makas (+{transatlantic.get('spread_bps')} bps) ABD lehine açık kaldıkça sermaye Dolar'a akar ve pozitif swap (carry) avantajı EURUSD SHORT'u destekler. DXY momentumu zayıfsa NEUTRAL_RANGE uygula.
         5. T-0 FAST STRESS & SERMAYE KORUMA MODU:
            - Eğer fast_stress_override True ise: capital_preservation_mode = True yap, recommended_risk_multiplier = 0.25'e düşür!
-        6. EXECUTION BIAS GATES:
-           - XAUUSD: LONG_ONLY (Mali hakimiyet kalkanı)
-           - EURUSD: SHORT_ONLY (Eğer makas > +180 bps ve Brent yüksekse) veya NEUTRAL_RANGE
-           - BTC: SHORT_ONLY (Eğer decoupling aktifse) veya LONG_ONLY (Sakinse)
-           - SPX: NEUTRAL_RANGE (VIX yüksekse) veya SHORT_ONLY (Rehavet + Likidite daralması varsa)
+        6. EXECUTION BIAS GATES KILAVUZU:
+           - XAUUSD: Reel Getiri >= %1.90 veya Bear Steepening varsa 'NEUTRAL_RANGE'; sakinse 'LONG_ONLY'
+           - EURUSD: Transatlantik makas > +180 bps ve Brent yüksekse 'SHORT_ONLY' veya 'NEUTRAL_RANGE'
+           - BTC: btc_decoupling_active True ise 'SHORT_ONLY' veya 'DEFENSIVE_HOLD'; sakinse 'LONG_ONLY'
+           - SPX: Bear Steepening / faiz şoku / VIX yüksekse 'NEUTRAL_RANGE'; rehavet + likidite daralmasında 'SHORT_ONLY'
         """
         system_instruction = (
             "Sen Küresel Bir Makro Hedge Fonunun Baş Yatırım Komitesi Başkanısın (CIO). "

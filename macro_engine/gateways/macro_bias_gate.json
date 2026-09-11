@@ -1,34 +1,35 @@
 {
-  "timestamp": "2026-09-05 09:15:10",
-  "primary_regime": "Late-Cycle Overheating with Global Divergence",
-  "volatility_risk_score": 0.45,
-  "capital_preservation_mode": false,
+  "timestamp": "2026-09-11 13:00:19",
+  "primary_regime": "Late-Cycle Overheating with Liquidity Contraction",
+  "volatility_risk_score": 0.72,
+  "capital_preservation_mode": true,
   "btc_decoupling_active": false,
   "hysteresis_active": true,
-  "recommended_risk_multiplier": 0.5,
+  "recommended_risk_multiplier": 0.25,
   "execution_bias_gates": {
-    "XAUUSD": "LONG_ONLY",
+    "XAUUSD": "NEUTRAL_RANGE",
     "BTC": "LONG_ONLY",
-    "EURUSD": "NEUTRAL_RANGE"
+    "EURUSD": "NEUTRAL_RANGE",
+    "SPX": "NEUTRAL_RANGE"
   },
   "asset_biases": {
-    "XAUUSD": "Strong Bullish",
+    "XAUUSD": "Neutral",
     "BTC": "Bullish",
     "DXY": "Neutral",
     "EURUSD": "Bearish",
-    "US10Y": "Strong Bullish",
+    "US10Y": "Bullish",
     "SPX": "Neutral"
   },
   "regime_state": {
     "energy_penalty_active": true,
-    "capital_preservation_active": false,
-    "fast_stress_override": false,
+    "capital_preservation_active": true,
+    "fast_stress_override": true,
     "btc_decoupling_active": false,
-    "vix_pct_60d": 8.3,
-    "brent_pct_60d": 96.7,
+    "vix_pct_60d": 76.7,
+    "brent_pct_60d": 98.3,
     "equity_short_allowed": true,
     "gold_short_allowed": false,
     "vix_complacent": true
   },
-  "macro_rationale": "Küresel makroekonomik görünüm, ABD ekonomisinin güçlü istihdam (NFP: 190K, İşsizlik: %4.1) ve ICSA (218K) verileriyle döngü sonu aşırı ısınma (Late-Cycle Overheating) yaşadığını, buna karşın küresel imalat sektörünün zayıfladığını göstermektedir. Getiri eğrisindeki Bear Steepening dinamiği, uzun vadeli tahvil faizlerini yukarı taşırken, Fed'in 'Higher for Longer' duruşu ve %1.95 seviyesindeki reel getiri (10Y TIPS) hisse senedi çarpanlarını baskılamakta ve SPX üzerinde bir tavan oluşturmaktadır. Net likiditedeki 60 milyar dolarlık daralmaya rağmen, finansal koşulların gevşek (NFCI: -0.52) ve kredi makaslarının sakin (HY OAS: %3.28) seyretmesi sistemik bir çöküş riskini sınırlamaktadır. Enerji şoku (Brent: $96.28) ve +238.4 bps seviyesindeki Transatlantik faiz makası, Euro Bölgesi üzerinde ciddi bir dış ticaret haddi baskısı yaratmaktadır; bu nedenle zayıf DXY'ye (99.16) rağmen EURUSD üzerinde körlemesine uzun pozisyon alınmamalı, histeresis bandı aktif tutularak NEUTRAL_RANGE kapısı uygulanmalıdır. Altın (XAUUSD), mali hakimiyet ve borç devalüasyonu (debasement) temalarıyla güçlü duruşunu korumakta olup LONG_ONLY olarak yönetilmelidir. BTC tarafında ise tahvil oynaklığının sakin seyretmesi (VIX 60G dilimi %8.3) nedeniyle altından negatif bir ayrışma (decoupling) gözlenmemiştir; bu doğrultuda BTC, borç devalüasyonu tezi kapsamında 0.50x risk katsayısı ile LONG_ONLY kapısında değerlendirilmektedir."
+  "macro_rationale": "Piyasa, 4 haftalık net likiditedeki daralma ($-60.0B) ve canlı piyasadaki T-0 Fast Stress Override tetikleyicisi nedeniyle akut bir geçiş evresindedir. ABD ekonomisi istihdam gücünü korurken Late-Cycle Overheating rejimini sürdürmektedir; ancak yüksek Brent petrol ($104.24) ve Bakır/Altın momentumundaki gerileme (%-0.13) küresel büyümenin yavaşladığına işaret etmektedir. 10Y Reel Getirinin %1.95 seviyesine ulaşması ve Higher for Longer faiz patikası, mali hakimiyet ve debasement tezine rağmen taktiksel olarak Altın (XAUUSD) üzerinde getiri/fırsat maliyeti baskısı oluşturduğundan XAUUSD 'NEUTRAL_RANGE' bandına çekilmiştir. Transatlantik makasın (+254.4 bps) ABD lehine kalması ve petrol şoku Euro Bölgesi ticaret hadlerini yıpratsa da DXY'nin zayıf seyri EURUSD'yi 'NEUTRAL_RANGE' kapısında dengelemektedir. BTC decoupling metriği aktif değildir ancak T-0 stres rejimi nedeniyle risk çarpanı acil koruma seviyesi olan 0.25x'e indirilmiştir. SPX tarafında ise yüksek iskonto oranı tavan oluşturarak endeksi 'NEUTRAL_RANGE' sınırında tutmaktadır."
 }
