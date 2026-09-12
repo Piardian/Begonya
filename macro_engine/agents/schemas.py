@@ -122,5 +122,17 @@ class MacroStrategistOutput(BaseModel):
     macro_rationale: str = Field(
         description="Tüm ajanların verilerinin sentezlendiği detaylı Türkçe stratejik rapor"
     )
+    horizon_today: str = Field(
+        default="",
+        description="Bugünkü işlem seansı (M15) için doğrudan aksiyon alınabilir, net Türkçe seans taktiği"
+    )
+    horizon_this_week: str = Field(
+        default="",
+        description="Bu haftaki swing (H4) ufku için piyasa beklentisi, veri etkileri ve haftalık stratejik yönlendirme"
+    )
+    horizon_this_month: str = Field(
+        default="",
+        description="Bu ayki makro rejim (D1/W1) için likidite, mali hakimiyet ve portföy rotası analizi"
+    )
     timestamp: Optional[str] = None
 

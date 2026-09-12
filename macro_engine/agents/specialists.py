@@ -221,6 +221,11 @@ class MacroSpecialists:
            - EURUSD: Transatlantik makas > +180 bps ve Brent yüksekse 'SHORT_ONLY' veya 'NEUTRAL_RANGE'
            - BTC: btc_decoupling_active True ise 'SHORT_ONLY' veya 'DEFENSIVE_HOLD'; sakinse 'LONG_ONLY'
            - SPX: Bear Steepening / faiz şoku / VIX yüksekse 'NEUTRAL_RANGE'; rehavet + likidite daralmasında 'SHORT_ONLY'
+           
+        7. ÜÇ KATMANLI ZAMAN UFKU STRATEJİSİ (HORIZON GUIDANCE):
+           - horizon_today: Bugünkü işlem seansı (M15 / Gün İçi) için net, somut ve doğrudan uygulanabilir taktik. Hangi saatlerde/paritelerde ne aranmalı?
+           - horizon_this_week: Bu haftalık (H4 / Swing) ufku için piyasa yönü, yaklaşan kritik verilerin (TÜFE/ÜFE/Merkez Bankası) getiri eğrisine ve paritelere haftalık etkisi.
+           - horizon_this_month: Bu aylık (D1/W1) makro rejim rotası. Fed net likidite seyri, borçlanma tavanı, mali hakimiyet ve portföyün genel yönü.
         """
         system_instruction = (
             "Sen Küresel Bir Makro Hedge Fonunun Baş Yatırım Komitesi Başkanısın (CIO). "

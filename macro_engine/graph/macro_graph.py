@@ -131,7 +131,10 @@ class MacroWorkflowEngine:
                 "execution_bias_gates": gates,
                 "asset_biases": final_dict.get("asset_biases", {}),
                 "regime_state": regime_st,
-                "macro_rationale": final_dict.get("macro_rationale", "")
+                "macro_rationale": final_dict.get("macro_rationale", ""),
+                "horizon_today": final_dict.get("horizon_today", ""),
+                "horizon_this_week": final_dict.get("horizon_this_week", ""),
+                "horizon_this_month": final_dict.get("horizon_this_month", "")
             }
             save_macro_gate_atomic(payload, BIAS_GATE_FILE)
             logger.info(f"💾 [MT5 EXECUTION GATE] Atomik Olarak Güncellendi -> {BIAS_GATE_FILE}")

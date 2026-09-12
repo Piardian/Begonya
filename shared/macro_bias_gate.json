@@ -1,35 +1,38 @@
 {
-  "timestamp": "2026-09-11 13:00:19",
-  "primary_regime": "Late-Cycle Overheating with Liquidity Contraction",
-  "volatility_risk_score": 0.72,
+  "timestamp": "2026-09-12 14:09:27",
+  "primary_regime": "Late-Cycle Overheating with Global Divergence",
+  "volatility_risk_score": 0.75,
   "capital_preservation_mode": true,
-  "btc_decoupling_active": false,
+  "btc_decoupling_active": true,
   "hysteresis_active": true,
   "recommended_risk_multiplier": 0.25,
   "execution_bias_gates": {
     "XAUUSD": "NEUTRAL_RANGE",
-    "BTC": "LONG_ONLY",
+    "BTC": "SHORT_ONLY",
     "EURUSD": "NEUTRAL_RANGE",
     "SPX": "NEUTRAL_RANGE"
   },
   "asset_biases": {
     "XAUUSD": "Neutral",
-    "BTC": "Bullish",
+    "BTC": "Bearish",
     "DXY": "Neutral",
-    "EURUSD": "Bearish",
-    "US10Y": "Bullish",
+    "EURUSD": "Neutral",
+    "US10Y": "Strong Bullish",
     "SPX": "Neutral"
   },
   "regime_state": {
     "energy_penalty_active": true,
     "capital_preservation_active": true,
     "fast_stress_override": true,
-    "btc_decoupling_active": false,
-    "vix_pct_60d": 76.7,
+    "btc_decoupling_active": true,
+    "vix_pct_60d": 45.0,
     "brent_pct_60d": 98.3,
     "equity_short_allowed": true,
     "gold_short_allowed": false,
     "vix_complacent": true
   },
-  "macro_rationale": "Piyasa, 4 haftalık net likiditedeki daralma ($-60.0B) ve canlı piyasadaki T-0 Fast Stress Override tetikleyicisi nedeniyle akut bir geçiş evresindedir. ABD ekonomisi istihdam gücünü korurken Late-Cycle Overheating rejimini sürdürmektedir; ancak yüksek Brent petrol ($104.24) ve Bakır/Altın momentumundaki gerileme (%-0.13) küresel büyümenin yavaşladığına işaret etmektedir. 10Y Reel Getirinin %1.95 seviyesine ulaşması ve Higher for Longer faiz patikası, mali hakimiyet ve debasement tezine rağmen taktiksel olarak Altın (XAUUSD) üzerinde getiri/fırsat maliyeti baskısı oluşturduğundan XAUUSD 'NEUTRAL_RANGE' bandına çekilmiştir. Transatlantik makasın (+254.4 bps) ABD lehine kalması ve petrol şoku Euro Bölgesi ticaret hadlerini yıpratsa da DXY'nin zayıf seyri EURUSD'yi 'NEUTRAL_RANGE' kapısında dengelemektedir. BTC decoupling metriği aktif değildir ancak T-0 stres rejimi nedeniyle risk çarpanı acil koruma seviyesi olan 0.25x'e indirilmiştir. SPX tarafında ise yüksek iskonto oranı tavan oluşturarak endeksi 'NEUTRAL_RANGE' sınırında tutmaktadır."
+  "macro_rationale": "Küresel makroekonomik görünüm, ABD'nin dirençli işgücü piyasası (NFP: 175K, İşsizlik: %4.1) ve hizmet sektörü öncülüğünde 'Late-Cycle Overheating' rejimini teyit etmektedir. Ancak, Brent petrolün 104.61$ seviyesine sıçramasıyla tetiklenen enerji şoku, Euro Bölgesi gibi net ithalatçı ekonomiler üzerinde ağır bir dış ticaret haddi cezası (Terms of Trade penalty) yaratmaktadır. Transatlantik faiz makasının +257.5 bps ile ABD lehine genişlemesi Dolar'ın getiri avantajını korurken, DXY'nin borç endişeleriyle 99.12 seviyesine gerilemesi geçici bir uyumsuzluk sunmaktadır. T-0 Fast Stress Override mekanizması, emtia şoku nedeniyle aktifleşmiş ve portföyü acil savunma moduna (Sermaye Koruma Aktif, Risk Katsayısı 0.25) geçirmiştir. Tahvil piyasasındaki Bear Steepening dinamiği ve %1.95 seviyesindeki 10Y reel getiri, Altın üzerinde taktiksel baskı oluşturarak XAUUSD'yi NEUTRAL_RANGE'e çekmiştir. BTC ise, tahvil oynaklığı ve teminat tamamlama (margin call) tasfiyeleri nedeniyle altından negatif ayrışarak SHORT_ONLY kapısına yönlendirilmiştir.",
+  "horizon_today": "M15 içi işlemlerde, Brent petrolün 104.61$ seviyesindeki seyrine bağlı olarak enerji duyarlılığı yüksek paritelerde volatilite takibi yapılmalıdır. EURUSD'de 1.0850-1.0920 bandında NEUTRAL_RANGE stratejisiyle tepki alımları yerine dirençlerden dönüşler izlenmeli, BTC'de ise 10Y tahvil faizlerindeki yükselişin tetikleyeceği kaldıraçlı temizlik dalgasına karşı LONG yönlü işlemlerden tamamen kaçınılarak SHORT yönlü kırılımlar kollanmalıdır.",
+  "horizon_this_week": "H4 swing ufkunda, bu hafta açıklanacak enflasyon verileri ve tahvil ihraçları yakından izlenecektir. Bear Steepening eğiliminin devam etmesi durumunda, %1.95 reel getiri seviyesi korunduğu sürece Altın'da (XAUUSD) yeni uzun pozisyon açılmayacak, mevcut pozisyonlar DEFENSIVE_HOLD statüsünde tutulacaktır. SPX'te likidite daralması (-$60B) ve çarpan baskısı nedeniyle yükselişler sınırlı kalacaktır; endekste rehavet (VIX < 18) sürse de temkinli duruş korunmalıdır.",
+  "horizon_this_month": "D1/W1 makro ufkunda, Fed'in 'Higher for Longer' patikası ve daralan net likidite rejimi ana belirleyicidir. ABD bütçe açıkları ve egemen borç riskleri orta vadede Altın'ı yapısal bir kalkan yapsa da, kısa vadeli getiri şokları geçene kadar portföy ağırlığı dengelenmelidir. Euro Bölgesi'ndeki stagflasyonist baskılar ve enerji faturası, EURUSD'de kalıcı bir ralliye izin vermeyecektir. Portföy genelinde risk katsayısı 0.25 seviyesinde tutularak sermaye koruma önceliklendirilecektir."
 }

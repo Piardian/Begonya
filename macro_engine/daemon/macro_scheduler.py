@@ -23,6 +23,7 @@ if str(ROOT_DIR) not in sys.path:
 import asyncio
 from graph.macro_graph import MacroWorkflowEngine
 from ingestion.calendar_event import CalendarEventIngestion
+from gateways.telegram_notifier import send_telegram_message, format_morning_briefing
 from config import BIAS_GATE_FILE
 
 if sys.stdout.encoding != 'utf-8':
@@ -64,12 +65,40 @@ class MacroEventScheduler:
             logger.error(f"❌ Makro analiz döngüsünde hata: {e}", exc_info=True)
             return False
 
+    def send_morning_briefing(self) -> bool:
+        """Sabah 09:00 analizini çalıştırır ve Telegram'a detaylı bülten iletir."""
+        logger.info("☀️ [SABAH BÜLTENİ] 09:00 Makro Analizi ve Telegram Raporlama Başlatıldı...")
+        result = self.engine.run_pipeline()
+        events = []
+        try:
+            events = asyncio.run(self.calendar.fetch_latest_events())
+        except Exception as e:
+            logger.debug(f"Bülten için takvim çekilirken hata: {e}")
+        
+        msg = format_morning_briefing(result, events)
+        sent = send_telegram_message(msg)
+        if sent:
+            logger.info("☀️ [SABAH BÜLTENİ] Telegram Sabah Makro Bülteni Başarıyla Gönderildi!")
+        else:
+            logger.warning("⚠️ [SABAH BÜLTENİ] Telegram bülteni gönderilemedi!")
+        return sent
+
     def get_upcoming_triggers(self) -> list:
-        """Bugünkü kırmızı bayraklı olayları ve D1 kapanışını listeler."""
+        """Bugünkü kırmızı bayraklı olayları, sabah bültenini ve D1 kapanışını listeler."""
         triggers = []
         now = datetime.datetime.now()
 
-        # 1. Günlük D1 Kapanış Tetikleyicisi (Her gece 23:55)
+        # 1. Sabah 09:00 Makro Bülten Tetikleyicisi
+        morning_target = now.replace(hour=9, minute=0, second=0, microsecond=0)
+        if morning_target < now:
+            morning_target += datetime.timedelta(days=1)
+        triggers.append({
+            "name": "Sabah Makro Bülteni (09:00)",
+            "scheduled_time": morning_target,
+            "type": "MORNING_BRIEFING"
+        })
+
+        # 2. Günlük D1 Kapanış Tetikleyicisi (Her gece 23:55)
         d1_target = now.replace(hour=23, minute=55, second=0, microsecond=0)
         if d1_target < now:
             d1_target += datetime.timedelta(days=1)
@@ -79,7 +108,7 @@ class MacroEventScheduler:
             "type": "DAILY_CLOSE"
         })
 
-        # 2. Yüksek Etkili Olaylar (Kırmızı Bayrak)
+        # 3. Yüksek Etkili Olaylar (Kırmızı Bayrak)
         try:
             events = asyncio.run(self.calendar.fetch_latest_events())
             for ev in events:
@@ -131,7 +160,10 @@ class MacroEventScheduler:
                     # Eğer tetikleme anına geldiysek (-15s ile +45s arası)
                     if -15 <= time_diff <= 45:
                         logger.info(f"🔔 [ZAMANLAYICI TETİKLENDİ] {trig['name']}")
-                        self.run_cycle(trigger_source=trig["name"])
+                        if trig.get("type") == "MORNING_BRIEFING":
+                            self.send_morning_briefing()
+                        else:
+                            self.run_cycle(trigger_source=trig["name"])
                         executed_triggers.add(trig_key)
 
                 time.sleep(poll_interval_seconds)
@@ -148,11 +180,14 @@ def main():
     parser.add_argument("--once", action="store_true", help="Tek bir makro analiz döngüsü çalıştır ve çık")
     parser.add_argument("--daemon", action="store_true", help="Arka plan izleme döngüsünü başlat")
     parser.add_argument("--status", action="store_true", help="Yaklaşan tetikleyicileri listele")
+    parser.add_argument("--briefing", action="store_true", help="Sabah makro bültenini hemen oluştur ve Telegram'a gönder")
     args = parser.parse_args()
 
     scheduler = MacroEventScheduler()
 
-    if args.once:
+    if args.briefing:
+        scheduler.send_morning_briefing()
+    elif args.once:
         scheduler.run_cycle(trigger_source="CLI --once")
     elif args.status:
         triggers = scheduler.get_upcoming_triggers()

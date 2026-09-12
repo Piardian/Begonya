@@ -7,6 +7,9 @@ ENV_FILE = BASE_DIR / ".env"
 
 # Mevcut .env dosyasından 4 anahtarı oku
 EXISTING_ENV = Path(r"C:\Users\piard\.gemini\antigravity\scratch\crewai_aider_orchestrator\.env")
+ROOT_ENV = BASE_DIR.parent / ".env"
+if ROOT_ENV.exists():
+    load_dotenv(ROOT_ENV)
 if ENV_FILE.exists():
     load_dotenv(ENV_FILE)
 elif EXISTING_ENV.exists():
@@ -47,6 +50,8 @@ ANALYST_CASCADE = [
 
 # FRED (Federal Reserve Economic Data) API Anahtarı
 FRED_API_KEY = os.getenv("FRED_API_KEY", "")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 
 # Takip Edilecek Temel Semboller
 MARKET_SYMBOLS = {
