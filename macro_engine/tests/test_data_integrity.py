@@ -1,5 +1,4 @@
 import unittest
-from datetime import date
 from unittest.mock import patch
 
 from data_quality import DataUnavailableError
@@ -25,7 +24,6 @@ class DataIntegrityTests(unittest.TestCase):
 
     def test_replay_clock_is_injected(self):
         calc = MacroMetricsCalculator()
-        # Base payload is constructed from the deterministic test fixture helpers.
         from tests.test_deterministic_metrics import DeterministicMacroMetricsTests
         helper = DeterministicMacroMetricsTests("runTest")
         market = helper.base_market()
@@ -43,6 +41,18 @@ class DataIntegrityTests(unittest.TestCase):
             as_of_datetime=__import__("datetime").datetime(2023, 9, 20, 12, 0),
         )
         self.assertEqual(first, second)
+
+    def test_fed_forward_path_uses_observed_dff(self):
+        result = MacroMetricsCalculator.calculate_fed_forward_path(
+            us02y=3.80,
+            dff=4.33,
+            us02y_5d=3.95,
+        )
+        self.assertEqual(result["fed_policy_rate_pct"], 4.33)
+        self.assertEqual(result["fed_policy_rate_source"], "FRED DFF")
+        self.assertEqual(result["implied_rate_gap_bps"], -53.0)
+        self.assertEqual(result["delta_02y_5d_bps"], -15.0)
+        self.assertEqual(result["rate_expectation_signal"], "Market-implied easing")
 
 
 if __name__ == "__main__":
