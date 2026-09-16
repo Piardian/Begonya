@@ -54,6 +54,21 @@ class DataIntegrityTests(unittest.TestCase):
         self.assertEqual(result["delta_02y_5d_bps"], -15.0)
         self.assertEqual(result["rate_expectation_signal"], "Market-implied easing")
 
+    def test_missing_dff_is_explicitly_reported_as_fallback(self):
+        from tests.test_deterministic_metrics import DeterministicMacroMetricsTests
+        helper = DeterministicMacroMetricsTests("runTest")
+        market = helper.base_market()
+        fred = helper.base_fred()
+
+        result = MacroMetricsCalculator().process_all_macro_data(market, fred, [])
+
+        self.assertTrue(result["data_quality"]["fallback_used"])
+        self.assertEqual(result["data_quality"]["fallback_fields"], ["DFF"])
+        self.assertEqual(
+            result["fed_forward_path_analysis"]["fed_policy_rate_source"],
+            "LEGACY_STATIC_5.33_FALLBACK",
+        )
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
