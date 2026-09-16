@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Mapping
 from core.deterministic_controls import resolve_execution_gate
 from graph.macro_graph_legacy import MacroWorkflowEngine as _LegacyMacroWorkflowEngine
 from graph.macro_graph_legacy import MacroGraphState, save_macro_gate_atomic
-from config import BIAS_GATE_FILE, NEWS_FREEZE_CONFIG
+from config import BIAS_GATE_FILE
 
 
 class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
@@ -18,8 +18,9 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
         as_of_datetime = getattr(self, "_as_of_datetime", None)
         raw_market = self.market_ingest.fetch_current_prices()
         raw_fred = self.fred_ingest.fetch_liquidity_metrics(as_of=as_of)
-        supplied_events = state.get("calendar_events")
-        events = list(supplied_events) if supplied_events else asyncio.run(self.cal_ingest.fetch_latest_events())
+        supplied_events = state.get("calendar_events") or []
+        events_provided = bool(state.get("calendar_events_supplied", False))
+        events = list(supplied_events) if events_provided else asyncio.run(self.cal_ingest.fetch_latest_events())
 
         previous_state = state.get("previous_regime_state") or {}
         processed = self.preprocessor.process_all_macro_data(
@@ -63,7 +64,7 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
         base_gates = {
             "XAUUSD": "SHORT_ONLY" if gold_short else "NEUTRAL_RANGE",
             "BTC": btc_map.get(btc_base, "DEFENSIVE_HOLD"),
-            "EURUSD": "NEUTRAL_RANGE" if metrics.get("terms_of_trade_energy_analysis", {}).get("eurusd_energy_penalty") else "NEUTRAL_RANGE",
+            "EURUSD": "NEUTRAL_RANGE",
             "SPX": "DEFENSIVE_HOLD" if fast_stress else "NEUTRAL_RANGE",
         }
         cross = metrics.get("cross_pairs_analysis", {}).get("cross_gates", {})
@@ -123,16 +124,22 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
         as_of: Optional[dt.datetime] = None,
         previous_regime_state: Optional[Mapping[str, Any]] = None,
     ) -> Dict[str, Any]:
+        """Run with caller-supplied events/state; no hidden persistent regime state is consulted."""
         self._as_of_datetime = as_of
         self._as_of_date = as_of.date() if as_of is not None else None
-        # The initial event list and previous state are input data, not persistent hidden state.
-        self._previous_regime_state = dict(previous_regime_state or {})
-        result = super().run_pipeline(initial_events=initial_events)
+        initial_state = {
+            "raw_market": {},
+            "raw_fred": {},
+            "calendar_events": list(initial_events or []),
+            "calendar_events_supplied": initial_events is not None,
+            "previous_regime_state": dict(previous_regime_state or {}),
+            "processed_metrics": {},
+            "liquidity_output": None,
+            "growth_output": None,
+            "final_output": None,
+        }
+        result = self.app.invoke(initial_state)
         result["deterministic_execution_gates"] = self._build_deterministic_gates(
             result.get("processed_metrics", {})
         )
         return result
-
-    def _build_graph(self):
-        # Recreate the legacy graph so the overridden node implementations are bound.
-        return super()._build_graph()
