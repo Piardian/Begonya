@@ -83,6 +83,36 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
             "description": f"10Y Reel Getiri: %{real_yield} [{source}] (Altın baskısı: {pressure_on_gold})",
         }
 
+    @staticmethod
+    def calculate_fed_forward_path(
+        us02y: float,
+        dff: Optional[float],
+        us02y_5d: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """Compare 2Y yield with the current effective fed funds rate without a static policy-rate baseline."""
+        if dff is None:
+            raise ValueError("DFF is required for the Fed forward-path calculation")
+
+        gap_bps = round((us02y - dff) * 100, 1)
+        delta_02y_5d_bps = None
+        if us02y_5d is not None:
+            delta_02y_5d_bps = round((us02y - us02y_5d) * 100, 1)
+
+        if gap_bps <= -25.0:
+            signal = "Market-implied easing"
+        elif gap_bps >= 25.0:
+            signal = "Market-implied tightening"
+        else:
+            signal = "Near-policy / neutral pricing"
+
+        return {
+            "fed_policy_rate_pct": round(dff, 3),
+            "fed_policy_rate_source": "FRED DFF",
+            "implied_rate_gap_bps": gap_bps,
+            "delta_02y_5d_bps": delta_02y_5d_bps,
+            "rate_expectation_signal": signal,
+        }
+
     def process_all_macro_data(
         self,
         market_data: Dict[str, Any],
@@ -95,12 +125,39 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         validate_fred_payload(fred_data)
         effective_date = as_of_date or self.as_of_date
 
-        # Preserve the public module-level test seam while keeping the legacy
-        # implementation as the single stateful owner of the gate path.
         _legacy_metrics_module.BIAS_GATE_FILE = BIAS_GATE_FILE
 
         with _fixed_legacy_date(effective_date, as_of_datetime):
             result = super().process_all_macro_data(market_data, fred_data, calendar_events)
+
+        if "DFF" in fred_data and isinstance(fred_data["DFF"], (int, float)):
+            us02y_data = market_data.get("US02Y", {})
+            result["fed_forward_path_analysis"] = self.calculate_fed_forward_path(
+                float(us02y_data["value"]),
+                float(fred_data["DFF"]),
+                float(us02y_data["val_5d_ago"]) if us02y_data.get("val_5d_ago") is not None else None,
+            )
+        else:
+            legacy_fed = result.get("fed_forward_path_analysis", {})
+            legacy_fed["fed_policy_rate_source"] = "LEGACY_STATIC_5.33_FALLBACK"
+            legacy_fed["methodology_warning"] = (
+                "DFF unavailable; static 5.33% baseline retained only for backward-compatible replay."
+            )
+            result["fed_forward_path_analysis"] = legacy_fed
+
+        cycle_state = result.get("cycle_diagnosis", {})
+        if cycle_state:
+            labor_strong = cycle_state.get("is_labor_strong")
+            cycle_state["us_domestic_cycle"] = (
+                "Labor regime: strong/resilient" if labor_strong else "Labor regime: cooling/weakening"
+            )
+            cycle_state["global_macro_cycle"] = (
+                "Not directly assessed: deterministic feed has no validated PMI/GDP cycle input"
+            )
+            cycle_state["methodology_warning"] = (
+                "Global manufacturing/cycle narrative is intentionally withheld without direct validated cycle data."
+            )
+            result["cycle_diagnosis"] = cycle_state
 
         gold_state = result.get("gold_fiscal_dominance", {})
         credit_state = result.get("credit_spread_analysis", {})
