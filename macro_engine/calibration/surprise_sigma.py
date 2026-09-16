@@ -3,13 +3,31 @@ from __future__ import annotations
 import csv
 import datetime as dt
 import json
+import math
 from pathlib import Path
-from typing import Any, Dict, Iterable, Mapping
+from typing import Any, Dict, Mapping
 
 from core.deterministic_controls import chronological_split, fit_surprise_sigmas
 
 
 REQUIRED_COLUMNS = {"date", "indicator_type", "actual", "forecast"}
+
+
+def _parse_date(value: Any) -> dt.date:
+    try:
+        return value if isinstance(value, dt.date) else dt.date.fromisoformat(str(value))
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"Invalid calibration date: {value!r}") from exc
+
+
+def _parse_number(field: str, value: Any) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"Invalid {field}: {value!r}") from exc
+    if not math.isfinite(number):
+        raise ValueError(f"Non-finite {field}: {value!r}")
+    return number
 
 
 def load_observations_csv(path: Path) -> list[Dict[str, Any]]:
@@ -20,7 +38,19 @@ def load_observations_csv(path: Path) -> list[Dict[str, Any]]:
     missing = REQUIRED_COLUMNS - set(rows[0])
     if missing:
         raise ValueError("Calibration dataset missing columns: " + ", ".join(sorted(missing)))
-    return rows
+
+    validated: list[Dict[str, Any]] = []
+    for index, row in enumerate(rows, start=2):
+        if not str(row.get("indicator_type", "")).strip():
+            raise ValueError(f"Row {index}: indicator_type is required")
+        validated.append({
+            **row,
+            "date": _parse_date(row.get("date")).isoformat(),
+            "indicator_type": str(row["indicator_type"]).strip().lower(),
+            "actual": _parse_number("actual", row.get("actual")),
+            "forecast": _parse_number("forecast", row.get("forecast")),
+        })
+    return validated
 
 
 def calibrate_from_csv(
@@ -28,16 +58,29 @@ def calibrate_from_csv(
     calibration_end: dt.date,
     validation_end: dt.date,
     min_observations: int = 30,
+    required_indicators: tuple[str, ...] = (),
 ) -> Dict[str, Any]:
+    if min_observations <= 1:
+        raise ValueError("min_observations must be > 1")
     rows = load_observations_csv(path)
     split = chronological_split(rows, calibration_end, validation_end)
     sigmas = fit_surprise_sigmas(split["calibration"], min_observations=min_observations)
+    missing_indicators = [
+        indicator for indicator in required_indicators if indicator.lower() not in sigmas
+    ]
+    if missing_indicators:
+        raise ValueError(
+            "Insufficient calibration observations for: " + ", ".join(sorted(missing_indicators))
+        )
+    if not sigmas:
+        raise ValueError("No empirical sigma could be fitted from the calibration partition")
     return {
         "method": "empirical_population_std_of_direction_adjusted_surprise",
         "calibration_end": calibration_end.isoformat(),
         "validation_end": validation_end.isoformat(),
         "sample_counts": {key: len(value) for key, value in split.items()},
         "sigmas": sigmas,
+        "required_indicators": list(required_indicators),
         "validation_rows": split["validation"],
         "out_of_sample_rows": split["out_of_sample"],
     }
@@ -53,4 +96,10 @@ def load_calibration_profile(path: Path) -> Dict[str, float]:
     sigmas = payload.get("sigmas")
     if not isinstance(sigmas, dict) or not sigmas:
         raise ValueError("Calibration profile has no fitted sigmas")
-    return {str(key): float(value) for key, value in sigmas.items() if float(value) > 0}
+    result: Dict[str, float] = {}
+    for key, value in sigmas.items():
+        number = float(value)
+        if not math.isfinite(number) or number <= 0:
+            raise ValueError(f"Invalid calibrated sigma for {key}: {value!r}")
+        result[str(key)] = number
+    return result
