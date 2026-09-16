@@ -51,6 +51,10 @@ jobs:
         working-directory: macro_engine
         run: python -m unittest discover -s tests -p 'test_deterministic_metrics.py' -v
 
+      - name: Run historical replay and determinism tests
+        working-directory: macro_engine
+        run: python -m unittest discover -s tests -p 'test_historical_replay.py' -v
+
   system-health-audit:
     name: Orchestration & System Audit
     runs-on: ubuntu-latest
