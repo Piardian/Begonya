@@ -71,6 +71,26 @@ def cleanup_stale_lock():
         except Exception as e:
             print(f"[Begonya Orchestrator] ⚠️ runtime.lock silinemedi: {e}")
 
+def prevent_system_sleep():
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            # ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_AWAYMODE_REQUIRED
+            ctypes.windll.kernel32.SetThreadExecutionState(0x80000000 | 0x00000001 | 0x00000040)
+            print("[Begonya Orchestrator] 🛡️ Windows Uyku Kilidi Aktif Edildi (İşlemler kesintisiz sürecek).")
+        except Exception as e:
+            print(f"[Begonya Orchestrator] ⚠️ Uyku kilidi uyarısı: {e}")
+
+def restore_system_sleep():
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            ctypes.windll.kernel32.SetThreadExecutionState(0x80000000)
+            print("[Begonya Orchestrator] 💤 Windows Uyku Kilidi Kaldırıldı.")
+        except Exception:
+            pass
+
+
 def run_macro_sync():
     print("\n[Begonya Orchestrator] 🚀 1. Makro Rejim Motoru İlk Analiz Döngüsü Çalıştırılıyor...")
     cmd = [sys.executable, str(MACRO_DIR / "main.py")]
@@ -117,6 +137,7 @@ def main():
         print("\n" + "=" * 70)
         print(" 🟢 TÜM BEGONYA SERVİSLERİ AKTİF VE NÖBETTE. DURDURMAK İÇİN CTRL+C.")
         print("=" * 70)
+        prevent_system_sleep()
 
         while True:
             time.sleep(3)
@@ -145,6 +166,7 @@ def main():
                     proc.kill()
         print("[Begonya Orchestrator] Sistem güvenle kapatıldı.")
     finally:
+        restore_system_sleep()
         release_orchestrator_lock()
 
 if __name__ == "__main__":

@@ -119,7 +119,11 @@ class MacroWorkflowEngine:
         metrics = state.get("processed_metrics", {})
         regime_st = metrics.get("regime_state", {})
         if final_dict:
-            gates = final_dict.get("execution_bias_gates", {})
+            gates = dict(final_dict.get("execution_bias_gates", {}))
+            cross_gates = regime_st.get("cross_pair_gates", {})
+            for sym, bias in cross_gates.items():
+                if sym not in gates:
+                    gates[sym] = bias
             payload = {
                 "timestamp": final_dict.get("timestamp"),
                 "primary_regime": final_dict.get("primary_regime"),

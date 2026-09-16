@@ -193,6 +193,26 @@ async function executeTwelveDataRequest(
     const message = isProviderPayload(data) && typeof data.message === 'string'
       ? data.message
       : 'missing values array';
+    const code = isProviderPayload(data) ? Number((data as { code?: number | string }).code) : NaN;
+    const isRateLimit = code === 429 ||
+      message.toLowerCase().includes('credit') ||
+      message.toLowerCase().includes('rate limit') ||
+      message.toLowerCase().includes('limit reached') ||
+      message.toLowerCase().includes('too many requests');
+
+    if (isRateLimit) {
+      const error = new ProviderRateLimitError(
+        `Twelve Data rate/credit limit reached for ${request.symbol} ${request.timeframe}: ${message}`,
+        request,
+        retryCount,
+        retryAfterMilliseconds(response.headers),
+        creditsUsed,
+        creditsLeft
+      );
+      attachMetadata(error, metadata);
+      throw error;
+    }
+
     const error = new ProviderResponseError(
       `Twelve Data invalid response for ${request.symbol} ${request.timeframe}: ${message}.`,
       request,
@@ -307,6 +327,10 @@ function mapSymbol(symbol: Symbol): string {
   if (symbol === 'CADCHF') return 'CAD/CHF';
   if (symbol === 'NZDCHF') return 'NZD/CHF';
   if (symbol === 'CHFJPY') return 'CHF/JPY';
+  if (symbol === 'CADJPY') return 'CAD/JPY';
+  if (symbol === 'AUDJPY') return 'AUD/JPY';
+  if (symbol === 'EURAUD') return 'EUR/AUD';
+  if (symbol === 'NZDCAD') return 'NZD/CAD';
   if (symbol === 'NAS100') return 'QQQ';
   if (symbol === 'XAUUSD') return 'XAU/USD';
   if (symbol === 'BTCUSD') return 'BTC/USD';
@@ -316,6 +340,10 @@ function mapSymbol(symbol: Symbol): string {
   if (symbol === 'LTCUSD') return 'LTC/USD';
   if (symbol === 'LTCEUR') return 'LTC/EUR';
   if (symbol === 'SOLUSD') return 'SOL/USD';
+  const rawStr = symbol as string;
+  if (rawStr && rawStr.length === 6 && !rawStr.includes('/')) {
+    return `${rawStr.slice(0, 3)}/${rawStr.slice(3, 6)}`;
+  }
   return symbol;
 }
 

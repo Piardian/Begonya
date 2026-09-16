@@ -4,6 +4,7 @@ import {
 } from '../server/twelveDataClient';
 import {
   ProviderNetworkError,
+  ProviderRateLimitError,
   ProviderResponseError,
 } from '../server/providerTypes';
 
@@ -118,5 +119,18 @@ describe('Twelve Data Client', () => {
     global.fetch = mockFetch;
 
     await expect(fetchCandles('EURUSD', '15m', 10)).rejects.toBeInstanceOf(ProviderNetworkError);
+  });
+
+  test('should throw ProviderRateLimitError when TwelveData returns code 429 in JSON body', async () => {
+    process.env.TWELVE_DATA_MAX_RETRIES = '0';
+    resetTwelveDataProviderQueueForTests();
+    const mockFetchRateLimit = jest.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: () => null },
+      json: async () => ({ status: 'error', code: 429, message: 'You have run out of API credits for current minute' }),
+    });
+    global.fetch = mockFetchRateLimit;
+
+    await expect(fetchCandles('EURUSD', '15m', 10)).rejects.toBeInstanceOf(ProviderRateLimitError);
   });
 });

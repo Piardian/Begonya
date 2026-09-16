@@ -105,7 +105,7 @@ YIELD_CURVE_TR_MAP = {
 }
 
 
-def build_three_horizon_strategy(strat: Dict[str, Any], gates: Dict[str, str], risk_score: float, capital_pres: bool, tot: Dict[str, Any]) -> str:
+def build_three_horizon_strategy(strat: Dict[str, Any], gates: Dict[str, str], risk_score: float, capital_pres: bool, tot: Dict[str, Any], risk_multiplier: float = 1.0) -> str:
     """Yatırımcının Bugün, Bu Hafta ve Bu Ay ufuklarında doğrudan uygulayabileceği net kurumsal eylem rehberi."""
     
     # ─── 1. BUGÜN (M15 / GÜN İÇİ TAKTİK) ───
@@ -124,10 +124,11 @@ def build_three_horizon_strategy(strat: Dict[str, Any], gates: Dict[str, str], r
 
     # Bitcoin
     btc = (gates.get("BTC") or "").upper()
+    risk_mult = strat.get("recommended_risk_multiplier", risk_multiplier)
     if "SHORT" in btc:
         today_items.append("• 🔵 <b>Bitcoin (BTCUSD):</b> Tahvil şoku fonlarda teminat tamamlama (margin call) dalgası yarattı. 🔴 <u>Sadece SATIŞ (Short)</u> fırsatlarına odaklan; ALIM KESİNLİKLE YASAK!")
     elif "LONG" in btc:
-        today_items.append("• 🔵 <b>Bitcoin (BTCUSD):</b> Değer kaybı kalkanı devrede; 🟢 <u>Alım (Long)</u> yönü açık, ancak 0.50x kontrollü lot ile seviye retestini bekle.")
+        today_items.append(f"• 🔵 <b>Bitcoin (BTCUSD):</b> Değer kaybı kalkanı devrede; 🟢 <u>Alım (Long)</u> yönü açık, ancak {risk_mult}x kontrollü lot ile seviye retestini bekle.")
     elif "DEFENSIVE" in btc or "HOLD" in btc:
         today_items.append("• 🔵 <b>Bitcoin (BTCUSD):</b> 🛑 Savunma modunda (Defensive Hold); fon tasfiyeleri riski nedeniyle yeni yönlü pozisyon açma, bekle.")
     else:
@@ -150,6 +151,42 @@ def build_three_horizon_strategy(strat: Dict[str, Any], gates: Dict[str, str], r
         today_items.append("• 🇺🇸 <b>Endeksler (SPX/NAS100):</b> Likidite daralması hisseleri baskılıyor; yükselişleri 🔴 SATIŞ fırsatı olarak izle.")
     else:
         today_items.append("• 🇺🇸 <b>Endeksler (SPX/NAS100):</b> Yüksek faizler büyüme hisselerine tavan koyuyor; tavan seviyelerde yeni alım kovalama, temkinli ol.")
+
+    # Dolar / Yen (USDJPY)
+    usdjpy = (gates.get("USDJPY") or "").upper()
+    if "SHORT" in usdjpy:
+        today_items.append("• 🇯🇵 <b>Dolar / Yen (USDJPY):</b> Carry trade çözülmesi ve güvenli liman talebi JPY'yi destekliyor; 🔴 <u>Sadece SATIŞ (Short)</u> odaklı kal, direnç retestlerini izle.")
+    elif "LONG" in usdjpy:
+        today_items.append("• 🇯🇵 <b>Dolar / Yen (USDJPY):</b> ABD getiri direnci Dolar'ı destekliyor; 🟢 <u>Sadece ALIM (Long)</u> fırsatlarını takip et.")
+    else:
+        today_items.append("• 🇯🇵 <b>Dolar / Yen (USDJPY):</b> ABD getiri direnci ile JPY carry çözülmesi dengede; 🟡 <u>Bant İşlemi (Range)</u> uygula, ortada kalma, dipte al / tepede sat.")
+
+    # Sterlin / Dolar (GBPUSD)
+    gbpusd = (gates.get("GBPUSD") or "").upper()
+    if "SHORT" in gbpusd:
+        today_items.append("• 🇬🇧 <b>Sterlin / Dolar (GBPUSD):</b> BoE faiz indirim fiyatlaması ve tahvil makası aleyhte; 🔴 <u>Sadece SATIŞ (Short)</u> yönlü kurulumları takip et.")
+    elif "LONG" in gbpusd:
+        today_items.append("• 🇬🇧 <b>Sterlin / Dolar (GBPUSD):</b> Dolar gevşemesi destekliyor; 🟢 Geri çekilmelerde ALIM (Long) ara.")
+    else:
+        today_items.append("• 🇬🇧 <b>Sterlin / Dolar (GBPUSD):</b> Dengeli bant hareketi; yön kovalama.")
+
+    # Dolar / Kanada D. (USDCAD)
+    usdcad = (gates.get("USDCAD") or "").upper()
+    if "LONG" in usdcad:
+        today_items.append(f"• 🇨🇦 <b>Dolar / Kanada D. (USDCAD):</b> BoC faiz indirim baskısı petrol desteğini eziyor; 🟢 Geri çekilmelerde <u>ALIM (Long)</u> takip et ({risk_mult}x risk).")
+    elif "SHORT" in usdcad:
+        today_items.append("• 🇨🇦 <b>Dolar / Kanada D. (USDCAD):</b> Petrol rallisi CAD'i öne çıkarıyor; 🔴 <u>Sadece SATIŞ (Short)</u> fırsatlarını izle.")
+    else:
+        today_items.append("• 🇨🇦 <b>Dolar / Kanada D. (USDCAD):</b> Petrol ile faiz erozyonu dengede; bant sınırlarını bekle.")
+
+    # Dolar / Frank (USDCHF)
+    usdchf = (gates.get("USDCHF") or "").upper()
+    if "SHORT" in usdchf:
+        today_items.append("• 🇨🇭 <b>Dolar / Frank (USDCHF):</b> Jeopolitik güvenli liman talebi CHF'yi destekliyor; 🔴 <u>Sadece SATIŞ (Short)</u> odaklı kal.")
+    elif "LONG" in usdchf:
+        today_items.append("• 🇨🇭 <b>Dolar / Frank (USDCHF):</b> Pozitif Dolar carry üstünlüğü devrede; 🟢 <u>Sadece ALIM (Long)</u> kurulumları ara.")
+    else:
+        today_items.append("• 🇨🇭 <b>Dolar / Frank (USDCHF):</b> Dolar getirisi ile jeopolitik sığınak dengede; 🟡 <u>Bant İşlemi (Range)</u> geçerli.")
 
     today_str = "\n".join(today_items)
     today_custom = html.escape(strat.get("horizon_today", "").strip())
@@ -240,6 +277,58 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
     eur_gate = gate_badge(gates.get("EURUSD", "NEUTRAL_RANGE"))
     spx_gate = gate_badge(gates.get("SPX", "NEUTRAL"))
 
+    # Çapraz Kur & Kripto Göreli Değer Radarı
+    regime_st = metrics.get("regime_state", {})
+    cross_analysis = metrics.get("cross_pairs_analysis", {})
+    cross_gates = cross_analysis.get("cross_gates", {}) or regime_st.get("cross_pair_gates", {}) or {}
+    yield_spreads = cross_analysis.get("yield_spreads_bps", {})
+    comm_rocs = cross_analysis.get("commodity_rocs", {})
+    sol_info = cross_analysis.get("sol_btc_analysis", {})
+
+    # Dolar Majörleri Kapıları (SMC Engine Entegrasyonu)
+    usdjpy_gate = gate_badge(cross_gates.get("USDJPY", gates.get("USDJPY", "NEUTRAL_RANGE")))
+    gbpusd_gate = gate_badge(cross_gates.get("GBPUSD", gates.get("GBPUSD", "NEUTRAL_RANGE")))
+    usdcad_gate = gate_badge(cross_gates.get("USDCAD", gates.get("USDCAD", "NEUTRAL_RANGE")))
+    usdchf_gate = gate_badge(cross_gates.get("USDCHF", gates.get("USDCHF", "NEUTRAL_RANGE")))
+    audusd_gate = gate_badge(cross_gates.get("AUDUSD", gates.get("AUDUSD", "NEUTRAL_RANGE")))
+    nzdusd_gate = gate_badge(cross_gates.get("NZDUSD", gates.get("NZDUSD", "NEUTRAL_RANGE")))
+
+    # Çapraz Kur & Kripto Göreli Değer Radarı
+    audcad_gate = gate_badge(cross_gates.get("AUDCAD", gates.get("AUDCAD", "NEUTRAL_RANGE")))
+    cadjpy_gate = gate_badge(cross_gates.get("CADJPY", gates.get("CADJPY", "NEUTRAL_RANGE")))
+    nzdcad_gate = gate_badge(cross_gates.get("NZDCAD", gates.get("NZDCAD", "NEUTRAL_RANGE")))
+    eurgbp_gate = gate_badge(cross_gates.get("EURGBP", gates.get("EURGBP", "NEUTRAL_RANGE")))
+    gbpjpy_gate = gate_badge(cross_gates.get("GBPJPY", gates.get("GBPJPY", "NEUTRAL_RANGE")))
+    sol_gate = gate_badge(cross_gates.get("SOL", gates.get("SOL", "NEUTRAL_RANGE")))
+
+    au_ca_spread = yield_spreads.get("AU_CA_2Y", regime_st.get("spread_au_ca_2y_bps", 0.0))
+    brent_roc = comm_rocs.get("brent_roc_20d", regime_st.get("brent_roc_20d", 0.0))
+    ca_spread_delta = yield_spreads.get("delta_CA_US_5d", regime_st.get("spread_ca_us_2y_delta_5d", 0.0))
+    gb_spread_delta = yield_spreads.get("delta_GB_US_5d", regime_st.get("spread_gb_us_2y_delta_5d", 0.0))
+    dairy_roc = comm_rocs.get("dairy_gdt_roc_20d", regime_st.get("dairy_gdt_roc_20d", 0.0))
+    au_nz_delta = regime_st.get("spread_au_nz_2y_delta_5d", 0.0)
+    sol_btc_roc = sol_info.get("sol_btc_roc_5d", regime_st.get("sol_btc_roc_5d", 0.0))
+    sol_4h_broken = regime_st.get("sol_btc_4h_structure_broken", False)
+
+    # NZDCAD radar notu (GDT bayat koruması devredeyse AU-NZ makasını göster)
+    if abs(dairy_roc) <= 0.01 and au_nz_delta != 0.0:
+        nzdcad_subtext = f"GDT: Yatay | AU-NZ 2Y Δ: {au_nz_delta:+.1f} bps"
+    else:
+        nzdcad_subtext = f"GDT Süt İndeksi: %{dairy_roc:+.1f} | Petrol: %{brent_roc:+.1f}"
+
+    # SOL radar notu (4H CHoCH kırılım uyarısı)
+    if sol_4h_broken:
+        sol_subtext = f"SOL/BTC: %{sol_btc_roc:+.2f} | 🛑 4H Dip Kırıldı (Veto)"
+    else:
+        sol_subtext = f"SOL/BTC 5G İvme: %{sol_btc_roc:+.2f} | Kripto Yüksek Beta"
+
+    # Red-Folder Event Freeze Durumu
+    event_freeze_active = regime_st.get("event_freeze_active", False)
+    active_event_info = regime_st.get("active_event_info", "")
+    event_freeze_banner = ""
+    if event_freeze_active:
+        event_freeze_banner = f"\n🛑 <b>KIRMIZI BÜLTEN DEVRE KESİCİSİ (DEVREDE):</b>\n└ ⚠️ <i>{html.escape(str(active_event_info))}</i> nedeniyle tüm yeni girişler donduruldu (±15 dk haber koruması)!\n"
+
     # Rasyonel (Smart chunking devrede olduğundan metin tam ve eksiksiz korunur)
     raw_rat = strat.get("macro_rationale", "").strip()
     rationale = html.escape(raw_rat)
@@ -251,18 +340,28 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
             t_str = html.escape(str(ev.get("time", "")))
             title = html.escape(str(ev.get("title", "")))
             country = html.escape(str(ev.get("country", "")))
-            news_lines.append(f"  • <b>{t_str}</b> [{country}] {title}")
+            impact = str(ev.get("impact", "")).upper()
+            is_red = impact == "HIGH" or any(kw in title.upper() for kw in ["CPI", "NFP", "FOMC", "RATE", "PAYROLL"])
+            badge = " <i>[±15 dk Koruma]</i>" if is_red else ""
+            news_lines.append(f"  • <b>{t_str}</b> [{country}] {title}{badge}")
     
     news_block = "\n".join(news_lines) if news_lines else "  • <i>Bugün için yüksek etkili kritik veri bulunmuyor.</i>"
 
     # 3 Zaman Ufku Stratejisi
-    horizon_strategy = build_three_horizon_strategy(strat, gates, risk_score, capital_pres, tot)
+    horizon_strategy = build_three_horizon_strategy(strat, gates, risk_score, capital_pres, tot, risk_multiplier=risk_multiplier)
+
+    # Brent Petrol Fiyatı (Öncelik: İşlenmiş gerçek değer)
+    brent_val = (
+        metrics.get("brent_level") or
+        tot.get("brent_level") or
+        (pipeline_result.get("raw_market", {}).get("BRENT", {}).get("value") if isinstance(pipeline_result.get("raw_market", {}).get("BRENT"), dict) else None) or
+        78.4
+    )
 
     # HTML Bülteni Derle
     msg = f"""🌺 <b>BEGONYA | GÜNLÜK SABAH MAKRO BÜLTENİ</b>
 📅 <i>{now_str} (TSİ)</i>
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+━━━━━━━━━━━━━━━━━━━━━━━━━━{event_freeze_banner}
 🏛️ <b>MAKRO PİYASA REJİMİ:</b>
 • <b>Döngü Teşhisi:</b> {regime}
 • <b>Sistemik Risk Seviyesi:</b> {risk_score:.2f} / 1.0 -> {risk_icon}
@@ -284,13 +383,29 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
   └ Fed Net Likiditesi: ${liq_dyn.get('current_net_liquidity_billion', 6110.0):,.1f}B (4H Değişim: ${liq_dyn.get('delta_liquidity_billion', -60.0):+,.1f}B)
   └ Dolar Endeksi (DXY): {dxy_t.get('level', 100.0)} ({dxy_t.get('momentum_regime', 'Düşüş Trendi')})
 • <b>4. Enerji Şoku & Dış Ticaret Hadleri:</b>
-  └ Brent Petrol: ${metrics.get('raw_market', {}).get('BRENT', {}).get('value', 104.6) if isinstance(metrics.get('raw_market', {}).get('BRENT'), dict) else 104.6} (Euro Bölgesi Enerji Faturası Cezası: {'⚠️ AKTİF' if tot.get('eurusd_energy_penalty') else 'YOK'})
+  └ Brent Petrol: ${brent_val:.1f} (Euro Bölgesi Enerji Faturası Cezası: {'⚠️ AKTİF' if tot.get('eurusd_energy_penalty') else 'YOK'})
 
 🛡️ <b>GÜNÜN İŞLEM KAPILARI (EXECUTION GATES):</b>
 • <b>Altın (XAUUSD) :</b> {xau_gate}
 • <b>Bitcoin (BTCUSD):</b> {btc_gate}
 • <b>Euro (EURUSD)  :</b> {eur_gate}
 • <b>Endeks (SPX/NAS):</b> {spx_gate}
+
+💵 <b>GÜNÜN DOLAR MAJÖRLERİ RADARI (USD MAJORS):</b>
+• <b>USDJPY :</b> {usdjpy_gate} <i>(Carry Çözülmesi vs US02Y Getirisi)</i>
+• <b>GBPUSD :</b> {gbpusd_gate} <i>(BoE Faiz İndirimi & GB-US 2Y Δ: {gb_spread_delta:+.1f} bps)</i>
+• <b>USDCAD :</b> {usdcad_gate} <i>(CA 2Y Δ: {ca_spread_delta:+.1f} bps vs Brent: %{brent_roc:+.1f})</i>
+• <b>USDCHF :</b> {usdchf_gate} <i>(Dolar Pozitif Carry vs Güvenli Liman Sığınağı)</i>
+• <b>AUDUSD :</b> {audusd_gate} <i>(Bakır/Demir İvmesi vs Dolar Getirisi)</i>
+• <b>NZDUSD :</b> {nzdusd_gate} <i>(GDT Süt İhalesi: %{dairy_roc:+.1f} vs Dolar Getirisi)</i>
+
+🌐 <b>GÜNÜN ÇAPRAZ KUR & KRİPTO RADARI (RELATIVE VALUE):</b>
+• <b>AUDCAD :</b> {audcad_gate} <i>(AU-CA 2Y: {au_ca_spread:+.1f} bps | Bakır/Demir vs Petrol)</i>
+• <b>CADJPY :</b> {cadjpy_gate} <i>(Brent 20G RoC: %{brent_roc:+.1f} | CA 2Y Δ: {ca_spread_delta:+.1f} bps)</i>
+• <b>NZDCAD :</b> {nzdcad_gate} <i>({nzdcad_subtext})</i>
+• <b>EURGBP :</b> {eurgbp_gate} <i>(Euro Enerji Faturası & Transatlantik Makas)</i>
+• <b>GBPJPY :</b> {gbpjpy_gate} <i>(BoE Faiz Avantajı & Carry Trade)</i>
+• <b>SOL/USD :</b> {sol_gate} <i>({sol_subtext})</i>
 
 ⚠️ <b>BUGÜNKÜ KRİTİK HABER TAKVİMİ:</b>
 {news_block}

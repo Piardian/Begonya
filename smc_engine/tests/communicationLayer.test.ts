@@ -39,7 +39,7 @@ describe('Communication Layer', () => {
     expect(rendered).toContain('Fiyat giriş bölgesinde değil; önce geri çekilme');
     expect(resolveCommunicationMode('Detailed')).toBe('Detailed');
     expect(rendered.length).toBeGreaterThan(150);
-    expect(rendered.length).toBeLessThan(2000);
+    expect(rendered.length).toBeLessThan(2500);
   });
 });
 

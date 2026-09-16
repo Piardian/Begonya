@@ -39,12 +39,37 @@ logging.basicConfig(
 )
 logger = logging.getLogger("MacroDaemon")
 
+STATE_FILE = Path(__file__).parent / "scheduler_state.json"
+
 
 class MacroEventScheduler:
     def __init__(self, post_news_delay_seconds: int = 180):
         self.post_news_delay = post_news_delay_seconds
+        self.state_file = STATE_FILE
         self.engine = MacroWorkflowEngine()
         self.calendar = CalendarEventIngestion()
+        self.cached_events = []
+        self.last_calendar_fetch = 0.0
+
+    def _load_state(self) -> dict:
+        try:
+            if self.state_file.exists():
+                with open(self.state_file, "r", encoding="utf-8") as f:
+                    return json.load(f)
+        except Exception as e:
+            logger.warning(f"State dosyası okunamadı: {e}")
+        return {
+            "last_morning_briefing_date": "",
+            "last_daily_close_date": "",
+            "executed_news_events": []
+        }
+
+    def _save_state(self, state: dict):
+        try:
+            with open(self.state_file, "w", encoding="utf-8") as f:
+                json.dump(state, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            logger.warning(f"State dosyası yazılamadı: {e}")
 
     def run_cycle(self, trigger_source: str = "Manual / Scheduled"):
         """Tam makro analiz döngüsünü çalıştırır ve atomik kapıyı günceller."""
@@ -79,18 +104,34 @@ class MacroEventScheduler:
         sent = send_telegram_message(msg)
         if sent:
             logger.info("☀️ [SABAH BÜLTENİ] Telegram Sabah Makro Bülteni Başarıyla Gönderildi!")
+            state = self._load_state()
+            state["last_morning_briefing_date"] = datetime.datetime.now().strftime("%Y-%m-%d")
+            self._save_state(state)
         else:
             logger.warning("⚠️ [SABAH BÜLTENİ] Telegram bülteni gönderilemedi!")
         return sent
+
+    def _get_calendar_events_cached(self, ttl_seconds: int = 300) -> list:
+        """Ekonomik takvim olaylarını 5 dakika önbellekli olarak çeker."""
+        now_ts = time.time()
+        if not self.cached_events or (now_ts - self.last_calendar_fetch) > ttl_seconds:
+            try:
+                self.cached_events = asyncio.run(self.calendar.fetch_latest_events())
+                self.last_calendar_fetch = now_ts
+            except Exception as ce:
+                logger.debug(f"Takvim çekilirken hata: {ce}")
+        return self.cached_events
 
     def get_upcoming_triggers(self) -> list:
         """Bugünkü kırmızı bayraklı olayları, sabah bültenini ve D1 kapanışını listeler."""
         triggers = []
         now = datetime.datetime.now()
+        today_str = now.strftime("%Y-%m-%d")
+        state = self._load_state()
 
         # 1. Sabah 09:00 Makro Bülten Tetikleyicisi
         morning_target = now.replace(hour=9, minute=0, second=0, microsecond=0)
-        if morning_target < now:
+        if state.get("last_morning_briefing_date") == today_str or morning_target < now:
             morning_target += datetime.timedelta(days=1)
         triggers.append({
             "name": "Sabah Makro Bülteni (09:00)",
@@ -100,39 +141,33 @@ class MacroEventScheduler:
 
         # 2. Günlük D1 Kapanış Tetikleyicisi (Her gece 23:55)
         d1_target = now.replace(hour=23, minute=55, second=0, microsecond=0)
-        if d1_target < now:
+        if state.get("last_daily_close_date") == today_str or d1_target < now:
             d1_target += datetime.timedelta(days=1)
         triggers.append({
-            "name": "D1 Günlük Bar Kapanışı",
+            "name": "D1 Günlük Bar Kapanışı (23:55)",
             "scheduled_time": d1_target,
             "type": "DAILY_CLOSE"
         })
 
         # 3. Yüksek Etkili Olaylar (Kırmızı Bayrak)
-        try:
-            events = asyncio.run(self.calendar.fetch_latest_events())
-            for ev in events:
-                # Olay başlığı ve saatini kontrol et
-                title = ev.get('title', 'Ekonomik Olay')
-                time_str = ev.get('time', '')
-                if time_str and ":" in time_str:
-                    try:
-                        t_parts = time_str.split(":")
-                        ev_time = now.replace(hour=int(t_parts[0]), minute=int(t_parts[1]), second=0, microsecond=0)
-                        # Olaydan 3 dakika sonra tetikle
-                        trigger_time = ev_time + datetime.timedelta(seconds=self.post_news_delay)
-                        if trigger_time > now:
-                            triggers.append({
-                                "name": f"Haber Tetiklemesi (+3dk): {title}",
-                                "scheduled_time": trigger_time,
-                                "type": "EVENT_DRIVEN"
-                            })
-                    except Exception:
-                        pass
-        except Exception as ce:
-            logger.debug(f"Takvim tetikleyicileri taranırken hata: {ce}")
+        events = self._get_calendar_events_cached(ttl_seconds=300)
+        for ev in events:
+            title = ev.get('title', 'Ekonomik Olay')
+            time_str = ev.get('time', '')
+            if time_str and ":" in time_str:
+                try:
+                    t_parts = time_str.split(":")
+                    ev_time = now.replace(hour=int(t_parts[0]), minute=int(t_parts[1]), second=0, microsecond=0)
+                    trigger_time = ev_time + datetime.timedelta(seconds=self.post_news_delay)
+                    if trigger_time > now:
+                        triggers.append({
+                            "name": f"Haber Tetiklemesi (+3dk): {title}",
+                            "scheduled_time": trigger_time,
+                            "type": "EVENT_DRIVEN"
+                        })
+                except Exception:
+                    pass
 
-        # Tarihe göre sırala
         triggers.sort(key=lambda x: x["scheduled_time"])
         return triggers
 
@@ -144,27 +179,52 @@ class MacroEventScheduler:
         # İlk çalıştırma (Sistem başlarken kapıyı güncel tut)
         self.run_cycle(trigger_source="Daemon Startup Baseline")
 
-        executed_triggers = set()
-
         while True:
             try:
                 now = datetime.datetime.now()
-                triggers = self.get_upcoming_triggers()
+                today_str = now.strftime("%Y-%m-%d")
+                state = self._load_state()
 
-                for trig in triggers:
-                    trig_key = f"{trig['name']}_{trig['scheduled_time'].strftime('%Y%m%d_%H%M')}"
-                    if trig_key in executed_triggers:
-                        continue
+                # 1. Sabah 09:00 Bülteni Kontrolü (Tarih kilitli, asla ıskalanmaz)
+                # Saat 09:00 ile 18:00 arasında ise ve bugünün bülteni henüz gönderilmediyse:
+                if (now.hour >= 9 and now.hour < 18) and state.get("last_morning_briefing_date") != today_str:
+                    logger.info(f"🔔 [ZAMANLAYICI TETİKLENDİ] Sabah Makro Bülteni (09:00) | Tarih: {today_str}")
+                    sent = self.send_morning_briefing()
+                    state["last_morning_briefing_date"] = today_str
+                    self._save_state(state)
 
-                    time_diff = (trig["scheduled_time"] - now).total_seconds()
-                    # Eğer tetikleme anına geldiysek (-15s ile +45s arası)
-                    if -15 <= time_diff <= 45:
-                        logger.info(f"🔔 [ZAMANLAYICI TETİKLENDİ] {trig['name']}")
-                        if trig.get("type") == "MORNING_BRIEFING":
-                            self.send_morning_briefing()
-                        else:
-                            self.run_cycle(trigger_source=trig["name"])
-                        executed_triggers.add(trig_key)
+                # 2. Günlük D1 Kapanış Kontrolü (Her gece 23:55 veya sonrası)
+                if (now.hour == 23 and now.minute >= 55) and state.get("last_daily_close_date") != today_str:
+                    logger.info(f"🔔 [ZAMANLAYICI TETİKLENDİ] D1 Günlük Bar Kapanışı (23:55) | Tarih: {today_str}")
+                    self.run_cycle(trigger_source="D1 Günlük Bar Kapanışı (23:55)")
+                    state["last_daily_close_date"] = today_str
+                    self._save_state(state)
+
+                # 3. Yüksek Etkili Haber / Olay Tetikleyicileri (Kırmızı Bayrak)
+                events = self._get_calendar_events_cached(ttl_seconds=300)
+                executed_events = set(state.get("executed_news_events", []))
+
+                for ev in events:
+                    title = ev.get('title', 'Ekonomik Olay')
+                    time_str = ev.get('time', '')
+                    if time_str and ":" in time_str:
+                        try:
+                            t_parts = time_str.split(":")
+                            ev_time = now.replace(hour=int(t_parts[0]), minute=int(t_parts[1]), second=0, microsecond=0)
+                            trigger_time = ev_time + datetime.timedelta(seconds=self.post_news_delay)
+                            event_key = f"{title}_{today_str}_{t_parts[0]}:{t_parts[1]}"
+
+                            if event_key not in executed_events:
+                                time_diff = (now - trigger_time).total_seconds()
+                                # Olay anından itibaren [0s, 900s] (15 dakika) içinde yakalandıysa tetikle
+                                if 0 <= time_diff <= 900:
+                                    logger.info(f"🔔 [HABER TETİKLENDİ] {title} (+3dk gecikme ile)")
+                                    self.run_cycle(trigger_source=f"Haber: {title}")
+                                    executed_events.add(event_key)
+                                    state["executed_news_events"] = list(executed_events)[-100:]
+                                    self._save_state(state)
+                        except Exception as ee:
+                            logger.debug(f"Haber tetikleyici hatası: {ee}")
 
                 time.sleep(poll_interval_seconds)
             except KeyboardInterrupt:

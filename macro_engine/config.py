@@ -68,6 +68,14 @@ MARKET_SYMBOLS = {
     "HYG": "HYG",            # iShares iBoxx $ High Yield Corporate Bond ETF
     "LQD": "LQD",            # iShares iBoxx $ Investment Grade Corporate Bond ETF
     "EUR_BOND": "IBGM.AS",   # iShares EUR Govt Bond 7-10yr ETF (Almanya/Euro Tahvil Göstergesi)
+    "SOL": "SOL-USD",        # Solana (Yüksek Beta Kripto)
+    "CA02Y": "CAD2Y=X",      # Kanada 2 Yıllık Tahvil Getirisi
+    "DE02Y": "DE02Y=X",      # Almanya 2 Yıllık Tahvil Getirisi (Schatz)
+    "GB02Y": "GB02Y=X",      # İngiltere 2 Yıllık Tahvil Getirisi (Gilt)
+    "AU02Y": "AU02Y=X",      # Avustralya 2 Yıllık Tahvil Getirisi
+    "IRON_ORE": "TIO=F",     # Demir Cevheri Vadeli (Iron Ore 62% Fe)
+    "DAIRY_GDT": "DAIRY",    # Küresel Süt Fiyat Endeksi (Global Dairy Trade)
+    "NZ02Y": "NZD2Y=X",      # Yeni Zelanda 2 Yıllık Tahvil Getirisi
 }
 
 # Histeresis ve Eşik Değeri Ayarları (Whipsaw / Titreme Önleyici)
@@ -76,6 +84,27 @@ HYSTERESIS_CONFIG = {
     "BRENT_ENERGY_PENALTY_EXIT": 81.0,   # Brent bu seviyenin altına inmeden ceza kalkmaz (~%5 marj)
     "RISK_PRESERVATION_ENTER": 0.65,     # Risk skoru bu seviyeyi aşınca sermaye koruma aktifleşir
     "RISK_PRESERVATION_EXIT": 0.50,      # Risk skoru bu seviyenin altına inmeden koruma kalkmaz
+    "SPREAD_DESYNC_NOISE_BPS": 3.0,      # Seans uyuşmazlığı gürültü eşiği (±3.0 bps altı değişimler nötr kabul edilir)
+}
+
+# Yüksek Etkili Kırmızı Bülten (Red-Folder) Dondurma Ayarları
+NEWS_FREEZE_CONFIG = {
+    "FREEZE_MINUTES_BEFORE": 15,
+    "FREEZE_MINUTES_AFTER": 15,
+    "HIGH_IMPACT_KEYWORDS": [
+        "non-farm", "nfp", "payrolls", "unemployment rate",
+        "cpi", "consumer price index", "core cpi", "pce",
+        "fomc", "interest rate decision", "rate decision",
+        "ecb", "boe", "rba", "rbnz", "boc", "boj"
+    ]
+}
+
+# Portföy Beta Kümelenme ve Korelasyon Tavanı (Portfolio Exposure Caps)
+PORTFOLIO_EXPOSURE_CONFIG = {
+    "MAX_USD_CONCURRENT_LEGS": 2,       # Aynı anda tek yönde en fazla 2 aktif USD pozisyonu
+    "MAX_JPY_CONCURRENT_LEGS": 2,       # Aynı anda tek yönde en fazla 2 aktif JPY pozisyonu
+    "MAX_CRYPTO_CONCURRENT_LEGS": 1,    # Aynı anda en fazla 1 aktif yüksek beta Kripto pozisyonu
+    "MAX_TOTAL_PORTFOLIO_RISK": 2.5     # Toplam eşzamanlı maksimum portföy riski (2.5x lot)
 }
 
 # MT5 Entegrasyon Yolu

@@ -60,6 +60,7 @@ class MacroSpecialists:
         - Güncel Net Likidite: ${liq_dyn.get('current_net_liquidity_billion'):,.1f}B
         - 4 Haftalık Net Likidite Değişimi (Δ): ${liq_dyn.get('delta_liquidity_billion'):,.1f}B (%{liq_dyn.get('delta_liquidity_pct_4w')})
         - Akış Yönü: {liq_dyn.get('flow_direction')}
+        - TGA Sezonsallık Durumu: {liq_dyn.get('tga_seasonality_note')}
         
         [DÖVİZ VE DXY MOMENTUMU]:
         - DXY Seviyesi: {dxy_trend.get('level')} | 20G Momentum: %{dxy_trend.get('delta_20d_pct')} ({dxy_trend.get('momentum_regime')})
@@ -70,6 +71,7 @@ class MacroSpecialists:
         2. DXY 100'ün altında ve negatif momentumdaysa Dolar Baskısı 'High' DEĞİL; 'Low' veya 'Neutral'dir.
         3. Kredi Makası (HY OAS) %3.8'in altındaysa ve HYG/LQD sakinse kredi stresi 'Low / Benign'dir; piyasa likidite krizi yaşamamaktadır.
         4. ICSA 218K seviyesindeyken istihdam piyasası sağlamdır; NFP'nin gücü haftalık olarak teyitlidir.
+        5. TGA VERGİ SEZONSALLIĞI: Eğer is_tga_tax_season True ise ({liq_dyn.get('is_tga_tax_season')}), likiditedeki düşüşün geçici federal vergi tahsilatından kaynaklandığını, kalıcı bir kredi/likidite krizi olmadığını özette belirt.
         """
         system_instruction = (
             "Sen Wall Street düzeyinde çalışan bir Baş Likidite, Kredi ve Tahvil Piyasası Analistisin. "
@@ -161,6 +163,8 @@ class MacroSpecialists:
         btc_dec = metrics.get('btc_decoupling_analysis', {})
         regime_st = metrics.get('regime_state', {})
         fed_rf = metrics.get('fed_reaction_function', {})
+        cross_analysis = metrics.get('cross_pairs_analysis', {})
+        cross_gates = cross_analysis.get('cross_gates', {}) or regime_st.get('cross_pair_gates', {}) or {}
 
         prompt = f"""
         Aşağıdaki iki uzman analist raporunu ve çapraz piyasa metriklerini değerlendirip portföy yönelimlerini sentezle:
@@ -196,8 +200,10 @@ class MacroSpecialists:
         - Fed Tepki Fonksiyonu: {fed_rf.get('rate_path_expectation')} | {fed_rf.get('equity_multiple_cap')}
         - Kredi Makası (HY OAS): %{credit.get('hy_oas_spread_pct')} ({credit.get('stress_level')})
         - 10Y Reel Getiri: %{ry.get('real_yield_pct')} [{ry.get('yield_source')}]
-        - 4H Net Likidite Deltası (Δ): ${liq_dyn.get('delta_liquidity_billion')}B (%{liq_dyn.get('delta_liquidity_pct_4w')})
+        - 4H Net Likidite Deltası (Δ): ${liq_dyn.get('delta_liquidity_billion')}B (%{liq_dyn.get('delta_liquidity_pct_4w')}) | TGA Notu: {liq_dyn.get('tga_seasonality_note')}
         - Bakır/Altın Momentum Deltası: %{cg.get('delta_4w_pct')}
+        - Para Birimi Güç Puanları (3-Faktör): {regime_st.get('cross_currency_scores', {})}
+        - Dolar Majörleri Kapıları: USDJPY: {cross_gates.get('USDJPY', 'NEUTRAL_RANGE')}, GBPUSD: {cross_gates.get('GBPUSD', 'NEUTRAL_RANGE')}, USDCAD: {cross_gates.get('USDCAD', 'NEUTRAL_RANGE')}, USDCHF: {cross_gates.get('USDCHF', 'NEUTRAL_RANGE')}
         
         🚨 ZORUNLU KURUMSAL PORTFÖY VE RİSK YÖNETİMİ KURALLARI:
         1. ALTIN (XAUUSD) - DİNAMİK MAKRO REJİM VE MALİ HAKİMİYET:
@@ -208,24 +214,35 @@ class MacroSpecialists:
            - VIX >= 22.0 olduğunda borsa zaten düşmüştür; kurumsal short cover ve ayı piyasası rallisi riski nedeniyle hisselerde 'SHORT_ONLY' YASAKTIR!
            - Endekslerde SHORT izni sadece fırtına öncesi sessizlikte verilebilir: VIX < 18.0 (Rehavet) ve Net Likidite daralırken.
            - Bear Steepening veya 10Y getiri sıçramasında (Δ10Y >= 10 bps), teknoloji/büyüme hisselerinin (NAS100) iskonto çarpanları daralır (değerleme şoku). Bu durumda SPX kapısı 'NEUTRAL_RANGE' veya likidite çekiliyorsa 'SHORT_ONLY' olmalıdır.
-        3. BTC VE AYRIŞMA (BEAR STEEPENING ŞOKU):
-           - Eğer btc_decoupling_active True ise: BTC 'SHORT_ONLY' veya 'DEFENSIVE_HOLD' olmalı (Fon teminat tamamlama tasfiyeleri yüksek olasılıklı düşüş dalgası yaratır; Long yasaktır).
-           - Eğer btc_decoupling_active False ise: BTC 'Bullish / LONG_ONLY (0.50x risk)' değerlendirilebilir.
+        3. BTC VE AYRIŞMA (BEAR STEEPENING & T-0 FAST STRESS):
+           - Eğer btc_decoupling_active True ise veya fast_stress_override / capital_preservation_mode True ise: BTC KESİNLİKLE 'LONG_ONLY' OLAMAZ!
+             * Bear Steepening faiz şokunda: BTC 'SHORT_ONLY' olmalı (hazine arz şoku & fon teminat tamamlama tasfiyeleri).
+             * T-0 Fast Stress veya Sermaye Koruma modunda (Brent şoku, VIX sıçraması, likidite daralması): BTC 'DEFENSIVE_HOLD' (veya NEUTRAL_RANGE) olarak kilitlenmelidir.
+           - Yalnızca piyasada stres yokken (fast_stress_override False, sermaye koruma pasif) ve tahvil oynaklığı sakinken BTC için fiat debasement temasıyla 'LONG_ONLY' izni verilebilir.
         4. EURUSD VE ENERJİ ŞOKU + TRANSATLANTİK MAKAS (İKİ TARAFLI DENGE):
            - Brent > $85 üzerindeyken Euro Bölgesi enerji ithalatçısıdır ve ticaret hadleri çöker.
            - Transatlantik makas (+{transatlantic.get('spread_bps')} bps) ABD lehine açık kaldıkça sermaye Dolar'a akar ve pozitif swap (carry) avantajı EURUSD SHORT'u destekler. DXY momentumu zayıfsa NEUTRAL_RANGE uygula.
         5. T-0 FAST STRESS & SERMAYE KORUMA MODU:
            - Eğer fast_stress_override True ise: capital_preservation_mode = True yap, recommended_risk_multiplier = 0.25'e düşür!
+           - Çelişkiyi engelle: Metin ve taktiklerde tüm varlıklar için risk katsayısı olarak sadece 0.25x belirt (asla 0.50x veya 1.0x yazma).
         6. EXECUTION BIAS GATES KILAVUZU:
            - XAUUSD: Reel Getiri >= %1.90 veya Bear Steepening varsa 'NEUTRAL_RANGE'; sakinse 'LONG_ONLY'
            - EURUSD: Transatlantik makas > +180 bps ve Brent yüksekse 'SHORT_ONLY' veya 'NEUTRAL_RANGE'
-           - BTC: btc_decoupling_active True ise 'SHORT_ONLY' veya 'DEFENSIVE_HOLD'; sakinse 'LONG_ONLY'
+           - BTC: Bear Steepening şokunda 'SHORT_ONLY'; T-0 stres / sermaye koruma modunda 'DEFENSIVE_HOLD'; sakin piyasada 'LONG_ONLY'
            - SPX: Bear Steepening / faiz şoku / VIX yüksekse 'NEUTRAL_RANGE'; rehavet + likidite daralmasında 'SHORT_ONLY'
-           
+            
         7. ÜÇ KATMANLI ZAMAN UFKU STRATEJİSİ (HORIZON GUIDANCE):
-           - horizon_today: Bugünkü işlem seansı (M15 / Gün İçi) için net, somut ve doğrudan uygulanabilir taktik. Hangi saatlerde/paritelerde ne aranmalı?
+           - horizon_today: Bugünkü işlem seansı (M15 / Gün İçi) için net, somut ve doğrudan uygulanabilir taktik. Varlık lot boyutlarını her zaman recommended_risk_multiplier ile tutarlı ver (çelişkili lot yazma).
            - horizon_this_week: Bu haftalık (H4 / Swing) ufku için piyasa yönü, yaklaşan kritik verilerin (TÜFE/ÜFE/Merkez Bankası) getiri eğrisine ve paritelere haftalık etkisi.
            - horizon_this_month: Bu aylık (D1/W1) makro rejim rotası. Fed net likidite seyri, borçlanma tavanı, mali hakimiyet ve portföyün genel yönü.
+           - TGA Sezonsallığı: Eğer TGA vergi dönemi aktifse ({liq_dyn.get('is_tga_tax_season')}), 4 haftalık net likidite düşüşünü geçici mevsimsel kamu tahsilatı olarak rasyonele ekle; kalıcı bir kriz gibi abartma.
+
+        8. DOLAR MAJÖRLERİ VE GÖRELİ DEĞER KURALLARI (USD MAJORS - USDJPY, GBPUSD, USDCAD, USDCHF):
+           - 3 Faktörlü para birimi puanları (USD, JPY, GBP, CAD, CHF, AUD, NZD) ve getiri farkı dinamiklerini rasyonele ve taktiklere yansıt.
+           - GBPUSD: BoE faiz indirim fiyatlaması ve GB-US makası aleyhteyse SHORT_ONLY odaklı ol.
+           - USDCAD: BoC faiz indirim baskısı petrolü eziyorsa LONG_ONLY; petrol güçlüyse NEUTRAL_RANGE.
+           - USDJPY: US 2Y faiz direnci ile JPY carry çözülmesi dengedeyse NEUTRAL_RANGE; JPY güvenli liman girişi baskınsa SHORT_ONLY.
+           - USDCHF: Dolar pozitif carry avantajı ile jeopolitik güvenli liman sığınağı dengedeyse NEUTRAL_RANGE.
         """
         system_instruction = (
             "Sen Küresel Bir Makro Hedge Fonunun Baş Yatırım Komitesi Başkanısın (CIO). "

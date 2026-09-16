@@ -6,40 +6,46 @@
       "quote_currency": "USD"
     },
     "GBPUSD": {
-      "macro_key": "EURUSD",
-      "proxy": "DXY_INVERSE",
+      "macro_type": "SYNTHETIC_CROSS",
       "base_currency": "GBP",
-      "quote_currency": "USD"
+      "quote_currency": "USD",
+      "base_driver": "GBP",
+      "quote_driver": "USD"
     },
     "AUDUSD": {
-      "macro_key": "COPPER_GOLD",
-      "proxy": "DXY_INVERSE",
+      "macro_type": "SYNTHETIC_CROSS",
       "base_currency": "AUD",
-      "quote_currency": "USD"
+      "quote_currency": "USD",
+      "base_driver": "AUD",
+      "quote_driver": "USD"
     },
     "NZDUSD": {
-      "macro_key": "COPPER_GOLD",
-      "proxy": "DXY_INVERSE",
+      "macro_type": "SYNTHETIC_CROSS",
       "base_currency": "NZD",
-      "quote_currency": "USD"
+      "quote_currency": "USD",
+      "base_driver": "NZD",
+      "quote_driver": "USD"
     },
     "USDCAD": {
-      "macro_key": "BRENT",
-      "proxy": "DXY_DIRECT",
+      "macro_type": "SYNTHETIC_CROSS",
       "base_currency": "USD",
-      "quote_currency": "CAD"
+      "quote_currency": "CAD",
+      "base_driver": "USD",
+      "quote_driver": "CAD"
     },
     "USDJPY": {
-      "macro_key": "US10Y",
-      "proxy": "DXY_DIRECT",
+      "macro_type": "SYNTHETIC_CROSS",
       "base_currency": "USD",
-      "quote_currency": "JPY"
+      "quote_currency": "JPY",
+      "base_driver": "USD",
+      "quote_driver": "JPY"
     },
     "USDCHF": {
-      "macro_key": "DXY",
-      "proxy": "DXY_DIRECT",
+      "macro_type": "SYNTHETIC_CROSS",
       "base_currency": "USD",
-      "quote_currency": "CHF"
+      "quote_currency": "CHF",
+      "base_driver": "USD",
+      "quote_driver": "CHF"
     },
     "XAUUSD": {
       "macro_key": "XAUUSD",
@@ -60,6 +66,114 @@
       "macro_key": "BTC",
       "base_currency": "ETH",
       "quote_currency": "USD"
+    },
+    "LTCUSD": {
+      "macro_key": "BTC",
+      "base_currency": "LTC",
+      "quote_currency": "USD"
+    },
+    "SOLUSD": {
+      "macro_key": "BTC",
+      "base_currency": "SOL",
+      "quote_currency": "USD"
+    },
+    "AUDCAD": {
+      "macro_type": "SYNTHETIC_CROSS",
+      "base_currency": "AUD",
+      "quote_currency": "CAD",
+      "base_driver": "AUD",
+      "quote_driver": "CAD"
+    },
+    "CADJPY": {
+      "macro_type": "SYNTHETIC_CROSS",
+      "base_currency": "CAD",
+      "quote_currency": "JPY",
+      "base_driver": "CAD",
+      "quote_driver": "JPY"
+    },
+    "GBPJPY": {
+      "macro_type": "SYNTHETIC_CROSS",
+      "base_currency": "GBP",
+      "quote_currency": "JPY",
+      "base_driver": "GBP",
+      "quote_driver": "JPY"
+    },
+    "AUDJPY": {
+      "macro_type": "SYNTHETIC_CROSS",
+      "base_currency": "AUD",
+      "quote_currency": "JPY",
+      "base_driver": "AUD",
+      "quote_driver": "JPY"
+    },
+    "EURGBP": {
+      "macro_type": "SYNTHETIC_CROSS",
+      "base_currency": "EUR",
+      "quote_currency": "GBP",
+      "base_driver": "EUR",
+      "quote_driver": "GBP"
+    },
+    "EURAUD": {
+      "macro_type": "SYNTHETIC_CROSS",
+      "base_currency": "EUR",
+      "quote_currency": "AUD",
+      "base_driver": "EUR",
+      "quote_driver": "AUD"
+    },
+    "NZDCAD": {
+      "macro_type": "SYNTHETIC_CROSS",
+      "base_currency": "NZD",
+      "quote_currency": "CAD",
+      "base_driver": "NZD",
+      "quote_driver": "CAD"
+    },
+    "EURJPY": {
+      "macro_type": "SYNTHETIC_CROSS",
+      "base_currency": "EUR",
+      "quote_currency": "JPY",
+      "base_driver": "EUR",
+      "quote_driver": "JPY"
+    },
+    "EURCHF": {
+      "macro_type": "SYNTHETIC_CROSS",
+      "base_currency": "EUR",
+      "quote_currency": "CHF",
+      "base_driver": "EUR",
+      "quote_driver": "CHF"
+    },
+    "GBPCHF": {
+      "macro_type": "SYNTHETIC_CROSS",
+      "base_currency": "GBP",
+      "quote_currency": "CHF",
+      "base_driver": "GBP",
+      "quote_driver": "CHF"
+    },
+    "AUDCHF": {
+      "macro_type": "SYNTHETIC_CROSS",
+      "base_currency": "AUD",
+      "quote_currency": "CHF",
+      "base_driver": "AUD",
+      "quote_driver": "CHF"
+    },
+    "CADCHF": {
+      "macro_type": "SYNTHETIC_CROSS",
+      "base_currency": "CAD",
+      "quote_currency": "CHF",
+      "base_driver": "CAD",
+      "quote_driver": "CHF"
+    },
+    "NZDCHF": {
+      "macro_type": "SYNTHETIC_CROSS",
+      "base_currency": "NZD",
+      "quote_currency": "CHF",
+      "base_driver": "NZD",
+      "quote_driver": "CHF"
+    },
+    "CHFJPY": {
+      "macro_type": "SYNTHETIC_CROSS",
+      "base_currency": "CHF",
+      "quote_currency": "JPY",
+      "base_driver": "CHF",
+      "quote_driver": "JPY"
     }
   },
   "default_risk_multiplier": 1,

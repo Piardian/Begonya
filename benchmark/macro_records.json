@@ -1,0 +1,813 @@
+[
+  {
+    "macro_record_id": "MACRO-20260905-001",
+    "linked_smc_record_id": "BG-20260905-001",
+    "timestamp_utc": "2026-09-05T09:15:00Z",
+    "timestamp_tsi": "2026-09-05 12:15:00",
+    "symbol": "SOLUSD",
+    "asset_class": "CRYPTO",
+    "base_currency": "SOL",
+    "quote_currency": "USD",
+    "trade_direction": "LONG",
+    "primary_regime": "Late-Cycle Overheating with Global Divergence",
+    "volatility_risk_score": 0.58,
+    "capital_preservation_mode": false,
+    "recommended_risk_multiplier": 0.75,
+    "macro_market_snapshot": {
+      "dxy": 104.15,
+      "us10y": 3.89,
+      "us02y": 3.93,
+      "vix": 15.2,
+      "brent": 78.4,
+      "gold": 2480.0
+    },
+    "currency_scores": {
+      "USD": 1,
+      "EUR": -1,
+      "GBP": -1,
+      "JPY": -1,
+      "CHF": 0,
+      "AUD": 0,
+      "CAD": 0,
+      "NZD": 1
+    },
+    "crypto_macro_metrics": {
+      "btc_gate": "NEUTRAL_ALL",
+      "sol_btc_roc_5d": 3.2,
+      "sol_btc_structure_bullish": true,
+      "crypto_liquidity_bias": "SELECTIVE_RISK_ON"
+    },
+    "cross_pair_verdict": {
+      "base_driver": "SOL (Kripto Beta)",
+      "quote_driver": "USD (Güçlü Dolar)",
+      "net_differential": 0,
+      "recommended_gate": "NEUTRAL_ALL",
+      "gate_alignment": "NEUTRAL_ALLOWED_DISCOUNTED_RISK"
+    },
+    "post_trade_macro_attribution": {
+      "trade_actual_outcome": "BREAK_EVEN",
+      "macro_directional_accuracy": true,
+      "decoupling_detected": false,
+      "failure_attribution": "NONE",
+      "macro_audit_takeaway": "Makro motor NEUTRAL_ALL vererek riski 0.75x ile sınırlandırmış, güçlü USD karşısında aşırı iyimserliği frenlemiştir. Kâr görüldükten sonra BE çekilmesi sermayeyi korumuştur.",
+      "calibration_rule": "DXY > 104 seviyesindeyken kripto long işlemlerinde 0.75x iskonto zorunluluğu sürdürülmelidir."
+    }
+  },
+  {
+    "macro_record_id": "MACRO-20260905-002",
+    "linked_smc_record_id": "BG-20260905-002",
+    "timestamp_utc": "2026-09-05T09:15:00Z",
+    "timestamp_tsi": "2026-09-05 12:15:00",
+    "symbol": "ETHUSD",
+    "asset_class": "CRYPTO",
+    "base_currency": "ETH",
+    "quote_currency": "USD",
+    "trade_direction": "LONG",
+    "primary_regime": "Late-Cycle Overheating with Global Divergence",
+    "volatility_risk_score": 0.55,
+    "capital_preservation_mode": false,
+    "recommended_risk_multiplier": 0.75,
+    "macro_market_snapshot": {
+      "dxy": 104.15,
+      "us10y": 3.89,
+      "us02y": 3.93,
+      "vix": 15.2,
+      "brent": 78.4,
+      "gold": 2480.0
+    },
+    "currency_scores": {
+      "USD": 1,
+      "EUR": -1,
+      "GBP": -1,
+      "JPY": -1,
+      "CHF": 0,
+      "AUD": 0,
+      "CAD": 0,
+      "NZD": 1
+    },
+    "crypto_macro_metrics": {
+      "btc_gate": "LONG_ONLY",
+      "eth_btc_roc_5d": 1.8,
+      "crypto_liquidity_bias": "LONG_ONLY_ALLOWED"
+    },
+    "cross_pair_verdict": {
+      "base_driver": "ETH (Layer 1 Bluechip)",
+      "quote_driver": "USD",
+      "net_differential": 1,
+      "recommended_gate": "LONG_ONLY",
+      "gate_alignment": "ALIGNED"
+    },
+    "post_trade_macro_attribution": {
+      "trade_actual_outcome": "WIN",
+      "macro_directional_accuracy": true,
+      "decoupling_detected": false,
+      "failure_attribution": "NONE",
+      "macro_audit_takeaway": "Makro motor ETHUSD için doğrudan LONG_ONLY kapısı açmış, 2451 denge bölgesinden 2514 karşı likidite hedefine tam isabetle (+2.9R) koşulmuştur.",
+      "calibration_rule": "SMC 15M OB ile Makro LONG_ONLY kapısı senkron olduğunda tam TP alma olasılığı %80'in üzerindedir."
+    }
+  },
+  {
+    "macro_record_id": "MACRO-20260905-003",
+    "linked_smc_record_id": "BG-20260905-003",
+    "timestamp_utc": "2026-09-05T13:45:00Z",
+    "timestamp_tsi": "2026-09-05 16:45:00",
+    "symbol": "SOLUSD",
+    "asset_class": "CRYPTO",
+    "base_currency": "SOL",
+    "quote_currency": "USD",
+    "trade_direction": "LONG",
+    "primary_regime": "Late-Cycle Overheating with Global Divergence",
+    "volatility_risk_score": 0.62,
+    "capital_preservation_mode": false,
+    "recommended_risk_multiplier": 0.75,
+    "macro_market_snapshot": {
+      "dxy": 104.3,
+      "us10y": 3.91,
+      "us02y": 3.96,
+      "vix": 15.8,
+      "brent": 78.9,
+      "gold": 2475.0
+    },
+    "currency_scores": {
+      "USD": 1,
+      "EUR": -1,
+      "GBP": -1,
+      "JPY": -1,
+      "CHF": 0,
+      "AUD": 0,
+      "CAD": 0,
+      "NZD": 1
+    },
+    "crypto_macro_metrics": {
+      "btc_gate": "NEUTRAL_ALL",
+      "sol_btc_roc_5d": 0.8,
+      "crypto_liquidity_bias": "NEUTRAL"
+    },
+    "cross_pair_verdict": {
+      "base_driver": "SOL",
+      "quote_driver": "USD",
+      "net_differential": 0,
+      "recommended_gate": "NEUTRAL_ALL",
+      "gate_alignment": "NEUTRAL"
+    },
+    "post_trade_macro_attribution": {
+      "trade_actual_outcome": "LOSS",
+      "macro_directional_accuracy": false,
+      "decoupling_detected": true,
+      "failure_attribution": "POI_STALENESS_AND_MARKET_FATIGUE",
+      "macro_audit_takeaway": "Makro yönsüz (NEUTRAL_ALL) iken fiyat sinyal anında kutudan %3.5 uzaktaydı. Kutunun test edilmesi 8 saat gecikince New York seansı kapanışında likidite çekildi ve kutu delindi.",
+      "calibration_rule": "Sinyal verildiğinde fiyattan > %2.0 uzakta olan POI'ler makro kapı 'NEUTRAL' ise otomatik olarak iptal edilmelidir."
+    }
+  },
+  {
+    "macro_record_id": "MACRO-20260905-004",
+    "linked_smc_record_id": "BG-20260905-004",
+    "timestamp_utc": "2026-09-05T14:30:00Z",
+    "timestamp_tsi": "2026-09-05 17:30:00",
+    "symbol": "ETHUSD",
+    "asset_class": "CRYPTO",
+    "base_currency": "ETH",
+    "quote_currency": "USD",
+    "trade_direction": "LONG",
+    "primary_regime": "Late-Cycle Overheating with Global Divergence",
+    "volatility_risk_score": 0.65,
+    "capital_preservation_mode": false,
+    "recommended_risk_multiplier": 0.75,
+    "macro_market_snapshot": {
+      "dxy": 104.35,
+      "us10y": 3.92,
+      "us02y": 3.98,
+      "vix": 16.1,
+      "brent": 79.1,
+      "gold": 2470.0
+    },
+    "currency_scores": {
+      "USD": 1,
+      "EUR": -1,
+      "GBP": -1,
+      "JPY": -1,
+      "CHF": 0,
+      "AUD": 0,
+      "CAD": 0,
+      "NZD": 1
+    },
+    "crypto_macro_metrics": {
+      "btc_gate": "NEUTRAL_ALL",
+      "eth_btc_roc_5d": -0.5,
+      "crypto_liquidity_bias": "WEAKENING"
+    },
+    "cross_pair_verdict": {
+      "base_driver": "ETH",
+      "quote_driver": "USD",
+      "net_differential": -1,
+      "recommended_gate": "NEUTRAL_RANGE",
+      "gate_alignment": "CONTRARY_WARNING"
+    },
+    "post_trade_macro_attribution": {
+      "trade_actual_outcome": "LOSS",
+      "macro_directional_accuracy": true,
+      "decoupling_detected": false,
+      "failure_attribution": "PREMIUM_OVERBOUGHT_REVERSAL",
+      "macro_audit_takeaway": "İlk kârlı ETH işleminden sonra 4H grafiği aşırı pahalı (Premium) bölgeye girmişti. Makro US02Y yükselişiyle dolar baskı kurdu ve 15M kutusu tutmadı.",
+      "calibration_rule": "Aynı paritede 4H Premium bölgede art arda 2. Long sinyali geldiğinde makro kapı zorunlu VETO çekmelidir."
+    }
+  },
+  {
+    "macro_record_id": "MACRO-20260907-001",
+    "linked_smc_record_id": "BG-20260907-001",
+    "timestamp_utc": "2026-09-07T08:00:00Z",
+    "timestamp_tsi": "2026-09-07 11:00:00",
+    "symbol": "USDJPY",
+    "asset_class": "FX_MAJOR",
+    "base_currency": "USD",
+    "quote_currency": "JPY",
+    "trade_direction": "SHORT",
+    "primary_regime": "Late-Cycle Overheating with Global Divergence",
+    "volatility_risk_score": 0.6,
+    "capital_preservation_mode": false,
+    "recommended_risk_multiplier": 0.75,
+    "macro_market_snapshot": {
+      "dxy": 104.25,
+      "us10y": 3.88,
+      "us02y": 3.94,
+      "vix": 15.5,
+      "brent": 78.5,
+      "gold": 2485.0
+    },
+    "currency_scores": {
+      "USD": 1,
+      "JPY": -1,
+      "EUR": -1,
+      "GBP": -1,
+      "CHF": 0,
+      "AUD": 0,
+      "CAD": 0,
+      "NZD": 1
+    },
+    "cross_pair_verdict": {
+      "base_driver": "USD (+1)",
+      "quote_driver": "JPY (-1 carry açığı)",
+      "net_differential": 2,
+      "recommended_gate": "LONG_ONLY",
+      "gate_alignment": "CONTRARY"
+    },
+    "post_trade_macro_attribution": {
+      "trade_actual_outcome": "PENDING_RETEST",
+      "macro_directional_accuracy": true,
+      "decoupling_detected": false,
+      "failure_attribution": "NONE_PENDING",
+      "macro_audit_takeaway": "Makro motor USDJPY için LONG_ONLY derken SMC 156.132 OB seviyesinden SHORT sinyali üretti. Fiyat kutuya girmeyip aşağı süzüldü; retest bekleniyor.",
+      "calibration_rule": "USDJPY carry makası açıkken (USD +1, JPY -1) SHORT işlemleri yüksek riskli sınıflandırılmalı ve 0.50x risk tavanı konmalıdır."
+    }
+  },
+  {
+    "macro_record_id": "MACRO-20260907-002",
+    "linked_smc_record_id": "BG-20260907-002",
+    "timestamp_utc": "2026-09-07T08:15:00Z",
+    "timestamp_tsi": "2026-09-07 11:15:00",
+    "symbol": "NZDUSD",
+    "asset_class": "FX_MAJOR",
+    "base_currency": "NZD",
+    "quote_currency": "USD",
+    "trade_direction": "SHORT",
+    "primary_regime": "Late-Cycle Overheating with Global Divergence",
+    "volatility_risk_score": 0.56,
+    "capital_preservation_mode": false,
+    "recommended_risk_multiplier": 0.75,
+    "macro_market_snapshot": {
+      "dxy": 104.25,
+      "us10y": 3.88,
+      "us02y": 3.94,
+      "vix": 15.5,
+      "brent": 78.5,
+      "gold": 2485.0
+    },
+    "currency_scores": {
+      "USD": 1,
+      "NZD": 0,
+      "EUR": -1,
+      "GBP": -1,
+      "JPY": -1,
+      "CHF": 0,
+      "AUD": 0,
+      "CAD": 0
+    },
+    "cross_pair_verdict": {
+      "base_driver": "NZD (0)",
+      "quote_driver": "USD (+1)",
+      "net_differential": -1,
+      "recommended_gate": "SHORT_ONLY",
+      "gate_alignment": "ALIGNED"
+    },
+    "post_trade_macro_attribution": {
+      "trade_actual_outcome": "WIN",
+      "macro_directional_accuracy": true,
+      "decoupling_detected": false,
+      "failure_attribution": "NONE",
+      "macro_audit_takeaway": "Doların küresel gücü (USD +1) karşısında NZDUSD SAT işlemi açıldı ve pozisyon +2.67R (+2.000 $) dev kâr ile hedefine ulaştı.",
+      "calibration_rule": "Dolar majörlerinde DXY lehine açılan pozisyonlarda (USD bacağı doğru yöndeyse) TP başarı katsayısı en yüksek seviyededir."
+    }
+  },
+  {
+    "macro_record_id": "MACRO-20260907-003",
+    "linked_smc_record_id": "BG-20260907-003",
+    "timestamp_utc": "2026-09-07T08:30:00Z",
+    "timestamp_tsi": "2026-09-07 11:30:00",
+    "symbol": "EURCHF",
+    "asset_class": "FX_CROSS",
+    "base_currency": "EUR",
+    "quote_currency": "CHF",
+    "trade_direction": "SHORT",
+    "primary_regime": "Late-Cycle Overheating with Global Divergence",
+    "volatility_risk_score": 0.58,
+    "capital_preservation_mode": false,
+    "recommended_risk_multiplier": 0.75,
+    "macro_market_snapshot": {
+      "dxy": 104.25,
+      "us10y": 3.88,
+      "us02y": 3.94,
+      "vix": 15.5,
+      "brent": 78.5,
+      "gold": 2485.0
+    },
+    "currency_scores": {
+      "EUR": -1,
+      "CHF": 1,
+      "USD": 1,
+      "GBP": -1,
+      "JPY": -1,
+      "AUD": 0,
+      "CAD": 0,
+      "NZD": 0
+    },
+    "cross_pair_verdict": {
+      "base_driver": "EUR (-1 Euro Bölgesi Enerji/Büyüme Zayıflığı)",
+      "quote_driver": "CHF (+1 Jeopolitik Güvenli Liman Talebi)",
+      "net_differential": -2,
+      "recommended_gate": "SHORT_ONLY",
+      "gate_alignment": "ALIGNED"
+    },
+    "post_trade_macro_attribution": {
+      "trade_actual_outcome": "WIN_PARTIAL_TP_AND_BE",
+      "macro_directional_accuracy": true,
+      "decoupling_detected": false,
+      "failure_attribution": "NONE",
+      "macro_audit_takeaway": "EUR -1 ve CHF +1 net skoru (-2) mükemmel bir SHORT_ONLY kapısı üretmiştir. Fiyat hızla kâra geçmiş, kısmi kâr alınarak (+325 $) risksiz kapatılmıştır.",
+      "calibration_rule": "Avrupa çaprazlarında (EURCHF, GBPCHF) net makas farkı |Δ| >= 2 olduğunda makro kapı kesin kâr yönlendiricidir."
+    }
+  },
+  {
+    "macro_record_id": "MACRO-20260908-001",
+    "linked_smc_record_id": "BG-20260908-001",
+    "timestamp_utc": "2026-09-08T09:00:00Z",
+    "timestamp_tsi": "2026-09-08 12:00:00",
+    "symbol": "USDCHF",
+    "asset_class": "FX_MAJOR",
+    "base_currency": "USD",
+    "quote_currency": "CHF",
+    "trade_direction": "LONG",
+    "primary_regime": "Late-Cycle Overheating with Global Divergence",
+    "volatility_risk_score": 0.54,
+    "capital_preservation_mode": false,
+    "recommended_risk_multiplier": 0.75,
+    "macro_market_snapshot": {
+      "dxy": 104.4,
+      "us10y": 3.9,
+      "us02y": 3.95,
+      "vix": 14.8,
+      "brent": 77.8,
+      "gold": 2490.0
+    },
+    "currency_scores": {
+      "USD": 1,
+      "CHF": -1,
+      "EUR": -1,
+      "GBP": -1,
+      "JPY": -1,
+      "AUD": 0,
+      "CAD": 0,
+      "NZD": 0
+    },
+    "cross_pair_verdict": {
+      "base_driver": "USD (+1 Getiri Avantajı)",
+      "quote_driver": "CHF (-1 VIX < 16 Düşük Oynaklıkta SNB Faiz Dezavantajı)",
+      "net_differential": 2,
+      "recommended_gate": "LONG_ONLY",
+      "gate_alignment": "ALIGNED"
+    },
+    "post_trade_macro_attribution": {
+      "trade_actual_outcome": "WIN",
+      "macro_directional_accuracy": true,
+      "decoupling_detected": false,
+      "failure_attribution": "NONE",
+      "macro_audit_takeaway": "VIX 14.8 seviyesine inince CHF güvenli liman primini kaybetti (CHF -1), güçlü Dolar (USD +1) ile birleşince USDCHF AL işlemi 2.0R (+1.500 $) tam TP ile kapandı.",
+      "calibration_rule": "VIX < 16 olduğunda CHF zayıflığına oynayan USDCHF LONG işlemleri kurumsal kalitededir."
+    }
+  },
+  {
+    "macro_record_id": "MACRO-20260908-002",
+    "linked_smc_record_id": "BG-20260908-002",
+    "timestamp_utc": "2026-09-08T14:00:00Z",
+    "timestamp_tsi": "2026-09-08 17:00:00",
+    "symbol": "SOLUSD",
+    "asset_class": "CRYPTO",
+    "base_currency": "SOL",
+    "quote_currency": "USD",
+    "trade_direction": "LONG",
+    "primary_regime": "Late-Cycle Overheating with Global Divergence",
+    "volatility_risk_score": 0.64,
+    "capital_preservation_mode": false,
+    "recommended_risk_multiplier": 0.75,
+    "macro_market_snapshot": {
+      "dxy": 104.45,
+      "us10y": 3.92,
+      "us02y": 3.97,
+      "vix": 16.2,
+      "brent": 78.2,
+      "gold": 2480.0
+    },
+    "currency_scores": {
+      "USD": 1,
+      "EUR": -1,
+      "GBP": -1,
+      "JPY": -1,
+      "CHF": 0,
+      "AUD": 0,
+      "CAD": 0,
+      "NZD": 0
+    },
+    "crypto_macro_metrics": {
+      "btc_gate": "DEFENSIVE_HOLD",
+      "sol_btc_roc_5d": -1.2,
+      "sol_btc_structure_bullish": false,
+      "crypto_liquidity_bias": "RISK_OFF"
+    },
+    "cross_pair_verdict": {
+      "base_driver": "SOL",
+      "quote_driver": "USD",
+      "net_differential": -1,
+      "recommended_gate": "NEUTRAL_RANGE",
+      "gate_alignment": "CONTRARY"
+    },
+    "post_trade_macro_attribution": {
+      "trade_actual_outcome": "LOSS",
+      "macro_directional_accuracy": true,
+      "decoupling_detected": false,
+      "failure_attribution": "HTF_COUNTER_TREND_AGAINST_STRONG_USD",
+      "macro_audit_takeaway": "Makro motor DXY yükselirken SOL için DEFENSIVE_HOLD sinyali üretti. SMC 15M AL kurulumu ana trende karşı kalarak stop oldu (-750 $).",
+      "calibration_rule": "SOL/BTC 5G ivmesi negatif ve BTC savunma modundayken SMC AL sinyalleri sert VETO edilmelidir."
+    }
+  },
+  {
+    "macro_record_id": "MACRO-20260908-003",
+    "linked_smc_record_id": "BG-20260908-003",
+    "timestamp_utc": "2026-09-08T15:00:00Z",
+    "timestamp_tsi": "2026-09-08 18:00:00",
+    "symbol": "LTCUSD",
+    "asset_class": "CRYPTO",
+    "base_currency": "LTC",
+    "quote_currency": "USD",
+    "trade_direction": "LONG",
+    "primary_regime": "Late-Cycle Overheating with Global Divergence",
+    "volatility_risk_score": 0.65,
+    "capital_preservation_mode": false,
+    "recommended_risk_multiplier": 0.75,
+    "macro_market_snapshot": {
+      "dxy": 104.5,
+      "us10y": 3.93,
+      "us02y": 3.98,
+      "vix": 16.4,
+      "brent": 78.5,
+      "gold": 2478.0
+    },
+    "currency_scores": {
+      "USD": 1,
+      "EUR": -1,
+      "GBP": -1,
+      "JPY": -1,
+      "CHF": 0,
+      "AUD": 0,
+      "CAD": 0,
+      "NZD": 0
+    },
+    "crypto_macro_metrics": {
+      "btc_gate": "DEFENSIVE_HOLD",
+      "crypto_liquidity_bias": "DEFENSIVE"
+    },
+    "cross_pair_verdict": {
+      "base_driver": "LTC",
+      "quote_driver": "USD",
+      "net_differential": -1,
+      "recommended_gate": "NEUTRAL_RANGE",
+      "gate_alignment": "CONTRARY"
+    },
+    "post_trade_macro_attribution": {
+      "trade_actual_outcome": "INVALID_NO_ENTRY",
+      "macro_directional_accuracy": true,
+      "decoupling_detected": false,
+      "failure_attribution": "AVERTED_BY_M1_EXECUTION_AND_MACRO",
+      "macro_audit_takeaway": "Makro yönsüz/zayıf iken gelen LTC sinyalinde M1 teyidi beklenmiş, teyit gelmeyip kutu delindiği için işlem açılmamış ve 750$ kurtarılmıştır.",
+      "calibration_rule": "Makro rüzgar arkada değilken M1 manuel teyit kuralı tavizsiz uygulanmalıdır."
+    }
+  },
+  {
+    "macro_record_id": "MACRO-20260910-001",
+    "linked_smc_record_id": "BG-20260910-001",
+    "timestamp_utc": "2026-09-10T09:15:00Z",
+    "timestamp_tsi": "2026-09-10 12:15:00",
+    "symbol": "GBPCHF",
+    "asset_class": "FX_CROSS",
+    "base_currency": "GBP",
+    "quote_currency": "CHF",
+    "trade_direction": "LONG",
+    "primary_regime": "Late-Cycle Overheating with Global Divergence",
+    "volatility_risk_score": 0.6,
+    "capital_preservation_mode": false,
+    "recommended_risk_multiplier": 0.75,
+    "macro_market_snapshot": {
+      "dxy": 103.85,
+      "us10y": 3.73,
+      "us02y": 3.66,
+      "vix": 16.8,
+      "brent": 73.4,
+      "gold": 2510.0
+    },
+    "currency_scores": {
+      "GBP": 0,
+      "CHF": 1,
+      "USD": 1,
+      "EUR": -1,
+      "JPY": -1,
+      "AUD": 0,
+      "CAD": 0,
+      "NZD": 1
+    },
+    "cross_pair_verdict": {
+      "base_driver": "GBP (0 Dengeli)",
+      "quote_driver": "CHF (+1 Güvenli Liman Talebi)",
+      "net_differential": -1,
+      "recommended_gate": "SHORT_ONLY",
+      "gate_alignment": "CONTRARY"
+    },
+    "post_trade_macro_attribution": {
+      "trade_actual_outcome": "ACTIVE_RUNNER_1ST_TP_HIT",
+      "macro_directional_accuracy": false,
+      "decoupling_detected": true,
+      "failure_attribution": "LOCAL_M15_SCALP_REACTION",
+      "macro_audit_takeaway": "Makro motor GBPCHF için SHORT yönünü tercih ederken SMC 15M Bullish FVG'den yerel tepki alarak ilk hedefi vurdu (+281.25 $) ve ardından ana makro yöne döndü.",
+      "calibration_rule": "Makroya ters 15M scalplerde ilk TP'de pozisyonun %70'i kapatılmalı ve stop hemen BE seviyesine çekilmelidir."
+    }
+  },
+  {
+    "macro_record_id": "MACRO-20260910-002",
+    "linked_smc_record_id": "BG-20260910-002",
+    "timestamp_utc": "2026-09-10T10:20:00Z",
+    "timestamp_tsi": "2026-09-10 13:20:00",
+    "symbol": "GBPCHF",
+    "asset_class": "FX_CROSS",
+    "base_currency": "GBP",
+    "quote_currency": "CHF",
+    "trade_direction": "SHORT",
+    "primary_regime": "Late-Cycle Overheating with Global Divergence",
+    "volatility_risk_score": 0.6,
+    "capital_preservation_mode": false,
+    "recommended_risk_multiplier": 0.75,
+    "macro_market_snapshot": {
+      "dxy": 103.85,
+      "us10y": 3.73,
+      "us02y": 3.66,
+      "vix": 16.8,
+      "brent": 73.4,
+      "gold": 2510.0
+    },
+    "currency_scores": {
+      "GBP": -1,
+      "CHF": 1,
+      "USD": 1,
+      "EUR": -1,
+      "JPY": -1,
+      "AUD": 0,
+      "CAD": 0,
+      "NZD": 1
+    },
+    "cross_pair_verdict": {
+      "base_driver": "GBP (-1 BOE Faiz İndirimi Beklentisi)",
+      "quote_driver": "CHF (+1 Güvenli Liman Talebi)",
+      "net_differential": -2,
+      "recommended_gate": "SHORT_ONLY",
+      "gate_alignment": "ALIGNED"
+    },
+    "post_trade_macro_attribution": {
+      "trade_actual_outcome": "LOSS",
+      "macro_directional_accuracy": false,
+      "decoupling_detected": true,
+      "failure_attribution": "LOCAL_SMC_SUPPORT_AND_COUNTER_HTF",
+      "macro_audit_takeaway": "Makro SHORT_ONLY yönü teoride çok doğruydu (Net -2); ancak teknik tarafta 15M satışı doğrudan 1H/4H majör destek bölgesinin tavanında tetiklendi. Yerel teknik alıcılar makroyu ezerek stop etti (-450 $).",
+      "calibration_rule": "Makro skor ne kadar güçlü olursa olsun, teknik POI 1H/4H ana destek seviyesine çarpıyorsa işlem VETO edilmeli veya 0.50x riskle sınırlandırılmalıdır."
+    }
+  },
+  {
+    "macro_record_id": "MACRO-20260910-003",
+    "linked_smc_record_id": "BG-20260910-003",
+    "timestamp_utc": "2026-09-10T11:00:00Z",
+    "timestamp_tsi": "2026-09-10 14:00:00",
+    "symbol": "USDJPY",
+    "asset_class": "FX_MAJOR",
+    "base_currency": "USD",
+    "quote_currency": "JPY",
+    "trade_direction": "SHORT",
+    "primary_regime": "Late-Cycle Overheating with Global Divergence",
+    "volatility_risk_score": 0.62,
+    "capital_preservation_mode": false,
+    "recommended_risk_multiplier": 0.75,
+    "macro_market_snapshot": {
+      "dxy": 103.8,
+      "us10y": 3.71,
+      "us02y": 3.64,
+      "vix": 16.9,
+      "brent": 73.1,
+      "gold": 2515.0
+    },
+    "currency_scores": {
+      "USD": -1,
+      "JPY": 1,
+      "EUR": -1,
+      "GBP": -1,
+      "CHF": 1,
+      "AUD": 0,
+      "CAD": 0,
+      "NZD": 1
+    },
+    "cross_pair_verdict": {
+      "base_driver": "USD (-1 US02Y 3.64% Seviyesine İndi)",
+      "quote_driver": "JPY (+1 Carry Çözülmesi)",
+      "net_differential": -2,
+      "recommended_gate": "SHORT_ONLY",
+      "gate_alignment": "ALIGNED"
+    },
+    "post_trade_macro_attribution": {
+      "trade_actual_outcome": "ACTIVE_IN_POSITION",
+      "macro_directional_accuracy": true,
+      "decoupling_detected": false,
+      "failure_attribution": "NONE_ACTIVE",
+      "macro_audit_takeaway": "US 2Y tahvil getirisinin 3.64'e gerilemesi ve DXY zayıflığıyla USDJPY carry makası kapandı. 153.821 OB'den açılan SHORT işlemi 153.09 EQL hedefine doğru kârda taşınıyor.",
+      "calibration_rule": "US02Y düşüş trendindeyken JPY güçlenmesi en yüksek R potansiyeline sahip makro kurulumdur."
+    }
+  },
+  {
+    "macro_record_id": "MACRO-20260915-001",
+    "linked_smc_record_id": "BG-20260915-001",
+    "timestamp_utc": "2026-09-15T00:30:00Z",
+    "timestamp_tsi": "2026-09-15 03:30:00",
+    "symbol": "USDCHF",
+    "asset_class": "FX_MAJOR",
+    "base_currency": "USD",
+    "quote_currency": "CHF",
+    "trade_direction": "SHORT",
+    "primary_regime": "Late-Cycle Overheating with Global Divergence",
+    "volatility_risk_score": 0.78,
+    "capital_preservation_mode": true,
+    "recommended_risk_multiplier": 0.25,
+    "macro_market_snapshot": {
+      "dxy": 103.75,
+      "us10y": 3.70,
+      "us02y": 3.62,
+      "vix": 17.8,
+      "brent": 73.2,
+      "gold": 2525.0
+    },
+    "currency_scores": {
+      "USD": -1,
+      "CHF": 1,
+      "EUR": -1,
+      "GBP": -1,
+      "JPY": 1,
+      "AUD": 0,
+      "CAD": 0,
+      "NZD": 1
+    },
+    "cross_pair_verdict": {
+      "base_driver": "USD (-1 US02Y Gerilemesi & Dolar İvme Kaybı)",
+      "quote_driver": "CHF (+1 Jeopolitik ve Altın Destekli Güvenli Liman Talebi)",
+      "net_differential": -2,
+      "recommended_gate": "SHORT_ONLY",
+      "gate_alignment": "ALIGNED"
+    },
+    "post_trade_macro_attribution": {
+      "trade_actual_outcome": "LOSS",
+      "macro_directional_accuracy": false,
+      "decoupling_detected": true,
+      "failure_attribution": "US_YIELD_SPIKE_AND_DATA_REVERSAL",
+      "macro_audit_takeaway": "Sinyal günü Dolar zayıf ve Frank güçlü iken (Net: -2 SHORT) 0.81897'den girilen işlem kâr gördü; ancak 16 Eylül seansında ABD 2 yıllık faizlerinin (+18.5 bps) sıçraması ve Core CPI verisi Dolar'ı fırlatarak 0.8196 seviyesindeki stopu vurdu. Makro motorun önerdiği 0.25x lot sermaye koruma boyutu zararı 250$ (-0.25 R) ile sınırlamış, 750$ ilave kaybı engellemiştir.",
+      "calibration_rule": "Pozisyon kâra geçtikten sonra ve makro rejim NEUTRAL_RANGE'e döndüğünde, yüksek etkili ABD verisi (CPI/NFP) öncesinde stop derhal BE seviyesine çekilmeli veya pozisyon kapatılmalıdır."
+    }
+  },
+  {
+    "macro_record_id": "MACRO-20260915-002",
+    "linked_smc_record_id": "BG-20260915-002",
+    "timestamp_utc": "2026-09-15T04:15:00Z",
+    "timestamp_tsi": "2026-09-15 07:15:00",
+    "symbol": "BTCUSD",
+    "asset_class": "CRYPTO",
+    "base_currency": "BTC",
+    "quote_currency": "USD",
+    "trade_direction": "LONG",
+    "primary_regime": "Late-Cycle Overheating with Global Divergence",
+    "volatility_risk_score": 0.78,
+    "capital_preservation_mode": true,
+    "recommended_risk_multiplier": 0.19,
+    "macro_market_snapshot": {
+      "dxy": 103.8,
+      "us10y": 3.7,
+      "us02y": 3.63,
+      "vix": 17.8,
+      "brent": 73.2,
+      "gold": 2525.0
+    },
+    "currency_scores": {
+      "USD": -1,
+      "BTC": 1,
+      "CHF": 1,
+      "EUR": -1,
+      "GBP": -1,
+      "JPY": 1,
+      "AUD": 0,
+      "CAD": 0,
+      "NZD": 1
+    },
+    "crypto_macro_metrics": {
+      "btc_gate": "LONG_ONLY",
+      "crypto_liquidity_bias": "LONG_ONLY_DISCOUNTED_RISK"
+    },
+    "cross_pair_verdict": {
+      "base_driver": "BTC (Kripto Likidite)",
+      "quote_driver": "USD (Zayıflayan Dolar)",
+      "net_differential": 2,
+      "recommended_gate": "LONG_ONLY",
+      "gate_alignment": "ALIGNED"
+    },
+    "post_trade_macro_attribution": {
+      "trade_actual_outcome": "INVALID_NO_ENTRY",
+      "macro_directional_accuracy": true,
+      "decoupling_detected": false,
+      "failure_attribution": "AVERTED_BY_M1_EXECUTION",
+      "macro_audit_takeaway": "Makro yönü BTC için LONG_ONLY onayladı ancak volatilite kalkanı 0.19x risk iskonto etti. M1 icra teyidi gelmediği için işlem açılmadı ve sermaye tam korundu.",
+      "calibration_rule": "Makro kapı açık olsa dahi M1 onayı olmadan emir tetiklenmemesi sermaye koruma disiplininin temelidir."
+    }
+  },
+  {
+    "macro_record_id": "MACRO-20260915-003",
+    "linked_smc_record_id": "BG-20260915-003",
+    "timestamp_utc": "2026-09-15T04:45:00Z",
+    "timestamp_tsi": "2026-09-15 07:45:00",
+    "symbol": "SOLUSD",
+    "asset_class": "CRYPTO",
+    "base_currency": "SOL",
+    "quote_currency": "USD",
+    "trade_direction": "LONG",
+    "primary_regime": "Late-Cycle Overheating with Global Divergence",
+    "volatility_risk_score": 0.78,
+    "capital_preservation_mode": true,
+    "recommended_risk_multiplier": 0.19,
+    "macro_market_snapshot": {
+      "dxy": 103.8,
+      "us10y": 3.7,
+      "us02y": 3.63,
+      "vix": 17.8,
+      "brent": 73.2,
+      "gold": 2525.0
+    },
+    "currency_scores": {
+      "USD": -1,
+      "SOL": 1,
+      "BTC": 1,
+      "CHF": 1,
+      "EUR": -1,
+      "GBP": -1,
+      "JPY": 1,
+      "AUD": 0,
+      "CAD": 0,
+      "NZD": 1
+    },
+    "crypto_macro_metrics": {
+      "btc_gate": "LONG_ONLY",
+      "sol_btc_roc_5d": 1.5,
+      "crypto_liquidity_bias": "LONG_ONLY_DEFENSIVE_SIZE"
+    },
+    "cross_pair_verdict": {
+      "base_driver": "SOL (Yüksek Beta Kripto)",
+      "quote_driver": "USD (Zayıflayan Dolar)",
+      "net_differential": 2,
+      "recommended_gate": "LONG_ONLY",
+      "gate_alignment": "ALIGNED"
+    },
+    "post_trade_macro_attribution": {
+      "trade_actual_outcome": "INVALID_NO_ENTRY",
+      "macro_directional_accuracy": true,
+      "decoupling_detected": false,
+      "failure_attribution": "AVERTED_BY_M1_EXECUTION",
+      "macro_audit_takeaway": "Makro yönü LONG_ONLY onaylı ve 0.19x defansif risk tahsisliydi. M1 teyidi gelmediği için emir açılmadı, sermaye korundu.",
+      "calibration_rule": "M1 manuel teyit kuralı kripto volatilite seanslarında sermayeyi sıfır kayıpla korumaya devam etmektedir."
+    }
+  }
+]

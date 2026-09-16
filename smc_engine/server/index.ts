@@ -11,6 +11,7 @@ import { QueuedSignalDelivery, SignalDeliveryQueue } from './signalDeliveryQueue
 import { createSignalDeliveryProcessor } from './signalDeliveryProcessor';
 import { probeTelegramConnection } from './telegramSender';
 import { acquireRuntimeInstanceLock, RuntimeInstanceLock } from './runtimeInstanceLock';
+import { evaluateHardMarketWindow } from './killzone';
 
 const port = environmentInteger('PORT', 3000);
 const symbols: Symbol[] = [...ALL_SYMBOLS];
@@ -157,6 +158,11 @@ async function executeAlignedPollingCycle(
   console.log(`[Scheduler] ${now.toISOString()} - Executing aligned polling cycle (4h=${is4HourClose}, 1h=${isHourClose}, 15m=true)...`);
 
   for (const symbol of symbols) {
+    const marketWindow = evaluateHardMarketWindow(now, symbol);
+    if (!marketWindow.active) {
+      // Market is closed (e.g. weekend, Friday post-close) -> skip to preserve TwelveData API quota
+      continue;
+    }
     if (is4HourClose) {
       void runTrackedPoll(symbol, '4h', candleStore, notifiedStore, deliveryQueue);
     }
@@ -164,6 +170,8 @@ async function executeAlignedPollingCycle(
       void runTrackedPoll(symbol, '1h', candleStore, notifiedStore, deliveryQueue);
     }
     void runTrackedPoll(symbol, '15m', candleStore, notifiedStore, deliveryQueue);
+    // Pacing delay to avoid burst queue spikes
+    await new Promise(resolve => setTimeout(resolve, 150));
   }
 }
 

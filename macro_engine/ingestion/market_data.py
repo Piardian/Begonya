@@ -81,6 +81,14 @@ class MarketDataIngestion:
             "VIX": {"value": 14.50, "prev": 14.80, "val_5d_ago": 15.20, "month_ago": 16.00, "change_pct": -2.03, "change_pct_5d": -4.61, "change_pct_4w": -9.38, "history_close": [15.2, 15.0, 14.8, 14.5]},
             "HYG": {"value": 79.20, "prev": 79.15, "val_5d_ago": 79.10, "month_ago": 78.80, "change_pct": 0.06, "change_pct_5d": 0.13, "change_pct_4w": 0.51, "history_close": [79.1, 79.12, 79.15, 79.20]},
             "LQD": {"value": 105.50, "prev": 105.40, "val_5d_ago": 105.30, "month_ago": 104.80, "change_pct": 0.09, "change_pct_5d": 0.19, "change_pct_4w": 0.67, "history_close": [105.3, 105.35, 105.4, 105.5]},
-            "EUR_BOND": {"value": 181.00, "prev": 180.80, "val_5d_ago": 180.50, "month_ago": 179.80, "change_pct": 0.11, "change_pct_5d": 0.28, "change_pct_4w": 0.67, "history_close": [180.5, 180.6, 180.8, 181.0]}
+            "EUR_BOND": {"value": 181.00, "prev": 180.80, "val_5d_ago": 180.50, "month_ago": 179.80, "change_pct": 0.11, "change_pct_5d": 0.28, "change_pct_4w": 0.67, "history_close": [180.5, 180.6, 180.8, 181.0]},
+            "SOL": {"value": 145.0, "prev": 142.0, "val_5d_ago": 138.0, "month_ago": 135.0, "change_pct": 2.11, "change_pct_5d": 5.07, "change_pct_4w": 7.41, "history_close": [138.0, 140.0, 142.0, 145.0]},
+            "CA02Y": {"value": 3.10, "prev": 3.12, "val_5d_ago": 3.15, "month_ago": 3.25, "change_pct": -0.64, "change_pct_5d": -1.59, "change_pct_4w": -4.62, "history_close": [3.15, 3.14, 3.12, 3.10]},
+            "DE02Y": {"value": 2.35, "prev": 2.37, "val_5d_ago": 2.40, "month_ago": 2.50, "change_pct": -0.84, "change_pct_5d": -2.08, "change_pct_4w": -6.00, "history_close": [2.40, 2.38, 2.37, 2.35]},
+            "GB02Y": {"value": 3.85, "prev": 3.88, "val_5d_ago": 3.90, "month_ago": 4.02, "change_pct": -0.77, "change_pct_5d": -1.28, "change_pct_4w": -4.23, "history_close": [3.90, 3.89, 3.88, 3.85]},
+            "AU02Y": {"value": 3.65, "prev": 3.68, "val_5d_ago": 3.70, "month_ago": 3.80, "change_pct": -0.81, "change_pct_5d": -1.35, "change_pct_4w": -3.95, "history_close": [3.70, 3.69, 3.68, 3.65]},
+            "IRON_ORE": {"value": 102.5, "prev": 101.8, "val_5d_ago": 100.2, "month_ago": 98.5, "change_pct": 0.69, "change_pct_5d": 2.29, "change_pct_4w": 4.06, "history_close": [100.2, 101.0, 101.8, 102.5]},
+            "DAIRY_GDT": {"value": 3250.0, "prev": 3230.0, "val_5d_ago": 3200.0, "month_ago": 3150.0, "change_pct": 0.62, "change_pct_5d": 1.56, "change_pct_4w": 3.17, "history_close": [3200.0, 3215.0, 3230.0, 3250.0]},
+            "NZ02Y": {"value": 3.80, "prev": 3.82, "val_5d_ago": 3.85, "month_ago": 3.95, "change_pct": -0.52, "change_pct_5d": -1.30, "change_pct_4w": -3.80, "history_close": [3.85, 3.84, 3.82, 3.80]}
         }
         return fallbacks.get(name, {"value": 100.0, "prev": 100.0, "val_5d_ago": 100.0, "month_ago": 100.0, "change_pct": 0.0, "change_pct_5d": 0.0, "change_pct_4w": 0.0, "history_close": [100.0, 100.0]})

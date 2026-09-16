@@ -51,30 +51,24 @@ class ExecutionBiasBridge:
         sym_key = symbol.upper()
         allowed_bias = gates.get(sym_key)
 
-        # Eğer sembol için özel kapı tanımlanmamışsa varsayılan olarak izin ver
-        if not allowed_bias or allowed_bias in ["NEUTRAL_ALL", "ALL"]:
-            return True, f"Makro Rejim ({regime}) nötr; işleme izin verildi."
-
-        if allowed_bias == "NEUTRAL_RANGE":
-            return True, f"Makro Rejim ({regime}) {sym_key} için NEUTRAL_RANGE (Enerji / Dış Ticaret Hadleri Kısıtı); kontrollü bant işlemine izin verildi."
-
-        if allowed_bias == "NO_TRADE":
-            return False, f"Makro Stratejist {sym_key} için NO_TRADE rejiminde."
-
-        if allowed_bias == "DEFENSIVE_HOLD":
-            return False, f"Makro Rejim ({regime}) {sym_key} için DEFENSIVE_HOLD (Sermaye Koruma Modu); yeni yönlü pozisyon açılışı engellendi."
-
-        if allowed_bias == "REDUCE_ONLY":
-            return False, f"Makro Rejim ({regime}) {sym_key} için REDUCE_ONLY (Yüksek Risk); yeni risk açılması engellendi."
-
         req_upper = requested_action.upper()
-        if allowed_bias == "LONG_ONLY" and req_upper == "SELL":
-            return False, f"Makro Rejim ({regime}) {sym_key} için LONG_ONLY; SELL işlemi engellendi."
+        if allowed_bias == "LONG_ONLY":
+            if req_upper in ["BUY", "LONG"]:
+                return True, f"İşlem yönü ({requested_action}) makro rejimle ({allowed_bias}) doğru orantılı ve tam uyumlu."
+            return False, f"Makro Rejim ({regime}) {sym_key} için LONG_ONLY; {requested_action} işlemi engellendi (Ters orantılı)."
 
-        if allowed_bias == "SHORT_ONLY" and req_upper == "BUY":
-            return False, f"Makro Rejim ({regime}) {sym_key} için SHORT_ONLY; BUY işlemi engellendi."
+        if allowed_bias == "SHORT_ONLY":
+            if req_upper in ["SELL", "SHORT"]:
+                return True, f"İşlem yönü ({requested_action}) makro rejimle ({allowed_bias}) doğru orantılı ve tam uyumlu."
+            return False, f"Makro Rejim ({regime}) {sym_key} için SHORT_ONLY; {requested_action} işlemi engellendi (Ters orantılı)."
 
-        return True, f"İşlem yönü ({requested_action}) makro rejimle ({allowed_bias}) tam uyumlu."
+        if allowed_bias in ["DEFENSIVE_HOLD", "NO_TRADE", "REDUCE_ONLY"]:
+            return False, f"Makro Rejim ({regime}) {sym_key} için {allowed_bias} (Savunma Modu); yeni işlem açılamaz."
+
+        if allowed_bias in ["NEUTRAL_RANGE", "NEUTRAL_ALL", "ALL"] or not allowed_bias:
+            return False, f"Makro Rejim ({regime}) {sym_key} için nötr / yönsüzdür ({allowed_bias or 'TANIMSIZ'}). Yalnızca makro ile doğru orantılı işlemlere izin verilir."
+
+        return False, f"Makro kapı kısıtı ({allowed_bias}) nedeniyle işlem engellendi."
 
     def get_risk_profile(self) -> Dict[str, Any]:
         """Sermaye koruma modu ve önerilen risk çarpanını döndürür."""

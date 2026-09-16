@@ -1,9 +1,10 @@
 import math
 import logging
 import json
+import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-from config import HYSTERESIS_CONFIG, BIAS_GATE_FILE
+from config import HYSTERESIS_CONFIG, BIAS_GATE_FILE, NEWS_FREEZE_CONFIG
 
 logger = logging.getLogger("MacroMetricsCalculator")
 
@@ -540,9 +541,27 @@ class MacroMetricsCalculator:
 
         # Mutlak VIX > 20 veya 60 günlük pencerede %80'in üzerinde oynaklık şoku
         is_volatility_shock = (vix_val > 20.0 or vix_pct_60d >= 80.0 or vix_delta_5d_pct > 10.0)
-        btc_decoupling_active = (
-            is_bear_steepening and (is_volatility_shock or delta_10y_5d >= 10.0 or fast_stress_override)
-        )
+        is_duration_shock = is_bear_steepening and (is_volatility_shock or delta_10y_5d >= 10.0)
+        is_systemic_stress = fast_stress_override or vix_val >= 25.0 or (credit_spread_analysis.get("stress_level") == "Şiddetli Kredi Krizi (Distress)")
+
+        btc_decoupling_active = is_duration_shock or is_systemic_stress
+
+        if is_duration_shock:
+            recommended_btc_gate = "SHORT_ONLY"
+            btc_rationale = (
+                f"Bear Steepening esnasında 10Y faiz sıçraması ({delta_10y_5d:+.1f} bps) ve oynaklık (VIX: {vix_val:.1f}, 60G Dilim: %{vix_pct_60d:.1f}) fonlarda teminat tamamlama (margin call) dalgası başlatır. "
+                "Altın merkez bankalarının fiziki rezerv talebiyle korunurken, BTC hafta sonu da nakde dönebilen en likit yüksek beta varlık olarak ilk satılan enstrümandır. "
+                "Bu sebeple BTC'de Long yönlü işlemler yüksek risk barındırır; fonların tasfiye dalgasıyla SHORT_ONLY yönlü kırılımlar desteklenir."
+            )
+        elif is_systemic_stress:
+            recommended_btc_gate = "DEFENSIVE_HOLD"
+            btc_rationale = (
+                f"T-0 hızlı piyasa stresi (Brent/VIX/Kredi şoku) ve sistemik sermaye koruma modunda (VIX: {vix_val:.1f}) fon tasfiyeleri riski nedeniyle BTC'de yönlü alım (Long) kilitlenir; "
+                "kripto varlıklar yüksek beta risk primi nedeniyle DEFENSIVE_HOLD olarak korunmalıdır."
+            )
+        else:
+            recommended_btc_gate = "LONG_ONLY_ALLOWED_IF_DEBASEMENT"
+            btc_rationale = f"Tahvil oynaklığı sakin (VIX 60G Dilim: %{vix_pct_60d:.1f}); BTC'de egemen borç debasement tezi kontrollü risk ile geçerli."
 
         btc_decoupling_analysis = {
             "btc_decoupling_active": btc_decoupling_active,
@@ -551,14 +570,8 @@ class MacroMetricsCalculator:
             "vix_pct_60d": vix_pct_60d,
             "vix_5d_delta_pct": vix_delta_5d_pct,
             "us10y_5d_delta_bps": delta_10y_5d,
-            "recommended_btc_gate": "SHORT_ONLY" if btc_decoupling_active else "LONG_ONLY_ALLOWED_IF_DEBASEMENT",
-            "rationale": (
-                f"Bear Steepening esnasında 10Y faiz sıçraması ({delta_10y_5d:+.1f} bps) ve oynaklık (VIX: {vix_val:.1f}, 60G Dilim: %{vix_pct_60d:.1f}) fonlarda teminat tamamlama (margin call) dalgası başlatır. "
-                "Altın merkez bankalarının fiziki rezerv talebiyle korunurken, BTC hafta sonu da nakde dönebilen en likit yüksek beta varlık olarak ilk satılan enstrümandır. "
-                "Bu sebeple BTC'de Long yönlü işlemler yüksek risk barındırır; fonların tasfiye dalgasıyla SHORT_ONLY yönlü kırılımlar desteklenir."
-                if btc_decoupling_active
-                else f"Tahvil oynaklığı sakin (VIX 60G Dilim: %{vix_pct_60d:.1f}); BTC'de egemen borç debasement tezi 0.50x risk ile geçerli."
-            )
+            "recommended_btc_gate": recommended_btc_gate,
+            "rationale": btc_rationale
         }
 
         # 15. Fiyatlanan Faiz Patikası (FedWatch & Forward Easing / Hawkish Repricing)
@@ -663,14 +676,348 @@ class MacroMetricsCalculator:
             )
         }
 
+        # 19. Çapraz Kurlar & Göreli Değer (Relative Value) Makro Matrisi
+        # A) 2 Yıllık Egemen Tahvil Faiz Farkları (Sovereign 2Y Yield Spreads)
+        ca02y_data = market_data.get("CA02Y", {})
+        de02y_data = market_data.get("DE02Y", {})
+        gb02y_data = market_data.get("GB02Y", {})
+        au02y_data = market_data.get("AU02Y", {})
+        nz02y_data = market_data.get("NZ02Y", {})
+
+        ca02y = ca02y_data.get("value", 3.10)
+        ca02y_5d = ca02y_data.get("val_5d_ago", ca02y)
+        de02y = de02y_data.get("value", 2.35)
+        de02y_5d = de02y_data.get("val_5d_ago", de02y)
+        gb02y = gb02y_data.get("value", 3.85)
+        gb02y_5d = gb02y_data.get("val_5d_ago", gb02y)
+        au02y = au02y_data.get("value", 3.65)
+        au02y_5d = au02y_data.get("val_5d_ago", au02y)
+        nz02y = nz02y_data.get("value", 3.80)
+        nz02y_5d = nz02y_data.get("val_5d_ago", nz02y)
+
+        # 2Y Spreads vs US02Y (bps cinsinden)
+        ca_us_spread_2y = round((ca02y - us02y) * 100, 1)
+        prev_ca_us_5d = round((ca02y_5d - u02_5d) * 100, 1)
+        delta_ca_us_spread_5d = round(ca_us_spread_2y - prev_ca_us_5d, 1)
+
+        de_us_spread_2y = round((de02y - us02y) * 100, 1)
+        prev_de_us_5d = round((de02y_5d - u02_5d) * 100, 1)
+        delta_de_us_spread_5d = round(de_us_spread_2y - prev_de_us_5d, 1)
+
+        gb_us_spread_2y = round((gb02y - us02y) * 100, 1)
+        prev_gb_us_5d = round((gb02y_5d - u02_5d) * 100, 1)
+        delta_gb_us_spread_5d = round(gb_us_spread_2y - prev_gb_us_5d, 1)
+
+        au_us_spread_2y = round((au02y - us02y) * 100, 1)
+        prev_au_us_5d = round((au02y_5d - u02_5d) * 100, 1)
+        delta_au_us_spread_5d = round(au_us_spread_2y - prev_au_us_5d, 1)
+
+        au_ca_spread_2y = round((au02y - ca02y) * 100, 1)
+        prev_au_ca_5d = round((au02y_5d - ca02y_5d) * 100, 1)
+        delta_au_ca_spread_5d = round(au_ca_spread_2y - prev_au_ca_5d, 1)
+
+        # AU-NZ 2Y Spread (Avustralya - Yeni Zelanda 2Y Faiz Makası - GDT Bayatlık Kalkanı)
+        au_nz_spread_2y = round((au02y - nz02y) * 100, 1)
+        prev_au_nz_5d = round((au02y_5d - nz02y_5d) * 100, 1)
+        delta_au_nz_spread_5d = round(au_nz_spread_2y - prev_au_nz_5d, 1)
+
+        # Seans Uyuşmazlığı & Gürültü Filtresi (Anti-Flickering / Hysteresis Bandı)
+        desync_noise = HYSTERESIS_CONFIG.get("SPREAD_DESYNC_NOISE_BPS", 3.0)
+        def _filter_spread_noise(delta_bps: float) -> float:
+            return delta_bps if abs(delta_bps) >= desync_noise else 0.0
+
+        sig_delta_ca_us = _filter_spread_noise(delta_ca_us_spread_5d)
+        sig_delta_de_us = _filter_spread_noise(delta_de_us_spread_5d)
+        sig_delta_gb_us = _filter_spread_noise(delta_gb_us_spread_5d)
+        sig_delta_au_us = _filter_spread_noise(delta_au_us_spread_5d)
+        sig_delta_au_ca = _filter_spread_noise(delta_au_ca_spread_5d)
+        sig_delta_au_nz = _filter_spread_noise(delta_au_nz_spread_5d)
+
+        # B) Emtia RoC & Ayrışmış Sektör Göstergeleri
+        brent_roc_20d = brent_data.get("change_pct_4w", 0.0)
+        brent_roc_5d = brent_data.get("change_pct_5d", 0.0)
+
+        iron_ore_data = market_data.get("IRON_ORE", {})
+        iron_ore_roc_20d = iron_ore_data.get("change_pct_4w", 0.0)
+        iron_ore_roc_5d = iron_ore_data.get("change_pct_5d", 0.0)
+
+        dairy_data = market_data.get("DAIRY_GDT", {})
+        dairy_roc_20d = dairy_data.get("change_pct_4w", 0.0)
+        dairy_roc_5d = dairy_data.get("change_pct_5d", 0.0)
+
+        # C) Para Birimi Bağımsız 3 Faktörlü Puanlama (3-Factor Base Currency Scoring)
+        # Faktör 1: Getiri Farkı İvmesi (Yield Spread Momentum)
+        # Faktör 2: Dış Ticaret Haddi / Emtia (Terms of Trade & Commodities)
+        # Faktör 3: Risk İştahı ve Güvenli Liman Talebi (Risk Appetite & Safe-Haven Sensitivity)
+
+        cross_currency_breakdown: Dict[str, Dict[str, Any]] = {}
+
+        # 1. CAD (Kanada Doları)
+        cad_yield = 1 if sig_delta_ca_us > 0.0 else (-1 if sig_delta_ca_us < 0.0 else 0)
+        cad_commodity = 1 if brent_roc_20d > 3.0 else (-1 if brent_roc_20d < -3.0 else 0)
+        cad_risk = -1 if vix_val >= 24.0 else (1 if vix_val < 16.0 else 0)
+        cad_raw = cad_yield + cad_commodity + (1 if cad_risk > 0 and cad_commodity > 0 else 0)
+        cad_score = 1 if cad_raw >= 2 or (cad_commodity > 0 and cad_yield >= 0) else (-1 if cad_raw <= -2 or (cad_commodity < 0 and cad_yield <= 0) else 0)
+        cross_currency_breakdown["CAD"] = {
+            "score": cad_score,
+            "yield_factor": f"CA-US 2Y Spread Delta: {sig_delta_ca_us:+.1f} bps ({cad_yield:+d})",
+            "commodity_factor": f"Brent 20G RoC: {brent_roc_20d:+.1f}% ({cad_commodity:+d})",
+            "risk_factor": f"VIX {vix_val:.1f} ({cad_risk:+d})",
+            "summary": "Petrol ve 2Y getiri makası lehte" if cad_score > 0 else ("Petrol ve getiri baskısı aleyhte" if cad_score < 0 else "Dengeli/Nötr CAD")
+        }
+
+        # 2. AUD (Avustralya Doları)
+        aud_yield = 1 if sig_delta_au_us > 0.0 else (-1 if sig_delta_au_us < 0.0 else 0)
+        aud_commodity = 1 if (ratio_delta_4w_pct > 0.0 and iron_ore_roc_20d > 0.0) else (-1 if (ratio_delta_4w_pct < 0.0 and iron_ore_roc_20d < 0.0) else 0)
+        aud_risk = -1 if vix_val >= 22.0 else (1 if vix_val < 16.0 else 0)
+        aud_score = 1 if (aud_commodity > 0 and aud_risk >= 0) or (aud_yield > 0 and aud_commodity >= 0) else (-1 if (aud_commodity < 0 or aud_risk < 0 and aud_yield <= 0) else 0)
+        cross_currency_breakdown["AUD"] = {
+            "score": aud_score,
+            "yield_factor": f"AU-US 2Y Spread Delta: {sig_delta_au_us:+.1f} bps ({aud_yield:+d})",
+            "commodity_factor": f"Bakır/Altın: {ratio_delta_4w_pct:+.1f}% & Demir: {iron_ore_roc_20d:+.1f}% ({aud_commodity:+d})",
+            "risk_factor": f"Yüksek Beta / VIX {vix_val:.1f} ({aud_risk:+d})",
+            "summary": "Çin/Emtia ve Asya risk iştahı destekliyor" if aud_score > 0 else ("Emtia zayıflığı veya riskten kaçış baskılıyor" if aud_score < 0 else "Nötr AUD")
+        }
+
+        # 3. NZD (Yeni Zelanda Doları)
+        nzd_yield = 1 if sig_delta_au_nz < 0.0 else (-1 if sig_delta_au_nz > 0.0 else 0) # AU-NZ daralması NZD lehine
+        nzd_commodity = 1 if dairy_roc_20d > 0.0 else (-1 if dairy_roc_20d < 0.0 else 0)
+        nzd_risk = -1 if vix_val >= 20.0 else (1 if vix_val < 16.0 else 0)
+        if abs(dairy_roc_20d) >= 0.1:
+            nzd_score = 1 if (nzd_commodity > 0 and nzd_risk >= 0) else (-1 if (nzd_commodity < 0 and nzd_risk <= 0) else 0)
+        else:
+            nzd_score = nzd_yield
+        cross_currency_breakdown["NZD"] = {
+            "score": nzd_score,
+            "yield_factor": f"AU-NZ 2Y Spread Delta: {sig_delta_au_nz:+.1f} bps ({nzd_yield:+d})",
+            "commodity_factor": f"GDT Süt RoC: {dairy_roc_20d:+.1f}% ({nzd_commodity:+d})",
+            "risk_factor": f"Asya Risk İştahı / VIX {vix_val:.1f} ({nzd_risk:+d})",
+            "summary": "GDT süt ihalesi ve AU-NZ faiz avantajı lehte" if nzd_score > 0 else ("Süt fiyatları veya faiz dezavantajı aleyhte" if nzd_score < 0 else "Dengeli NZD")
+        }
+
+        # 4. JPY (Japon Yeni)
+        jpy_yield = 1 if delta_02y_5d_bps < -5.0 else (-1 if delta_02y_5d_bps > 5.0 else 0) # ABD 2Y düşerse Carry çözülür, JPY güçlenir
+        jpy_safehaven = 1 if (vix_val >= 22.0 or vix_pct_60d >= 70.0 or fast_stress_override) else (-1 if vix_val < 17.0 else 0)
+        jpy_score = 1 if (jpy_yield > 0 or jpy_safehaven > 0) else (-1 if (jpy_yield < 0 and jpy_safehaven < 0) else 0)
+        cross_currency_breakdown["JPY"] = {
+            "score": jpy_score,
+            "yield_factor": f"US 2Y Faiz Yeniden Fiyatlama: {delta_02y_5d_bps:+.1f} bps ({jpy_yield:+d})",
+            "safe_haven_factor": f"Güvenli Liman Talebi / VIX {vix_val:.1f} ({jpy_safehaven:+d})",
+            "risk_factor": f"Carry Trade İştahı ({'Açık (JPY Zayıf)' if jpy_safehaven < 0 else 'Kapalı (JPY Güçlü)'})",
+            "summary": "Carry çözülmesi ve güvenli liman girişi" if jpy_score > 0 else ("Taşıma getirisi faiz dezavantajı (Carry açığı)" if jpy_score < 0 else "Dengeli JPY")
+        }
+
+        # 5. EUR (Euro)
+        eur_yield = 1 if sig_delta_de_us > 0.0 else (-1 if sig_delta_de_us < 0.0 else 0)
+        eur_energy = -1 if eurusd_energy_penalty else 0
+        eur_score = -1 if eurusd_energy_penalty else (1 if eur_yield > 0 else (-1 if eur_yield < 0 else 0))
+        cross_currency_breakdown["EUR"] = {
+            "score": eur_score,
+            "yield_factor": f"DE-US 2Y Spread Delta: {sig_delta_de_us:+.1f} bps ({eur_yield:+d})",
+            "commodity_factor": f"Enerji/Petrol Maliyet Cezası: {'AKTİF (-1)' if eurusd_energy_penalty else 'YOK (0)'}",
+            "risk_factor": f"Transatlantik Büyüme Farkı ({'EUR Aleyhte' if eur_yield < 0 else 'EUR Lehte'})",
+            "summary": "Enerji şoku veya Transatlantik makas baskılıyor" if eur_score < 0 else ("Transatlantik faiz makası lehte" if eur_score > 0 else "Dengeli EUR")
+        }
+
+        # 6. GBP (İngiliz Sterlini)
+        gbp_yield = 1 if sig_delta_gb_us > 0.0 else (-1 if sig_delta_gb_us < 0.0 else 0)
+        gbp_risk = -1 if vix_val >= 25.0 else (1 if vix_val < 17.0 else 0)
+        gbp_score = 1 if gbp_yield > 0 and gbp_risk >= 0 else (-1 if gbp_yield < 0 else 0)
+        cross_currency_breakdown["GBP"] = {
+            "score": gbp_score,
+            "yield_factor": f"GB-US 2Y Spread Delta: {sig_delta_gb_us:+.1f} bps ({gbp_yield:+d})",
+            "commodity_factor": f"DXY Korelasyonu: {dxy_data.get('change_pct_5d', 0):+.2f}%",
+            "risk_factor": f"Avrupa Risk İştahı / VIX {vix_val:.1f} ({gbp_risk:+d})",
+            "summary": "Gilt faiz momentumu güçlü" if gbp_score > 0 else ("BOE faiz indirimi veya faiz erozyonu aleyhte" if gbp_score < 0 else "Dengeli GBP")
+        }
+
+        # 7. USD (Amerikan Doları)
+        usd_yield = 1 if delta_02y_5d_bps >= 5.0 else (-1 if delta_02y_5d_bps <= -5.0 else 0)
+        usd_momentum = 1 if dxy_data.get("change_pct_5d", 0) > 0.4 else (-1 if dxy_data.get("change_pct_5d", 0) < -0.4 else 0)
+        usd_score = 1 if (usd_yield > 0 or usd_momentum > 0) else (-1 if (usd_yield < 0 or usd_momentum < 0) else 0)
+        cross_currency_breakdown["USD"] = {
+            "score": usd_score,
+            "yield_factor": f"US 2Y Değişim: {delta_02y_5d_bps:+.1f} bps ({usd_yield:+d})",
+            "commodity_factor": f"DXY 5G Momentum: {dxy_data.get('change_pct_5d', 0):+.2f}% ({usd_momentum:+d})",
+            "risk_factor": f"Küresel Likidite ve US Exceptionalism",
+            "summary": "Güçlü Dolar (Getiri ve DXY ivmesi lehte)" if usd_score > 0 else ("Zayıf Dolar (Getiri erozyonu veya gevşeme)" if usd_score < 0 else "Nötr USD")
+        }
+
+        # 8. CHF (İsviçre Frangı)
+        gold_data = market_data.get("GOLD", {})
+        chf_safehaven = 1 if (fast_stress_override or vix_val >= 22.0 or vix_pct_60d >= 70.0) else (-1 if vix_val < 17.0 else 0)
+        gold_support = 1 if gold_data.get("change_pct_5d", 0) > 1.0 else 0
+        chf_score = 1 if (chf_safehaven > 0 or (fast_stress_override and gold_support > 0)) else (-1 if (chf_safehaven < 0 and not fast_stress_override) else 0)
+        cross_currency_breakdown["CHF"] = {
+            "score": chf_score,
+            "yield_factor": f"SNB Faiz Farkı (Düşük Politika Faizi Dezavantajı: {'Aktif' if chf_safehaven < 0 else 'Savunmada'})",
+            "commodity_factor": f"Altın Desteği: {gold_data.get('change_pct_5d', 0):+.2f}% 5G ({gold_support:+d})",
+            "risk_factor": f"Güvenli Liman Talebi / VIX {vix_val:.1f} ({chf_safehaven:+d})",
+            "summary": "Sistemik stres ve güvenli liman alımları" if chf_score > 0 else ("Düşük oynaklıkta SNB faiz dezavantajı (Zayıf CHF)" if chf_score < 0 else "Dengeli CHF")
+        }
+
+        # D) Sentetik Çapraz & Majör Kur Kapıları (Relative Value Matrix)
+        def _calc_cross_bias(base_s: int, quote_s: int) -> str:
+            diff = base_s - quote_s
+            return "LONG_ONLY" if diff > 0 else "SHORT_ONLY" if diff < 0 else "NEUTRAL_RANGE"
+
+        cross_gates = {
+            # Çapraz Kurlar
+            "AUDCAD": _calc_cross_bias(aud_score, cad_score),
+            "CADJPY": _calc_cross_bias(cad_score, jpy_score),
+            "GBPJPY": _calc_cross_bias(gbp_score, jpy_score),
+            "AUDJPY": _calc_cross_bias(aud_score, jpy_score),
+            "EURGBP": _calc_cross_bias(eur_score, gbp_score),
+            "EURAUD": _calc_cross_bias(eur_score, aud_score),
+            "NZDCAD": _calc_cross_bias(nzd_score, cad_score),
+            "EURJPY": _calc_cross_bias(eur_score, jpy_score),
+
+            # Dolar Majörleri (SMC Universe Entegrasyonu)
+            "USDCAD": _calc_cross_bias(usd_score, cad_score),
+            "USDJPY": _calc_cross_bias(usd_score, jpy_score),
+            "GBPUSD": _calc_cross_bias(gbp_score, usd_score),
+            "AUDUSD": _calc_cross_bias(aud_score, usd_score),
+            "NZDUSD": _calc_cross_bias(nzd_score, usd_score),
+            "USDCHF": _calc_cross_bias(usd_score, chf_score),
+
+            # CHF Çaprazları (SMC Universe Entegrasyonu)
+            "EURCHF": _calc_cross_bias(eur_score, chf_score),
+            "GBPCHF": _calc_cross_bias(gbp_score, chf_score),
+            "AUDCHF": _calc_cross_bias(aud_score, chf_score),
+            "CADCHF": _calc_cross_bias(cad_score, chf_score),
+            "NZDCHF": _calc_cross_bias(nzd_score, chf_score),
+            "CHFJPY": _calc_cross_bias(chf_score, jpy_score),
+        }
+
+        # E) SOL / Kripto Göreli Güç & 4H CHoCH (Market Structure Shift) Kalkanı
+        sol_data = market_data.get("SOL", {})
+        sol_val = sol_data.get("value", 145.0)
+        sol_5d = sol_data.get("val_5d_ago", 138.0)
+        btc_val = market_data.get("BTC", {}).get("value", 58500.0)
+        btc_5d = market_data.get("BTC", {}).get("val_5d_ago", 56500.0)
+
+        sol_btc_current = round(sol_val / btc_val, 6) if btc_val else 0.002478
+        sol_btc_prev_5d = round(sol_5d / btc_5d, 6) if btc_5d else sol_btc_current
+        sol_btc_roc_5d = round(((sol_btc_current - sol_btc_prev_5d) / sol_btc_prev_5d) * 100, 2) if sol_btc_prev_5d else 0.0
+
+        # 4H Market Structure Shift (CHoCH Kırılımı): Kripto tasfiyesinde 5G RoC gecikmesini önler!
+        sol_btc_4h_structure_broken = bool(market_data.get("SOL_BTC_STRUCTURE_BROKEN", False))
+        sol_btc_structure_bullish = (sol_btc_roc_5d > 0.0) and not sol_btc_4h_structure_broken
+
+        # SOL Gate: Sadece BTC güvenli, SOL/BTC 5G ivmesi pozitif VE 4H yapısı bozulmamışsa LONG_ONLY
+        if sol_btc_4h_structure_broken:
+            sol_gate = "DEFENSIVE_HOLD"
+            sol_rationale = f"🛑 SOL/BTC 4H swing low kırıldı (CHoCH / Yapı Bozuldu). 5G RoC'ye (+%{sol_btc_roc_5d:.2f}) bakılmaksızın Long kilitlendi."
+        elif recommended_btc_gate == "LONG_ONLY_ALLOWED_IF_DEBASEMENT" and sol_btc_structure_bullish:
+            sol_gate = "LONG_ONLY"
+            sol_rationale = f"BTC long izinli, SOL/BTC 5G ivmesi pozitif (+%{sol_btc_roc_5d:.2f}) ve 4H yapı sağlam."
+        elif recommended_btc_gate in ["SHORT_ONLY", "DEFENSIVE_HOLD"]:
+            sol_gate = recommended_btc_gate
+            sol_rationale = f"BTC savunma/short modunda ({recommended_btc_gate}); SOL yüksek beta nedeniyle kilitlendi."
+        else:
+            sol_gate = "NEUTRAL_RANGE"
+            sol_rationale = f"SOL/BTC rasyosu ivmesi negatif (%{sol_btc_roc_5d:.2f} 5G); BTC ayrışması olmasa da SOL zayıf."
+
+        cross_gates["SOL"] = sol_gate
+
+        # 20. Kırmızı Bülten (Red-Folder) Devre Kesicisi (Event Risk Freeze)
+        event_freeze_active = False
+        active_event_info = ""
+        freeze_before = NEWS_FREEZE_CONFIG.get("FREEZE_MINUTES_BEFORE", 15)
+        freeze_after = NEWS_FREEZE_CONFIG.get("FREEZE_MINUTES_AFTER", 15)
+        high_impact_keywords = NEWS_FREEZE_CONFIG.get("HIGH_IMPACT_KEYWORDS", [])
+        now_utc = datetime.datetime.now(datetime.timezone.utc)
+
+        for ev in calendar_events:
+            title = str(ev.get("title", "")).lower()
+            impact = str(ev.get("impact", "")).upper()
+            is_high = impact in ("CRITICAL", "HIGH", "RED") or any(kw in title for kw in high_impact_keywords)
+            if not is_high:
+                continue
+            ev_time = ev.get("time") or ev.get("event_time_utc") or ""
+            if ev_time and "T" in str(ev_time):
+                try:
+                    ev_dt = datetime.datetime.fromisoformat(str(ev_time).replace("Z", "+00:00"))
+                    diff_min = (ev_dt - now_utc).total_seconds() / 60.0
+                    if -freeze_after <= diff_min <= freeze_before:
+                        event_freeze_active = True
+                        active_event_info = f"{ev.get('title')} ({ev.get('country', 'USD')}) [Kalan: {diff_min:+.0f} dk]"
+                        break
+                except Exception:
+                    pass
+
+        cross_pairs_analysis = {
+            "sovereign_yields": {
+                "US02Y": us02y, "CA02Y": ca02y, "DE02Y": de02y, "GB02Y": gb02y, "AU02Y": au02y, "NZ02Y": nz02y
+            },
+            "yield_spreads_bps": {
+                "CA_US_2Y": ca_us_spread_2y, "delta_CA_US_5d": delta_ca_us_spread_5d, "sig_delta_CA_US": sig_delta_ca_us,
+                "DE_US_2Y": de_us_spread_2y, "delta_DE_US_5d": delta_de_us_spread_5d, "sig_delta_DE_US": sig_delta_de_us,
+                "GB_US_2Y": gb_us_spread_2y, "delta_GB_US_5d": delta_gb_us_spread_5d, "sig_delta_GB_US": sig_delta_gb_us,
+                "AU_US_2Y": au_us_spread_2y, "delta_AU_US_5d": delta_au_us_spread_5d, "sig_delta_AU_US": sig_delta_au_us,
+                "AU_CA_2Y": au_ca_spread_2y, "delta_AU_CA_5d": delta_au_ca_spread_5d, "sig_delta_AU_CA": sig_delta_au_ca,
+                "AU_NZ_2Y": au_nz_spread_2y, "delta_AU_NZ_5d": delta_au_nz_spread_5d, "sig_delta_AU_NZ": sig_delta_au_nz,
+            },
+            "commodity_rocs": {
+                "brent_roc_20d": brent_roc_20d,
+                "iron_ore_roc_20d": iron_ore_roc_20d,
+                "dairy_gdt_roc_20d": dairy_roc_20d
+            },
+            "currency_scores": {
+                "AUD": aud_score, "CAD": cad_score, "NZD": nzd_score,
+                "JPY": jpy_score, "EUR": eur_score, "GBP": gbp_score, "USD": usd_score, "CHF": chf_score
+            },
+            "currency_breakdown": cross_currency_breakdown,
+            "sol_btc_analysis": {
+                "sol_btc_ratio": sol_btc_current,
+                "sol_btc_roc_5d": sol_btc_roc_5d,
+                "structure_broken_4h": sol_btc_4h_structure_broken,
+                "structure_bullish": sol_btc_structure_bullish,
+                "gate": sol_gate,
+                "rationale": sol_rationale
+            },
+            "event_freeze": {
+                "active": event_freeze_active,
+                "info": active_event_info
+            },
+            "cross_gates": cross_gates
+        }
+
         # Histeresis Durumu Hafızası
         regime_state = {
             "energy_penalty_active": eurusd_energy_penalty,
             "capital_preservation_active": prev_cap_preservation or fast_stress_override,
             "fast_stress_override": fast_stress_override,
             "btc_decoupling_active": btc_decoupling_active,
+            "event_freeze_active": event_freeze_active,
+            "active_event_info": active_event_info,
             "vix_pct_60d": vix_pct_60d,
             "brent_pct_60d": brent_pct_60d,
+            "brent_level": brent,
+            "brent_roc_20d": brent_roc_20d,
+            "brent_roc_5d": brent_roc_5d,
+            "spread_ca_us_2y_bps": ca_us_spread_2y,
+            "spread_ca_us_2y_delta_5d": delta_ca_us_spread_5d,
+            "spread_de_us_2y_bps": de_us_spread_2y,
+            "spread_de_us_2y_delta_5d": delta_de_us_spread_5d,
+            "spread_gb_us_2y_bps": gb_us_spread_2y,
+            "spread_gb_us_2y_delta_5d": delta_gb_us_spread_5d,
+            "spread_au_us_2y_bps": au_us_spread_2y,
+            "spread_au_us_2y_delta_5d": delta_au_us_spread_5d,
+            "spread_au_ca_2y_bps": au_ca_spread_2y,
+            "spread_au_ca_2y_delta_5d": delta_au_ca_spread_5d,
+            "spread_au_nz_2y_bps": au_nz_spread_2y,
+            "spread_au_nz_2y_delta_5d": delta_au_nz_spread_5d,
+            "iron_ore_roc_20d": iron_ore_roc_20d,
+            "dairy_gdt_roc_20d": dairy_roc_20d,
+            "sol_btc_roc_5d": sol_btc_roc_5d,
+            "sol_btc_4h_structure_broken": sol_btc_4h_structure_broken,
+            "sol_btc_structure_bullish": sol_btc_structure_bullish,
+            "cross_currency_scores": cross_pairs_analysis["currency_scores"],
+            "cross_currency_breakdown": cross_currency_breakdown,
+            "cross_pair_gates": cross_gates,
+            "copper_gold_delta_4w_pct": ratio_delta_4w_pct,
+            "transatlantic_spread_bps": transatlantic_spread_bps,
             "equity_short_allowed": equity_short_gate_allowed,
             "gold_short_allowed": gold_short_allowed,
             "vix_complacent": is_equity_complacent
@@ -687,6 +1034,7 @@ class MacroMetricsCalculator:
             "transatlantic_analysis": transatlantic_analysis,
             "t0_fast_stress_analysis": t0_fast_stress_analysis,
             "btc_decoupling_analysis": btc_decoupling_analysis,
+            "cross_pairs_analysis": cross_pairs_analysis,
             "equity_short_regime": equity_short_regime,
             "gold_fiscal_dominance": gold_fiscal_dominance,
             "regime_state": regime_state,

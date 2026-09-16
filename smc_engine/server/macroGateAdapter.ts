@@ -18,10 +18,33 @@ export interface MacroGatePayload {
     fast_stress_override?: boolean;
     btc_decoupling_active?: boolean;
     vix_pct_60d?: number;
+    vix_level?: number;
     brent_pct_60d?: number;
+    brent_level?: number;
+    brent_roc_20d?: number;
+    brent_roc_5d?: number;
+    spread_ca_us_2y_bps?: number;
+    spread_ca_us_2y_delta_5d?: number;
+    spread_de_us_2y_bps?: number;
+    spread_de_us_2y_delta_5d?: number;
+    spread_gb_us_2y_bps?: number;
+    spread_gb_us_2y_delta_5d?: number;
+    spread_au_us_2y_bps?: number;
+    spread_au_us_2y_delta_5d?: number;
+    spread_au_ca_2y_bps?: number;
+    spread_au_ca_2y_delta_5d?: number;
+    iron_ore_roc_20d?: number;
+    dairy_gdt_roc_20d?: number;
+    sol_btc_roc_5d?: number;
+    sol_btc_structure_bullish?: boolean;
+    cross_currency_scores?: Record<string, number>;
+    cross_pair_gates?: Record<string, string>;
+    copper_gold_delta_4w_pct?: number;
+    transatlantic_spread_bps?: number;
     equity_short_allowed?: boolean;
     gold_short_allowed?: boolean;
     vix_complacent?: boolean;
+    [key: string]: any;
   };
   macro_rationale?: string;
 }
@@ -52,8 +75,18 @@ export interface MacroGateEvaluation {
   tierRationale: string;
 }
 
+export interface SymbolMappingEntry {
+  macro_key?: string;
+  proxy?: string;
+  macro_type?: string;
+  base_currency?: string;
+  quote_currency?: string;
+  base_driver?: string;
+  quote_driver?: string;
+}
+
 interface SymbolMapConfig {
-  mappings: Record<string, { macro_key: string; proxy?: string }>;
+  mappings: Record<string, SymbolMappingEntry>;
   default_risk_multiplier: number;
   max_gate_staleness_hours: number;
 }
@@ -90,6 +123,54 @@ export class MacroGateAdapter {
       MacroGateAdapter.instance = new MacroGateAdapter();
     }
     return MacroGateAdapter.instance;
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // PORTFÖY BETA KÜMELENME & KORELASYON TAKİBİ (EXPOSURE MANAGER)
+  // ──────────────────────────────────────────────────────────────────────────
+  private activePositions: Array<{ symbol: string; tradeDirection: 'long' | 'short'; timestamp: number }> = [];
+
+  public registerActivePosition(symbol: string, tradeDirection: 'long' | 'short'): void {
+    const cleanSym = symbol.toUpperCase();
+    this.activePositions = this.activePositions.filter(p => p.symbol !== cleanSym);
+    this.activePositions.push({ symbol: cleanSym, tradeDirection, timestamp: Date.now() });
+  }
+
+  public closeActivePosition(symbol: string): void {
+    const cleanSym = symbol.toUpperCase();
+    this.activePositions = this.activePositions.filter(p => p.symbol !== cleanSym);
+  }
+
+  public clearActivePositions(): void {
+    this.activePositions = [];
+  }
+
+  public getActivePositions(): Array<{ symbol: string; tradeDirection: 'long' | 'short' }> {
+    return [...this.activePositions];
+  }
+
+  public resolveCurrencyLegs(symbol: string, tradeDirection: 'long' | 'short', symbolMap: SymbolMapConfig): {
+    usdLeg?: 'LONG' | 'SHORT';
+    jpyLeg?: 'LONG' | 'SHORT';
+    isCrypto?: boolean;
+  } {
+    const cleanSym = symbol.toUpperCase();
+    const mapped = symbolMap.mappings[cleanSym];
+    const base = mapped?.base_currency?.toUpperCase() || (cleanSym.length === 6 ? cleanSym.slice(0, 3) : '');
+    const quote = mapped?.quote_currency?.toUpperCase() || (cleanSym.length === 6 ? cleanSym.slice(3, 6) : '');
+    const isLong = tradeDirection === 'long';
+
+    let usdLeg: 'LONG' | 'SHORT' | undefined;
+    let jpyLeg: 'LONG' | 'SHORT' | undefined;
+    const isCrypto = ['BTC', 'SOL', 'ETH', 'LTC'].includes(base) || cleanSym.startsWith('BTC') || cleanSym.startsWith('SOL') || cleanSym.startsWith('ETH');
+
+    if (base === 'USD') usdLeg = isLong ? 'LONG' : 'SHORT';
+    if (quote === 'USD') usdLeg = isLong ? 'SHORT' : 'LONG';
+
+    if (base === 'JPY') jpyLeg = isLong ? 'LONG' : 'SHORT';
+    if (quote === 'JPY') jpyLeg = isLong ? 'SHORT' : 'LONG';
+
+    return { usdLeg, jpyLeg, isCrypto };
   }
 
   private loadSymbolMap(): SymbolMapConfig {
@@ -164,10 +245,244 @@ export class MacroGateAdapter {
     };
   }
 
+  public resolveDriverScore(driver: string, payload: MacroGatePayload): { score: number; reason: string } {
+    const rs = payload.regime_state ?? {};
+    const assetBiases = payload.asset_biases ?? {};
+    const dUpper = (driver || '').toUpperCase();
+
+    // 1. Doğrudan hesaplanmış currency score kontrolü
+    if (rs.cross_currency_scores && typeof rs.cross_currency_scores[dUpper] === 'number') {
+      const s = rs.cross_currency_scores[dUpper];
+      return { score: s, reason: `Rejim Skoru (${dUpper}): ${s > 0 ? '+' : ''}${s}` };
+    }
+
+    switch (dUpper) {
+      case 'CAD':
+      case 'CAD_MACRO':
+      case 'BRENT': {
+        const brentRoc = rs.brent_roc_20d;
+        const caSpreadDelta = rs.spread_ca_us_2y_delta_5d;
+        if (typeof brentRoc === 'number' && typeof caSpreadDelta === 'number') {
+          if (brentRoc > 3.0 && caSpreadDelta > 0) {
+            return { score: 1, reason: `Brent 20G RoC: +%${brentRoc.toFixed(1)} & CA-US 2Y Spread Genişliyor (+${caSpreadDelta.toFixed(1)} bps) -> Güçlü CAD` };
+          }
+          if (brentRoc < -3.0 && caSpreadDelta < 0) {
+            return { score: -1, reason: `Brent 20G RoC: %${brentRoc.toFixed(1)} & CA-US 2Y Spread Daralıyor (${caSpreadDelta.toFixed(1)} bps) -> Zayıf CAD` };
+          }
+          return { score: 0, reason: `Brent RoC (%${brentRoc.toFixed(1)}) ve 2Y Spread (${caSpreadDelta.toFixed(1)} bps) dengeli/nötr` };
+        }
+        const brent = rs.brent_level ?? 80;
+        const brentPct = rs.brent_pct_60d ?? 50;
+        if (brent >= 85 || brentPct >= 80) return { score: 1, reason: `Brent petrol yüksek ($${brent.toFixed(1)}) -> Güçlü CAD` };
+        if (brent < 72 || brentPct <= 25) return { score: -1, reason: `Brent petrol zayıf ($${brent.toFixed(1)}) -> Zayıf CAD` };
+        return { score: 0, reason: `Brent petrol dengeli ($${brent.toFixed(1)})` };
+      }
+      case 'AUD':
+      case 'AUD_MACRO':
+      case 'COPPER_GOLD': {
+        const delta = rs.copper_gold_delta_4w_pct ?? 0;
+        const ironOreRoc = rs.iron_ore_roc_20d;
+        if (typeof ironOreRoc === 'number') {
+          if (delta > 0 && ironOreRoc > 0) {
+            return { score: 1, reason: `Bakır/Altın (+%${delta.toFixed(2)}) ve Demir Cevheri (+%${ironOreRoc.toFixed(1)}) pozitif -> Güçlü AUD` };
+          }
+          if (delta < 0 && ironOreRoc < 0) {
+            return { score: -1, reason: `Bakır/Altın (%${delta.toFixed(2)}) ve Demir Cevheri (%${ironOreRoc.toFixed(1)}) zayıf -> Zayıf AUD` };
+          }
+          return { score: 0, reason: `Bakır/Altın (%${delta.toFixed(2)}) ve Demir Cevheri (%${ironOreRoc.toFixed(1)}) nötr/ayrışmış` };
+        }
+        if (delta > 1.5) return { score: 1, reason: `Bakır/Altın momentumu pozitif (+%${delta.toFixed(2)})` };
+        if (delta < -1.0) return { score: -1, reason: `Bakır/Altın sanayi talebi zayıf (%${delta.toFixed(2)})` };
+        return { score: 0, reason: `Bakır/Altın momentumu nötr (%${delta.toFixed(2)})` };
+      }
+      case 'NZD':
+      case 'NZD_MACRO': {
+        const dairyRoc = rs.dairy_gdt_roc_20d ?? 0;
+        const vix = rs.vix_level ?? 15;
+        const auNzSpreadDelta = rs.spread_au_nz_2y_delta_5d;
+
+        if (Math.abs(dairyRoc) >= 0.1) {
+          if (dairyRoc > 0 && vix < 20) {
+            return { score: 1, reason: `GDT Süt İndeksi (+%${dairyRoc.toFixed(1)}) & Asya risk iştahı açık -> Güçlü NZD` };
+          }
+          if (dairyRoc < 0 && vix >= 20) {
+            return { score: -1, reason: `GDT Süt İndeksi (%${dairyRoc.toFixed(1)}) & Asya riskten kaçış -> Zayıf NZD` };
+          }
+        } else if (typeof auNzSpreadDelta === 'number') {
+          // GDT Bayatlık Kalkanı (14 günlük sessizlik penceresi): Canlı AU-NZ 2Y faiz makası devreye girer
+          if (auNzSpreadDelta < -3.0) {
+            return { score: 1, reason: `GDT Sessizliğinde Canlı AU-NZ 2Y Makası Daralıyor (${auNzSpreadDelta.toFixed(1)} bps) -> Güçlü NZD` };
+          }
+          if (auNzSpreadDelta > 3.0) {
+            return { score: -1, reason: `GDT Sessizliğinde Canlı AU-NZ 2Y Makası Genişliyor (+${auNzSpreadDelta.toFixed(1)} bps) -> Zayıf NZD` };
+          }
+        }
+        return { score: 0, reason: `NZD göstergeleri dengeli (Süt: %${dairyRoc.toFixed(1)}, VIX: ${vix.toFixed(1)})` };
+      }
+      case 'JPY':
+      case 'JPY_MACRO':
+      case 'YIELD_CARRY': {
+        const vixPct = rs.vix_pct_60d ?? 50;
+        const capPres = payload.capital_preservation_mode ?? false;
+        if (capPres || vixPct >= 75) {
+          return { score: 1, reason: 'Sistemik stres/VIX yüksek -> JPY güvenli liman talebi güçlü' };
+        }
+        return { score: -1, reason: 'Taşıma getirisi (carry trade) faiz avantajı -> JPY zayıf' };
+      }
+      case 'EUR':
+      case 'EUR_MACRO':
+      case 'EUR_ENERGY': {
+        const penalty = rs.energy_penalty_active ?? false;
+        const deSpreadDelta = rs.spread_de_us_2y_delta_5d;
+        if (penalty) return { score: -1, reason: 'Euro Bölgesi enerji cezası aktif -> Zayıf EUR' };
+        if (typeof deSpreadDelta === 'number' && deSpreadDelta > 5.0) {
+          return { score: 1, reason: `DE-US 2Y getiri makası lehte (+${deSpreadDelta.toFixed(1)} bps) -> Güçlü EUR` };
+        }
+        if (typeof deSpreadDelta === 'number' && deSpreadDelta < -5.0) {
+          return { score: -1, reason: `DE-US 2Y getiri makası aleyhte (${deSpreadDelta.toFixed(1)} bps) -> Zayıf EUR` };
+        }
+        return { score: 0, reason: 'Euro Bölgesi dengeli' };
+      }
+      case 'GBP':
+      case 'GBP_MACRO': {
+        const gbSpreadDelta = rs.spread_gb_us_2y_delta_5d;
+        if (typeof gbSpreadDelta === 'number' && gbSpreadDelta > 5.0) {
+          return { score: 1, reason: `GB-US 2Y getiri makası lehte (+${gbSpreadDelta.toFixed(1)} bps) -> Güçlü GBP` };
+        }
+        if (typeof gbSpreadDelta === 'number' && gbSpreadDelta < -5.0) {
+          return { score: -1, reason: `GB-US 2Y getiri makası aleyhte (${gbSpreadDelta.toFixed(1)} bps) -> Zayıf GBP` };
+        }
+        const dxyBias = assetBiases['DXY'];
+        if (dxyBias === 'Bearish' || dxyBias === 'Strong Bearish') return { score: 1, reason: "Zayıf Dolar GBP'yi destekliyor" };
+        if (dxyBias === 'Bullish' || dxyBias === 'Strong Bullish') return { score: -1, reason: "Güçlü Dolar GBP'yi baskılıyor" };
+        return { score: 0, reason: 'GBP dengeli' };
+      }
+      case 'USD':
+      case 'USD_MACRO':
+      case 'DXY': {
+        const dxyBias = assetBiases['DXY'];
+        if (dxyBias === 'Bullish' || dxyBias === 'Strong Bullish') return { score: 1, reason: 'DXY yükseliş trendi / Güçlü USD' };
+        if (dxyBias === 'Bearish' || dxyBias === 'Strong Bearish') return { score: -1, reason: 'DXY düşüş trendi / Zayıf USD' };
+        return { score: 0, reason: 'USD dengeli / nötr' };
+      }
+      case 'CHF':
+      case 'CHF_MACRO': {
+        const vixPct = rs.vix_pct_60d ?? 50;
+        const vixVal = rs.vix_level ?? 15;
+        const capPres = payload.capital_preservation_mode ?? false;
+        if (capPres || vixVal >= 25 || vixPct >= 75) {
+          return { score: 1, reason: 'Sistemik stres / krizde CHF güvenli liman talebi güçlü' };
+        }
+        if (vixVal < 18) {
+          return { score: -1, reason: 'Düşük oynaklıkta SNB faiz dezavantajı / Zayıf CHF' };
+        }
+        return { score: 0, reason: 'CHF dengeli / nötr' };
+      }
+      default:
+        return { score: 0, reason: 'Nötr sürücü' };
+    }
+  }
+
+  public resolveSyntheticCrossDirection(
+    cleanSym: string,
+    mapping: SymbolMappingEntry,
+    payload: MacroGatePayload
+  ): { direction: 'LONG' | 'SHORT' | 'NEUTRAL'; reason: string } {
+    const baseDriver = mapping.base_driver ?? '';
+    const quoteDriver = mapping.quote_driver ?? '';
+    const baseRes = this.resolveDriverScore(baseDriver, payload);
+    const quoteRes = this.resolveDriverScore(quoteDriver, payload);
+
+    const netScore = baseRes.score - quoteRes.score;
+    const baseSym = mapping.base_currency ?? 'Base';
+    const quoteSym = mapping.quote_currency ?? 'Quote';
+
+    if (netScore > 0) {
+      return {
+        direction: 'LONG',
+        reason: `Sentetik Çapraz: ${baseSym} (${baseRes.reason}) vs ${quoteSym} (${quoteRes.reason}) -> Net Skor: +${netScore} (LONG)`,
+      };
+    }
+    if (netScore < 0) {
+      return {
+        direction: 'SHORT',
+        reason: `Sentetik Çapraz: ${baseSym} (${baseRes.reason}) vs ${quoteSym} (${quoteRes.reason}) -> Net Skor: ${netScore} (SHORT)`,
+      };
+    }
+    return {
+      direction: 'NEUTRAL',
+      reason: `Sentetik Çapraz: ${baseSym} (${baseRes.reason}) vs ${quoteSym} (${quoteRes.reason}) -> Net Skor: 0 (Nötr)`,
+    };
+  }
+
+  public resolveMacroDirection(
+    cleanSym: string,
+    macroKey: string,
+    payload: MacroGatePayload,
+    symbolMap: SymbolMapConfig
+  ): { direction: 'LONG' | 'SHORT' | 'NEUTRAL'; reason: string } {
+    const gates = payload.execution_bias_gates ?? {};
+    const assetBiases = payload.asset_biases ?? {};
+    const mapped = symbolMap.mappings[cleanSym];
+    const proxy = mapped?.proxy;
+
+    // 1. Önce doğrudan execution_bias_gates kontrolü (Açık kapı tanımlıysa önceliklidir)
+    const rawGate = (gates[cleanSym] || gates[macroKey] || '').toUpperCase();
+    if (rawGate === 'LONG_ONLY') {
+      return { direction: 'LONG', reason: `Makro Kapı: ${cleanSym} LONG_ONLY` };
+    }
+    if (rawGate === 'SHORT_ONLY') {
+      return { direction: 'SHORT', reason: `Makro Kapı: ${cleanSym} SHORT_ONLY` };
+    }
+    if (['DEFENSIVE_HOLD', 'NO_TRADE', 'REDUCE_ONLY', 'NEUTRAL_RANGE', 'EVENT_FREEZE'].includes(rawGate)) {
+      return { direction: 'NEUTRAL', reason: `Makro Kapı Yönsüz / Savunmada (${rawGate})` };
+    }
+
+    // 2. Sentetik Çapraz & Majör Kur (Relative Value) kontrolü
+    if (mapped?.macro_type === 'SYNTHETIC_CROSS') {
+      return this.resolveSyntheticCrossDirection(cleanSym, mapped, payload);
+    }
+
+    // 2. Eğer gate atanmamışsa veya NEUTRAL_ALL ise, asset_biases & proxy eşlemesini sorgula
+    const biasKey = macroKey in assetBiases ? macroKey : (cleanSym in assetBiases ? cleanSym : null);
+    const rawBias = biasKey ? assetBiases[biasKey] : null;
+
+    if (rawBias) {
+      const isBull = rawBias === 'Strong Bullish' || rawBias === 'Bullish';
+      const isBear = rawBias === 'Strong Bearish' || rawBias === 'Bearish';
+
+      if (proxy === 'DXY_INVERSE') {
+        if (isBull) return { direction: 'SHORT', reason: `DXY ${rawBias} -> Ters Korelasyon SHORT` };
+        if (isBear) return { direction: 'LONG', reason: `DXY ${rawBias} -> Ters Korelasyon LONG` };
+      } else {
+        if (isBull) return { direction: 'LONG', reason: `Makro Varlık Görünümü: ${rawBias}` };
+        if (isBear) return { direction: 'SHORT', reason: `Makro Varlık Görünümü: ${rawBias}` };
+      }
+    }
+
+    // 3. Eğer proxy varsa ve DXY bias'ı mevcutsa
+    if (proxy && assetBiases['DXY']) {
+      const dxyBias = assetBiases['DXY'];
+      const dxyBull = dxyBias === 'Strong Bullish' || dxyBias === 'Bullish';
+      const dxyBear = dxyBias === 'Strong Bearish' || dxyBias === 'Bearish';
+
+      if (proxy === 'DXY_INVERSE') {
+        if (dxyBull) return { direction: 'SHORT', reason: `DXY ${dxyBias} -> Ters Korelasyon SHORT` };
+        if (dxyBear) return { direction: 'LONG', reason: `DXY ${dxyBias} -> Ters Korelasyon LONG` };
+      } else if (proxy === 'DXY_DIRECT') {
+        if (dxyBull) return { direction: 'LONG', reason: `DXY ${dxyBias} -> Doğrudan Korelasyon LONG` };
+        if (dxyBear) return { direction: 'SHORT', reason: `DXY ${dxyBias} -> Doğrudan Korelasyon SHORT` };
+      }
+    }
+
+    return { direction: 'NEUTRAL', reason: `Net bir makroekonomik yön belirlenmedi (${rawGate || 'Nötr'})` };
+  }
+
   public evaluateCandidate(
     symbol: string,
     tradeDirection: 'long' | 'short',
-    smcGradeScore?: number
+    smcGradeScore?: number,
+    activePositionsOverride?: Array<{ symbol: string; tradeDirection: 'long' | 'short' }>
   ): MacroGateEvaluation {
     const symbolMap = this.loadSymbolMap();
     const payload = this.loadGatePayload();
@@ -216,7 +531,6 @@ export class MacroGateAdapter {
     let smcScore = 80; // Varsayılan kurumsal A kalite kurulum
     if (typeof smcGradeScore === 'number' && !isNaN(smcGradeScore)) {
       if (smcGradeScore <= 9) {
-        // 0-9 SMC Grade ölçeğini (6=A, 8=A+, 9=A+) 0-100 kurumsal Begonya ölçeğine dönüştür
         const mapping: Record<number, number> = {
           9: 98,
           8: 90,
@@ -236,10 +550,86 @@ export class MacroGateAdapter {
     }
 
     // ──────────────────────────────────────────────────────────────────────────
+    // -1. KATMAN: PORTFÖY BETA KÜMELENME & KORELASYON KALKANI (EXPOSURE CAPS)
+    // ──────────────────────────────────────────────────────────────────────────
+    const activeList = activePositionsOverride ?? this.activePositions;
+    const candidateLegs = this.resolveCurrencyLegs(cleanSym, tradeDirection, symbolMap);
+
+    let activeUsdSameDirectionCount = 0;
+    let activeJpyShortCount = 0;
+    let activeCryptoCount = 0;
+
+    for (const pos of activeList) {
+      if (pos.symbol.toUpperCase() === cleanSym) continue; // Mevcut pozisyonu çift sayma
+      const legs = this.resolveCurrencyLegs(pos.symbol, pos.tradeDirection, symbolMap);
+      if (candidateLegs.usdLeg && legs.usdLeg === candidateLegs.usdLeg) {
+        activeUsdSameDirectionCount++;
+      }
+      if (legs.jpyLeg === 'SHORT') {
+        activeJpyShortCount++;
+      }
+      if (legs.isCrypto) {
+        activeCryptoCount++;
+      }
+    }
+
+    // A) USD Bacak Sınırı (Max 2)
+    if (candidateLegs.usdLeg && activeUsdSameDirectionCount >= 2) {
+      return this.buildVetoResult(
+        cleanSym,
+        macroKey,
+        tradeDirection,
+        macroBias,
+        regime,
+        capitalPreservation,
+        btcDecoupling,
+        rationale,
+        smcScore,
+        `🛑 VETO [PORTFOLIO_EXPOSURE_CAP]: Dolar (${candidateLegs.usdLeg === 'LONG' ? 'Uzun/Long' : 'Kısa/Short'}) bacağında izin verilen maksimum aktif pozisyon sınırına (2) ulaşıldı! Portföy beta kümelenmesini önlemek için yeni Dolar işlemi engellendi.`
+      );
+    }
+
+    // B) JPY-Short / Carry Sınırı (Max 2)
+    if (candidateLegs.jpyLeg === 'SHORT' && activeJpyShortCount >= 2) {
+      return this.buildVetoResult(
+        cleanSym,
+        macroKey,
+        tradeDirection,
+        macroBias,
+        regime,
+        capitalPreservation,
+        btcDecoupling,
+        rationale,
+        smcScore,
+        `🛑 VETO [PORTFOLIO_EXPOSURE_CAP]: JPY-Short (Yen Satış / Carry) bacağında maksimum aktif pozisyon sınırına (2) ulaşıldı! BoJ faiz sıçraması ve küresel kriz riskine karşı 3. JPY satışı engellendi.`
+      );
+    }
+
+    // C) Kripto Beta Sınırı (Max 1)
+    if (candidateLegs.isCrypto && activeCryptoCount >= 1) {
+      return this.buildVetoResult(
+        cleanSym,
+        macroKey,
+        tradeDirection,
+        macroBias,
+        regime,
+        capitalPreservation,
+        btcDecoupling,
+        rationale,
+        smcScore,
+        `🛑 VETO [PORTFOLIO_EXPOSURE_CAP]: Yüksek beta Kripto sepetinde maksimum aktif pozisyon sınırına (1) ulaşıldı! Fon tasfiyesi (margin call) dalgasına karşı ikinci bir kripto işlemi engellendi.`
+      );
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
     // 0. KATMAN: MAKRO HABER KALKANI (NEWS FREEZE GUARD - ±15 DK DONDURMA)
     // ──────────────────────────────────────────────────────────────────────────
     const newsFreeze = NewsGuard.getInstance().checkNewsFreeze(cleanSym);
-    if (newsFreeze.isFrozen) {
+    const eventFreezeFromGate = regimeState.event_freeze_active ?? false;
+    if (newsFreeze.isFrozen || eventFreezeFromGate) {
+      const reason = eventFreezeFromGate
+        ? `🛑 VETO: Yüksek Etkili Kırmızı Bülten Dondurması (Event Freeze) Devrede! [${regimeState.active_event_info || 'Kritik Veri'}]`
+        : `🛡️ VETO: Makro Haber Kalkanı Devrede! ${newsFreeze.reason}`;
       return this.buildVetoResult(
         cleanSym,
         macroKey,
@@ -250,15 +640,14 @@ export class MacroGateAdapter {
         btcDecoupling,
         rationale,
         smcScore,
-        `🛡️ VETO: Makro Haber Kalkanı Devrede! ${newsFreeze.reason}`
+        reason
       );
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // 1. KATMAN: GENEL MAKRO YÖN VE DEFENSIVE_HOLD KONTROLÜ
+    // 1. KATMAN: SİSTEMİK AŞIRI KRİZ DEVRE KESİCİSİ (VOLATİLİTE SKORU >= 0.95)
     // ──────────────────────────────────────────────────────────────────────────
-    // A) Sistemik Donma / Küresel Kriz (Sermaye Koruma Kalkanı)
-    if (capitalPreservation || riskScore >= 0.90) {
+    if (riskScore >= 0.95) {
       return this.buildVetoResult(
         cleanSym,
         macroKey,
@@ -269,59 +658,12 @@ export class MacroGateAdapter {
         btcDecoupling,
         rationale,
         smcScore,
-        `🛑 VETO: Sistemik Kriz / Sermaye Koruma Kalkanı Devrede (Risk Skoru: ${riskScore.toFixed(2)})`
-      );
-    }
-
-    // B) DEFENSIVE_HOLD Kontrolü (Genel Savunma Modu)
-    if (macroBias === 'DEFENSIVE_HOLD') {
-      return this.buildVetoResult(
-        cleanSym,
-        macroKey,
-        tradeDirection,
-        macroBias,
-        regime,
-        capitalPreservation,
-        btcDecoupling,
-        rationale,
-        smcScore,
-        `🛑 VETO: ${cleanSym} Makro Savunma Modunda (DEFENSIVE_HOLD) - Yeni İşlem Açılamaz!`
-      );
-    }
-
-    // C) Temel Yön Uyumu (Directional Compatibility)
-    if (tradeDirection === 'short' && macroBias === 'LONG_ONLY') {
-      return this.buildVetoResult(
-        cleanSym,
-        macroKey,
-        tradeDirection,
-        macroBias,
-        regime,
-        capitalPreservation,
-        btcDecoupling,
-        rationale,
-        smcScore,
-        `🛑 VETO: ${cleanSym} Makro Yönü LONG_ONLY iken SHORT Açılamaz!`
-      );
-    }
-
-    if (tradeDirection === 'long' && macroBias === 'SHORT_ONLY') {
-      return this.buildVetoResult(
-        cleanSym,
-        macroKey,
-        tradeDirection,
-        macroBias,
-        regime,
-        capitalPreservation,
-        btcDecoupling,
-        rationale,
-        smcScore,
-        `🛑 VETO: ${cleanSym} Makro Yönü SHORT_ONLY iken LONG Açılamaz!`
+        `🛑 VETO: Sistemik Aşırı Kriz / Acil Devre Kesici Devrede (Risk Skoru: ${riskScore.toFixed(2)})`
       );
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // 2. KATMAN: ASİMETRİK PİYASA VE ENSTRÜMAN İSTİSNALARI
+    // 2. KATMAN: ASİMETRİK PİYASA VE ENSTRÜMAN MUTLAK KALKANLARI
     // ──────────────────────────────────────────────────────────────────────────
     // A) ALTIN (XAUUSD / GOLD) SHORT KURALI: Mali Hakimiyet & Egemen Borç Kalkanı
     if ((cleanSym.includes('XAU') || cleanSym.includes('GOLD')) && tradeDirection === 'short') {
@@ -376,44 +718,170 @@ export class MacroGateAdapter {
       );
     }
 
+    // D) SOL (SOLUSD / SOL) KURALI: BTC Gate ve SOL/BTC Göreli Güç Filtresi + 4H CHoCH
+    if (cleanSym.includes('SOL') && tradeDirection === 'long') {
+      const btcGate = (gates['BTC'] || gates['BTCUSD'] || '').toUpperCase();
+      const sol4hBroken = regimeState.sol_btc_4h_structure_broken ?? false;
+      const solBtcBullish = (regimeState.sol_btc_structure_bullish ?? ((regimeState.sol_btc_roc_5d ?? 0) > 0)) && !sol4hBroken;
+      const isBtcLong = (btcGate === 'LONG_ONLY' || btcGate === 'LONG_ONLY_ALLOWED_IF_DEBASEMENT') && !btcDecoupling;
+
+      if (sol4hBroken) {
+        return this.buildVetoResult(
+          cleanSym,
+          macroKey,
+          tradeDirection,
+          macroBias,
+          regime,
+          capitalPreservation,
+          btcDecoupling,
+          rationale,
+          smcScore,
+          `🛑 VETO: SOL/BTC 4H Piyasa Yapısı Bozuldu (CHoCH / Swing Low Kırıldı); Long Yasak!`
+        );
+      }
+      if (!isBtcLong) {
+        return this.buildVetoResult(
+          cleanSym,
+          macroKey,
+          tradeDirection,
+          macroBias,
+          regime,
+          capitalPreservation,
+          btcDecoupling,
+          rationale,
+          smcScore,
+          `🛑 VETO: SOL Long İzni Yok! BTC Kapısı LONG_ONLY değil (${btcGate || 'NÖTR'}) veya Decoupling devrede.`
+        );
+      }
+      if (!solBtcBullish) {
+        return this.buildVetoResult(
+          cleanSym,
+          macroKey,
+          tradeDirection,
+          macroBias,
+          regime,
+          capitalPreservation,
+          btcDecoupling,
+          rationale,
+          smcScore,
+          `🛑 VETO: SOL Long İzni Yok! SOL/BTC momentumu negatif (%${regimeState.sol_btc_roc_5d ?? 0}).`
+        );
+      }
+    }
+
     // ──────────────────────────────────────────────────────────────────────────
-    // 3. ADIM: MAKRO ONAYI (G_macro = 1) & ÇARPIMSAL NİHAİ SKOR
+    // 3. KATMAN: MAKRO YÖN ÇÖZÜMLEME & DOĞRU ORANTILILIK DENETİMİ (STRICT ALIGNMENT)
+    // ──────────────────────────────────────────────────────────────────────────
+    const macroResolution = this.resolveMacroDirection(cleanSym, macroKey, payload, symbolMap);
+    const macroDir = macroResolution.direction;
+    const effectiveMacroBias = mapped?.macro_type === 'SYNTHETIC_CROSS' ? macroDir : macroBias;
+
+    // A) Doğrudan Yön Uyuşmazlığı / Ters Orantı Kontrolü
+    if (tradeDirection === 'long' && (macroDir === 'SHORT' || effectiveMacroBias === 'SHORT_ONLY' || effectiveMacroBias === 'SHORT')) {
+      return this.buildVetoResult(
+        cleanSym,
+        macroKey,
+        tradeDirection,
+        effectiveMacroBias,
+        regime,
+        capitalPreservation,
+        btcDecoupling,
+        rationale,
+        smcScore,
+        `🛑 VETO: ${cleanSym} Makro Yönü SHORT_ONLY iken LONG Açılamaz!`
+      );
+    }
+
+    if (tradeDirection === 'short' && (macroDir === 'LONG' || effectiveMacroBias === 'LONG_ONLY' || effectiveMacroBias === 'LONG')) {
+      return this.buildVetoResult(
+        cleanSym,
+        macroKey,
+        tradeDirection,
+        effectiveMacroBias,
+        regime,
+        capitalPreservation,
+        btcDecoupling,
+        rationale,
+        smcScore,
+        `🛑 VETO: ${cleanSym} Makro Yönü LONG_ONLY iken SHORT Açılamaz!`
+      );
+    }
+
+    // B) DEFENSIVE_HOLD Kontrolü
+    if (macroBias === 'DEFENSIVE_HOLD' || macroResolution.reason.includes('DEFENSIVE_HOLD')) {
+      return this.buildVetoResult(
+        cleanSym,
+        macroKey,
+        tradeDirection,
+        macroBias,
+        regime,
+        capitalPreservation,
+        btcDecoupling,
+        rationale,
+        smcScore,
+        `🛑 VETO: ${cleanSym} Makro Savunma Modunda (DEFENSIVE_HOLD) - Yeni İşlem Açılamaz!`
+      );
+    }
+
+    // C) Makro Yönsüz / Nötr Veto Kuralı
+    // Kullanıcı talebi: "yalnızca makro ekonomiyle doğru orantıda olan işlemleri versin, diğerlerini veto etsin"
+    if (macroDir === 'NEUTRAL') {
+      return this.buildVetoResult(
+        cleanSym,
+        macroKey,
+        tradeDirection,
+        macroBias,
+        regime,
+        capitalPreservation,
+        btcDecoupling,
+        rationale,
+        smcScore,
+        `🛑 VETO: ${cleanSym} için makroekonomik yön nötr / yönsüzdür (${macroResolution.reason}). Yalnızca makro ile doğru orantılı işlemlere izin verilir!`
+      );
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 4. ADIM: MAKRO ONAYI (G_macro = 1) & DİNAMİK RİSK ÇARPANLI NİHAİ SKOR
     // ──────────────────────────────────────────────────────────────────────────
     const begonyaScore = smcScore;
 
+    // Makro çarpanı: payload'dan gelen recommended_risk_multiplier (örn: 0.25x veya 0.50x)
+    const macroMultiplier = typeof payload.recommended_risk_multiplier === 'number'
+      ? payload.recommended_risk_multiplier
+      : (capitalPreservation ? 0.25 : 1.0);
 
-    // Makro İzin Verdi (G_macro = 1) -> Sinyal SMC Puanına göre derecelendirilir
     let scoreTier: BegonyaScoreTier;
-    let riskMultiplier: number;
+    let baseRisk: number;
     let action: MacroGateEvaluation['action'];
     let tierRationale: string;
-    let gateStatusMessage: string;
 
     if (begonyaScore >= 85) {
       scoreTier = 'A+';
-      riskMultiplier = 1.00;
+      baseRisk = 1.00;
       action = 'PROCEED';
-      tierRationale = 'Elit Kurumsal Çift Teyit (Tam Lot - 1.00x)';
-      gateStatusMessage = `🌟 A+ ELİT İŞLEM (Skor: ${begonyaScore}/100) -> 1.00x Tam Lot ile Uygula`;
+      tierRationale = 'Elit Kurumsal Çift Teyit (Tam Lot)';
     } else if (begonyaScore >= 70) {
       scoreTier = 'A';
-      riskMultiplier = 0.75;
+      baseRisk = 0.75;
       action = 'PROCEED';
       tierRationale = 'Güçlü Kurumsal Kurulum (0.75x Lot)';
-      gateStatusMessage = `✅ A GÜÇLÜ İŞLEM (Skor: ${begonyaScore}/100) -> 0.75x Lot ile Uygula`;
     } else if (begonyaScore >= 50) {
       scoreTier = 'B';
-      riskMultiplier = 0.40;
+      baseRisk = 0.40;
       action = 'NEUTRAL_CAUTION';
       tierRationale = 'Orta Seviye / M1 Manuel Teyit Bekle (0.40x Lot)';
-      gateStatusMessage = `⚠️ B ORTA SEVİYE (Skor: ${begonyaScore}/100) -> 0.40x Kontrollü Lot`;
     } else {
       scoreTier = 'C';
-      riskMultiplier = 0.15;
+      baseRisk = 0.15;
       action = 'DEFENSIVE_REDUCE';
       tierRationale = 'Zayıf Kurulum (Pas Geçilmesi Önerilir - 0.15x)';
-      gateStatusMessage = `⚠️ ZAYIF KURULUM (Skor: ${begonyaScore}/100) -> Pas Geç Önerisi`;
     }
+
+    // Nihai Risk = Taban SMC Riski * Makro Risk Çarpanı (Örn: 1.00 * 0.25 = 0.25x)
+    const finalRiskMultiplier = Math.round(baseRisk * macroMultiplier * 100) / 100;
+    const gateStatusMessage = mapped?.macro_type === 'SYNTHETIC_CROSS'
+      ? `🌟 ${scoreTier} SENTETİK ÇAPRAZ MAKRO ONAYI (${macroResolution.reason}) -> ${finalRiskMultiplier.toFixed(2)}x Lot ile Uygula`
+      : `🌟 ${scoreTier} DOĞRU ORANTILI MAKRO İŞLEM (Skor: ${begonyaScore}/100) -> ${finalRiskMultiplier.toFixed(2)}x Lot (Makro Çarpan: ${macroMultiplier}x) ile Uygula`;
 
     return {
       allowed: true,
@@ -421,10 +889,10 @@ export class MacroGateAdapter {
       symbol: cleanSym,
       mappedMacroKey: macroKey,
       tradeDirection,
-      macroBias,
+      macroBias: effectiveMacroBias,
       primaryRegime: regime,
-      riskMultiplier,
-      capitalPreservationMode: false,
+      riskMultiplier: finalRiskMultiplier,
+      capitalPreservationMode: capitalPreservation,
       btcDecouplingActive: btcDecoupling,
       macroRationale: rationale,
       gateStatusMessage,
@@ -432,7 +900,7 @@ export class MacroGateAdapter {
       smcTechnicalScore: smcScore,
       begonyaScore,
       scoreTier,
-      tierRationale,
+      tierRationale: `${tierRationale} [Makro Çarpan: ${macroMultiplier}x]`,
     };
   }
 }

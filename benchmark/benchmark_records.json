@@ -32,13 +32,13 @@
     "macro_gating_layer": {
       "primary_regime": "Late-Cycle Overheating with Global Divergence",
       "macro_bias_gate": "NEUTRAL_ALL",
-      "macro_multiplier": 1.0,
+      "macro_multiplier": 1,
       "recommended_risk_multiplier": 0.75,
       "news_freeze_active": false,
       "macro_rationale_snippet": "Late-Cycle Overheating, NFP 190K, ICSA 218K. Kripto varlıklarda seçici risk iştahı, 0.75x lot defansif boyutlandırma."
     },
     "begonya_synthesis": {
-      "final_begonya_score": 75.0,
+      "final_begonya_score": 75,
       "score_tier": "Tier A",
       "action": "PROCEED_CONDITIONAL_RETEST",
       "gate_decision": "Makro kapı NEUTRAL_ALL onay verdi, ancak 0.75x risk iskonto edildi."
@@ -62,11 +62,12 @@
       "smc_notes": "Fiyat 102.43-102.58 FVG bölgesine retest vererek 102.80+ üzerine tepki verdi. Ancak 1H ve 15M Pahalı (Premium) bölgede olması sebebiyle yukarı momentum sınırlı kaldı. BE koruması sermayeyi olası geri dönüşten korudu.",
       "macro_notes": "Makro rejim kriptoyu doğrudan veto etmiyor (NEUTRAL_ALL), ancak faiz getirilerinin yüksekliği ve late-cycle baskısı sebebiyle lot 0.75x ile sınırlandırıldı.",
       "key_learning": "1H/15M Pahalı bölgedeyken AL işlemlerinde erken kâr alma veya başabaş (BE) çekme stratejisi esastır. Operatör 750$ riskte 325$ kâr koruyarak risksiz trade yönetimi gerçekleştirdi.",
-      "account_size_usd": 100000.0,
-      "risk_allocated_usd": 750.0,
+      "account_size_usd": 100000,
+      "risk_allocated_usd": 750,
       "risk_pct": 0.75,
-      "realized_pnl_usd": 325.0,
-      "exit_reason": "Fiyat POI bölgesine retest verip tepki aldı, +325$ kara ulaştıktan sonra stop başabaşa (BE) çekildi ve kalan pozisyon BE oldu."
+      "realized_pnl_usd": 325,
+      "exit_reason": "Fiyat POI bölgesine retest verip tepki aldı, +325$ kara ulaştıktan sonra stop başabaşa (BE) çekildi ve kalan pozisyon BE oldu.",
+      "realized_usd": 325
     }
   },
   {
@@ -85,7 +86,7 @@
         2451.89
       ],
       "current_price_at_signal": 2459.47,
-      "executed_entry_price": 2452.0,
+      "executed_entry_price": 2452,
       "stop_loss": 2431.61,
       "take_profit": 2514.67,
       "take_profit_poi": "15M Bearish OB",
@@ -105,13 +106,13 @@
     "macro_gating_layer": {
       "primary_regime": "Late-Cycle Overheating with Global Divergence",
       "macro_bias_gate": "LONG_ONLY",
-      "macro_multiplier": 1.0,
+      "macro_multiplier": 1,
       "recommended_risk_multiplier": 0.75,
       "news_freeze_active": false,
       "macro_rationale_snippet": "Late-Cycle Overheating. ETHUSD için doğrudan LONG_ONLY kapısı aktif. 0.75x risk iskonto."
     },
     "begonya_synthesis": {
-      "final_begonya_score": 75.0,
+      "final_begonya_score": 75,
       "score_tier": "Tier A",
       "action": "PROCEED_CONDITIONAL_RETEST",
       "gate_decision": "Makro kapı LONG_ONLY tam yeşil ışık verdi. 0.75x lot önerisi."
@@ -132,13 +133,14 @@
       "was_whipsawed": false,
       "outcome_category": "PROFIT",
       "failure_attribution": "None",
-      "account_size_usd": 100000.0,
-      "risk_allocated_usd": 750.0,
+      "account_size_usd": 100000,
+      "risk_allocated_usd": 750,
       "risk_pct": 0.75,
-      "realized_pnl_usd": 2175.0,
+      "realized_pnl_usd": 2175,
       "smc_notes": "Fiyat 2459.47 seviyesinden 15M OB (2450.79-2451.89) seviyesine retest verdi. 2451.61 seviyesi yerel swingin 0.5 Fib denge noktasıydı. M1 onayıyla girilen işlem, 15M Bearish OB hedefi olan 2514.67 seviyesine kusursuz ulaştı.",
       "macro_notes": "Makro motorun LONG_ONLY kapısı ile SMC bullish OB yapısı kusursuz senkronize oldu. Operatör Begonyanın 0.75x risk önerisine tam uyarak 750$ (%0.75) risk tahsis etti.",
-      "key_learning": "Makro LONG_ONLY kapısı + HTF 0.5 Fib desteğindeki OB + M1 retest onayı = Yüksek olasılıklı kurumsal kurulum. Hedefteki 15M Bearish OBde kâr realizasyonu yapmak, ardından gelen tepe dönüşünden sermayeyi korudu."
+      "key_learning": "Makro LONG_ONLY kapısı + HTF 0.5 Fib desteğindeki OB + M1 retest onayı = Yüksek olasılıklı kurumsal kurulum. Hedefteki 15M Bearish OBde kâr realizasyonu yapmak, ardından gelen tepe dönüşünden sermayeyi korudu.",
+      "realized_usd": 2175
     }
   },
   {
@@ -159,8 +161,8 @@
       "current_price_at_signal": 102.57,
       "distance_pct_to_poi": 4.73,
       "stop_loss": 97.65,
-      "take_profit": 106.0,
-      "risk_reward_estimated": 4.0,
+      "take_profit": 106,
+      "risk_reward_estimated": 4,
       "htf_trend_4h": "Bullish",
       "htf_trend_1h": "Bullish",
       "htf_alignment": "Aligned",
@@ -177,13 +179,13 @@
     "macro_gating_layer": {
       "primary_regime": "Late-Cycle Overheating with Global Divergence",
       "macro_bias_gate": "NEUTRAL_ALL",
-      "macro_multiplier": 1.0,
-      "recommended_risk_multiplier": 1.0,
+      "macro_multiplier": 1,
+      "recommended_risk_multiplier": 1,
       "news_freeze_active": false,
       "macro_rationale_snippet": "Late-Cycle Overheating. NEUTRAL_ALL kapısı onaylı, 1.00x tam lot önerisi."
     },
     "begonya_synthesis": {
-      "final_begonya_score": 90.0,
+      "final_begonya_score": 90,
       "score_tier": "Tier A+",
       "action": "PASSIVE_WATCHLIST_DISTANT_POI",
       "gate_decision": "Makro onaylı, SMC A+ elit ancak POI operasyonel olarak aşırı uzakta (%4.73)."
@@ -194,22 +196,26 @@
       "m1_displacement_occurred": false,
       "m1_confirmation_received": false,
       "entry_triggered": true,
-      "execution_state": "ACTIVE_IN_POSITION",
+      "execution_state": "STOPPED_OUT",
       "session": "London",
       "spread_pips_at_signal": 1.8
     },
     "post_trade_audit": {
-      "actual_outcome": "ACTIVE_IN_POSITION",
-      "realized_r": null,
-      "was_whipsawed": null,
-      "outcome_category": "IN_PROGRESS",
-      "failure_attribution": "Operational_Distance_Mismatch",
-      "smc_notes": "5 Eylulde fiyata %4.73 uzaktayken uretilen 2 Eylul dip OBsi (97.65 - 97.94), 6 gunluk derin piyasa duzeltmesinin ardindan 11 Eylulde nihayet test edildi ve isleme girildi.",
+      "actual_outcome": "LOSS",
+      "realized_r": -1,
+      "was_whipsawed": false,
+      "outcome_category": "LOSS",
+      "failure_attribution": "Stale_Macro_Shift_And_Trend_Collapse",
+      "smc_notes": "Ilk sinyal anindaki kritik tespitimiz dogrulandi: Bir seviye fiyata %4-5 uzaktaysa ve fiyat gunler sonra oraya iniyorsa, bu bir saglikli retest degil ana trend cokusudur. Ana trend cokusu ic yapi OBlerini ezip gecer.",
       "macro_notes": "Eğer fiyat 102.57den 97.65e (%5) çökecek bir şok yaşarsa, bu hareket makro rejimi ve volatilite skorunu da bozabilir.",
-      "key_learning": "Algoritmaya Max_Distance_To_POI_Pct kuralı konulmalıdır (örneğin mesafe > %2.0 ise canlı aksiyon sinyali yerine Arka Plan İzleme Uyarısı verilmeli). Bu operatörü sahte retest beklentisinden korur.",
+      "key_learning": "Max_Distance_To_POI kuralinin onemi bir kez daha kanitlandi: >%2.5 uzaktaki bayat POIler takipten cikarilmalidir.",
       "risk_pct_allocated": 0.75,
-      "account_size_usd": 100000.0,
-      "risk_allocated_usd": 750.0
+      "account_size_usd": 100000,
+      "risk_allocated_usd": 750,
+      "realized_pnl_usd": -750,
+      "risk_pct": 0.75,
+      "exit_reason": "5 Eyluldeki %4.73 uzaktaki seviyeye 6 gun sonra ulasan fiyat, momentum cokusuyle 97.65 altina inerek stop oldu.",
+      "realized_usd": -750
     }
   },
   {
@@ -244,13 +250,13 @@
     "macro_gating_layer": {
       "primary_regime": "Late-Cycle Overheating with Global Divergence",
       "macro_bias_gate": "LONG_ONLY",
-      "macro_multiplier": 1.0,
+      "macro_multiplier": 1,
       "recommended_risk_multiplier": 0.75,
       "news_freeze_active": false,
       "macro_rationale_snippet": "Late-Cycle Overheating. ETHUSD için doğrudan LONG_ONLY kapısı aktif. 0.75x risk boyutu."
     },
     "begonya_synthesis": {
-      "final_begonya_score": 75.0,
+      "final_begonya_score": 75,
       "score_tier": "Tier A",
       "action": "PROCEED_ON_RETEST",
       "gate_decision": "Makro kapı LONG_ONLY tam yeşil ışık, 0.75x lot önerisi."
@@ -267,18 +273,19 @@
     },
     "post_trade_audit": {
       "actual_outcome": "LOSS",
-      "realized_r": -1.0,
+      "realized_r": -1,
       "was_whipsawed": false,
       "outcome_category": "LOSS",
       "failure_attribution": "Session_Timing_Dead_Zone_And_HTF_Pullback",
-      "account_size_usd": 100000.0,
+      "account_size_usd": 100000,
       "risk_pct": 0.75,
       "smc_notes": "Fiyat öğlen 2514teki 15M Bearish OB direnç bölgesine çarptıktan sonra başlayan düzeltme dalgasında, 22:10 TSİdeki ara OB tutunamadı. Kripto piyasasındaki genel satış baskısı seviyeyi ezip geçti.",
       "macro_notes": "Makronun LONG_ONLY kapısı güçlü desteğini koruyor. NY seansı sonlarında gelen retestte 0.75x risk tahsisi yapıldı.",
       "key_learning": "Güçlü bir HTF arz bloğundan (2514 OB) sert ret yedikten sonra New York kapanışı/Dead Zone saatlerinde açılan ara retestler yüksek risklidir. Gece seansında yeni pozisyon açmak yerine Londra/NY ana saatleri beklenmelidir.",
-      "realized_pnl_usd": -750.0,
-      "risk_allocated_usd": 750.0,
-      "exit_reason": "2454 bölgesine retest sonrası girilen pozisyon, gece seansı likidite sığlığı ve derinleşen kripto satış dalgasıyla stop seviyesini kırarak stop oldu."
+      "realized_pnl_usd": -750,
+      "risk_allocated_usd": 750,
+      "exit_reason": "2454 bölgesine retest sonrası girilen pozisyon, gece seansı likidite sığlığı ve derinleşen kripto satış dalgasıyla stop seviyesini kırarak stop oldu.",
+      "realized_usd": -750
     }
   },
   {
@@ -315,13 +322,13 @@
     "macro_gating_layer": {
       "primary_regime": "Late-Cycle Overheating with Transatlantic Divergence",
       "macro_bias_gate": "NEUTRAL_ALL",
-      "macro_multiplier": 1.0,
+      "macro_multiplier": 1,
       "recommended_risk_multiplier": 0.75,
       "news_freeze_active": false,
       "macro_rationale_snippet": "Late-Cycle Overheating, Bear Steepening getiri dinamikleri. USDJPY için NEUTRAL_ALL izinli, 0.75x lot."
     },
     "begonya_synthesis": {
-      "final_begonya_score": 82.0,
+      "final_begonya_score": 82,
       "score_tier": "Tier A",
       "action": "PROCEED_CONDITIONAL_RETEST",
       "gate_decision": "Makro kapı NEUTRAL_ALL onaylı, SMC puanı 82 ile güçlü Tier A."
@@ -344,7 +351,8 @@
       "failure_attribution": "None",
       "smc_notes": "4H Pahalı (Premium) ve 4H/1H Bearish trend uyumu Short için ideal. 156.132-156.178 OB seviyesine 1M geri çekilme başladı. Aşağıda EQL (155.82) likidite mıknatısı var ancak 155.79 seviyesindeki karşı 15M Bullish OB hedefin sınırını çiziyor.",
       "macro_notes": "ABD getiri eğrisindeki dikleşme Doları desteklese de Asya/Londra geçişinde JPY volatilitesi dengeli; makro kapı NEUTRAL_ALL ile 0.75x riske onay veriyor.",
-      "key_learning": "Short işlemlerinde 4H Premium bölgesi SMC kanunudur. Karşıdaki 15M Bullish OB (155.79) kâr alımı (TP) için doğal bariyerdir."
+      "key_learning": "Short işlemlerinde 4H Premium bölgesi SMC kanunudur. Karşıdaki 15M Bullish OB (155.79) kâr alımı (TP) için doğal bariyerdir.",
+      "realized_usd": null
     }
   },
   {
@@ -382,13 +390,13 @@
     "macro_gating_layer": {
       "primary_regime": "Late-Cycle Overheating with Transatlantic Divergence",
       "macro_bias_gate": "NEUTRAL_ALL",
-      "macro_multiplier": 1.0,
+      "macro_multiplier": 1,
       "recommended_risk_multiplier": 0.75,
       "news_freeze_active": false,
       "macro_rationale_snippet": "Late-Cycle Overheating, DXY baskısı ve emtia para birimlerinde (NZD) zayıflık. NEUTRAL_ALL onaylı, 0.75x lot."
     },
     "begonya_synthesis": {
-      "final_begonya_score": 82.0,
+      "final_begonya_score": 82,
       "score_tier": "Tier A",
       "action": "PROCEED_ON_RETEST",
       "gate_decision": "Makro onaylı, 4H/1H çift Premium filtresiyle elit SAT kurulumu."
@@ -403,8 +411,8 @@
       "session": "London_Mid",
       "spread_pips_at_signal": 0.9,
       "risk_pct_allocated": 0.75,
-      "account_size_usd": 100000.0,
-      "risk_allocated_usd": 750.0
+      "account_size_usd": 100000,
+      "risk_allocated_usd": 750
     },
     "post_trade_audit": {
       "actual_outcome": "WIN",
@@ -415,8 +423,9 @@
       "smc_notes": "Kusursuz icra. Fiyat 0.58808-0.58829 OB bölgesine retest verdi, 1M grafiğinde üst fitil likidite sweep yaptıktan sonra 0.5883ten 0.5870e sert bir displacement düşüşü başlattı. 17.8 pip aşağıdaki 15M Bullish OB (0.5861) ilk kâr hedefidir.",
       "macro_notes": "ABD tahvil faizlerinin yüksekliği ve DXY gücü, NZD gibi yüksek betalı emtia para birimlerinde satış baskısını destekliyor. 0.75x lot disiplinle uygulandı.",
       "key_learning": "2.1 piplik jilet gibi OBden 1. TP ile 980$ (+1.31R) kasaya atmak ve stopu BEye cekmek, fon yoneticisi seviyesinde kusursuz bir asimetrik kâr/risk orani yaratmistir.",
-      "realized_pnl_usd": 2000.0,
-      "exit_reason": "Islem 0.5843 EQL likidite miknatisina akarak toplamda +2,000.00 $ (+2.67R) kâr ile tamamen kapatildi."
+      "realized_pnl_usd": 2000,
+      "exit_reason": "Islem 0.5843 EQL likidite miknatisina akarak toplamda +2,000.00 $ (+2.67R) kâr ile tamamen kapatildi.",
+      "realized_usd": 2000
     }
   },
   {
@@ -453,13 +462,13 @@
     "macro_gating_layer": {
       "primary_regime": "Late-Cycle Overheating with Global Divergence & Fiscal Dominance",
       "macro_bias_gate": "NEUTRAL_ALL",
-      "macro_multiplier": 1.0,
+      "macro_multiplier": 1,
       "recommended_risk_multiplier": 0.75,
       "news_freeze_active": false,
       "macro_rationale_snippet": "Late-Cycle Overheating, küresel imalat zayıflığı ve CHF sığınak rolü. NEUTRAL_ALL onaylı, 0.75x lot."
     },
     "begonya_synthesis": {
-      "final_begonya_score": 82.0,
+      "final_begonya_score": 82,
       "score_tier": "Tier A",
       "action": "PROCEED_ON_RETEST",
       "gate_decision": "Makro kapı NEUTRAL_ALL onaylı, 4H/15M Pahalı bölge uyumuyla Tier A SAT."
@@ -474,20 +483,21 @@
       "session": "NY_Mid",
       "spread_pips_at_signal": 1.1,
       "risk_pct_allocated": 0.75,
-      "account_size_usd": 100000.0,
-      "risk_allocated_usd": 750.0
+      "account_size_usd": 100000,
+      "risk_allocated_usd": 750
     },
     "post_trade_audit": {
       "actual_outcome": "WIN_PARTIAL_TP_AND_BE",
       "realized_r": 0.43,
-      "realized_pnl_usd": 325.0,
+      "realized_pnl_usd": 325,
       "was_whipsawed": false,
       "outcome_category": "PROFIT",
       "failure_attribution": "None",
       "exit_reason": "Fiyat POI retesti sonrası hedefe aktı; 1. TP seviyesinde kısmi kâr alındı (+325$), ardından stop başabaşa (BE) çekildi ve kalan pozisyon BE oldu.",
       "smc_notes": "4H ve 15M Pahalı (Premium) bölge Short için harika çalıştı. 6 dipli devasa EQL mıknatısına doğru başlayan harekette 1. TPnin alınması ve kalanın BEye çekilmesi sermaye korumalı kazanç sağladı.",
       "macro_notes": "Avrupa büyüme endişeleri ve CHF güvenli liman talebi EURCHF short hareketini destekledi. 0.75x risk disiplini sürdürüldü.",
-      "key_learning": "1. TP alındıktan sonra stopu BEye çekmek, piyasada oluşabilecek ani likidite geri dönüşlerine karşı net kârı garantiye alan profesyonel trader alışkanlığıdır."
+      "key_learning": "1. TP alındıktan sonra stopu BEye çekmek, piyasada oluşabilecek ani likidite geri dönüşlerine karşı net kârı garantiye alan profesyonel trader alışkanlığıdır.",
+      "realized_usd": 325
     }
   },
   {
@@ -524,13 +534,13 @@
     "macro_gating_layer": {
       "primary_regime": "Late-Cycle Overheating with Bear Steepening",
       "macro_bias_gate": "NEUTRAL_ALL",
-      "macro_multiplier": 1.0,
+      "macro_multiplier": 1,
       "recommended_risk_multiplier": 0.75,
       "news_freeze_active": false,
       "macro_rationale_snippet": "Late-Cycle Overheating, Bear Steepening getiri dinamikleri ve dirençli ABD istihdamı. NEUTRAL_ALL onaylı, 0.75x lot."
     },
     "begonya_synthesis": {
-      "final_begonya_score": 82.0,
+      "final_begonya_score": 82,
       "score_tier": "Tier A",
       "action": "PROCEED_ON_RETEST",
       "gate_decision": "Makro onaylı, 4H/15M Ucuz bölgesi ve EQH mıknatısıyla Tier A AL."
@@ -545,20 +555,21 @@
       "session": "Asian_Open",
       "spread_pips_at_signal": 1.2,
       "risk_pct_allocated": 0.75,
-      "account_size_usd": 100000.0,
-      "risk_allocated_usd": 750.0
+      "account_size_usd": 100000,
+      "risk_allocated_usd": 750
     },
     "post_trade_audit": {
       "actual_outcome": "WIN",
-      "realized_r": 2.0,
-      "realized_pnl_usd": 1500.0,
+      "realized_r": 2,
+      "realized_pnl_usd": 1500,
       "was_whipsawed": false,
       "outcome_category": "PROFIT",
       "failure_attribution": "None",
       "exit_reason": "Islem 0.8124 EQH miknatisina dogru yukselerek toplamda 2.0R (+1,500.00 $) kâr ile tamamen kapatildi.",
       "smc_notes": "4H ve 15M Ucuz (Discount) bölgesindeki Bullish OB kusursuz çalıştı. 19 pip yukarıdaki karşı 15M Bearish OBde kısmi kâr realizasyonu disiplinli yapıldı.",
       "macro_notes": "Bear Steepening ve güçlü Dolar teması USDCHF alım yönünü destekledi. 0.75x risk disiplinle uygulandı.",
-      "key_learning": "Karşı engel bölgesinde 1. TP alıp (500$) stopu BEye çekmek risksiz bir runner yaratır; kalan pozisyon artık tamamen piyasanın parasıyla üst EQH likiditesini kovalamaktadır."
+      "key_learning": "Karşı engel bölgesinde 1. TP alıp (500$) stopu BEye çekmek risksiz bir runner yaratır; kalan pozisyon artık tamamen piyasanın parasıyla üst EQH likiditesini kovalamaktadır.",
+      "realized_usd": 1500
     }
   },
   {
@@ -594,13 +605,13 @@
     "macro_gating_layer": {
       "primary_regime": "Late-Cycle Overheating with Bear Steepening",
       "macro_bias_gate": "NEUTRAL_ALL",
-      "macro_multiplier": 1.0,
+      "macro_multiplier": 1,
       "recommended_risk_multiplier": 0.75,
       "news_freeze_active": false,
       "macro_rationale_snippet": "Late-Cycle Overheating, Bear Steepening getiri dinamikleri. NEUTRAL_ALL onaylı, 0.75x lot."
     },
     "begonya_synthesis": {
-      "final_begonya_score": 82.0,
+      "final_begonya_score": 82,
       "score_tier": "Tier A",
       "action": "PROCEED_ON_RETEST",
       "gate_decision": "Makro kapı onaylı, 82 puan Tier A."
@@ -615,19 +626,20 @@
       "session": "London_Mid",
       "spread_pips_at_signal": 1.8,
       "risk_pct_allocated": 0.75,
-      "account_size_usd": 100000.0,
-      "risk_allocated_usd": 750.0
+      "account_size_usd": 100000,
+      "risk_allocated_usd": 750
     },
     "post_trade_audit": {
       "actual_outcome": "LOSS",
-      "realized_r": -1.0,
-      "realized_pnl_usd": -750.0,
+      "realized_r": -1,
+      "realized_pnl_usd": -750,
       "was_whipsawed": false,
       "outcome_category": "LOSS",
       "failure_attribution": "SMC_Structure_Blown_And_M1_Execution_Premature",
       "smc_notes": "Kritik Hata: 1H zaman dilimi 107.00 tepesinden beri net bir dağıtım (distribution) ve düşüş içindeydi. 1H Pahalı (Premium) bölgedeydi. 15Mde sabah 102.30a inen fiyatın yukarı sıçraması bir ana trend değil, sadece düzeltmeydi. Fiyat 102.94 POIsini aşağı ezip geçti.",
       "macro_notes": "Late-Cycle getiri baskısı kripto varlıklardaki zayıflığı derinleştirdi. Makronun NEUTRAL_ALL yerine VETO vermesi durumunda bu zarar engellenebilirdi.",
-      "key_learning": "1. Kural: 1H grafiğinde tepe dağıtımı varken iç yapı OBlerine AL girilmemeli. 2. Kural: 1M grafiğinde düşüş bıçak gibiyse (peş peşe kırmızı mumlar) ve yukarı CHoCH/Displacement görülmüyorsa emir ASLA açılmamalıdır; POI delinmesi durumunda pas geçilmelidir."
+      "key_learning": "1. Kural: 1H grafiğinde tepe dağıtımı varken iç yapı OBlerine AL girilmemeli. 2. Kural: 1M grafiğinde düşüş bıçak gibiyse (peş peşe kırmızı mumlar) ve yukarı CHoCH/Displacement görülmüyorsa emir ASLA açılmamalıdır; POI delinmesi durumunda pas geçilmelidir.",
+      "realized_usd": -750
     }
   },
   {
@@ -663,13 +675,13 @@
     "macro_gating_layer": {
       "primary_regime": "Late-Cycle Overheating with Bear Steepening",
       "macro_bias_gate": "NEUTRAL_ALL",
-      "macro_multiplier": 1.0,
+      "macro_multiplier": 1,
       "recommended_risk_multiplier": 0.75,
       "news_freeze_active": false,
       "macro_rationale_snippet": "Late-Cycle Overheating, Bear Steepening getiri dinamikleri. NEUTRAL_ALL onaylı, 0.75x lot."
     },
     "begonya_synthesis": {
-      "final_begonya_score": 75.0,
+      "final_begonya_score": 75,
       "score_tier": "Tier A",
       "action": "PROCEED_CONDITIONAL_M1",
       "gate_decision": "Makro kapı NEUTRAL_ALL onaylı, ancak anlatı parametreleri Nötr/Orta."
@@ -686,18 +698,19 @@
     },
     "post_trade_audit": {
       "actual_outcome": "INVALID_NO_ENTRY",
-      "realized_r": 0.0,
-      "realized_pnl_usd": 0.0,
+      "realized_r": 0,
+      "realized_pnl_usd": 0,
       "was_whipsawed": false,
       "outcome_category": "AVERTED_LOSS",
       "failure_attribution": "None_Protected_By_M1",
       "smc_notes": "Fiyat 15M OB destegini (55.14) kirip altinda kapatti. M1 filtresi sayesinde giris yapilmadi.",
       "macro_notes": "Late-Cycle getiri ortamında kripto varlıklardaki zayıflık devam etti.",
       "key_learning": "M1 Manuel Teyit filtresinin hayati zaferi: Fiyat POI altinda kapattiginda isleme girmeyerek kasadaki 750$ korundu. Engellenen zarar (Averted Loss), en az kâr etmek kadar degerli bir basari metriktir.",
-      "account_size_usd": 100000.0,
-      "risk_allocated_usd": 0.0,
-      "risk_pct": 0.0,
-      "exit_reason": "Fiyat 55.14 POI tabaninin altinda mum govdesi kapanisi yapti; M1 teyidi olusmadi. Operator kurala sadik kalarak isleme girmedi ve 750$ zarar engellendi (Averted Loss)."
+      "account_size_usd": 100000,
+      "risk_allocated_usd": 0,
+      "risk_pct": 0,
+      "exit_reason": "Fiyat 55.14 POI tabaninin altinda mum govdesi kapanisi yapti; M1 teyidi olusmadi. Operator kurala sadik kalarak isleme girmedi ve 750$ zarar engellendi (Averted Loss).",
+      "realized_usd": 0
     }
   },
   {
@@ -734,13 +747,13 @@
     "macro_gating_layer": {
       "primary_regime": "Late-Cycle Overheating with Global Divergence",
       "macro_bias_gate": "NEUTRAL_ALL",
-      "macro_multiplier": 1.0,
+      "macro_multiplier": 1,
       "recommended_risk_multiplier": 0.75,
       "news_freeze_active": false,
       "macro_rationale_snippet": "Late-Cycle Overheating. NEUTRAL_ALL onaylı, 0.75x lot."
     },
     "begonya_synthesis": {
-      "final_begonya_score": 75.0,
+      "final_begonya_score": 75,
       "score_tier": "Tier A",
       "action": "PROCEED_ON_RETEST",
       "gate_decision": "Makro onaylı, 4H/1H çift Ucuz bölge desteğiyle Tier A AL."
@@ -755,8 +768,8 @@
       "session": "Asian_Early",
       "spread_pips_at_signal": 1.2,
       "risk_pct_allocated": 0.75,
-      "account_size_usd": 100000.0,
-      "risk_allocated_usd": 750.0
+      "account_size_usd": 100000,
+      "risk_allocated_usd": 750
     },
     "post_trade_audit": {
       "actual_outcome": "ACTIVE_RUNNER_1ST_TP_HIT",
@@ -768,7 +781,8 @@
       "exit_reason": "Fiyat 1.0953 OB retesti sonrası yukarı fırlayarak 1.0984 EQH tepelerini süpürdü ve 1.1000 üzerine çıktı. 0.75R seviyesinde %50 kısmi kâr alındı (+281.25$), stop BEye çekildi. Kalan %50 runner pozisyon sıfır riskle açık.",
       "smc_notes": "15M Pahalı bölgede olmasına rağmen hem 4H hem de 1Hın Ucuz (Discount) olması ana rüzgarı sağladı. 15M Pahalı şüphesine karşılık 0.75Rda %50 kâr alıp kalanı BEye çekmek harika bir operatör disiplinidir.",
       "macro_notes": "Global Divergence ortamında CHF karşısında GBP alımı makro kapı tarafından onaylandı.",
-      "key_learning": "4H ve 1H çift Discount desteği varsa 15M Pahalı olsa dahi kurulum çalışabilir; ancak operatörün erken kısmi kâr alıp stopu BEye çekmesi en profesyonel risk yönetimidir."
+      "key_learning": "4H ve 1H çift Discount desteği varsa 15M Pahalı olsa dahi kurulum çalışabilir; ancak operatörün erken kısmi kâr alıp stopu BEye çekmesi en profesyonel risk yönetimidir.",
+      "realized_usd": 281.25
     }
   },
   {
@@ -787,7 +801,7 @@
         1.09958
       ],
       "current_price_at_signal": 1.09683,
-      "distance_pips_to_poi": 23.0,
+      "distance_pips_to_poi": 23,
       "stop_loss": 1.09965,
       "htf_trend_4h": "Bearish",
       "htf_trend_1h": "Bearish",
@@ -805,13 +819,13 @@
     "macro_gating_layer": {
       "primary_regime": "Late-Cycle Overheating with Global Divergence",
       "macro_bias_gate": "NEUTRAL_ALL",
-      "macro_multiplier": 1.0,
+      "macro_multiplier": 1,
       "recommended_risk_multiplier": 0.75,
       "news_freeze_active": false,
       "macro_rationale_snippet": "Late-Cycle Overheating, Global Divergence. NEUTRAL_ALL onaylı, 0.75x lot."
     },
     "begonya_synthesis": {
-      "final_begonya_score": 82.0,
+      "final_begonya_score": 82,
       "score_tier": "Tier A",
       "action": "PROCEED_CONDITIONAL_RETEST",
       "gate_decision": "Makro onaylı, 4H/15M Pahalı bölge satışı için Tier A kurulum."
@@ -836,11 +850,12 @@
       "macro_notes": "NEUTRAL_ALL kapısı iki yönlü dengeli volatiliteye izin veriyor.",
       "key_learning": "4H ve 1H guclu yukselis trendindeyken (sabahki GBPCHF AL isleminin calistigi ortamda), ic yapi 15M Bearish OBlerine tepe avciligi amaciyla short girmek yuksek risklidir. HTF trend yonuyle ters islemlere Grade A verilmemelidir.",
       "risk_pct_allocated": 0.75,
-      "account_size_usd": 100000.0,
-      "risk_allocated_usd": 450.0,
-      "realized_pnl_usd": -450.0,
+      "account_size_usd": 100000,
+      "risk_allocated_usd": 450,
+      "realized_pnl_usd": -450,
       "risk_pct": 0.45,
-      "exit_reason": "1.0991 seviyesindeki 15M Bearish OB direnci, ana 4H ve 1H yukselis trendinin momentumunu durduramadi; fiyat tepeyi yukari delip gecti ve -450$ ile stop oldu."
+      "exit_reason": "1.0991 seviyesindeki 15M Bearish OB direnci, ana 4H ve 1H yukselis trendinin momentumunu durduramadi; fiyat tepeyi yukari delip gecti ve -450$ ile stop oldu.",
+      "realized_usd": -450
     }
   },
   {
@@ -877,13 +892,13 @@
     "macro_gating_layer": {
       "primary_regime": "Late-Cycle Overheating with Global Divergence",
       "macro_bias_gate": "NEUTRAL_ALL",
-      "macro_multiplier": 1.0,
+      "macro_multiplier": 1,
       "recommended_risk_multiplier": 0.75,
       "news_freeze_active": false,
       "macro_rationale_snippet": "Late-Cycle Overheating, Global Divergence. NEUTRAL_ALL onaylı, 0.75x lot."
     },
     "begonya_synthesis": {
-      "final_begonya_score": 82.0,
+      "final_begonya_score": 82,
       "score_tier": "Tier A",
       "action": "PROCEED_ON_RETEST",
       "gate_decision": "Makro onaylı, 4H/15M Pahalı bölge ve 153.09 EQL hedefiyle Tier A SAT."
@@ -898,8 +913,8 @@
       "session": "London_Mid",
       "spread_pips_at_signal": 0.8,
       "risk_pct_allocated": 0.75,
-      "account_size_usd": 100000.0,
-      "risk_allocated_usd": 750.0
+      "account_size_usd": 100000,
+      "risk_allocated_usd": 750
     },
     "post_trade_audit": {
       "actual_outcome": "ACTIVE_IN_POSITION",
@@ -909,7 +924,228 @@
       "failure_attribution": "None",
       "smc_notes": "156.50den 153.00e inen devasa düşüş trendinin ardından gelen geri çekilmede 153.82-153.91 Bearish OBsinden girildi. Aşağıda 153.0949 seviyesinde tam 49 pip aşağıdaki devasa 3lü dip EQL likidite havuzu hedefleniyor.",
       "macro_notes": "Late-Cycle rejiminde küresel ayrışma ve JPY oynaklığı short yönünü destekliyor. 0.75x lot uygulandı.",
-      "key_learning": "4H ve 15M Premium bölgesindeyken HTF trend yönünde açılan short işlemleri 49 piplik EQL hedeflerine doğru güçlü akış potansiyeline sahiptir."
+      "key_learning": "4H ve 15M Premium bölgesindeyken HTF trend yönünde açılan short işlemleri 49 piplik EQL hedeflerine doğru güçlü akış potansiyeline sahiptir.",
+      "realized_usd": null
+    }
+  },
+  {
+    "record_id": "BG-20260915-001",
+    "timestamp_utc": "2026-09-15T00:30:00Z",
+    "timestamp_tsi": "2026-09-15 03:30:00",
+    "symbol": "USDCHF",
+    "trade_direction": "SHORT",
+    "telegram_raw_summary": "USDCHF SAT | Grade A (8/9) | Skor: 90/100 | Makro: NEUTRAL_ALL | Giriş: 0.81897 - 0.81953 | Anlık: 0.81767 | Stop: 0.81953 üstü",
+    "smc_technical_layer": {
+      "raw_score": 90,
+      "grade": "A",
+      "poi_type": "Bearish OB",
+      "entry_zone": [
+        0.81897,
+        0.81953
+      ],
+      "current_price_at_signal": 0.81767,
+      "distance_points_to_poi": 13.0,
+      "stop_loss": 0.8196,
+      "take_profit": 0.811,
+      "risk_reward_estimated": 10.5,
+      "htf_trend_4h": "Bearish",
+      "htf_trend_1h": "Bearish",
+      "htf_alignment": "Aligned",
+      "premium_discount_state": {
+        "4h": "Denge (Equilibrium)",
+        "1h": "Premium (Pahalı)",
+        "15m": "Premium (Pahalı)"
+      },
+      "liquidity_magnet": "EQL (Eşit Dipler - 4 dip @ 0.8110, 66.7 pip aşağıda)",
+      "opposing_barrier": "15M Bullish OB @ 0.8164 - 0.8165 (24.2 pip aşağıda)",
+      "liquidity_sweep_prior": true,
+      "displacement_quality": "High"
+    },
+    "macro_gating_layer": {
+      "primary_regime": "Late-Cycle Overheating with Global Divergence",
+      "macro_bias_gate": "NEUTRAL_ALL",
+      "macro_multiplier": 1,
+      "recommended_risk_multiplier": 0.25,
+      "news_freeze_active": false,
+      "macro_rationale_snippet": "Late-Cycle Overheating rejimi hakim. Transatlantik getiri makası (+256.1 bps) ABD lehine. 0.25x lot defansif sermaye koruma boyutu."
+    },
+    "begonya_synthesis": {
+      "final_begonya_score": 90,
+      "score_tier": "Tier A+",
+      "action": "PROCEED_ON_RETEST",
+      "gate_decision": "Makro kapı NEUTRAL_ALL onay verdi, risk çarpanı 0.25x ile sermaye koruma modunda uygulandı."
+    },
+    "m1_execution_reality": {
+      "poi_retested": true,
+      "m1_sweep_occurred": true,
+      "m1_displacement_occurred": true,
+      "m1_confirmation_received": true,
+      "entry_triggered": true,
+      "execution_state": "STOPPED_OUT",
+      "session": "Asian_Late",
+      "spread_pips_at_signal": 1.1,
+      "risk_pct_allocated": 0.25,
+      "account_size_usd": 100000,
+      "risk_allocated_usd": 250
+    },
+    "post_trade_audit": {
+      "actual_outcome": "LOSS",
+      "realized_r": -0.25,
+      "realized_pnl_usd": -250.0,
+      "realized_usd": -250.0,
+      "was_whipsawed": false,
+      "outcome_category": "LOSS",
+      "failure_attribution": "US_Yield_Spike_And_CPI_Reversal",
+      "exit_reason": "16 Eylül seansında ABD 2 yıllık tahvil faizlerinin sıçraması (+18.5 bps) ve Core CPI verisi Dolar'ı yukarı itti; fiyat 0.8196 stop seviyesine çarparak 0.25x lot ile -250.00 $ (-0.25 R) zararla kapandı.",
+      "smc_notes": "0.81897 15M Bearish OB retesti sonrası fiyat kâra geçti ancak aşağıdaki 0.8110 EQL likidite havuzunu süpüremeden, 16 Eylül ABD verileriyle gelen ters momentum 0.8196 kutu tavanını yukarı kırıp stop etti.",
+      "macro_notes": "Girişteki Late-Cycle DXY düşüşü 16 Eylül'de getiri sıçramasıyla nötrlenerek pariteyi NEUTRAL_RANGE'e soktu. Makronun 0.25x lot defansif iskonto önerisi sayesinde standart 750$ veya 1.000$ stop kaybı yerine sadece 250$ (-0.25 R) risk gerçekleşti.",
+      "key_learning": "1. Makro rejim SHORT'tan NEUTRAL_RANGE'e geçtiğinde ve önümüzde Core CPI gibi Kırmızı Bülten verisi varken stop mutlaka BE seviyesine çekilmeli veya veri öncesi pozisyon kapatılmalıdır. 2. 0.25x sermaye koruma boyutu kasadaki 750$ nakdi korumuştur."
+    }
+  },
+  {
+    "record_id": "BG-20260915-002",
+    "timestamp_utc": "2026-09-15T04:15:00Z",
+    "timestamp_tsi": "2026-09-15 07:15:00",
+    "symbol": "BTCUSD",
+    "trade_direction": "LONG",
+    "telegram_raw_summary": "BTCUSD AL | Grade A (7/9) | Skor: 82/100 | Makro: LONG_ONLY | Giriş: 77615.06 - 77930.01 | Anlık: 77678.00 | Stop: 77615.06 altı",
+    "smc_technical_layer": {
+      "raw_score": 82,
+      "grade": "A",
+      "poi_type": "Bullish OB",
+      "entry_zone": [
+        77615.06,
+        77930.01
+      ],
+      "current_price_at_signal": 77678.0,
+      "distance_points_to_poi": 0.0,
+      "stop_loss": 77615.06,
+      "take_profit": 79346.41,
+      "risk_reward_estimated": 5.4,
+      "htf_trend_4h": "Bullish",
+      "htf_trend_1h": "Bullish",
+      "htf_alignment": "Aligned",
+      "premium_discount_state": {
+        "4h": "Discount (Ucuz)",
+        "1h": "Discount (Ucuz)",
+        "15m": "Discount (Ucuz)"
+      },
+      "liquidity_magnet": "EQH (Eşit Tepeler - 4 tepe @ 79346.41, 1668 pip yukarıda)",
+      "opposing_barrier": "15M Bearish OB @ 78408.64 - 78564.39 (478.6 pip yukarıda)",
+      "liquidity_sweep_prior": true,
+      "displacement_quality": "Medium"
+    },
+    "macro_gating_layer": {
+      "primary_regime": "Late-Cycle Overheating with Global Divergence",
+      "macro_bias_gate": "LONG_ONLY",
+      "macro_multiplier": 1,
+      "recommended_risk_multiplier": 0.19,
+      "news_freeze_active": false,
+      "macro_rationale_snippet": "Late-Cycle Overheating rejimi hakim. Transatlantik getiri makası (+256.1 bps). Makro BTC için LONG_ONLY izin verdi, fakat oynaklık nedeniyle 0.19x lot defansif boyutlandırma önerildi."
+    },
+    "begonya_synthesis": {
+      "final_begonya_score": 82,
+      "score_tier": "Tier A",
+      "action": "WAIT_M1_CONFIRMATION",
+      "gate_decision": "Makro onaylı, 1 dakikalık onay şartıyla 0.19x risk tahsis edildi."
+    },
+    "m1_execution_reality": {
+      "poi_retested": true,
+      "m1_sweep_occurred": false,
+      "m1_displacement_occurred": false,
+      "m1_confirmation_received": false,
+      "entry_triggered": false,
+      "execution_state": "INVALID_NO_ENTRY",
+      "session": "Asian_Late",
+      "spread_pips_at_signal": 2.5,
+      "risk_pct_allocated": 0.19,
+      "account_size_usd": 100000,
+      "risk_allocated_usd": 190.0
+    },
+    "post_trade_audit": {
+      "actual_outcome": "INVALID_NO_ENTRY",
+      "realized_r": 0.0,
+      "realized_usd": 0.0,
+      "was_whipsawed": false,
+      "outcome_category": "AVERTED_LOSS",
+      "failure_attribution": "AVERTED_BY_M1_CONFIRMATION_FILTER",
+      "smc_notes": "Fiyat 79300 zirvesinden 77615-77930 15M Bullish OB bölgesine çok sert kırmızı mumlarla indi. 1 dakikalık grafikte hiçbir bullish reversal/CHoCH veya fitil tepkisi oluşmadı (confirme vermedi); fiyat kutu tabanını kırıp geçti. M1 icra kuralı sayesinde işleme girilmedi.",
+      "macro_notes": "Makro kapı LONG_ONLY vermişti ancak risk çarpanını 0.19x'e indirerek piyasa kırılganlığını işaret etmişti.",
+      "key_learning": "M1 icra filtresinin önemi bir kez daha kanıtlandı: Kutuya sert/agresif yaklaşımlarda ('Agresif düşüş') 1M CHoCH teyidi olmadan asla limit emir atılmamalıdır. M1 filtresi 190$'lık stop kaybını doğrudan engellemiştir.",
+      "exit_reason": "1 dakikalık grafikte teyit oluşmadı (confirme vermedi) ve fiyat kutuyu delip geçtiği için işlem pas geçildi."
+    }
+  },
+  {
+    "record_id": "BG-20260915-003",
+    "timestamp_utc": "2026-09-15T04:45:00Z",
+    "timestamp_tsi": "2026-09-15 07:45:00",
+    "symbol": "SOLUSD",
+    "trade_direction": "LONG",
+    "telegram_raw_summary": "SOLUSD AL | Grade A (7/9) | Skor: 82/100 | Makro: LONG_ONLY | Giriş: 99.72 - 99.97 | Anlık: 101.36 | Stop: 99.72 altı",
+    "smc_technical_layer": {
+      "raw_score": 82,
+      "grade": "A",
+      "poi_type": "Bullish FVG",
+      "entry_zone": [
+        99.72,
+        99.97
+      ],
+      "current_price_at_signal": 101.36,
+      "distance_points_to_poi": 1.39,
+      "stop_loss": 99.72,
+      "take_profit": 103.9333,
+      "risk_reward_estimated": 15.8,
+      "htf_trend_4h": "Bullish",
+      "htf_trend_1h": "Bullish",
+      "htf_alignment": "Aligned",
+      "premium_discount_state": {
+        "4h": "Discount (Ucuz)",
+        "1h": "Discount (Ucuz)",
+        "15m": "Discount (Ucuz)"
+      },
+      "liquidity_magnet": "EQH (Eşit Tepeler - 3 tepe @ 103.9333, 257.3 pip yukarıda)",
+      "opposing_barrier": "15M Bearish OB @ 103.48 - 103.73 (351 pip yukarıda)",
+      "liquidity_sweep_prior": true,
+      "displacement_quality": "High"
+    },
+    "macro_gating_layer": {
+      "primary_regime": "Late-Cycle Overheating with Global Divergence",
+      "macro_bias_gate": "LONG_ONLY",
+      "macro_multiplier": 1,
+      "recommended_risk_multiplier": 0.19,
+      "news_freeze_active": false,
+      "macro_rationale_snippet": "Late-Cycle Overheating rejimi hakim. Transatlantik getiri makası (+256.1 bps). SOL için makro kapı LONG_ONLY onaylı, ancak sistemik risk nedeniyle 0.19x lot defansif boyutlandırma uygulandı."
+    },
+    "begonya_synthesis": {
+      "final_begonya_score": 82,
+      "score_tier": "Tier A",
+      "action": "WAIT_RETEST_AND_M1_CONFIRMATION",
+      "gate_decision": "Makro kapı onaylı, geri çekilme ve 1M onayı şartıyla 0.19x lot iskonto edildi."
+    },
+    "m1_execution_reality": {
+      "poi_retested": false,
+      "m1_sweep_occurred": false,
+      "m1_displacement_occurred": false,
+      "m1_confirmation_received": false,
+      "entry_triggered": false,
+      "execution_state": "INVALID_NO_ENTRY",
+      "session": "Asian_Late",
+      "spread_pips_at_signal": 2.2,
+      "risk_pct_allocated": 0.19,
+      "account_size_usd": 100000,
+      "risk_allocated_usd": 190.0
+    },
+    "post_trade_audit": {
+      "actual_outcome": "INVALID_NO_ENTRY",
+      "realized_r": 0.0,
+      "realized_usd": 0.0,
+      "was_whipsawed": false,
+      "outcome_category": "AVERTED_LOSS",
+      "failure_attribution": "NO_CONFIRMATION_PASSED",
+      "smc_notes": "Fiyat 101.36 seviyesindeyken 99.72-99.97 FVG kutusuna geri çekilme ve 1M onayı beklendi. 1 dakikalık grafikte hiçbir geçerli giriş teyidi oluşmadı (confirme vermedi); kural gereği işleme girilmedi ve sermaye korundu.",
+      "macro_notes": "Makro motor LONG_ONLY kapısı açmış olsa da sermaye koruma modu (0.25x) ile riski 190$'a çekmişti.",
+      "key_learning": "Fiyat POI bölgesine yaklaşırken veya kutu içinde 1M CHoCH/fitil onayı vermediğinde işlem açmamak, gereksiz likidite tuzaklarından korunmanın temelidir.",
+      "exit_reason": "1 dakikalık onay gelmediği için işlem açılmadı."
     }
   }
 ]
