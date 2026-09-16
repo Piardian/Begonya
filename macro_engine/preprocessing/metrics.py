@@ -130,7 +130,8 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         with _fixed_legacy_date(effective_date, as_of_datetime):
             result = super().process_all_macro_data(market_data, fred_data, calendar_events)
 
-        if "DFF" in fred_data and isinstance(fred_data["DFF"], (int, float)):
+        dff_available = isinstance(fred_data.get("DFF"), (int, float))
+        if dff_available:
             us02y_data = market_data.get("US02Y", {})
             result["fed_forward_path_analysis"] = self.calculate_fed_forward_path(
                 float(us02y_data["value"]),
@@ -176,8 +177,13 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
                 )
             result["gold_fiscal_dominance"] = gold_state
 
+        fallback_fields = []
+        if not dff_available:
+            fallback_fields.append("DFF")
+
         result["data_quality"] = {
-            "fallback_used": False,
+            "fallback_used": bool(fallback_fields),
+            "fallback_fields": fallback_fields,
             "market_provider": "validated upstream payload",
             "fred_provider": "validated upstream payload",
             "as_of_date": effective_date.isoformat() if effective_date else None,
