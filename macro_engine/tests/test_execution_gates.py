@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from gateways.execution_bias_bridge import ExecutionBiasBridge
+from graph.macro_graph import MacroWorkflowEngine
 
 
 class ExecutionGateTests(unittest.TestCase):
@@ -65,6 +66,31 @@ class ExecutionGateTests(unittest.TestCase):
         finally:
             tmp.cleanup()
 
+    def test_workflow_gate_boundary_ignores_llm_gate_values(self):
+        metrics = {
+            "cross_pairs_analysis": {
+                "event_freeze": {"active": False},
+                "cross_gates": {"XAUUSD": "LONG_ONLY"},
+            },
+            "t0_fast_stress_analysis": {"fast_stress_override": False},
+            "gold_fiscal_dominance": {"gold_short_allowed": False},
+            "btc_decoupling_analysis": {"recommended_btc_gate": "LONG_ONLY_ALLOWED_IF_DEBASEMENT"},
+        }
+        gates = MacroWorkflowEngine._build_deterministic_gates(metrics)
+        self.assertEqual(gates["execution_bias_gates"]["XAUUSD"], "LONG_ONLY")
+        self.assertEqual(gates["source"], "deterministic_metrics_only")
+        self.assertTrue(gates["llm_execution_gates_ignored"])
 
-if __name__ == "__main__":
-    unittest.main(verbosity=2)
+    def test_workflow_event_freeze_overrides_base_gate(self):
+        metrics = {
+            "cross_pairs_analysis": {
+                "event_freeze": {"active": True},
+                "cross_gates": {"XAUUSD": "LONG_ONLY", "EURUSD": "SHORT_ONLY"},
+            },
+            "t0_fast_stress_analysis": {"fast_stress_override": False},
+            "gold_fiscal_dominance": {"gold_short_allowed": False},
+            "btc_decoupling_analysis": {"recommended_btc_gate": "LONG_ONLY_ALLOWED_IF_DEBASEMENT"},
+        }
+        gates = MacroWorkflowEngine._build_deterministic_gates(metrics)
+        self.assertEqual(gates["execution_bias_gates"]["XAUUSD"], "NO_TRADE")
+        self.assertEqual(gates["execution_bias_gates"]["EURUSD"], "NO_TRADE")
