@@ -1,34 +1,33 @@
 ﻿# Macro Multi-AGI Army: Institutional Macro Regime & Risk Engine
 
-Institutional Quantitative Macro Regime & Risk Engine powered by a multi-agent hierarchy of Google Gemini models with deterministic mathematical and econometrical fallbacks.
+Macro regime and risk engine combining deterministic market/FRED metrics with LLM-based analysis. Deterministic metrics are authoritative for execution gates; LLM outputs are advisory explanations only.
 
 ## Architecture & Workflow
 
-1. **Ingestion Layer (`ingestion/`):**
-   - Direct MT5 Zero-Latency Live Feed (`mt5_market_data.py`) with fallback to Yahoo Finance (`market_data.py`).
-   - Federal Reserve Economic Data (`fred_macro_data.py`) with direct FRED API & public fallback scrapers.
-   - High-Impact Economic Calendar (`economic_calendar.py`) tracking NFP, CPI, FOMC rate decisions.
+1. **Ingestion (`ingestion/`)**
+   - Market data from the configured MT5/Yahoo path with fail-closed validation.
+   - FRED observations with explicit current/prior observation dates and no synthetic live baselines.
+   - High-impact economic calendar with fail-closed availability semantics.
 
-2. **Preprocessing & Econometrics (`preprocessing/`):**
-   - Term structure analysis (Yield Curve Spread 10Y - 2Y, 20-day momentum Spread_20D).
-   - Dynamic 60-day percentiles for VIX, Credit Spread (HY OAS), and Financial Conditions (NFCI).
-   - Real yields via TIPS (DFII10) and Transatlantic Policy Divergence (US10Y - DE10Y).
-   - Commodity terms-of-trade shock filters (Brent, Copper/Gold ratio).
+2. **Deterministic preprocessing (`preprocessing/`)**
+   - Yield-curve, real-yield, liquidity, credit, volatility and cross-asset metrics.
+   - Explicit replay clock and explicit previous regime state.
+   - Input range/anomaly checks, freshness checks and provenance metadata.
+   - Return-based cross-asset correlation rather than price-level correlation.
 
-3. **Multi-Agent Orchestrator (`agents/` & `graph/`):**
-   - **Agent 1 (Macro Analyst):** Rates, yield curve, labor market Z-scores, economic regime classification.
-   - **Agent 2 (Market Cross-Asset Analyst):** DXY, commodities, equities, crypto decoupling, cross-asset correlations.
-   - **Agent 3 (Chief Macro Strategist):** Synthesis, regime determination, asset biases (EURUSD, XAUUSD, BTC, SPX), and risk scaling.
-   - **Model Cascading:** Seamless automatic fallback across Gemini Flash models.
-   - **Deterministic Fallback Engine:** 100% offline mathematical rule engine if LLM connectivity is disrupted.
+3. **LLM analysis (`agents/`)**
+   - Specialist and strategist models consume deterministic metrics.
+   - Structured LLM output remains advisory. It does not authorize execution.
 
-4. **Gateways & Execution (`gateways/` & `daemon/`):**
-   - Atomic lock-free `macro_bias_gate.json` publishing with regime hysteresis (preventing whipsaws).
-   - Event-driven background scheduler (`macro_scheduler.py`) triggering on daily D1 close and T+180s post high-impact releases.
-   - Direct bridge integration with algorithmic trading systems (e.g., MetaTrader 5).
+4. **Execution gate (`gateways/`)**
+   - Gate precedence is deterministic: EVENT_FREEZE > SYSTEMIC_STRESS > BASE_BIAS.
+   - Execution bridge accepts only `deterministic_metrics_only` gates and rejects stale/untrusted gate files.
+   - Gate publication remains atomic so downstream execution never reads a partially written JSON file.
 
-5. **Historical Crisis Verification (`tests/`):**
-   - Validated against historical market stress events: October 2023 Supply Shock, March 2023 SVB Run, March 2020 COVID Dash for Cash.
+5. **Calibration and replay (`calibration/`, `tests/`)**
+   - Surprise calibration infrastructure uses real provider-backed observations and chronological calibration/validation/out-of-sample splits.
+   - The existing crisis fixtures are synthetic rule-execution fixtures, not provider-backed historical performance evidence.
+   - No economic edge is claimed until a real historical dataset is loaded and evaluated out-of-sample.
 
 ## Setup & Quick Start
 
@@ -38,23 +37,20 @@ pip install -r requirements.txt
 ```
 
 ### 2. Configure Environment
-Copy `.env.example` to `.env` and provide your Google Gemini API keys:
+Copy `.env.example` to `.env` and provide the required API keys:
 ```bash
 cp .env.example .env
 ```
 
 ### 3. Run Pipeline
-To execute a single full analysis run:
 ```bash
 python main.py
 ```
 
-To run historical crisis replay tests:
+### 4. Run Tests
 ```bash
-python tests/historical_replay.py
+python -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-To run the background event-driven daemon:
-```bash
-python daemon/macro_scheduler.py
-```
+### 5. Calibrate Surprise Sigmas
+Populate `calibration/surprise_observations.csv` with provider-backed actual/forecast observations and then use `calibration/surprise_sigma.py` to generate a fitted profile. The module will not fabricate a sigma when the observation count is insufficient.
