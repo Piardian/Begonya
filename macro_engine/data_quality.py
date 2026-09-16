@@ -7,12 +7,16 @@ class DataUnavailableError(RuntimeError):
     """Required macro input is unavailable; never substitute synthetic market data."""
 
 
-# Only fields actually consumed by the deterministic macro calculator are required.
+# Core inputs required to produce execution-relevant macro gates.
 REQUIRED_MARKET_FIELDS = {
     "DXY", "GOLD", "BRENT", "US10Y", "US02Y", "BTC", "COPPER", "VIX",
-    "HYG", "LQD", "CA02Y", "DE02Y", "GB02Y", "AU02Y", "IRON_ORE",
-    "DAIRY_GDT", "NZ02Y", "SOL",
+    "HYG", "LQD", "CA02Y", "DE02Y", "GB02Y", "AU02Y", "NZ02Y", "SOL",
 }
+
+# Optional cross-asset inputs. Missing values must be treated as unavailable/neutral,
+# not as fabricated prices. The legacy calculator naturally gives these factors zero
+# contribution when their change fields are absent.
+OPTIONAL_MARKET_FIELDS = {"IRON_ORE", "DAIRY_GDT", "SPX", "WTI"}
 
 REQUIRED_FRED_FIELDS = {
     "WALCL", "WALCL_4W_AGO", "RRPONTSYD", "RRPONTSYD_4W_AGO",
