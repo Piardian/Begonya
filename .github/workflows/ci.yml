@@ -30,6 +30,27 @@ jobs:
         working-directory: smc_engine
         run: node --max-old-space-size=4096 ./node_modules/jest/bin/jest.js tests/liquidityMagnetDetector.test.ts tests/opposingObstacleDetector.test.ts tests/smc2Rules.test.ts tests/poller.test.ts tests/telegramFormatter.test.ts tests/sharedCache.test.ts --runInBand
 
+  macro-engine-tests:
+    name: Deterministic Macro Metrics Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install macro dependencies
+        working-directory: macro_engine
+        run: pip install -r requirements.txt
+
+      - name: Run deterministic macro tests
+        working-directory: macro_engine
+        run: python -m unittest discover -s tests -p 'test_deterministic_metrics.py' -v
+
   system-health-audit:
     name: Orchestration & System Audit
     runs-on: ubuntu-latest
