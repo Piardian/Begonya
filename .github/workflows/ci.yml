@@ -51,6 +51,23 @@ jobs:
         working-directory: macro_engine
         run: python -m unittest discover -s tests -p 'test_deterministic_metrics.py' -v
 
+  historical-macro-replay:
+    name: Historical Macro Replay & Determinism
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install macro dependencies
+        working-directory: macro_engine
+        run: pip install -r requirements.txt
+
       - name: Run historical replay and determinism tests
         working-directory: macro_engine
         run: python -m unittest discover -s tests -p 'test_historical_replay.py' -v
