@@ -4,8 +4,10 @@ import datetime as dt
 from contextlib import contextmanager
 from typing import Any, Dict, List, Optional
 
+from config import BIAS_GATE_FILE
 from data_quality import validate_fred_payload, validate_market_payload
 from preprocessing.metrics_legacy import MacroMetricsCalculator as _LegacyMacroMetricsCalculator
+import preprocessing.metrics_legacy as _legacy_metrics_module
 
 
 @contextmanager
@@ -92,6 +94,11 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         validate_market_payload(market_data)
         validate_fred_payload(fred_data)
         effective_date = as_of_date or self.as_of_date
+
+        # Preserve the public module-level test seam while keeping the legacy
+        # implementation as the single stateful owner of the gate path.
+        _legacy_metrics_module.BIAS_GATE_FILE = BIAS_GATE_FILE
+
         with _fixed_legacy_date(effective_date, as_of_datetime):
             result = super().process_all_macro_data(market_data, fred_data, calendar_events)
 
