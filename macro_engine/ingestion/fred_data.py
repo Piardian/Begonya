@@ -23,6 +23,7 @@ class FredDataIngestion:
         "WTREGEN": "WTREGEN",
         "T10YIE": "T10YIE",
         "DFII10": "DFII10",
+        "DFF": "DFF",
         "BAMLH0A0HYM2": "BAMLH0A0HYM2",
         "NFCI": "NFCI",
         "ICSA": "ICSA",
