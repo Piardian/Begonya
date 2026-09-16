@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 import aiohttp
+
+from data_quality import DataUnavailableError
 
 logger = logging.getLogger("CalendarEventIngestion")
 
@@ -23,7 +25,12 @@ class CalendarEventIngestion:
                     if resp.status != 200:
                         raise RuntimeError(f"HTTP {resp.status}")
                     data = await resp.json()
-                    return [e for e in data if e.get("impact") == "High"]
+                    events = [e for e in data if e.get("impact") == "High"]
+                    if not isinstance(events, list):
+                        raise RuntimeError("Calendar payload is not a list")
+                    return events
         except Exception as exc:
-            logger.warning("Economic calendar unavailable: %s", exc)
-            return []
+            logger.error("Economic calendar unavailable: %s", exc)
+            raise DataUnavailableError(
+                "Economic calendar unavailable; event freeze cannot be trusted."
+            ) from exc
