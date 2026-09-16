@@ -15,6 +15,7 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
 
     def _node_ingestion_and_preprocessing(self, state: MacroGraphState) -> Dict[str, Any]:
         as_of = getattr(self, "_as_of_date", None)
+        as_of_datetime = getattr(self, "_as_of_datetime", None)
         raw_market = self.market_ingest.fetch_current_prices()
         raw_fred = self.fred_ingest.fetch_liquidity_metrics(as_of=as_of)
         events = list(state.get("calendar_events") or [])
@@ -26,6 +27,7 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             raw_fred,
             events,
             as_of_date=as_of,
+            as_of_datetime=as_of_datetime,
         )
         return {
             "raw_market": raw_market,
@@ -37,7 +39,7 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
     def _node_macro_strategist(self, state: MacroGraphState) -> Dict[str, Any]:
         result = super()._node_macro_strategist(state)
         final = result.get("final_output") or {}
-        as_of = getattr(self, "_as_of_date", None)
+        as_of = getattr(self, "_as_of_datetime", None)
         if as_of is not None:
             final["timestamp"] = as_of.isoformat()
             result["final_output"] = final
@@ -48,5 +50,6 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
         initial_events: Optional[List[Dict[str, Any]]] = None,
         as_of: Optional[dt.datetime] = None,
     ) -> Dict[str, Any]:
+        self._as_of_datetime = as_of
         self._as_of_date = as_of.date() if as_of is not None else None
         return super().run_pipeline(initial_events=initial_events)
