@@ -74,13 +74,21 @@ class HistoricalReplayAndDeterminismTests(unittest.TestCase):
         self.assertIn("credit_spread_analysis", result)
         self.assertIn("btc_decoupling_analysis", result)
 
+    def test_replay_scenarios_are_documented_as_synthetic_fixtures(self):
+        # These scenarios are hand-authored deterministic fixtures, not provider-backed
+        # historical observations. They validate rule execution, not historical edge.
+        with patch("preprocessing.metrics.BIAS_GATE_FILE", self.gate_path):
+            result = run_scenario_march_2020_covid()
+        self.assertTrue(result["data_quality"]["fallback_used"])
+        self.assertIn("DFF", result["data_quality"]["fallback_fields"])
+
     def test_real_yield_negative_tips_is_not_lost_from_raw_result(self):
-        calc = MacroMetricsCalculator()
-        # Documents the current behavior explicitly: negative DFII10 currently
-        # falls back to synthetic real yield. This test is intentionally descriptive,
-        # so a future change can be identified as a behavior change.
-        result = calc.calculate_real_yield(0.70, dfii10_tips=-0.15, breakeven_10y=0.85)
+        # Negative DFII10 is a valid observed real yield and must remain negative.
+        result = MacroMetricsCalculator.calculate_real_yield(
+            0.70, dfii10_tips=-0.15, breakeven_10y=0.85
+        )
         self.assertEqual(result["real_yield_pct"], -0.15)
+        self.assertIn("FRED DFII10", result["yield_source"])
 
 
 if __name__ == "__main__":
