@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from data_quality import DataUnavailableError, validate_market_payload
+from data_quality import (
+    DataUnavailableError,
+    REQUIRED_MARKET_FIELDS,
+    validate_market_payload,
+)
 from ingestion.market_data_legacy import MarketDataIngestion as _LegacyMarketDataIngestion
 
 
@@ -16,11 +20,12 @@ class MarketDataIngestion(_LegacyMarketDataIngestion):
 
     def fetch_current_prices(self) -> Dict[str, Any]:
         results = super().fetch_current_prices()
-        validate_market_payload(results)
+        validate_market_payload(results, required_fields=REQUIRED_MARKET_FIELDS)
         short_hist = sorted(
             f"{name}({len(data.get('history_close', []))})"
             for name, data in results.items()
-            if isinstance(data, dict) and len(data.get("history_close", [])) < 6
+            if isinstance(data, dict) and name in REQUIRED_MARKET_FIELDS
+            and len(data.get("history_close", [])) < 6
         )
         if short_hist:
             raise DataUnavailableError(
