@@ -41,7 +41,7 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         dfii10_tips: Optional[float] = None,
         breakeven_10y: Optional[float] = None,
     ) -> Dict[str, Any]:
-        # A negative TIPS yield is valid market data and must not trigger a synthetic fallback.
+        # Negative TIPS yields are valid observations and must be used directly.
         if dfii10_tips is not None:
             real_yield = round(dfii10_tips, 3)
             source = "FRED DFII10 (Doğrudan 10Y TIPS Reel Getirisi)"
@@ -52,9 +52,7 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
             source = f"Sentetik (US10Y {us10y}% - Breakeven {breakeven_10y}%)"
 
         if real_yield >= 1.90:
-            pressure_on_gold = (
-                "High Fırsat Maliyeti (Reel Faiz >= %1.90; Yeni Long Kısıtlanır)"
-            )
+            pressure_on_gold = "High Fırsat Maliyeti (Reel Faiz >= %1.90; Yeni Long Kısıtlanır)"
         elif real_yield < 1.0:
             pressure_on_gold = "Low (Destekleyici; Negatif/Düşük Reel Faiz)"
         else:
@@ -79,6 +77,26 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         effective_date = as_of_date or self.as_of_date
         with _fixed_legacy_date(effective_date):
             result = super().process_all_macro_data(market_data, fred_data, calendar_events)
+
+        # Correct the legacy emergency-gold predicate. Legacy expects the bare string
+        # "Distress", while the credit classifier emits a Turkish label containing it.
+        gold_state = result.get("gold_fiscal_dominance", {})
+        credit_state = result.get("credit_spread_analysis", {})
+        vix_level = result.get("t0_fast_stress_analysis", {}).get("vix_level")
+        oas = credit_state.get("hy_oas_spread_pct")
+        distress = (
+            isinstance(oas, (int, float)) and oas >= 4.8
+        ) or "Distress" in str(credit_state.get("stress_level", ""))
+        if isinstance(vix_level, (int, float)):
+            is_cash_dash = bool(vix_level >= 40.0 and distress)
+            gold_state["is_cash_dash"] = is_cash_dash
+            gold_state["gold_short_allowed"] = is_cash_dash
+            if is_cash_dash:
+                gold_state["status_message"] = (
+                    "⚠️ SİSTEMİK NAKİT YARIŞI: Dolar likidite donması nedeniyle geçici Altın Short izni aktif."
+                )
+            result["gold_fiscal_dominance"] = gold_state
+
         result["data_quality"] = {
             "fallback_used": False,
             "market_provider": "validated upstream payload",
