@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 from preprocessing.metrics import MacroMetricsCalculator
 from calibration.replay import validate_snapshot_no_lookahead
+from data_quality import DataUnavailableError
 from tests.historical_replay import (
     run_scenario_october_2023,
     run_scenario_march_2023_svb,
@@ -101,7 +102,7 @@ class HistoricalReplayAndDeterminismTests(unittest.TestCase):
         self.assertIn("FRED DFII10", result["yield_source"])
 
     def test_replay_lookahead_is_rejected(self):
-        with self.assertRaises(Exception):
+        with self.assertRaises(DataUnavailableError):
             validate_snapshot_no_lookahead(
                 {"timestamp": "2023-03-14T00:00:00+00:00"},
                 dt.datetime(2023, 3, 13, 12, 0, tzinfo=dt.timezone.utc),
