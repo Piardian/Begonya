@@ -1,22 +1,23 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable
+from typing import Any, Dict
 
 
 class DataUnavailableError(RuntimeError):
     """Required macro input is unavailable; never substitute synthetic market data."""
 
 
+# Only fields actually consumed by the deterministic macro calculator are required.
 REQUIRED_MARKET_FIELDS = {
-    "DXY", "GOLD", "BRENT", "WTI", "US10Y", "US02Y", "BTC", "SPX",
-    "COPPER", "VIX", "HYG", "LQD", "CA02Y", "DE02Y", "GB02Y", "AU02Y",
-    "IRON_ORE", "DAIRY_GDT", "NZ02Y", "SOL"
+    "DXY", "GOLD", "BRENT", "US10Y", "US02Y", "BTC", "COPPER", "VIX",
+    "HYG", "LQD", "CA02Y", "DE02Y", "GB02Y", "AU02Y", "IRON_ORE",
+    "DAIRY_GDT", "NZ02Y", "SOL",
 }
 
 REQUIRED_FRED_FIELDS = {
     "WALCL", "WALCL_4W_AGO", "RRPONTSYD", "RRPONTSYD_4W_AGO",
     "WTREGEN", "WTREGEN_4W_AGO", "T10YIE", "DFII10",
-    "BAMLH0A0HYM2", "NFCI", "ICSA", "DE10Y", "DE10Y_4W_AGO"
+    "BAMLH0A0HYM2", "NFCI", "ICSA", "DE10Y", "DE10Y_4W_AGO",
 }
 
 
