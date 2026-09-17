@@ -21,6 +21,17 @@ REQUIRED_FRED_FIELDS = {
     "BAMLH0A0HYM2", "NFCI", "ICSA", "DE10Y", "DE10Y_4W_AGO",
 }
 
+# Extended economic regime panel. These are kept separate from the legacy
+# liquidity/credit contract so old fixtures remain valid while live ingestion
+# can fail closed when the new panel itself is requested.
+REQUIRED_ECONOMIC_FRED_FIELDS = {
+    "CPI_YOY", "CORE_CPI_YOY", "PCE_YOY", "CORE_PCE_YOY",
+    "PAYEMS", "UNRATE", "AHE_YOY",
+    "GDP_QOQ_SAAR", "INDPRO", "RSAFS",
+    "DGS3MO", "DGS2", "DGS5", "DGS10", "DGS30",
+    "T10Y2Y", "T10Y3M",
+}
+
 
 def _validate_present_market_fields(payload: Dict[str, Any]) -> None:
     for name, data in payload.items():
