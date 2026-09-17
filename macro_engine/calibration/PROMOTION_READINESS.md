@@ -8,7 +8,7 @@ As of the current repository state, the promotion framework is implemented and C
 - Holdout windows: `2025_H2`, `2026_YTD`
 - Execution stress: `CALM_10BP`, `NEWS_30BP`, `NEWS_50BP`
 - SMC incremental comparison: implemented, complete ledger required
-- Production activation: `false`
+- production activation: `false`
 
 ## Blocking evidence
 
