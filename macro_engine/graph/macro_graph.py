@@ -8,6 +8,7 @@ from core.deterministic_controls import resolve_execution_gate
 from graph.macro_graph_legacy import MacroWorkflowEngine as _LegacyMacroWorkflowEngine
 from graph.macro_graph_legacy import MacroGraphState, save_macro_gate_atomic
 from config import BIAS_GATE_FILE
+from preprocessing.economic_regimes import build_economic_regime_snapshot
 
 
 class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
@@ -31,6 +32,10 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             as_of_datetime=as_of_datetime,
             previous_regime_state=previous_state,
             now_utc=as_of_datetime,
+        )
+        processed["economic_regime_snapshot"] = build_economic_regime_snapshot(
+            raw_fred,
+            as_of=as_of,
         )
         return {
             "raw_market": raw_market,
@@ -113,6 +118,7 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             "horizon_today": final_dict.get("horizon_today", ""),
             "horizon_this_week": final_dict.get("horizon_this_week", ""),
             "horizon_this_month": final_dict.get("horizon_this_month", ""),
+            "economic_regime_snapshot": metrics.get("economic_regime_snapshot", {}),
             "data_quality": metrics.get("data_quality", {}),
         }
         save_macro_gate_atomic(payload, BIAS_GATE_FILE)
