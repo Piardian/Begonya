@@ -9,6 +9,7 @@ from graph.macro_graph_legacy import MacroWorkflowEngine as _LegacyMacroWorkflow
 from graph.macro_graph_legacy import MacroGraphState, save_macro_gate_atomic
 from config import BIAS_GATE_FILE
 from preprocessing.economic_regimes import build_economic_regime_snapshot
+from preprocessing.policy_expectations import build_policy_expectations
 
 
 class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
@@ -36,6 +37,10 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
         processed["economic_regime_snapshot"] = build_economic_regime_snapshot(
             raw_fred,
             as_of=as_of,
+            market_data=raw_market,
+        )
+        processed["policy_expectations"] = build_policy_expectations(
+            raw_fred,
             market_data=raw_market,
         )
         return {
@@ -120,6 +125,7 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             "horizon_this_week": final_dict.get("horizon_this_week", ""),
             "horizon_this_month": final_dict.get("horizon_this_month", ""),
             "economic_regime_snapshot": metrics.get("economic_regime_snapshot", {}),
+            "policy_expectations": metrics.get("policy_expectations", {}),
             "data_quality": metrics.get("data_quality", {}),
         }
         save_macro_gate_atomic(payload, BIAS_GATE_FILE)
