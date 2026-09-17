@@ -8,9 +8,12 @@ import { runRuntimeExecutionPipeline } from './runtimeExecutionPipeline';
 import { evaluateSignalValidationGate } from '../src/signalValidationGate';
 import { fetchCandles } from './twelveDataClient';
 import { NotifiedStore } from './notifiedStore';
-import { recordRuntimeTrace, } from './runtimeTrace';
+import { recordRuntimeTrace } from './runtimeTrace';
 import { elapsedMs, recordScreenshotTelemetry, telemetryTimer } from './telemetry';
+import { FileSignalLedger } from './signalLedger';
 import type { DeliveryProcessingResult, QueuedSignalDelivery } from './signalDeliveryQueue';
+
+const signalLedger = new FileSignalLedger();
 
 export function createSignalDeliveryProcessor(
   candleStore: CandleStore,
@@ -53,6 +56,12 @@ export function createSignalDeliveryProcessor(
     }
 
     markCandidateAsNotified(notifiedStore, refreshedCandidate);
+    try {
+      await signalLedger.recordSignalIssued({ candidate: refreshedCandidate, execution: executionPipeline });
+    } catch (error) {
+      console.warn(`[SignalLedger] Signal record failed for ${refreshedCandidate.signalId ?? refreshedCandidate.uniqueKey}:`, error);
+    }
+
     try {
       const screenshotsOk = await deliverSignalScreenshots(refreshedCandidate, candleStore);
       return {
@@ -134,7 +143,7 @@ async function deliverSignalScreenshots(candidate: QueuedSignalDelivery['candida
           ['1m', '15m', '1h']
         );
         let allOk = true;
-        for (const item of charts.sort((a, b) => ({ '1m': 0, '15m': 1, '1h': 2, '4h': 3 }[a.timeframe] ?? 99) - ({ '1m': 0, '15m': 1, '1h': 2, '4h': 3 }[b.timeframe] ?? 99))) {
+        for (const item of charts.sort((a, b) => ({ '1m': 0, '15m': 1, '1h': 2, '4h': 3 }[a.timeframe] ?? 99) - ({ '1m': 0, '15m': 1, '1h': 2, '4h': 3 }[a.timeframe] ?? 99))) {
           const ok = await deliverRenderedChart(candidate.symbol, signalId, item.timeframe, item.chart.screenshotPng, item.chart.metadata, item.candidate === candidate ? candles15m : candleStore.getCandles(candidate.symbol, item.timeframe), item.candidate);
           allOk = allOk && ok;
         }
