@@ -24,6 +24,9 @@ class EconomicRegimeTests(unittest.TestCase):
             "DGS30": 4.2,
             "T10Y2Y": -0.50,
             "T10Y3M": -1.00,
+            "SOFR": 4.33,
+            "ISM_MANUFACTURING_PMI": 49.5,
+            "ISM_SERVICES_ACTIVITY": 52.0,
         }
         prior = {
             "CPI_YOY": 3.1,
@@ -43,6 +46,9 @@ class EconomicRegimeTests(unittest.TestCase):
             "DGS30": 4.0,
             "T10Y2Y": -0.80,
             "T10Y3M": -1.30,
+            "SOFR": 4.33,
+            "ISM_MANUFACTURING_PMI": 50.2,
+            "ISM_SERVICES_ACTIVITY": 51.0,
         }
         fred = dict(values)
         for key, value in prior.items():
@@ -53,7 +59,7 @@ class EconomicRegimeTests(unittest.TestCase):
         fred["data_quality"] = {
             "vintage_end": "2024-03-31",
             "economic_observation_dates": {
-                key: ("2024-03-29" if key.startswith("DG") or key.startswith("T10") else "2024-03-01")
+                key: ("2024-03-29" if key.startswith("DG") or key.startswith("T10") or key == "SOFR" else "2024-03-01")
                 for key in values
             },
         }
@@ -72,12 +78,37 @@ class EconomicRegimeTests(unittest.TestCase):
         self.assertEqual(first["growth_regime"]["signal"], "EXPANDING")
         self.assertTrue(first["rate_curve_regime"]["two_ten_inverted"])
         self.assertEqual(first["rate_curve_regime"]["curve_move"], "STEEPENING")
+        self.assertEqual(first["pmi_regime"]["signal"], "MIXED")
+        self.assertEqual(first["policy_regime"]["sofr_minus_dff_bps"], 0.0)
+        self.assertEqual(first["policy_regime"]["fed_funds_futures"]["status"], "UNAVAILABLE")
         self.assertTrue(first["interpretation_guardrails"]["no_composite_score"])
+
+    def test_fed_funds_futures_is_deterministic_and_optional(self):
+        fred = self.base_fred()
+        market = {
+            "FED_FUNDS_FUTURES": {
+                "value": 96.25,
+                "prev": 96.20,
+                "val_5d_ago": 96.05,
+            }
+        }
+        result = build_economic_regime_snapshot(
+            fred,
+            as_of=dt.date(2024, 3, 31),
+            market_data=market,
+        )
+        panel = result["policy_regime"]["fed_funds_futures"]
+        self.assertEqual(panel["status"], "AVAILABLE")
+        self.assertEqual(panel["market_implied_rate_pct"], 3.75)
+        self.assertEqual(panel["vs_dff_bps"], -58.0)
+        self.assertEqual(panel["reprice_1d_bps"], -5.0)
+        self.assertEqual(panel["reprice_5d_bps"], -20.0)
 
     def test_missing_fields_withhold_economic_narrative(self):
         result = build_economic_regime_snapshot({})
         self.assertEqual(result["status"], "UNAVAILABLE")
         self.assertIn("CPI_YOY", result["missing_fields"])
+        self.assertIn("ISM_SERVICES_ACTIVITY", result["missing_fields"])
         self.assertNotIn("inflation_regime", result)
 
 
