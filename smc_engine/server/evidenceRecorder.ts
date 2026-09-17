@@ -4,6 +4,7 @@ import { NotificationCandidate } from './pipeline';
 import { RuntimeExecutionPipelineResult } from './runtimeExecutionPipeline';
 import { StoredCandle, Symbol } from './candleStore';
 import { JsonlEvidenceStore, EvidenceStore } from './evidenceStore';
+import { paperOutcomeTracker } from './paperOutcomeTracker';
 import { buildOverlayInput } from './overlayMetadata';
 import { buildCommunicationLayer } from './communicationLayer';
 import { buildExecutionCardView } from './notificationBuilder';
@@ -40,6 +41,12 @@ export function recordApprovedSignalEvidenceAsync(
   void store.appendSignalEvidence(record).catch(error => {
     console.warn(`[EvidenceRecorder] Signal evidence write failed for ${record.metadata.signalId}:`, error);
   });
+
+  const validationPassed = operational?.validationGate?.validationDecision === 'PASS';
+  const riskAccepted = execution.riskResult.items[0]?.evaluation.executionAllowed === true;
+  if (riskAccepted && validationPassed) {
+    paperOutcomeTracker.registerCandidate(candidate);
+  }
 }
 
 export interface SignalOperationalEvidence {
