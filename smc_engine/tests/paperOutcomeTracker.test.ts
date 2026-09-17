@@ -93,7 +93,7 @@ describe('PaperOutcomeTracker', () => {
     tracker.registerCandidate(candidate('tp-long'));
     tracker.update('EURUSD', [
       candle(2_000, 1.1020, 1.1000, 1.0992, 1.0996),
-      candle(3_000, 1.0996, 1.1018, 1.0995, 1.1015),
+      candle(3_000, 1.0996, 1.1025, 1.0995, 1.1020),
     ]);
 
     const result = tracker.get('tp-long');
@@ -118,7 +118,7 @@ describe('PaperOutcomeTracker', () => {
     tracker.registerCandidate(candidate('be-long'));
     tracker.update('EURUSD', [
       candle(2_000, 1.1020, 1.1000, 1.0992, 1.0995),
-      candle(3_000, 1.0995, 1.1011, 1.0994, 1.1008),
+      candle(3_000, 1.0995, 1.1013, 1.0994, 1.1008),
       candle(4_000, 1.1008, 1.1009, 1.0998, 1.1000),
     ]);
 
@@ -130,7 +130,7 @@ describe('PaperOutcomeTracker', () => {
   test('expires a signal that never reaches the entry zone', () => {
     const { tracker } = makeTracker();
     tracker.registerCandidate(candidate('expire-long'));
-    tracker.update('EURUSD', [candle(172_800_001, 1.1030, 1.1040, 1.1025, 1.1035)]);
+    tracker.update('EURUSD', [candle(172_801_001, 1.1030, 1.1040, 1.1025, 1.1035)]);
 
     expect(tracker.get('expire-long')?.outcome).toBe('EXPIRED');
   });
@@ -139,7 +139,7 @@ describe('PaperOutcomeTracker', () => {
     const { tracker } = makeTracker();
     tracker.registerCandidate(candidate('ambiguous-long'));
     tracker.update('EURUSD', [
-      candle(2_000, 1.1020, 1.1020, 1.0980, 1.0995),
+      candle(2_000, 1.1020, 1.1025, 1.0980, 1.0995),
     ]);
 
     expect(tracker.get('ambiguous-long')?.outcome).toBe('UNKNOWN');
