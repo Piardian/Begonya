@@ -85,8 +85,15 @@ def audit_event_timestamp(row: Mapping[str, Any]) -> Dict[str, Any]:
     }
 
 
-def fetch_mt5_m5_bars(symbol: str = "EURUSD", count: int = 300000) -> Dict[dt.datetime, Dict[str, float]]:
-    """Load MT5 M5 bars keyed by UTC bar-open timestamp."""
+BROKER_TZ = ZoneInfo("Europe/Helsinki")
+
+
+def fetch_mt5_bars(
+    symbol: str = "EURUSD",
+    timeframe: str = "M5",
+    count: int = 65000,
+) -> Dict[dt.datetime, Dict[str, float]]:
+    """Load MT5 bars converted from broker server timezone (EET/EEST) to true UTC."""
     try:
         import MetaTrader5 as mt5
     except ImportError:
@@ -94,8 +101,20 @@ def fetch_mt5_m5_bars(symbol: str = "EURUSD", count: int = 300000) -> Dict[dt.da
 
     if not mt5.initialize():
         return {}
+
+    tf_map = {
+        "M1": mt5.TIMEFRAME_M1,
+        "M5": mt5.TIMEFRAME_M5,
+        "M15": mt5.TIMEFRAME_M15,
+        "M30": mt5.TIMEFRAME_M30,
+        "H1": mt5.TIMEFRAME_H1,
+    }
+    tf = tf_map.get(timeframe.upper(), mt5.TIMEFRAME_M5)
+    # MT5 terminal chart buffer rejects requests exceeding terminal max (typically 65000)
+    safe_count = min(count, 65000)
+
     try:
-        rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M5, 0, count)
+        rates = mt5.copy_rates_from_pos(symbol, tf, 0, safe_count)
     finally:
         mt5.shutdown()
 
@@ -104,7 +123,10 @@ def fetch_mt5_m5_bars(symbol: str = "EURUSD", count: int = 300000) -> Dict[dt.da
 
     result: Dict[dt.datetime, Dict[str, float]] = {}
     for r in rates:
-        t = dt.datetime.fromtimestamp(int(r["time"]), tz=UTC).replace(second=0, microsecond=0)
+        # MT5 timestamps are epoch seconds in the broker's server timezone (Europe/Helsinki, EET/EEST)
+        ts = int(r["time"])
+        broker_dt = dt.datetime.fromtimestamp(ts, tz=UTC).replace(tzinfo=None).replace(tzinfo=BROKER_TZ)
+        t = broker_dt.astimezone(UTC).replace(second=0, microsecond=0)
         result[t] = {
             "open": float(r["open"]),
             "high": float(r["high"]),
@@ -112,6 +134,11 @@ def fetch_mt5_m5_bars(symbol: str = "EURUSD", count: int = 300000) -> Dict[dt.da
             "close": float(r["close"]),
         }
     return result
+
+
+def fetch_mt5_m5_bars(symbol: str = "EURUSD", count: int = 65000) -> Dict[dt.datetime, Dict[str, float]]:
+    """Backward-compatible loader for M5 bars with broker-timezone to UTC conversion."""
+    return fetch_mt5_bars(symbol=symbol, timeframe="M5", count=count)
 
 
 def calculate_usd_return_bps(p0: float, p1: float) -> float:
@@ -165,6 +192,7 @@ def build_records(
     bar_map: Mapping[dt.datetime, Mapping[str, float]],
     test_years: Sequence[int] = tuple(range(2019, 2026)),
     min_observations: int = 15,
+    horizons: Sequence[int] = HORIZONS_MINUTES,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, int]]:
     with observations_path.open("r", encoding="utf-8", newline="") as f:
         rows = list(csv.DictReader(f))
@@ -208,7 +236,7 @@ def build_records(
 
             prices: Dict[int, float] = {}
             complete = True
-            for minutes in HORIZONS_MINUTES:
+            for minutes in horizons:
                 bar = bar_map.get(event_utc + dt.timedelta(minutes=minutes))
                 if bar is None:
                     complete = False
@@ -236,16 +264,26 @@ def build_records(
     return records, diagnostics
 
 
-def summarize(records: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
+def summarize(
+    records: Sequence[Mapping[str, Any]],
+    horizons: Sequence[int] = HORIZONS_MINUTES,
+) -> Dict[str, Any]:
     if not records:
         return {"error": "No fully aligned event records"}
 
+    # Infer available horizons if not present in all records
+    available_horizons = [m for m in horizons if f"ret_{m}m" in records[0]]
+    if not available_horizons:
+        available_horizons = list(horizons)
+
     output: Dict[str, Any] = {"sample_count": len(records), "horizons": {}}
-    for minutes in HORIZONS_MINUTES:
+    for minutes in available_horizons:
         ret_key = f"ret_{minutes}m"
-        rets = [float(r[ret_key]) for r in records]
-        z_mad = [float(r["z_mad"]) for r in records]
-        z_std = [float(r["z_std"]) for r in records]
+        rets = [float(r[ret_key]) for r in records if ret_key in r]
+        z_mad = [float(r["z_mad"]) for r in records if ret_key in r]
+        z_std = [float(r["z_std"]) for r in records if ret_key in r]
+        if not rets:
+            continue
         output["horizons"][f"{minutes}m"] = {
             "mad_ic": round(spearman_rank_ic(z_mad, rets), 4),
             "std_ic": round(spearman_rank_ic(z_std, rets), 4),
@@ -254,10 +292,32 @@ def summarize(records: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
             "std_hit_rate_abs_z_ge_1": round(calc_hit_rate(records, "z_std", ret_key) * 100, 1),
             "mean_return_mad_sign": round(mean(
                 float(r[ret_key]) if float(r["z_mad"]) > 0 else -float(r[ret_key])
-                for r in records if float(r["z_mad"]) != 0
+                for r in records if float(r["z_mad"]) != 0 and ret_key in r
             ), 3),
         }
     return output
+
+
+def run_market_response_analysis(
+    observations_path: Path,
+    bar_map: Mapping[dt.datetime, Mapping[str, float]],
+    test_years: Sequence[int] = tuple(range(2019, 2026)),
+    min_observations: int = 15,
+    horizons: Sequence[int] = HORIZONS_MINUTES,
+) -> Dict[str, Any]:
+    """Top-level convenience runner for event-time market validation."""
+    records, diagnostics = build_records(
+        observations_path,
+        bar_map,
+        test_years=test_years,
+        min_observations=min_observations,
+        horizons=horizons,
+    )
+    return {
+        "diagnostics": diagnostics,
+        "summary": summarize(records, horizons=horizons),
+        "records": records,
+    }
 
 
 def main() -> None:
@@ -265,24 +325,41 @@ def main() -> None:
     parser.add_argument("--observations", type=Path, default=Path(__file__).with_name("surprise_observations.csv"))
     parser.add_argument("--output", type=Path, default=Path(__file__).with_name("market_response_validation_v2.json"))
     parser.add_argument("--symbol", default="EURUSD")
-    parser.add_argument("--count", type=int, default=300000)
+    parser.add_argument("--timeframe", default="M5", choices=["M5", "M15", "M30", "H1"])
+    parser.add_argument("--count", type=int, default=65000)
     args = parser.parse_args()
 
-    bars = fetch_mt5_m5_bars(args.symbol, args.count)
-    if not bars:
-        raise SystemExit("MT5 M5 bars unavailable; run this on the Windows/MT5 environment.")
+    tf_horizons = {
+        "M5": (5, 15, 30, 60, 240),
+        "M15": (15, 30, 60, 240),
+        "M30": (30, 60, 240),
+        "H1": (60, 240),
+    }
+    horizons = tf_horizons.get(args.timeframe.upper(), HORIZONS_MINUTES)
 
-    records, diagnostics = build_records(args.observations, bars)
+    bars = fetch_mt5_bars(args.symbol, timeframe=args.timeframe, count=args.count)
+    if not bars:
+        raise SystemExit("MT5 bars unavailable; run this on the Windows/MT5 environment.")
+
+    first_bar = min(bars.keys())
+    last_bar = max(bars.keys())
+
+    records, diagnostics = build_records(args.observations, bars, horizons=horizons)
     report = {
         "metadata": {
             "symbol": args.symbol,
             "time_basis": "UTC event timestamp reconstructed from America/New_York schedule",
-            "bar_timeframe": "M5",
-            "horizons_minutes": list(HORIZONS_MINUTES),
+            "bar_timeframe": args.timeframe.upper(),
+            "horizons_minutes": list(horizons),
             "walk_forward": "expanding, train strictly before validation year",
+            "mt5_bar_range_utc": {
+                "first_bar": first_bar.isoformat(),
+                "last_bar": last_bar.isoformat(),
+                "total_bars": len(bars),
+            },
         },
         "diagnostics": diagnostics,
-        "summary": summarize(records),
+        "summary": summarize(records, horizons=horizons),
         "timestamp_audit": {
             "raw_vs_reconstructed_close_within_5m": sum(
                 1 for r in records if r["timestamp_audit"]["timestamp_is_close"]
@@ -290,6 +367,20 @@ def main() -> None:
             "matched_records": len(records),
         },
     }
+
+    # If M5 was requested but yielded 0 matches due to broker historical buffer depth,
+    # automatically augment with M15 resolution so the user gets actionable empirical output
+    if args.timeframe.upper() == "M5" and diagnostics["matched"] == 0:
+        m15_bars = fetch_mt5_bars(args.symbol, timeframe="M15", count=args.count)
+        if m15_bars:
+            m15_horizons = (15, 30, 60, 240)
+            m15_records, m15_diag = build_records(args.observations, m15_bars, horizons=m15_horizons)
+            report["m15_extended_analysis"] = {
+                "note": "M5 buffer only exists from " + first_bar.strftime("%Y-%m-%d") + " onwards in this broker account. M15 is available back to " + min(m15_bars.keys()).strftime("%Y-%m-%d") + " and covers 2024-2025 events.",
+                "diagnostics": m15_diag,
+                "summary": summarize(m15_records, horizons=m15_horizons),
+            }
+
     args.output.write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(json.dumps(report, indent=2))
 
