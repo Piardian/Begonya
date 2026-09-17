@@ -29,8 +29,8 @@ class TestMacroEdgeResearch(unittest.TestCase):
 
             event = dt.datetime(2021, 1, 8, 13, 30, tzinfo=UTC)
             bars = {
-                "XAUUSD": self._bars(event, 2000.0, [2000.0, 1990.0, 1980.0, 1970.0]),
-                "EURUSD": self._bars(event, 1.2000, [1.2000, 1.1990, 1.1980, 1.1970]),
+                "XAUUSD": self._bars(event, 2000.0, [1990.0, 1980.0, 1970.0, 1960.0]),
+                "EURUSD": self._bars(event, 1.2000, [1.1990, 1.1980, 1.1970, 1.1960]),
             }
 
             report = build_macro_edge_dataset(
@@ -54,8 +54,8 @@ class TestMacroEdgeResearch(unittest.TestCase):
         dataset = {
             "metadata": {"expected_asset_direction": {"EURUSD": -1.0}},
             "records": [
-                {"EURUSD_return_5m_bps": -20.0, "cluster_signal_usd": 1},
-                {"EURUSD_return_5m_bps": 10.0, "cluster_signal_usd": 1},
+                {"EURUSD_return_5m_bps": -20.0, "EURUSD_directional_hit_5m": True, "cluster_signal_usd": 1},
+                {"EURUSD_return_5m_bps": 10.0, "EURUSD_directional_hit_5m": False, "cluster_signal_usd": 1},
             ],
         }
         summary = summarize_macro_edge(dataset, horizons=(5,), costs_bps={"EURUSD": 5.0})

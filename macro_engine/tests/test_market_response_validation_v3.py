@@ -16,9 +16,10 @@ class TestMarketResponseValidationV3(unittest.TestCase):
             path.write_text(csv_text, encoding="utf-8")
             event = dt.datetime(2021, 1, 9, 13, 30, tzinfo=UTC)
             bars = {}
-            for i, close in enumerate([1.2000, 1.1900, 1.1850, 1.1800, 1.1750, 1.1700, 1.1650]):
+            closes = [1.1900, 1.1850, 1.1800, 1.1750, 1.1700, 1.1680, 1.1660, 1.1650]
+            for i, close in enumerate(closes):
                 t = event + dt.timedelta(minutes=30 * i)
-                bars[t] = {"open": 1.2000 if i == 0 else close, "high": close + 0.0002, "low": close - 0.0002, "close": close}
+                bars[t] = {"open": 1.2000 if i == 0 else closes[i-1], "high": max(1.2000, close) + 0.0002, "low": min(1.2000, close) - 0.0002, "close": close}
 
             records, diagnostics = build_records(
                 path,

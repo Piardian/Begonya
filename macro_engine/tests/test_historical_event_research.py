@@ -16,10 +16,10 @@ class TestHistoricalEventResearch(unittest.TestCase):
     def test_outcome_path_stops_at_exact_horizon(self):
         event = dt.datetime(2024, 1, 2, 13, 30, tzinfo=UTC)
         bars = {}
-        closes = [1.2000, 1.1900, 1.1800, 1.1700]
+        closes = [1.1900, 1.1800, 1.1700, 1.1600]
         for i, close in enumerate(closes):
             t = event + dt.timedelta(minutes=30 * i)
-            bars[t] = {"open": 1.2000, "high": max(1.2000, close), "low": min(1.2000, close), "close": close}
+            bars[t] = {"open": 1.2000 if i == 0 else closes[i-1], "high": max(1.2000, close), "low": min(1.2000, close), "close": close}
 
         result = _outcome_path(bars, event, 30, 30)
         self.assertIsNotNone(result)
@@ -57,9 +57,10 @@ class TestHistoricalEventResearch(unittest.TestCase):
                 p = 1.2100 + i * 0.0001
                 bars[t] = {"open": p, "high": p + 0.0004, "low": p - 0.0004, "close": p + 0.00005}
             # Exact event-to-horizon bars. Event-bar CLOSE is +30m, next bar CLOSE is +60m.
-            for i, close in enumerate([1.2000, 1.1900, 1.1850, 1.1800, 1.1750, 1.1700, 1.1650]):
+            closes = [1.1900, 1.1850, 1.1800, 1.1750, 1.1700, 1.1680, 1.1660, 1.1650]
+            for i, close in enumerate(closes):
                 t = event + dt.timedelta(minutes=30 * i)
-                bars[t] = {"open": 1.2000 if i == 0 else close + 0.0002, "high": max(1.2000, close) + 0.0002, "low": min(1.2000, close) - 0.0002, "close": close}
+                bars[t] = {"open": 1.2000 if i == 0 else closes[i-1] + 0.0002, "high": max(1.2000, close) + 0.0002, "low": min(1.2000, close) - 0.0002, "close": close}
 
             dataset, diagnostics = build_historical_event_dataset(
                 path,

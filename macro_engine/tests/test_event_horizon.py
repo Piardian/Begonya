@@ -19,7 +19,7 @@ class TestEventHorizon(unittest.TestCase):
         )
         self.assertEqual(
             target_bar_open(self.t, 30, 240),
-            dt.datetime(2024, 1, 2, 16, 30, tzinfo=dt.timezone.utc),
+            dt.datetime(2024, 1, 2, 17, 0, tzinfo=dt.timezone.utc),
         )
 
     def test_m15_horizon(self):
