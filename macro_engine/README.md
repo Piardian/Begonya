@@ -7,13 +7,16 @@ Macro regime and risk engine combining deterministic market/FRED metrics with LL
 1. **Ingestion (`ingestion/`)**
    - Market data from the configured MT5/Yahoo path with fail-closed validation.
    - FRED observations with explicit current/prior observation dates and an explicit replay vintage end date.
+   - Economic activity, inflation, labor and Treasury-curve observations are ingested as a separate required provider-backed panel.
    - High-impact economic calendar with fail-closed availability semantics.
 
 2. **Deterministic preprocessing (`preprocessing/`)**
    - Yield-curve, real-yield, liquidity, credit, volatility and cross-asset metrics.
+   - Separate deterministic economic dimensions: inflation, labor, growth, policy and rate-curve state.
    - Explicit replay clock and explicit previous regime state.
    - Input range/anomaly checks, freshness checks and provenance metadata.
    - Return-based cross-asset correlation rather than price-level correlation.
+   - The economic panel does not collapse correlated observations into an arbitrary composite score.
 
 3. **LLM analysis (`agents/`)**
    - Specialist and strategist models consume deterministic metrics.
@@ -30,6 +33,12 @@ Macro regime and risk engine combining deterministic market/FRED metrics with LL
    - Calibration is split chronologically into calibration, validation and out-of-sample partitions.
    - Existing crisis fixtures are synthetic rule-execution fixtures, not provider-backed historical performance evidence.
    - No economic edge is claimed until a real historical dataset is loaded and evaluated out-of-sample.
+
+## Economic Regime Panel
+
+The extended deterministic panel adds four inflation measures (`CPI`, `core CPI`, `PCE`, `core PCE`), labor indicators (`PAYEMS`, `UNRATE`, average hourly earnings, initial claims), real-economy indicators (`real GDP q/q SAAR`, industrial production, retail sales), and the Treasury curve (`3M`, `2Y`, `5Y`, `10Y`, `30Y`, `2s10s`, `3m10y`). The values are kept in separate dimensions so one common risk factor is not counted multiple times as an opaque score.
+
+The panel reports current levels, four-week changes, source observation ages and point-in-time vintage metadata. When a required economic observation is missing or stale, the economic narrative is withheld rather than replaced with a synthetic baseline.
 
 ## Setup & Quick Start
 
