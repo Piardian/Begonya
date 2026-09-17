@@ -82,7 +82,7 @@ def event_freeze_status(
         is_high = impact in {"CRITICAL", "HIGH", "RED"} or any(k in title.lower() for k in kws)
         if not is_high:
             continue
-        raw_time = event.get("time") or event.get("event_time_utc")
+        raw_time = event.get("time") or event.get("event_time_utc") or event.get("date")
         if not raw_time:
             return {
                 "active": True,
@@ -163,6 +163,10 @@ def parse_numeric(value: Any) -> float:
 
 def normalize_calendar_event(event: Mapping[str, Any]) -> Dict[str, Any]:
     result = dict(event)
+    raw_time = result.get("time") or result.get("event_time_utc") or result.get("date")
+    if raw_time:
+        result["time"] = raw_time
+        result["event_time_utc"] = raw_time
     for key in ("actual", "forecast", "previous", "revision"):
         if result.get(key) not in (None, ""):
             try:

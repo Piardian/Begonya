@@ -30,15 +30,8 @@ def main():
     # 1. Boru Hattını Başlat
     engine = MacroWorkflowEngine()
     
-    # İsteğe bağlı özel olay enjekte edilebilir (veya takvimden otomatik çekilir)
-    sample_events = [
-        {"country": "USD", "title": "Core CPI m/m", "actual": "0.3%", "forecast": "0.2%"},
-        {"country": "USD", "title": "Non-Farm Employment Change", "actual": "190K", "forecast": "165K"},
-        {"country": "USD", "title": "Unemployment Rate", "actual": "4.1%", "forecast": "4.3%"}
-    ]
-    
-    # 2. Pipeline'ı Çalıştır
-    result = engine.run_pipeline(sample_events)
+    # 2. Pipeline'ı Canlı Takvim Verileri ile Çalıştır
+    result = engine.run_pipeline()
     
     liq = result.get("liquidity_output", {})
     growth = result.get("growth_output", {})

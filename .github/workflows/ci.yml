@@ -33,7 +33,7 @@ jobs:
         run: node --max-old-space-size=4096 ./node_modules/jest/bin/jest.js tests/liquidityMagnetDetector.test.ts tests/opposingObstacleDetector.test.ts tests/smc2Rules.test.ts tests/poller.test.ts tests/telegramFormatter.test.ts tests/sharedCache.test.ts --runInBand
 
   macro-engine-tests:
-    name: Deterministic Macro Metrics Test Suite
+    name: Macro Engine & Calibration Test Suite
     runs-on: ubuntu-latest
 
     steps:
@@ -49,9 +49,9 @@ jobs:
         working-directory: macro_engine
         run: pip install -r requirements.txt
 
-      - name: Run deterministic macro tests
+      - name: Run full macro engine and calibration test suite
         working-directory: macro_engine
-        run: python -m unittest discover -s tests -p 'test_deterministic_metrics.py' -v
+        run: python -m unittest discover -s tests -v
 
   historical-macro-replay:
     name: Historical Macro Replay & Determinism
