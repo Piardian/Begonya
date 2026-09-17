@@ -6,7 +6,7 @@ Macro regime and risk engine combining deterministic market/FRED metrics with LL
 
 1. **Ingestion (`ingestion/`)**
    - Market data from the configured MT5/Yahoo path with fail-closed validation.
-   - FRED observations with explicit current/prior observation dates and no synthetic live baselines.
+   - FRED observations with explicit current/prior observation dates and an explicit replay vintage end date.
    - High-impact economic calendar with fail-closed availability semantics.
 
 2. **Deterministic preprocessing (`preprocessing/`)**
@@ -25,8 +25,10 @@ Macro regime and risk engine combining deterministic market/FRED metrics with LL
    - Gate publication remains atomic so downstream execution never reads a partially written JSON file.
 
 5. **Calibration and replay (`calibration/`, `tests/`)**
-   - Surprise calibration infrastructure uses real provider-backed observations and chronological calibration/validation/out-of-sample splits.
-   - The existing crisis fixtures are synthetic rule-execution fixtures, not provider-backed historical performance evidence.
+   - Surprise calibration uses provider-backed actual/consensus observations with provenance and point-in-time flags.
+   - FRED replay requests are constrained to the replay vintage date to reduce revision leakage.
+   - Calibration is split chronologically into calibration, validation and out-of-sample partitions.
+   - Existing crisis fixtures are synthetic rule-execution fixtures, not provider-backed historical performance evidence.
    - No economic edge is claimed until a real historical dataset is loaded and evaluated out-of-sample.
 
 ## Setup & Quick Start
@@ -52,5 +54,17 @@ python main.py
 python -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-### 5. Calibrate Surprise Sigmas
-Populate `calibration/surprise_observations.csv` with provider-backed actual/forecast observations and then use `calibration/surprise_sigma.py` to generate a fitted profile. The module will not fabricate a sigma when the observation count is insufficient.
+### 5. Collect Historical Surprise Observations
+Trading Economics historical calendar data is used as the provider-backed source for calibration. The API provides historical actual and consensus forecast fields and documents point-in-time calendar data for backtesting. citeturn700684search0turn648268search0
+
+Set `TRADING_ECONOMICS_API_KEY`, then run:
+```bash
+python -m calibration.collect_surprises --start 2015-01-01 --end 2025-12-31
+```
+
+The collector writes only rows containing numeric `actual` and `forecast` values and stores provider provenance, source URL, event timestamp and the point-in-time flag. It does not silently substitute the provider's proprietary `TEForecast` for the consensus `Forecast` field.
+
+### 6. Fit Surprise Sigmas
+Run the calibration module against the populated CSV and choose chronological cutoffs explicitly. The fitter refuses to create empirical sigmas when the minimum observation count is not met.
+
+The checked-in CSV is intentionally empty until provider-backed data is collected; no fabricated observations are committed.
