@@ -12,11 +12,12 @@ Macro regime and risk engine combining deterministic market/FRED metrics with LL
 
 2. **Deterministic preprocessing (`preprocessing/`)**
    - Yield-curve, real-yield, liquidity, credit, volatility and cross-asset metrics.
-   - Separate deterministic economic dimensions: inflation, labor, growth, policy and rate-curve state.
+   - Separate deterministic economic dimensions: inflation, labor, growth, PMI/activity, policy and rate-curve state.
    - Explicit replay clock and explicit previous regime state.
    - Input range/anomaly checks, freshness checks and provenance metadata.
    - Return-based cross-asset correlation rather than price-level correlation.
    - The economic panel does not collapse correlated observations into an arbitrary composite score.
+   - Policy expectations are kept separate from economic state: DFF/SOFR, front 30-Day Fed Funds futures, an optional multi-contract Fed Funds futures curve, and an optional provider-supplied USD OIS curve.
 
 3. **LLM analysis (`agents/`)**
    - Specialist and strategist models consume deterministic metrics.
@@ -36,9 +37,23 @@ Macro regime and risk engine combining deterministic market/FRED metrics with LL
 
 ## Economic Regime Panel
 
-The extended deterministic panel adds four inflation measures (`CPI`, `core CPI`, `PCE`, `core PCE`), labor indicators (`PAYEMS`, `UNRATE`, average hourly earnings, initial claims), real-economy indicators (`real GDP q/q SAAR`, industrial production, retail sales), and the Treasury curve (`3M`, `2Y`, `5Y`, `10Y`, `30Y`, `2s10s`, `3m10y`). The values are kept in separate dimensions so one common risk factor is not counted multiple times as an opaque score.
+The extended deterministic panel adds four inflation measures (`CPI`, `core CPI`, `PCE`, `core PCE`), labor indicators (`PAYEMS`, `UNRATE`, average hourly earnings, initial claims), real-economy indicators (`real GDP q/q SAAR`, industrial production, retail sales), the Treasury curve (`3M`, `2Y`, `5Y`, `10Y`, `30Y`, `2s10s`, `3m10y`), and separate PMI/activity measures.
+
+For manufacturing, the feed uses the FRED `NAPM` series. For services, the feed uses the FRED `NMFBAI` Non-Manufacturing Business Activity Index as a services activity proxy. Begonya does **not** fabricate a headline Services PMI from that sub-index. Manufacturing and services are reported separately and combined only into broad labels such as `BROAD_EXPANSION`, `BROAD_CONTRACTION`, or `MIXED`.
 
 The panel reports current levels, four-week changes, source observation ages and point-in-time vintage metadata. When a required economic observation is missing or stale, the economic narrative is withheld rather than replaced with a synthetic baseline.
+
+## Policy Expectations
+
+`DFF` is the effective federal funds rate observation. `SOFR` is consumed as a money-market anchor and is not treated as a forward OIS curve.
+
+The optional front 30-Day Fed Funds futures input is converted deterministically as `100 - price`. A single front contract describes the market-implied average effective federal funds rate for its delivery month; it is not a full meeting-probability curve.
+
+A multi-contract `FED_FUNDS_FUTURES_CURVE` can be supplied to preserve the market-implied policy path across delivery months. Begonya reports those contract-implied rates without inventing meeting probabilities.
+
+A provider-backed `USD_OIS_CURVE` can also be supplied. Begonya passes that curve through with provenance and does not synthesize OIS rates from Treasury yields, SOFR, or the Fed Funds futures curve.
+
+The front futures and full curves are optional inputs. The core macro pipeline does not fail solely because those optional market-implied policy feeds are unavailable.
 
 ## Setup & Quick Start
 
