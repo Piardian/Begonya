@@ -127,6 +127,7 @@ def main() -> int:
     parser.add_argument("--first-validation-year", type=int, default=2020)
     parser.add_argument("--last-validation-year", type=int, default=2025)
     parser.add_argument("--min-observations", type=int, default=30)
+    parser.add_argument("--required-indicator", action="append", default=[])
     parser.add_argument("--output", type=Path, default=Path(__file__).with_name("walk_forward_validation.json"))
     args = parser.parse_args()
 
@@ -136,16 +137,30 @@ def main() -> int:
         parser.error("last validation year must be >= first validation year")
 
     rows = load_observations_csv(args.input)
+    required_indicators = tuple(args.required_indicator) if args.required_indicator else DEFAULT_REQUIRED_INDICATORS
     report = run_expanding_walk_forward(
         rows,
         calibration_start=args.calibration_start,
         first_validation_year=args.first_validation_year,
         last_validation_year=args.last_validation_year,
         min_observations=args.min_observations,
+        required_indicators=required_indicators,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"Walk-forward validation written to {args.output}")
+    print(f"Walk-forward validation written to {args.output}\n")
+    print(f"{'YEAR':<6} | {'METHOD':<8} | {'N_VAL':<6} | {'MEAN(Z)':<8} | {'STD(Z)':<8} | {'MSNR':<8} | {'IN 1SIG':<8} | {'IN 2SIG':<8}")
+    print("-" * 76)
+    for f in report["folds"]:
+        y = f["validation_year"]
+        for m in ("mad", "std"):
+            info = f["methods"][m]
+            if info["status"] != "ok":
+                print(f"{y:<6} | {m.upper():<8} | {f['validation_sample_count']:<6} | INSUFFICIENT DATA ({', '.join(info['missing_indicators'])})")
+            else:
+                v = info["validation"]
+                print(f"{y:<6} | {m.upper():<8} | {v['sample_count']:<6} | {v['mean_z']:>+7.4f}  | {v['std_z']:>7.4f}  | {v['msnr']:>7.4f}  | {v['pct_within_1sigma']:>6.2f}%  | {v['pct_within_2sigma']:>6.2f}%")
+        print("-" * 76)
     return 0
 
 

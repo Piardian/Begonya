@@ -1,0 +1,306 @@
+{
+  "methodology": "expanding_walk_forward",
+  "calibration_start": "2016-01-01",
+  "first_validation_year": 2020,
+  "last_validation_year": 2025,
+  "folds": [
+    {
+      "validation_year": 2020,
+      "calibration_end": "2019-12-31",
+      "validation_end": "2020-12-31",
+      "calibration_sample_count": 304,
+      "validation_sample_count": 76,
+      "methods": {
+        "mad": {
+          "status": "ok",
+          "missing_indicators": [],
+          "sigmas": {
+            "pmi": 1.4826,
+            "nfp": 63010.5,
+            "unemployment": 0.14826,
+            "retail_sales": 0.44478,
+            "core_cpi": 0.14826,
+            "cpi": 0.14826
+          },
+          "validation": {
+            "sample_count": 72,
+            "mean_z": 1.045,
+            "std_z": 3.846,
+            "msnr": 15.8834,
+            "pct_within_1sigma": 48.61,
+            "pct_within_2sigma": 65.28
+          }
+        },
+        "std": {
+          "status": "ok",
+          "missing_indicators": [],
+          "sigmas": {
+            "pmi": 1.58836372,
+            "nfp": 65530.40801796,
+            "unemployment": 0.11408985,
+            "retail_sales": 0.43236571,
+            "core_cpi": 0.08539126,
+            "cpi": 0.10604555
+          },
+          "validation": {
+            "sample_count": 72,
+            "mean_z": 1.1135,
+            "std_z": 4.0492,
+            "msnr": 17.6355,
+            "pct_within_1sigma": 43.06,
+            "pct_within_2sigma": 61.11
+          }
+        }
+      }
+    },
+    {
+      "validation_year": 2021,
+      "calibration_end": "2020-12-31",
+      "validation_end": "2021-12-31",
+      "calibration_sample_count": 380,
+      "validation_sample_count": 76,
+      "methods": {
+        "mad": {
+          "status": "ok",
+          "missing_indicators": [],
+          "sigmas": {
+            "pmi": 1.55673,
+            "nfp": 73388.7,
+            "unemployment": 0.14826,
+            "retail_sales": 0.37065,
+            "core_cpi": 0.14826,
+            "cpi": 0.14826
+          },
+          "validation": {
+            "sample_count": 72,
+            "mean_z": 0.3115,
+            "std_z": 2.941,
+            "msnr": 8.7467,
+            "pct_within_1sigma": 41.67,
+            "pct_within_2sigma": 59.72
+          }
+        },
+        "std": {
+          "status": "ok",
+          "missing_indicators": [],
+          "sigmas": {
+            "pmi": 1.77658849,
+            "nfp": 1344274.68454182,
+            "unemployment": 0.83850893,
+            "retail_sales": 1.49606428,
+            "core_cpi": 0.1092398,
+            "cpi": 0.10998737
+          },
+          "validation": {
+            "sample_count": 72,
+            "mean_z": 0.4413,
+            "std_z": 1.4485,
+            "msnr": 2.293,
+            "pct_within_1sigma": 76.39,
+            "pct_within_2sigma": 87.5
+          }
+        }
+      }
+    },
+    {
+      "validation_year": 2022,
+      "calibration_end": "2021-12-31",
+      "validation_end": "2022-12-31",
+      "calibration_sample_count": 456,
+      "validation_sample_count": 76,
+      "methods": {
+        "mad": {
+          "status": "ok",
+          "missing_indicators": [],
+          "sigmas": {
+            "pmi": 1.77912,
+            "nfp": 83025.6,
+            "unemployment": 0.14826,
+            "retail_sales": 0.51891,
+            "core_cpi": 0.14826,
+            "cpi": 0.14826
+          },
+          "validation": {
+            "sample_count": 72,
+            "mean_z": 0.2263,
+            "std_z": 1.314,
+            "msnr": 1.7777,
+            "pct_within_1sigma": 62.5,
+            "pct_within_2sigma": 88.89
+          }
+        },
+        "std": {
+          "status": "ok",
+          "missing_indicators": [],
+          "sigmas": {
+            "pmi": 1.8442771,
+            "nfp": 1239021.03858908,
+            "unemployment": 0.77131742,
+            "retail_sales": 1.58146027,
+            "core_cpi": 0.14622302,
+            "cpi": 0.13944334
+          },
+          "validation": {
+            "sample_count": 72,
+            "mean_z": 0.0839,
+            "std_z": 0.7974,
+            "msnr": 0.6429,
+            "pct_within_1sigma": 75.0,
+            "pct_within_2sigma": 97.22
+          }
+        }
+      }
+    },
+    {
+      "validation_year": 2023,
+      "calibration_end": "2022-12-31",
+      "validation_end": "2023-12-31",
+      "calibration_sample_count": 532,
+      "validation_sample_count": 76,
+      "methods": {
+        "mad": {
+          "status": "ok",
+          "missing_indicators": [],
+          "sigmas": {
+            "pmi": 1.77912,
+            "nfp": 87473.4,
+            "unemployment": 0.14826,
+            "retail_sales": 0.44478,
+            "core_cpi": 0.14826,
+            "cpi": 0.14826
+          },
+          "validation": {
+            "sample_count": 72,
+            "mean_z": 0.139,
+            "std_z": 0.9182,
+            "msnr": 0.8624,
+            "pct_within_1sigma": 79.17,
+            "pct_within_2sigma": 95.83
+          }
+        },
+        "std": {
+          "status": "ok",
+          "missing_indicators": [],
+          "sigmas": {
+            "pmi": 1.78856281,
+            "nfp": 1148872.70292594,
+            "unemployment": 0.71804862,
+            "retail_sales": 1.4945152,
+            "core_cpi": 0.15074926,
+            "cpi": 0.14503792
+          },
+          "validation": {
+            "sample_count": 72,
+            "mean_z": -0.0232,
+            "std_z": 0.3907,
+            "msnr": 0.1531,
+            "pct_within_1sigma": 98.61,
+            "pct_within_2sigma": 100.0
+          }
+        }
+      }
+    },
+    {
+      "validation_year": 2024,
+      "calibration_end": "2023-12-31",
+      "validation_end": "2024-12-31",
+      "calibration_sample_count": 608,
+      "validation_sample_count": 76,
+      "methods": {
+        "mad": {
+          "status": "ok",
+          "missing_indicators": [],
+          "sigmas": {
+            "pmi": 1.63086,
+            "nfp": 83766.9,
+            "unemployment": 0.14826,
+            "retail_sales": 0.44478,
+            "core_cpi": 0.14826,
+            "cpi": 0.14826,
+            "gdp": 0.51891
+          },
+          "validation": {
+            "sample_count": 76,
+            "mean_z": 0.0624,
+            "std_z": 0.8216,
+            "msnr": 0.6789,
+            "pct_within_1sigma": 77.63,
+            "pct_within_2sigma": 98.68
+          }
+        },
+        "std": {
+          "status": "ok",
+          "missing_indicators": [],
+          "sigmas": {
+            "pmi": 1.72011688,
+            "nfp": 1075583.96036491,
+            "unemployment": 0.67618209,
+            "retail_sales": 1.40778928,
+            "core_cpi": 0.14282614,
+            "cpi": 0.13843981,
+            "gdp": 0.88705975
+          },
+          "validation": {
+            "sample_count": 76,
+            "mean_z": 0.0175,
+            "std_z": 0.5108,
+            "msnr": 0.2612,
+            "pct_within_1sigma": 92.11,
+            "pct_within_2sigma": 100.0
+          }
+        }
+      }
+    },
+    {
+      "validation_year": 2025,
+      "calibration_end": "2024-12-31",
+      "validation_end": "2025-12-31",
+      "calibration_sample_count": 684,
+      "validation_sample_count": 22,
+      "methods": {
+        "mad": {
+          "status": "ok",
+          "missing_indicators": [],
+          "sigmas": {
+            "pmi": 1.63086,
+            "nfp": 86732.1,
+            "unemployment": 0.14826,
+            "retail_sales": 0.44478,
+            "core_cpi": 0.14826,
+            "cpi": 0.14826,
+            "gdp": 0.59304
+          },
+          "validation": {
+            "sample_count": 22,
+            "mean_z": -0.0318,
+            "std_z": 0.774,
+            "msnr": 0.6001,
+            "pct_within_1sigma": 81.82,
+            "pct_within_2sigma": 100.0
+          }
+        },
+        "std": {
+          "status": "ok",
+          "missing_indicators": [],
+          "sigmas": {
+            "pmi": 1.67648011,
+            "nfp": 1014967.89308251,
+            "unemployment": 0.64071933,
+            "retail_sales": 1.3318536,
+            "core_cpi": 0.13694629,
+            "cpi": 0.13413788,
+            "gdp": 0.88953102
+          },
+          "validation": {
+            "sample_count": 22,
+            "mean_z": -0.0068,
+            "std_z": 0.5459,
+            "msnr": 0.2981,
+            "pct_within_1sigma": 95.45,
+            "pct_within_2sigma": 100.0
+          }
+        }
+      }
+    }
+  ]
+}
