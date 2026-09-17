@@ -30,6 +30,9 @@ FREQUENCIES = {
     "DGS30": "daily",
     "T10Y2Y": "daily",
     "T10Y3M": "daily",
+    "SOFR": "daily",
+    "ISM_MANUFACTURING_PMI": "monthly",
+    "ISM_SERVICES_ACTIVITY": "monthly",
 }
 
 
@@ -66,9 +69,17 @@ def _direction(delta: Optional[float], threshold: float) -> str:
     return "STABLE"
 
 
-def _freshness(
-    fred: Mapping[str, Any], as_of: Optional[dt.date]
-) -> Dict[str, int]:
+def _pmi_state(value: Optional[float], delta: Optional[float]) -> str:
+    if value is None:
+        return "UNAVAILABLE"
+    if value > 50.0:
+        return "EXPANDING" if delta is None or delta >= 0.0 else "EXPANDING_COOLING"
+    if value < 50.0:
+        return "CONTRACTING" if delta is None or delta <= 0.0 else "CONTRACTING_RECOVERING"
+    return "NEUTRAL_50"
+
+
+def _freshness(fred: Mapping[str, Any], as_of: Optional[dt.date]) -> Dict[str, int]:
     if as_of is None:
         return {}
     metadata = fred.get("data_quality", {})
@@ -89,14 +100,45 @@ def _freshness(
 
 
 def _missing_fields(fred: Mapping[str, Any]) -> list[str]:
-    required = set(REQUIRED_ECONOMIC_FRED_FIELDS)
-    missing = [key for key in sorted(required) if not isinstance(fred.get(key), (int, float))]
-    return missing
+    return [key for key in sorted(REQUIRED_ECONOMIC_FRED_FIELDS) if not isinstance(fred.get(key), (int, float))]
+
+
+def _fed_futures_panel(market_data: Optional[Mapping[str, Any]], dff: Optional[float]) -> Dict[str, Any]:
+    data = (market_data or {}).get("FED_FUNDS_FUTURES")
+    if not isinstance(data, Mapping) or not isinstance(data.get("value"), (int, float)):
+        return {
+            "status": "UNAVAILABLE",
+            "source": "Yahoo Finance ZQ=F optional front 30-Day Fed Funds future",
+            "market_implied_rate_pct": None,
+            "vs_dff_bps": None,
+            "reprice_1d_bps": None,
+            "reprice_5d_bps": None,
+            "methodology_warning": "Fed Funds futures feed unavailable; no synthetic rate is substituted.",
+        }
+
+    price = float(data["value"])
+    implied_rate = 100.0 - price
+    prev_price = data.get("prev")
+    five_day_price = data.get("val_5d_ago")
+    prev_implied = 100.0 - float(prev_price) if isinstance(prev_price, (int, float)) else None
+    five_day_implied = 100.0 - float(five_day_price) if isinstance(five_day_price, (int, float)) else None
+    return {
+        "status": "AVAILABLE",
+        "source": "Yahoo Finance ZQ=F; CME/CBOT 30-Day Fed Funds Futures",
+        "contract_price": price,
+        "market_implied_rate_pct": round(implied_rate, 4),
+        "vs_dff_bps": None if dff is None else round((implied_rate - dff) * 100.0, 1),
+        "reprice_1d_bps": None if prev_implied is None else round((implied_rate - prev_implied) * 100.0, 1),
+        "reprice_5d_bps": None if five_day_implied is None else round((implied_rate - five_day_implied) * 100.0, 1),
+        "interpretation": "lower_future_rate" if dff is not None and implied_rate < dff else "higher_future_rate" if dff is not None and implied_rate > dff else "near_policy",
+        "methodology_note": "Implied rate is deterministic: 100 - futures price. Front-month only; not equivalent to a full CME FedWatch meeting probability curve.",
+    }
 
 
 def build_economic_regime_snapshot(
     fred: Mapping[str, Any],
     as_of: Optional[dt.date] = None,
+    market_data: Optional[Mapping[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Create a deterministic economic panel without inventing a composite score."""
     missing = _missing_fields(fred)
@@ -116,7 +158,7 @@ def build_economic_regime_snapshot(
         "core_pce_yoy_pp_4w": _delta(fred, "CORE_PCE_YOY"),
     }
     inflation_directions = [
-        _direction(fred.get("CPI_YOY_4W_AGO") and _delta(fred, "CPI_YOY"), 0.10),
+        _direction(_delta(fred, "CPI_YOY"), 0.10),
         _direction(_delta(fred, "CORE_CPI_YOY"), 0.10),
         _direction(_delta(fred, "PCE_YOY"), 0.10),
         _direction(_delta(fred, "CORE_PCE_YOY"), 0.10),
@@ -174,11 +216,25 @@ def build_economic_regime_snapshot(
             curve_move = "FLATTENING"
 
     dff = _num(fred, "DFF")
+    sofr = _num(fred, "SOFR")
     policy_gap_bps = (two_year - dff) * 100.0 if two_year is not None and dff is not None else None
+    sofr_gap_bps = (sofr - dff) * 100.0 if sofr is not None and dff is not None else None
+
+    manufacturing_pmi = _num(fred, "ISM_MANUFACTURING_PMI")
+    manufacturing_pmi_delta = _delta(fred, "ISM_MANUFACTURING_PMI")
+    services_activity = _num(fred, "ISM_SERVICES_ACTIVITY")
+    services_activity_delta = _delta(fred, "ISM_SERVICES_ACTIVITY")
+    manufacturing_state = _pmi_state(manufacturing_pmi, manufacturing_pmi_delta)
+    services_state = _pmi_state(services_activity, services_activity_delta)
+    pmi_signal = "MIXED"
+    if manufacturing_state.startswith("EXPANDING") and services_state.startswith("EXPANDING"):
+        pmi_signal = "BROAD_EXPANSION"
+    elif manufacturing_state.startswith("CONTRACTING") and services_state.startswith("CONTRACTING"):
+        pmi_signal = "BROAD_CONTRACTION"
 
     return {
         "status": "COMPLETE",
-        "methodology_version": "economic-panel-v1",
+        "methodology_version": "economic-panel-v2",
         "point_in_time_vintage_end": fred.get("data_quality", {}).get("vintage_end"),
         "freshness_days": ages,
         "inflation_regime": {
@@ -206,6 +262,16 @@ def build_economic_regime_snapshot(
             "industrial_production_change_pct_4w": industrial_change,
             "retail_sales_change_pct_4w": retail_change,
         },
+        "pmi_regime": {
+            "signal": pmi_signal,
+            "manufacturing_pmi": manufacturing_pmi,
+            "manufacturing_pmi_change_4w": manufacturing_pmi_delta,
+            "manufacturing_state": manufacturing_state,
+            "services_business_activity": services_activity,
+            "services_business_activity_change_4w": services_activity_delta,
+            "services_state": services_state,
+            "services_measure_note": "NMFBAI is the ISM Non-Manufacturing Business Activity Index, used as a services-sector activity proxy; no synthetic headline Services PMI is constructed.",
+        },
         "rate_curve_regime": {
             "dgs3mo_pct": three_month,
             "dgs2_pct": two_year,
@@ -223,12 +289,16 @@ def build_economic_regime_snapshot(
         },
         "policy_regime": {
             "dff_pct": dff,
+            "sofr_pct": sofr,
+            "sofr_minus_dff_bps": sofr_gap_bps,
             "two_year_minus_dff_bps": policy_gap_bps,
             "market_vs_policy": (
                 "NEAR_POLICY" if policy_gap_bps is None or abs(policy_gap_bps) < 25.0
                 else "MARKET_PRICES_LOWER_POLICY_PATH" if policy_gap_bps < 0.0
                 else "MARKET_PRICES_HIGHER_POLICY_PATH"
             ),
+            "money_market_note": "SOFR is the secured overnight benchmark and is treated as a money-market anchor, not as a forward OIS curve.",
+            "fed_funds_futures": _fed_futures_panel(market_data, dff),
         },
         "interpretation_guardrails": {
             "no_composite_score": True,
