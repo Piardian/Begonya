@@ -102,6 +102,19 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         self.as_of_date = as_of_date
         self.surprise_sigmas = dict(surprise_sigmas or self.DEFAULT_SURPRISE_SIGMAS)
 
+    @classmethod
+    def from_calibration_profile(
+        cls,
+        profile_path: Optional[Path] = None,
+        **kwargs: Any,
+    ) -> MacroMetricsCalculator:
+        path = profile_path or Path(__file__).resolve().parent.parent / "calibration" / "surprise_sigma_profile.json"
+        if not path.exists():
+            return cls(**kwargs)
+        from calibration.surprise_sigma import load_calibration_profile
+        sigmas = load_calibration_profile(path)
+        return cls(surprise_sigmas=sigmas, **kwargs)
+
     def calculate_surprise_zscore(self, indicator_type: str, actual: float, forecast: float) -> float:
         sigma = float(self.surprise_sigmas.get(indicator_type.lower(), self.surprise_sigmas.get("generic", 1.0)))
         # Backward-compatible direct-call behavior for legacy tests that pass NFP in K.

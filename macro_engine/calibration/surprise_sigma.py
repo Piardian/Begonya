@@ -62,9 +62,10 @@ def load_observations_csv(path: Path) -> list[Dict[str, Any]]:
     for index, row in enumerate(rows, start=2):
         if not str(row.get("indicator_type", "")).strip():
             raise ValueError(f"Row {index}: indicator_type is required")
-        if str(row.get("provider", "")).strip() != "TradingEconomics":
-            raise DataUnavailableError(f"Row {index}: provider must be TradingEconomics")
-        if str(row.get("point_in_time", "")).strip().lower() != "true":
+        provider = str(row.get("provider", "")).strip()
+        if provider not in ("TradingEconomics", "ForexFactory"):
+            raise DataUnavailableError(f"Row {index}: provider must be TradingEconomics or ForexFactory")
+        if str(row.get("point_in_time", "")).strip().lower() not in ("true", "1"):
             raise DataUnavailableError(f"Row {index}: point_in_time must be true")
 
         event_date = _parse_date(row.get("date"))
@@ -79,7 +80,7 @@ def load_observations_csv(path: Path) -> list[Dict[str, Any]]:
             "indicator_type": str(row["indicator_type"]).strip().lower(),
             "actual": _parse_number("actual", row.get("actual")),
             "forecast": _parse_number("forecast", row.get("forecast")),
-            "provider": "TradingEconomics",
+            "provider": provider,
             "point_in_time": True,
         })
     return validated
@@ -91,10 +92,16 @@ def calibrate_from_csv(
     validation_end: dt.date,
     min_observations: int = 30,
     required_indicators: tuple[str, ...] = (),
+    filter_covid_shock: bool = False,
 ) -> Dict[str, Any]:
     if min_observations <= 1:
         raise ValueError("min_observations must be > 1")
     rows = load_observations_csv(path)
+    if filter_covid_shock:
+        covid_start = dt.date(2020, 3, 1)
+        covid_end = dt.date(2020, 7, 31)
+        rows = [r for r in rows if not (covid_start <= dt.date.fromisoformat(str(r["date"])) <= covid_end)]
+
     split = chronological_split(rows, calibration_end, validation_end)
     sigmas = fit_surprise_sigmas(split["calibration"], min_observations=min_observations)
     missing_indicators = [
@@ -107,7 +114,8 @@ def calibrate_from_csv(
     if not sigmas:
         raise ValueError("No empirical sigma could be fitted from the calibration partition")
     return {
-        "method": "empirical_population_std_of_direction_adjusted_surprise",
+        "method": "empirical_population_std_of_direction_adjusted_surprise" + ("_ex_covid" if filter_covid_shock else ""),
+        "filter_covid_shock": filter_covid_shock,
         "calibration_end": calibration_end.isoformat(),
         "validation_end": validation_end.isoformat(),
         "sample_counts": {key: len(value) for key, value in split.items()},

@@ -63,6 +63,40 @@ class ReplayAndCalibrationContractTests(unittest.TestCase):
                     required_indicators=("cpi",),
                 )
 
+    def test_calibration_accepts_forexfactory_provider(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "observations.csv"
+            header = "date,event_timestamp_utc,indicator_type,actual,forecast,provider,point_in_time"
+            rows = [header]
+            for i in range(35):
+                date = dt.date(2023, 1, 1) + dt.timedelta(days=i)
+                ts = f"{date.isoformat()}T13:30:00+00:00"
+                rows.append(f"{date.isoformat()},{ts},cpi,{0.2 + (i % 5)/100:.2f},0.20,ForexFactory,True")
+            path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+            loaded = load_observations_csv(path)
+            self.assertEqual(len(loaded), 35)
+            self.assertEqual(loaded[0]["provider"], "ForexFactory")
+
+            calibrated = calibrate_from_csv(
+                path,
+                calibration_end=dt.date(2023, 12, 31),
+                validation_end=dt.date(2024, 12, 31),
+                min_observations=30,
+                required_indicators=("cpi",),
+            )
+            self.assertIn("cpi", calibrated["sigmas"])
+            self.assertGreater(calibrated["sigmas"]["cpi"], 0)
+
+    def test_calibration_rejects_untrusted_provider(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "observations.csv"
+            header = "date,event_timestamp_utc,indicator_type,actual,forecast,provider,point_in_time"
+            ts = "2023-01-01T13:30:00+00:00"
+            rows = [header, f"2023-01-01,{ts},cpi,0.3,0.2,RandomBlog,True"]
+            path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+            with self.assertRaises(DataUnavailableError):
+                load_observations_csv(path)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

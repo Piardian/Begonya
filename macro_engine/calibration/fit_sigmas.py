@@ -24,6 +24,11 @@ def main() -> int:
     parser.add_argument("--min-observations", type=int, default=30)
     parser.add_argument("--required-indicator", action="append", default=[])
     parser.add_argument(
+        "--filter-covid-shock",
+        action="store_true",
+        help="Exclude structural COVID lockdown shock months (March-July 2020) from calibration",
+    )
+    parser.add_argument(
         "--output",
         type=Path,
         default=Path(__file__).with_name("surprise_sigma_profile.json"),
@@ -39,6 +44,7 @@ def main() -> int:
         args.validation_end,
         min_observations=args.min_observations,
         required_indicators=tuple(args.required_indicator),
+        filter_covid_shock=args.filter_covid_shock,
     )
     write_calibration_profile(profile, args.output)
     print(f"Fitted {len(profile['sigmas'])} empirical sigmas to {args.output}")

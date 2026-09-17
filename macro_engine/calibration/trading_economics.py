@@ -181,7 +181,7 @@ def validate_pit_rows(rows: Iterable[Mapping[str, Any]]) -> list[Dict[str, Any]]
         for field in ("date", "event_timestamp_utc", "indicator_type", "actual", "forecast", "provider"):
             if row.get(field) in (None, ""):
                 raise DataUnavailableError(f"Calibration row {index} missing {field}")
-        if str(row.get("provider")) != "TradingEconomics":
+        if str(row.get("provider")) not in ("TradingEconomics", "ForexFactory"):
             raise DataUnavailableError(f"Calibration row {index} has untrusted provider")
         if row.get("point_in_time") is not True:
             raise DataUnavailableError(f"Calibration row {index} is not point-in-time")
