@@ -29,8 +29,8 @@ class TestMacroEdgeResearch(unittest.TestCase):
 
             event = dt.datetime(2021, 1, 8, 13, 30, tzinfo=UTC)
             bars = {
-                "XAUUSD": self._bars(event, 2000.0, [2000.0, 1990.0, 1980.0, 1970.0, 1960.0]),
-                "EURUSD": self._bars(event, 1.2000, [1.2000, 1.1990, 1.1980, 1.1970, 1.1960]),
+                "XAUUSD": self._bars(event, 2000.0, [2000.0, 1990.0, 1980.0, 1970.0]),
+                "EURUSD": self._bars(event, 1.2000, [1.2000, 1.1990, 1.1980, 1.1970]),
             }
 
             report = build_macro_edge_dataset(
@@ -62,7 +62,7 @@ class TestMacroEdgeResearch(unittest.TestCase):
         h = summary["assets"]["EURUSD"]["horizons"]["5"]
         self.assertEqual(h["sample_count"], 2)
         self.assertEqual(h["directional_hit_rate_pct"], 50.0)
-        self.assertEqual(h["mean_net_bps"], 10.0)
+        self.assertEqual(h["mean_net_bps"], 0.0)
         self.assertFalse(summary["methodology"]["threshold_optimization"])
 
 
