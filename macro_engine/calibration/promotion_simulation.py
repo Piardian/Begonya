@@ -144,6 +144,7 @@ def evaluate_frozen_holdout(
     threshold: float = FROZEN_MAD_THRESHOLD,
     windows: Sequence[HoldoutWindow] = DEFAULT_HOLDOUT_WINDOWS,
     cost_bps: float = 15.0,
+    min_window_rows: int = 1,
 ) -> Dict[str, Any]:
     """Evaluate a frozen MAD threshold without fitting anything on the holdout."""
     if threshold != FROZEN_MAD_THRESHOLD:
@@ -176,11 +177,13 @@ def evaluate_frozen_holdout(
         baseline = [signal * outcome - cost_bps for _, signal, _, outcome in eligible]
         gated = [signal * outcome - cost_bps for _, signal, z, outcome in eligible if abs(z) >= threshold]
         filtered_out = [signal * outcome - cost_bps for _, signal, z, outcome in eligible if abs(z) < threshold]
-        status = "PASS_DATA" if eligible else "INSUFFICIENT_DATA"
+        status = "PASS_DATA" if len(eligible) >= min_window_rows else "INSUFFICIENT_DATA"
         results["windows"][window.name] = {
             "status": status,
+            "partial_data": bool(0 < len(eligible) < min_window_rows),
             "coverage": {
                 "rows_in_window": len(eligible),
+                "min_required_rows": min_window_rows,
                 "gated_rows": len(gated),
                 "filtered_rows": len(filtered_out),
             },
