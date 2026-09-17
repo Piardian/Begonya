@@ -14,9 +14,8 @@ logger = logging.getLogger("FredDataIngestion")
 
 
 class FredDataIngestion:
-    """Fetch current and prior observations from FRED; never synthesize missing data."""
+    """Fetch FRED observations using an explicit real-time vintage when replaying."""
 
-    # Logical name -> actual FRED series ID.
     FRED_SERIES = {
         "WALCL": "WALCL",
         "RRPONTSYD": "RRPONTSYD",
@@ -37,7 +36,11 @@ class FredDataIngestion:
         self.timeout = timeout
 
     def _get_observations(
-        self, series_id: str, start: dt.date, end: dt.date
+        self,
+        series_id: str,
+        start: dt.date,
+        end: dt.date,
+        realtime_end: Optional[dt.date] = None,
     ) -> List[Tuple[dt.date, float]]:
         if not self.api_key:
             raise DataUnavailableError("FRED_API_KEY is not configured")
@@ -51,6 +54,10 @@ class FredDataIngestion:
             "sort_order": "asc",
             "limit": 1000,
         }
+        if realtime_end is not None:
+            # ALFRED/FRED real-time period: exclude observations revised after replay date.
+            params["realtime_end"] = realtime_end.isoformat()
+
         url = (
             "https://api.stlouisfed.org/fred/series/observations?"
             + urllib.parse.urlencode(params)
@@ -92,6 +99,7 @@ class FredDataIngestion:
             series_id,
             target - dt.timedelta(days=90),
             as_of,
+            realtime_end=as_of,
         )
         rows_sorted = sorted(rows, key=lambda x: x[0])
         current_date, current = rows_sorted[-1]
@@ -135,10 +143,12 @@ class FredDataIngestion:
             "provider": "FRED",
             "fallback_used": False,
             "as_of": as_of.isoformat(),
+            "vintage_end": as_of.isoformat(),
             "observation_dates": observation_dates,
             "prior_4w_dates": prior_dates,
         }
         logger.info(
-            "[FRED] current and historical observations loaded; synthetic baselines disabled"
+            "[FRED] current/prior observations loaded at vintage=%s; synthetic baselines disabled",
+            as_of.isoformat(),
         )
         return results
