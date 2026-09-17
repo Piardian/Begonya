@@ -21,7 +21,7 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
         raw_market = self.market_ingest.fetch_current_prices()
         raw_fred = self.fred_ingest.fetch_liquidity_metrics(as_of=as_of)
         supplied_events = state.get("calendar_events") or []
-        events_provided = bool(state.get("calendar_events_supplied", False))
+        events_provided = bool(state.get("calendar_events_supplied", False)) or bool(supplied_events)
         events = list(supplied_events) if events_provided else asyncio.run(self.cal_ingest.fetch_latest_events())
 
         previous_state = state.get("previous_regime_state") or {}

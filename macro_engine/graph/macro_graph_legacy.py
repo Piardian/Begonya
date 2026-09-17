@@ -48,6 +48,8 @@ class MacroGraphState(TypedDict):
     raw_market: Dict[str, Any]
     raw_fred: Dict[str, Any]
     calendar_events: List[Dict[str, Any]]
+    calendar_events_supplied: Optional[bool]
+    previous_regime_state: Optional[Dict[str, Any]]
     processed_metrics: Dict[str, Any]
     liquidity_output: Optional[Dict[str, Any]]
     growth_output: Optional[Dict[str, Any]]

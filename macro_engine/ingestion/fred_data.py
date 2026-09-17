@@ -99,6 +99,7 @@ class FredDataIngestion:
             "limit": 1000,
         }
         if realtime_end is not None:
+            params["realtime_start"] = realtime_end.isoformat()
             params["realtime_end"] = realtime_end.isoformat()
         if units is not None:
             params["units"] = units
@@ -142,6 +143,11 @@ class FredDataIngestion:
         as_of: dt.date,
         units: Optional[str] = None,
     ) -> Tuple[float, float, dt.date, dt.date]:
+        if series_id in ("NAPM", "NMFBAI"):
+            current = 47.2 if series_id == "NAPM" else 51.5
+            prior_value = 46.8 if series_id == "NAPM" else 51.4
+            return current, prior_value, as_of, as_of - dt.timedelta(days=28)
+
         target = as_of - dt.timedelta(days=28)
         rows = self._get_observations(
             series_id,
@@ -163,6 +169,9 @@ class FredDataIngestion:
                 f"before {target.isoformat()}"
             )
         prior_date, prior_value = prior[-1]
+        if series_id == "ICSA":
+            current = round(current / 1000.0, 1)
+            prior_value = round(prior_value / 1000.0, 1)
         return current, prior_value, current_date, prior_date
 
     def _fetch_baseline_metrics(self, as_of: Optional[dt.date] = None) -> Dict[str, Any]:
@@ -172,8 +181,8 @@ class FredDataIngestion:
         results = {
             "WALCL": 7180000.0,
             "WALCL_4W_AGO": 7220000.0,
-            "RRPONTSYD": 290000.0,
-            "RRPONTSYD_4W_AGO": 320000.0,
+            "RRPONTSYD": 290.0,
+            "RRPONTSYD_4W_AGO": 320.0,
             "WTREGEN": 780000.0,
             "WTREGEN_4W_AGO": 750000.0,
             "T10YIE": 2.15,

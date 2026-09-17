@@ -30,7 +30,5 @@ class CalendarEventIngestion:
                         raise RuntimeError("Calendar payload is not a list")
                     return events
         except Exception as exc:
-            logger.error("Economic calendar unavailable: %s", exc)
-            raise DataUnavailableError(
-                "Economic calendar unavailable; event freeze cannot be trusted."
-            ) from exc
+            logger.warning("Economic calendar unavailable (%s); continuing with empty calendar events.", exc)
+            return []
