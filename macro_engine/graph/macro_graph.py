@@ -36,6 +36,7 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
         processed["economic_regime_snapshot"] = build_economic_regime_snapshot(
             raw_fred,
             as_of=as_of,
+            market_data=raw_market,
         )
         return {
             "raw_market": raw_market,
