@@ -53,6 +53,10 @@ jobs:
         working-directory: macro_engine
         run: python -m unittest discover -s tests -v
 
+      - name: Verify promotion evidence contract
+        working-directory: macro_engine
+        run: python -m calibration.verify_promotion_evidence calibration/PROMOTION_EVIDENCE_TEMPLATE.json
+
   historical-macro-replay:
     name: Historical Macro Replay & Determinism
     runs-on: ubuntu-latest
