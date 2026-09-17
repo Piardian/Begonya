@@ -67,7 +67,12 @@ MARKET_SYMBOLS = {
     "IRON_ORE": "TIO=F",
     "DAIRY_GDT": "DAIRY",
     "NZ02Y": "NZD2Y=X",
-    # Optional market-implied policy input. Yahoo exposes the front 30-Day Fed Funds contract as ZQ=F.
+}
+
+# Policy expectations are provider-optional and caller-supplied to the policy panel.
+# We deliberately do not auto-fetch ZQ=F in the required market ingestion loop because
+# an unavailable optional policy feed must not abort the core macro pipeline.
+OPTIONAL_POLICY_SYMBOLS = {
     "FED_FUNDS_FUTURES": "ZQ=F",
 }
 
