@@ -67,6 +67,8 @@ MARKET_SYMBOLS = {
     "IRON_ORE": "TIO=F",
     "DAIRY_GDT": "DAIRY",
     "NZ02Y": "NZD2Y=X",
+    # Optional market-implied policy input. Yahoo exposes the front 30-Day Fed Funds contract as ZQ=F.
+    "FED_FUNDS_FUTURES": "ZQ=F",
 }
 
 HYSTERESIS_CONFIG = {
