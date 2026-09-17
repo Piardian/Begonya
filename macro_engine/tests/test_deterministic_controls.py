@@ -78,6 +78,34 @@ class DeterministicControlsTests(unittest.TestCase):
         self.assertIn("nfp", fitted)
         self.assertGreater(fitted["nfp"], 0)
 
+    def test_fit_surprise_sigmas_mad_resists_extreme_outliers(self):
+        # 30 regular observations with surprise around 1.0, plus 1 massive outlier of 1000.0
+        rows = [{"indicator_type": "cpi", "actual": 1.0, "forecast": 0.0} for _ in range(30)]
+        for i in range(15):
+            rows[i]["actual"] = 1.2
+        # Add a massive single outlier
+        rows.append({"indicator_type": "cpi", "actual": 1000.0, "forecast": 0.0})
+
+        sigma_mad = fit_surprise_sigmas(rows, min_observations=30, method="mad")["cpi"]
+        sigma_std = fit_surprise_sigmas(rows, min_observations=30, method="std")["cpi"]
+
+        # MAD should be small (~0.15-0.30) whereas std should be distorted (> 100)
+        self.assertLess(sigma_mad, 1.0)
+        self.assertGreater(sigma_std, 100.0)
+
+    def test_fit_surprise_sigmas_mad_zero_fallback(self):
+        # When all surprises are exactly 0.0, MAD is 0; should safely fallback to pstdev or positive
+        rows = [{"indicator_type": "gdp", "actual": 2.0, "forecast": 2.0} for _ in range(30)]
+        rows.append({"indicator_type": "gdp", "actual": 3.0, "forecast": 2.0})
+        fitted = fit_surprise_sigmas(rows, min_observations=30, method="mad")
+        self.assertIn("gdp", fitted)
+        self.assertGreater(fitted["gdp"], 0)
+
+    def test_fit_surprise_sigmas_invalid_method(self):
+        rows = [{"indicator_type": "gdp", "actual": 2.0, "forecast": 2.0} for _ in range(30)]
+        with self.assertRaises(ValueError):
+            fit_surprise_sigmas(rows, min_observations=30, method="invalid_method")
+
     def test_chronological_split_prevents_overlap(self):
         rows = [
             {"date": "2024-12-31", "x": 1},

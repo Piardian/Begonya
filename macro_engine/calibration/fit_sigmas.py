@@ -29,6 +29,12 @@ def main() -> int:
         help="Exclude structural COVID lockdown shock months (March-July 2020) from calibration",
     )
     parser.add_argument(
+        "--method",
+        choices=["mad", "std"],
+        default="mad",
+        help="Empirical scale estimation method: 'mad' (Robust Median Absolute Deviation) or 'std' (Classical Std Dev)",
+    )
+    parser.add_argument(
         "--output",
         type=Path,
         default=Path(__file__).with_name("surprise_sigma_profile.json"),
@@ -45,10 +51,14 @@ def main() -> int:
         min_observations=args.min_observations,
         required_indicators=tuple(args.required_indicator),
         filter_covid_shock=args.filter_covid_shock,
+        method=args.method,
     )
     write_calibration_profile(profile, args.output)
-    print(f"Fitted {len(profile['sigmas'])} empirical sigmas to {args.output}")
+    print(f"Fitted {len(profile['sigmas'])} empirical sigmas [{args.method}] to {args.output}")
     print(f"Samples: {profile['sample_counts']}")
+    if "validation_performance" in profile:
+        perf = profile["validation_performance"]["aggregate"]
+        print(f"OOS Validation (2024-2025, N={perf['sample_count']}): Std(Z)={perf['std_z']}, MSNR={perf['msnr']}, Within 1-Sigma={perf['pct_within_1sigma']}%, Within 2-Sigma={perf['pct_within_2sigma']}%")
     return 0
 
 

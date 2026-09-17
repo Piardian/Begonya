@@ -1,21 +1,22 @@
 {
-  "method": "empirical_population_std_of_direction_adjusted_surprise_ex_covid",
-  "filter_covid_shock": true,
+  "method": "empirical_mad",
+  "scale_estimator": "mad",
+  "filter_covid_shock": false,
   "calibration_end": "2023-12-31",
   "validation_end": "2025-12-31",
   "sample_counts": {
-    "calibration": 576,
+    "calibration": 608,
     "validation": 98,
     "out_of_sample": 0
   },
   "sigmas": {
-    "pmi": 1.61148591,
-    "nfp": 150089.5140065,
-    "unemployment": 0.22007672,
-    "retail_sales": 0.86867002,
-    "core_cpi": 0.14269644,
-    "cpi": 0.14003122,
-    "gdp": 0.85281234
+    "pmi": 1.63086,
+    "nfp": 83766.9,
+    "unemployment": 0.14826,
+    "retail_sales": 0.44478,
+    "core_cpi": 0.14826,
+    "cpi": 0.14826,
+    "gdp": 0.51891
   },
   "required_indicators": [
     "nfp",
@@ -26,6 +27,73 @@
     "gdp",
     "retail_sales"
   ],
+  "validation_performance": {
+    "aggregate": {
+      "sample_count": 98,
+      "std_z": 0.8141,
+      "msnr": 0.6645,
+      "pct_within_1sigma": 78.57,
+      "pct_within_2sigma": 98.98
+    },
+    "by_indicator": {
+      "pmi": {
+        "sample_count": 16,
+        "std_z": 0.7189,
+        "msnr": 0.5205,
+        "pct_within_1sigma": 75.0,
+        "pct_within_2sigma": 100.0,
+        "max_abs_z": 1.23
+      },
+      "nfp": {
+        "sample_count": 16,
+        "std_z": 0.8555,
+        "msnr": 0.8777,
+        "pct_within_1sigma": 56.25,
+        "pct_within_2sigma": 100.0,
+        "max_abs_z": 1.98
+      },
+      "unemployment": {
+        "sample_count": 16,
+        "std_z": 0.7321,
+        "msnr": 0.5645,
+        "pct_within_1sigma": 87.5,
+        "pct_within_2sigma": 100.0,
+        "max_abs_z": 1.35
+      },
+      "cpi": {
+        "sample_count": 15,
+        "std_z": 0.6712,
+        "msnr": 0.4525,
+        "pct_within_1sigma": 86.67,
+        "pct_within_2sigma": 100.0,
+        "max_abs_z": 1.35
+      },
+      "core_cpi": {
+        "sample_count": 15,
+        "std_z": 0.5397,
+        "msnr": 0.2993,
+        "pct_within_1sigma": 100.0,
+        "pct_within_2sigma": 100.0,
+        "max_abs_z": 0.67
+      },
+      "retail_sales": {
+        "sample_count": 15,
+        "std_z": 0.8108,
+        "msnr": 0.6688,
+        "pct_within_1sigma": 80.0,
+        "pct_within_2sigma": 100.0,
+        "max_abs_z": 1.57
+      },
+      "gdp": {
+        "sample_count": 5,
+        "std_z": 1.5582,
+        "msnr": 2.4819,
+        "pct_within_1sigma": 40.0,
+        "pct_within_2sigma": 80.0,
+        "max_abs_z": 2.51
+      }
+    }
+  },
   "validation_rows": [
     {
       "date": "2024-01-03",

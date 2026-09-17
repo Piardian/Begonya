@@ -1,22 +1,22 @@
 {
-  "method": "empirical_std",
+  "method": "empirical_std_ex_covid",
   "scale_estimator": "std",
-  "filter_covid_shock": false,
+  "filter_covid_shock": true,
   "calibration_end": "2023-12-31",
   "validation_end": "2025-12-31",
   "sample_counts": {
-    "calibration": 608,
+    "calibration": 576,
     "validation": 98,
     "out_of_sample": 0
   },
   "sigmas": {
-    "pmi": 1.72011688,
-    "nfp": 1075583.96036491,
-    "unemployment": 0.67618209,
-    "retail_sales": 1.40778928,
-    "core_cpi": 0.14282614,
-    "cpi": 0.13843981,
-    "gdp": 0.88705975
+    "pmi": 1.61148591,
+    "nfp": 150089.5140065,
+    "unemployment": 0.22007672,
+    "retail_sales": 0.86867002,
+    "core_cpi": 0.14269644,
+    "cpi": 0.14003122,
+    "gdp": 0.85281234
   },
   "required_indicators": [
     "nfp",
@@ -30,43 +30,43 @@
   "validation_performance": {
     "aggregate": {
       "sample_count": 98,
-      "std_z": 0.5145,
-      "msnr": 0.2648,
-      "pct_within_1sigma": 92.86,
+      "std_z": 0.6118,
+      "msnr": 0.375,
+      "pct_within_1sigma": 90.82,
       "pct_within_2sigma": 100.0
     },
     "by_indicator": {
       "pmi": {
         "sample_count": 16,
-        "std_z": 0.6822,
-        "msnr": 0.4686,
-        "pct_within_1sigma": 81.25,
+        "std_z": 0.727,
+        "msnr": 0.5324,
+        "pct_within_1sigma": 75.0,
         "pct_within_2sigma": 100.0,
-        "max_abs_z": 1.16
+        "max_abs_z": 1.24
       },
       "nfp": {
         "sample_count": 16,
-        "std_z": 0.0662,
-        "msnr": 0.0052,
-        "pct_within_1sigma": 100.0,
+        "std_z": 0.4781,
+        "msnr": 0.274,
+        "pct_within_1sigma": 93.75,
         "pct_within_2sigma": 100.0,
-        "max_abs_z": 0.15
+        "max_abs_z": 1.11
       },
       "unemployment": {
         "sample_count": 16,
-        "std_z": 0.1635,
-        "msnr": 0.0281,
+        "std_z": 0.4924,
+        "msnr": 0.2554,
         "pct_within_1sigma": 100.0,
         "pct_within_2sigma": 100.0,
-        "max_abs_z": 0.3
+        "max_abs_z": 0.91
       },
       "cpi": {
         "sample_count": 15,
-        "std_z": 0.7184,
-        "msnr": 0.5184,
+        "std_z": 0.7111,
+        "msnr": 0.5079,
         "pct_within_1sigma": 86.67,
         "pct_within_2sigma": 100.0,
-        "max_abs_z": 1.44
+        "max_abs_z": 1.43
       },
       "core_cpi": {
         "sample_count": 15,
@@ -78,19 +78,19 @@
       },
       "retail_sales": {
         "sample_count": 15,
-        "std_z": 0.2563,
-        "msnr": 0.0668,
+        "std_z": 0.4174,
+        "msnr": 0.1769,
         "pct_within_1sigma": 100.0,
         "pct_within_2sigma": 100.0,
-        "max_abs_z": 0.5
+        "max_abs_z": 0.81
       },
       "gdp": {
         "sample_count": 5,
-        "std_z": 0.9115,
-        "msnr": 0.8493,
+        "std_z": 0.948,
+        "msnr": 0.9183,
         "pct_within_1sigma": 60.0,
         "pct_within_2sigma": 100.0,
-        "max_abs_z": 1.47
+        "max_abs_z": 1.52
       }
     }
   },

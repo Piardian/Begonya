@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime as dt
 import math
 import re
-from statistics import mean, pstdev
+from statistics import mean, median, pstdev
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
 
 from data_quality import DataUnavailableError
@@ -189,8 +189,15 @@ def signed_surprise_zscore(
     return max(-clip, min(clip, round(z, 2)))
 
 
-def fit_surprise_sigmas(rows: Iterable[Mapping[str, Any]], min_observations: int = 30) -> Dict[str, float]:
-    """Fit empirical population sigmas from a provider-backed observation table."""
+def fit_surprise_sigmas(
+    rows: Iterable[Mapping[str, Any]],
+    min_observations: int = 30,
+    method: str = "mad",
+) -> Dict[str, float]:
+    """Fit empirical population sigmas (Robust MAD or standard deviation) from a provider-backed observation table."""
+    if method not in ("mad", "std"):
+        raise ValueError(f"Unknown fitting method: {method!r}, must be 'mad' or 'std'")
+
     grouped: Dict[str, List[float]] = {}
     for row in rows:
         kind = str(row.get("indicator_type", "generic")).lower()
@@ -208,7 +215,15 @@ def fit_surprise_sigmas(rows: Iterable[Mapping[str, Any]], min_observations: int
     for kind, values in grouped.items():
         if len(values) < min_observations:
             continue
-        sigma = pstdev(values)
+        if method == "mad":
+            med = median(values)
+            mad = median([abs(v - med) for v in values])
+            sigma = 1.4826 * mad
+            if sigma <= 0 or not math.isfinite(sigma):
+                sigma = pstdev(values)
+        else:
+            sigma = pstdev(values)
+
         if sigma > 0 and math.isfinite(sigma):
             fitted[kind] = round(sigma, 8)
     return fitted
