@@ -72,7 +72,7 @@ class EconomicRegimeTests(unittest.TestCase):
         self.assertEqual(first["growth_regime"]["signal"], "EXPANDING")
         self.assertTrue(first["rate_curve_regime"]["two_ten_inverted"])
         self.assertEqual(first["rate_curve_regime"]["curve_move"], "STEEPENING")
-        self.assertFalse(first["interpretation_guardrails"]["no_composite_score"] is False)
+        self.assertTrue(first["interpretation_guardrails"]["no_composite_score"])
 
     def test_missing_fields_withhold_economic_narrative(self):
         result = build_economic_regime_snapshot({})
