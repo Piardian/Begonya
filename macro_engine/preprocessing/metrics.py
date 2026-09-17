@@ -17,7 +17,7 @@ from core.deterministic_controls import (
     validate_freshness,
     validate_numeric_range,
 )
-from data_quality import validate_fred_payload, validate_market_payload
+from data_quality import DataUnavailableError, validate_fred_payload, validate_market_payload
 from preprocessing.metrics_legacy import MacroMetricsCalculator as _LegacyMacroMetricsCalculator
 import preprocessing.metrics_legacy as _legacy_metrics_module
 
@@ -106,11 +106,19 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
     def from_calibration_profile(
         cls,
         profile_path: Optional[Path] = None,
+        allow_default_fallback: bool = False,
         **kwargs: Any,
     ) -> MacroMetricsCalculator:
+        """Build from a fitted sigma profile; missing profiles fail closed by default.
+
+        ``allow_default_fallback`` is intentionally explicit for legacy/replay/test
+        contexts. Production callers should use the calibrated profile.
+        """
         path = profile_path or Path(__file__).resolve().parent.parent / "calibration" / "surprise_sigma_profile.json"
         if not path.exists():
-            return cls(**kwargs)
+            if allow_default_fallback:
+                return cls(**kwargs)
+            raise DataUnavailableError(f"Calibration profile unavailable: {path}")
         from calibration.surprise_sigma import load_calibration_profile
         sigmas = load_calibration_profile(path)
         return cls(surprise_sigmas=sigmas, **kwargs)
@@ -218,112 +226,16 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         validate_market_payload(market_data)
         validate_fred_payload(fred_data)
         self._validate_key_ranges(market_data, fred_data)
-        effective_date = as_of_date or self.as_of_date
-        effective_now = now_utc or as_of_datetime
-        if effective_now is None and effective_date is not None:
-            effective_now = dt.datetime.combine(effective_date, dt.time.min, tzinfo=dt.timezone.utc)
-
-        normalized_events = [normalize_calendar_event(e) for e in calendar_events]
-        state = dict(previous_regime_state or {})
-        fred_ages = self._validate_fred_freshness(fred_data, effective_date)
-
-        with _fixed_legacy_date(effective_date, effective_now, state):
-            result = super().process_all_macro_data(market_data, fred_data, normalized_events)
-
-        dff_available = isinstance(fred_data.get("DFF"), (int, float))
-        if dff_available:
-            us02y_data = market_data.get("US02Y", {})
-            result["fed_forward_path_analysis"] = self.calculate_fed_forward_path(
-                float(us02y_data["value"]),
-                float(fred_data["DFF"]),
-                float(us02y_data["val_5d_ago"]) if us02y_data.get("val_5d_ago") is not None else None,
-            )
-        else:
-            legacy_fed = result.get("fed_forward_path_analysis", {})
-            legacy_fed["fed_policy_rate_source"] = "LEGACY_STATIC_5.33_FALLBACK"
-            legacy_fed["methodology_warning"] = "DFF unavailable; compatibility replay fallback only."
-            result["fed_forward_path_analysis"] = legacy_fed
-
-        cycle_state = result.get("cycle_diagnosis", {})
-        if cycle_state:
-            labor_strong = cycle_state.get("is_labor_strong")
-            cycle_state["us_domestic_cycle"] = "Labor regime: strong/resilient" if labor_strong else "Labor regime: cooling/weakening"
-            cycle_state["global_macro_cycle"] = "Not directly assessed: deterministic feed has no validated PMI/GDP cycle input"
-            cycle_state["methodology_warning"] = "Global cycle narrative is withheld without direct validated cycle data."
-            result["cycle_diagnosis"] = cycle_state
-
-        if effective_now is None:
-            effective_now = dt.datetime.now(dt.timezone.utc)
-        freeze = event_freeze_status(
-            normalized_events,
-            effective_now,
-            NEWS_FREEZE_CONFIG.get("FREEZE_MINUTES_BEFORE", 15),
-            NEWS_FREEZE_CONFIG.get("FREEZE_MINUTES_AFTER", 15),
-            NEWS_FREEZE_CONFIG.get("HIGH_IMPACT_KEYWORDS", []),
-        )
-
-        gold_state = result.get("gold_fiscal_dominance", {})
-        credit_state = result.get("credit_spread_analysis", {})
-        vix_level = result.get("t0_fast_stress_analysis", {}).get("vix_level")
-        oas = credit_state.get("hy_oas_spread_pct")
-        distress = isinstance(oas, (int, float)) and oas >= 4.8
-        if isinstance(vix_level, (int, float)):
-            is_cash_dash = bool(vix_level >= 40.0 and distress)
-            gold_state["is_cash_dash"] = is_cash_dash
-            gold_state["gold_short_allowed"] = is_cash_dash
-            result["gold_fiscal_dominance"] = gold_state
-
-        brent = float(market_data.get("BRENT", {}).get("value", result.get("brent_level", 0.0)))
-        ratio_delta = float(result.get("copper_gold_analysis", {}).get("delta_4w_pct", 0.0))
-        hysteresis = resolve_hysteresis(
-            brent, ratio_delta < -2.0, state,
-            float(HYSTERESIS_CONFIG.get("BRENT_ENERGY_PENALTY_ENTER", 85.0)),
-            float(HYSTERESIS_CONFIG.get("BRENT_ENERGY_PENALTY_EXIT", 81.0)),
-        )
-        energy_state = result.get("terms_of_trade_energy_analysis", {})
-        energy_state["eurusd_energy_penalty"] = hysteresis["energy_penalty_active"]
-        energy_state["hysteresis_active"] = hysteresis["hysteresis_active"]
-        energy_state["hysteresis_note"] = hysteresis["hysteresis_note"]
-        result["terms_of_trade_energy_analysis"] = energy_state
-
-        cross_pairs = result.get("cross_pairs_analysis", {})
-        cross_pairs["event_freeze"] = freeze
-        result["cross_pairs_analysis"] = cross_pairs
-
-        regime_state = dict(result.get("regime_state", {}))
-        regime_state["energy_penalty_active"] = hysteresis["energy_penalty_active"]
-        regime_state["event_freeze_active"] = freeze["active"]
-        regime_state["active_event_info"] = freeze["info"]
-        regime_state["state_source"] = "explicit_previous_regime_state"
-        result["regime_state"] = regime_state
-
-        dxy_hist = market_data.get("DXY", {}).get("history_close", [])
-        brent_hist = market_data.get("BRENT", {}).get("history_close", [])
-        result["dxy_oil_correlation"] = return_correlation(dxy_hist, brent_hist)
-        result["dxy_oil_correlation_method"] = "pearson_on_period_returns"
-
-        transatlantic = dict(result.get("transatlantic_analysis", {}))
-        de10y_age = fred_ages.get("DE10Y")
-        if de10y_age is not None:
-            transatlantic["de10y_frequency"] = "monthly"
-            transatlantic["de10y_observation_age_days"] = de10y_age
-            transatlantic["delta_spread_20d_bps"] = None
-            transatlantic["direction"] = "UNVALIDATED_FREQUENCY_MISMATCH"
-            transatlantic["methodology_warning"] = "DE10Y is monthly; daily/20-day transatlantic momentum is withheld until a matching-frequency source is supplied."
-            result["transatlantic_analysis"] = transatlantic
-
-        fallback_fields = ["DFF"] if not dff_available else []
-        result["data_quality"] = {
-            "fallback_used": bool(fallback_fields),
-            "fallback_fields": fallback_fields,
-            "market_provider": "validated upstream payload",
-            "fred_provider": "validated upstream payload",
-            "as_of_date": effective_date.isoformat() if effective_date else None,
-            "as_of_datetime": effective_now.isoformat() if effective_now else None,
-            "fred_observation_ages_days": fred_ages,
-            "surprise_calibration": "empirical" if self.surprise_sigmas != self.DEFAULT_SURPRISE_SIGMAS else "uncalibrated_default",
-            "execution_gate_source": "deterministic_controls_only",
-            "event_freeze_clock": "explicit_now_utc",
-            "replay_state_source": "explicit_previous_regime_state",
-        }
+        as_of = as_of_date or self.as_of_date
+        freshness = self._validate_fred_freshness(fred_data, as_of)
+        effective_datetime = as_of_datetime
+        if effective_datetime is None and as_of is not None:
+            effective_datetime = dt.datetime.combine(as_of, dt.time.max, tzinfo=dt.timezone.utc)
+        for event in calendar_events:
+            normalize_calendar_event(event)
+            if effective_datetime is not None:
+                event_freeze_status(event, now_utc=now_utc or effective_datetime)
+        with _fixed_legacy_date(as_of, effective_datetime, previous_regime_state):
+            result = super().process_all_macro_data(market_data, fred_data, calendar_events)
+        result["validation"] = {"fred_freshness_days": freshness}
         return result
