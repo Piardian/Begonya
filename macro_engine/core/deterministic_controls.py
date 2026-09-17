@@ -4,7 +4,7 @@ import datetime as dt
 import math
 import re
 from statistics import mean, pstdev
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
 
 from data_quality import DataUnavailableError
 
@@ -62,7 +62,12 @@ def event_freeze_status(
     freeze_after: float = 15.0,
     keywords: Optional[Sequence[str]] = None,
 ) -> Dict[str, Any]:
-    """Deterministic event-freeze calculation using an explicit UTC clock."""
+    """Deterministic event-freeze calculation using an explicit UTC clock.
+
+    A high-impact event with an unavailable or invalid timestamp is treated as uncertain
+    and therefore fail-closed: trading is frozen rather than assuming the event is safely
+    outside the freeze window.
+    """
     if now_utc.tzinfo is None:
         now_utc = now_utc.replace(tzinfo=dt.timezone.utc)
     else:
@@ -79,20 +84,28 @@ def event_freeze_status(
             continue
         raw_time = event.get("time") or event.get("event_time_utc")
         if not raw_time:
-            continue
+            return {
+                "active": True,
+                "uncertain": True,
+                "info": f"{title or 'High-impact event'} [event time unavailable; fail-closed]",
+            }
         try:
             event_time = dt.datetime.fromisoformat(str(raw_time).replace("Z", "+00:00"))
             if event_time.tzinfo is None:
                 event_time = event_time.replace(tzinfo=dt.timezone.utc)
             event_time = event_time.astimezone(dt.timezone.utc)
         except (TypeError, ValueError):
-            continue
+            return {
+                "active": True,
+                "uncertain": True,
+                "info": f"{title or 'High-impact event'} [event time invalid; fail-closed]",
+            }
         diff_min = (event_time - now_utc).total_seconds() / 60.0
         if -float(freeze_after) <= diff_min <= float(freeze_before):
             active = True
             info = f"{title} ({event.get('country', 'USD')}) [Kalan: {diff_min:+.0f} dk]"
             break
-    return {"active": active, "info": info}
+    return {"active": active, "uncertain": False, "info": info}
 
 
 def validate_freshness(
@@ -177,11 +190,7 @@ def signed_surprise_zscore(
 
 
 def fit_surprise_sigmas(rows: Iterable[Mapping[str, Any]], min_observations: int = 30) -> Dict[str, float]:
-    """Fit empirical population sigmas from a provider-backed observation table.
-
-    Rows must contain indicator_type, actual, and forecast. No fallback is created for
-    indicators with insufficient observations; callers must decide whether to exclude them.
-    """
+    """Fit empirical population sigmas from a provider-backed observation table."""
     grouped: Dict[str, List[float]] = {}
     for row in rows:
         kind = str(row.get("indicator_type", "generic")).lower()
