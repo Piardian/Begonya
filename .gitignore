@@ -11,6 +11,8 @@
 *.pid
 orchestrator/*.lock
 smc_engine/data/*.lock
+macro_engine/gateways/calendar_cache.json
+
 
 # Python Bytecode & Cache
 __pycache__/

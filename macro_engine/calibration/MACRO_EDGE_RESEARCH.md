@@ -55,3 +55,21 @@ The output is `macro_edge_research.json` unless another output path is provided.
 ## Promotion rule
 
 No research result is automatically promoted to a production gate. A candidate relationship must first pass chronological OOS validation, transaction-cost checks, robustness tests, and finally an incremental test against the existing SMC + Macro baseline.
+
+## Canonical Multi-Asset Empirical Results (M30, 2022–2025 OOS, N=162 events)
+
+Evaluated with exact-horizon mapping on broker MT5 historical candles:
+
+| Asset | Horizon | Sample Count | Directional Hit Rate % | Mean Gross (bps) | Cost Assumption | Mean Net (bps) | Profit Factor (Gross) | Net Positive % |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **EURUSD** | +30m | 162 | **69.14%** | **+14.97** | 10 bps | **+4.97** | **3.86** | **53.09%** |
+| | +60m | 162 | 68.52% | +14.98 | 10 bps | +4.98 | 3.43 | 52.47% |
+| | +240m | 162 | 62.35% | +10.69 | 10 bps | +0.69 | 1.92 | 46.91% |
+| **XAUUSD** | +30m | 162 | **67.90%** | **+19.70** | 15 bps | **+4.70** | **3.77** | **50.00%** |
+| | +60m | 162 | 64.81% | +18.59 | 15 bps | +3.59 | 3.11 | 47.53% |
+| | +240m | 162 | 62.35% | +14.50 | 15 bps | -0.50 | 1.67 | 46.91% |
+
+### Multi-Asset Insights
+- **XAUUSD vs EURUSD**: Gold responds with higher absolute amplitude (+19.70 bps at 30m vs +14.97 bps for EURUSD), but incurs higher spread/slippage friction (modeled at 15 bps vs 10 bps). Both assets yield comparable net edge (+4.70 bps vs +4.97 bps) at the 30-minute horizon.
+- **Horizon Decay**: Forward edge decays between 60m and 240m across both assets. By +240m, gold becomes net slightly negative (-0.50 bps) after 15 bps friction, showing that macroeconomic surprise edge is front-loaded in the initial 30 to 60 minutes post-release.
+

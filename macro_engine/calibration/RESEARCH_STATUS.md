@@ -29,3 +29,34 @@ The historical findings remain useful as hypotheses, but all IC, hit-rate, and c
 7. Do not promote a filter to production without an untouched OOS test and execution-cost validation.
 
 No automatic filter activation is part of this research layer.
+
+## Canonical Exact-Horizon Empirical Results (2022–2025 OOS)
+
+Generated on live MT5 bars (EURUSD M30, Europe/Helsinki converted to UTC) and `surprise_observations.csv`:
+
+### 1. Market Response Validation v3 (EURUSD M30, N=288)
+
+| Horizon | MAD Rank IC | STD Rank IC | Δ (MAD - STD) | MAD Hit Rate % | Mean Signed Return (bps) |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **+30m** | **+0.4602** | +0.4532 | +0.0070 | **60.42%** | **+16.09 bps** |
+| **+60m** | **+0.4177** | +0.4190 | -0.0013 | 58.33% | +16.21 bps |
+| **+240m**| **+0.2139** | +0.2382 | -0.0242 | 54.86% | +12.70 bps |
+
+### 2. Walk-Forward Filter Lab (EURUSD M30, 2022–2025 OOS, N=145 trades)
+
+| Strategy / Filter | Cost (bps) | Trades (N) | Hit Rate % | Mean Gross (bps) | Mean Net (bps) | Profit Factor | Max DD (bps) |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Baseline** (`signal != 0`) | 0 bps | 145 | 68.28% | +15.42 | +15.42 | 4.07 | 77.5 |
+| | 10 bps | 145 | 53.10% | +15.42 | +5.42 | 1.60 | 225.0 |
+| | 15 bps | 145 | 46.90% | +15.42 | **+0.42** | 1.04 | 385.3 |
+| **MAD Actionable** (\|Z\| ≥ 1.0) | 0 bps | 50 | **80.00%** | **+28.89** | **+28.89** | **9.70** | **53.5** |
+| | 10 bps | 50 | **68.00%** | **+28.89** | **+18.89** | **4.27** | **75.7** |
+| | 15 bps | 50 | **62.00%** | **+28.89** | **+13.89** | **2.84** | **102.9** |
+| **Coherent & MAD** | 15 bps | 47 | 61.70% | +29.23 | +14.23 | 2.78 | 102.9 |
+| **Volatility Not Extreme** | 15 bps | 90 | 34.44% | +6.44 | **-8.56** | **0.29** | 770.8 |
+
+### Key Takeaways
+1. **Filter Efficacy**: `mad_actionable` (|Z| ≥ 1.0) filters out 95 noisy/marginal trades. In doing so, it **eliminates 52 losing trades at 10 bps and 58 losing trades at 15 bps** (which averaged -6.67 bps loss per trade in the discarded pool).
+2. **Cost Survival**: At realistic news execution costs (15 bps spread + slippage), the unguided Baseline collapses to breakeven (+0.42 bps net, PF 1.04, Max DD 385 bps), whereas `mad_actionable` retains an edge (+13.89 bps net, PF 2.84, Max DD 102.9 bps).
+3. **Harmful Filters**: Filtering out high historical volatility (`volatility_not_extreme`) actively destroys edge (net drops to -8.56 bps, PF 0.29). High volatility events are necessary to provide the impulse amplitude that clears transaction spreads.
+
