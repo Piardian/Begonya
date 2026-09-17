@@ -2,6 +2,7 @@ import logging
 from typing import Dict, Any, Optional
 import yfinance as yf
 from config import MARKET_SYMBOLS
+from data_quality import OPTIONAL_MARKET_FIELDS
 from ingestion.mt5_market_data import MT5MarketDataIngestion
 
 logger = logging.getLogger("MarketDataIngestion")
@@ -59,8 +60,14 @@ class MarketDataIngestion:
                         "history_close": hist['Close'].tolist()
                     }
                 else:
+                    if name in OPTIONAL_MARKET_FIELDS:
+                        logger.info("%s (%s) unavailable; optional market input omitted.", name, ticker)
+                        continue
                     results[name] = self._get_fallback_price(name)
             except Exception as e:
+                if name in OPTIONAL_MARKET_FIELDS:
+                    logger.warning(f"{name} ({ticker}) verisi çekilemedi; opsiyonel veri atlanıyor: {e}")
+                    continue
                 logger.warning(f"{name} ({ticker}) verisi çekilemedi: {e}. Yedek değer kullanılıyor.")
                 results[name] = self._get_fallback_price(name)
 
