@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { Symbol } from './universe';
+import { paperOutcomeTracker } from './paperOutcomeTracker';
 export type { Symbol } from './universe';
 
 export type Timeframe = '1m' | '15m' | '1h' | '4h';
@@ -93,6 +94,10 @@ export class CandleStore {
       }
     } catch {
       fs.writeFileSync(filePath, JSON.stringify(candles, null, 2), 'utf8');
+    }
+
+    if (timeframe === '15m') {
+      paperOutcomeTracker.update(symbol, candles);
     }
   }
 
