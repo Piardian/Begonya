@@ -49,11 +49,14 @@ class ExecutionBiasBridge:
         try:
             stamp = dt.datetime.fromisoformat(str(raw_timestamp).replace("Z", "+00:00"))
             if stamp.tzinfo is None:
-                stamp = stamp.replace(tzinfo=dt.timezone.utc)
-            age_minutes = (dt.datetime.now(dt.timezone.utc) - stamp.astimezone(dt.timezone.utc)).total_seconds() / 60.0
+                now = dt.datetime.now()
+                age_minutes = (now - stamp).total_seconds() / 60.0
+            else:
+                now_utc = dt.datetime.now(dt.timezone.utc)
+                age_minutes = (now_utc - stamp.astimezone(dt.timezone.utc)).total_seconds() / 60.0
         except (TypeError, ValueError):
             return False, "Gate timestamp invalid."
-        if age_minutes < 0 or age_minutes > self.MAX_GATE_AGE_MINUTES:
+        if age_minutes < -5.0 or age_minutes > self.MAX_GATE_AGE_MINUTES:
             return False, f"Gate is stale: age={age_minutes:.1f} minutes."
         return True, "ok"
 
