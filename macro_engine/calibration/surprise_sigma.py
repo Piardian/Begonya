@@ -8,9 +8,18 @@ from pathlib import Path
 from typing import Any, Dict, Mapping
 
 from core.deterministic_controls import chronological_split, fit_surprise_sigmas
+from data_quality import DataUnavailableError
 
 
-REQUIRED_COLUMNS = {"date", "indicator_type", "actual", "forecast"}
+REQUIRED_COLUMNS = {
+    "date",
+    "event_timestamp_utc",
+    "indicator_type",
+    "actual",
+    "forecast",
+    "provider",
+    "point_in_time",
+}
 
 
 def _parse_date(value: Any) -> dt.date:
@@ -18,6 +27,16 @@ def _parse_date(value: Any) -> dt.date:
         return value if isinstance(value, dt.date) else dt.date.fromisoformat(str(value))
     except (TypeError, ValueError) as exc:
         raise ValueError(f"Invalid calibration date: {value!r}") from exc
+
+
+def _parse_timestamp(value: Any) -> dt.datetime:
+    try:
+        stamp = dt.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"Invalid event timestamp: {value!r}") from exc
+    if stamp.tzinfo is None:
+        stamp = stamp.replace(tzinfo=dt.timezone.utc)
+    return stamp.astimezone(dt.timezone.utc)
 
 
 def _parse_number(field: str, value: Any) -> float:
@@ -43,12 +62,25 @@ def load_observations_csv(path: Path) -> list[Dict[str, Any]]:
     for index, row in enumerate(rows, start=2):
         if not str(row.get("indicator_type", "")).strip():
             raise ValueError(f"Row {index}: indicator_type is required")
+        if str(row.get("provider", "")).strip() != "TradingEconomics":
+            raise DataUnavailableError(f"Row {index}: provider must be TradingEconomics")
+        if str(row.get("point_in_time", "")).strip().lower() != "true":
+            raise DataUnavailableError(f"Row {index}: point_in_time must be true")
+
+        event_date = _parse_date(row.get("date"))
+        event_timestamp = _parse_timestamp(row.get("event_timestamp_utc"))
+        if event_timestamp.date() != event_date:
+            raise ValueError(f"Row {index}: date and event_timestamp_utc disagree")
+
         validated.append({
             **row,
-            "date": _parse_date(row.get("date")).isoformat(),
+            "date": event_date.isoformat(),
+            "event_timestamp_utc": event_timestamp.isoformat(),
             "indicator_type": str(row["indicator_type"]).strip().lower(),
             "actual": _parse_number("actual", row.get("actual")),
             "forecast": _parse_number("forecast", row.get("forecast")),
+            "provider": "TradingEconomics",
+            "point_in_time": True,
         })
     return validated
 
