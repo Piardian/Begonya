@@ -27,6 +27,7 @@ class FredDataIngestion:
         "T10YIE": "T10YIE",
         "DFII10": "DFII10",
         "DFF": "DFF",
+        "SOFR": "SOFR",
         "BAMLH0A0HYM2": "BAMLH0A0HYM2",
         "NFCI": "NFCI",
         "ICSA": "ICSA",
@@ -57,6 +58,9 @@ class FredDataIngestion:
         "DGS30": "DGS30",
         "T10Y2Y": "T10Y2Y",
         "T10Y3M": "T10Y3M",
+        # ISM diffusion measures. Services uses Business Activity Index, not a synthetic headline.
+        "ISM_MANUFACTURING_PMI": "NAPM",
+        "ISM_SERVICES_ACTIVITY": "NMFBAI",
     }
 
     # FRED's pc1 transform returns percent change from one year ago.
@@ -95,7 +99,6 @@ class FredDataIngestion:
             "limit": 1000,
         }
         if realtime_end is not None:
-            # FRED real-time period: exclude observations revised after replay date.
             params["realtime_end"] = realtime_end.isoformat()
         if units is not None:
             params["units"] = units
@@ -148,9 +151,12 @@ class FredDataIngestion:
             units=units,
         )
         rows_sorted = sorted(rows, key=lambda x: x[0])
-        current_date, current = rows_sorted[-1]
+        current_candidates = [row for row in rows_sorted if row[0] <= as_of]
+        if not current_candidates:
+            raise DataUnavailableError(f"No observation on or before {as_of.isoformat()} for {series_id}")
+        current_date, current = current_candidates[-1]
 
-        prior = [(date, value) for date, value in rows_sorted if date <= target]
+        prior = [row for row in rows_sorted if row[0] <= target]
         if not prior:
             raise DataUnavailableError(
                 f"No usable 4-week historical observation for {series_id} "
@@ -195,9 +201,7 @@ class FredDataIngestion:
                 "Missing FRED fields: " + ", ".join(sorted(missing))
             )
 
-        if "M2SL" in results:
-            results["M2SL_SOURCE_DATE"] = observation_dates["M2SL"]
-
+        results["M2SL_SOURCE_DATE"] = observation_dates["M2SL"]
         results["data_quality"] = {
             "provider": "FRED",
             "fallback_used": False,
@@ -207,6 +211,12 @@ class FredDataIngestion:
             "prior_4w_dates": prior_dates,
             "economic_observation_dates": economic_observation_dates,
             "economic_prior_4w_dates": economic_prior_dates,
+            "economic_transformations": {
+                **{key: f"FRED {units} transform from {series_id}" for key, series_id in self.ECONOMIC_FRED_SERIES.items() if (units := self.FRED_UNITS.get(key))},
+                "ISM_MANUFACTURING_PMI": "direct NAPM observation",
+                "ISM_SERVICES_ACTIVITY": "direct NMFBAI observation; services business activity proxy, not headline PMI",
+                "SOFR": "direct New York Fed SOFR observation via FRED",
+            },
         }
         logger.info(
             "[FRED] base+economic observations loaded at vintage=%s; synthetic baselines disabled",
