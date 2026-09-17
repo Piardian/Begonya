@@ -27,6 +27,17 @@ def _finite_float(row: Mapping[str, Any], key: str) -> Optional[float]:
         return None
 
 
+def _as_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    text = str(value).strip().lower()
+    if text in {"true", "1", "yes", "y"}:
+        return True
+    if text in {"false", "0", "no", "n", ""}:
+        return False
+    return bool(value)
+
+
 def _quantile(values: Sequence[float], q: float) -> Optional[float]:
     if not values:
         return None
@@ -84,11 +95,11 @@ def _baseline(_: Mapping[str, Any]) -> bool:
 
 
 def _coherent(row: Mapping[str, Any]) -> bool:
-    return bool(row.get("cluster_all_aligned", False))
+    return _as_bool(row.get("cluster_all_aligned", False))
 
 
 def _mad_actionable(row: Mapping[str, Any]) -> bool:
-    return bool(row.get("dominant_mad_actionable", False))
+    return _as_bool(row.get("dominant_mad_actionable", False))
 
 
 def _pre_not_extreme(row: Mapping[str, Any], threshold: Optional[float]) -> bool:
@@ -108,7 +119,9 @@ def _atr_not_extreme(row: Mapping[str, Any], threshold: Optional[float]) -> bool
 
 def _pre_not_already_aligned(row: Mapping[str, Any]) -> bool:
     aligned = row.get("pre_60m_aligned")
-    return aligned is False
+    if aligned is None or str(aligned).strip() == "":
+        return False
+    return not _as_bool(aligned)
 
 
 def _load_dataset(path: Path) -> List[Dict[str, Any]]:
