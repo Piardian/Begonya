@@ -16,7 +16,7 @@ Point-in-time surprise normalization
 Event clustering
       ↓
 Cross-asset repricing
-(DXY / US02Y / US10Y / XAUUSD / EURUSD)
+(DXY + optional US02Y/US10Y proxies + XAUUSD/EURUSD)
       ↓
 Forward returns at exact horizons
       ↓
@@ -44,9 +44,11 @@ These directions are hypotheses, not production rules. They must survive out-of-
 ```bash
 python -m calibration.macro_edge_research \
   --timeframe M5 \
-  --symbols XAUUSD EURUSD DXY US02Y US10Y \
+  --symbols XAUUSD EURUSD DXY \
   --years 2019 2020 2021 2022 2023 2024 2025
 ```
+
+If the MT5 environment exposes usable intraday broker symbols for US02Y/US10Y, they can be added explicitly to the `--symbols` list. They are not required for the first XAUUSD/EURUSD research pass.
 
 The output is `macro_edge_research.json` unless another output path is provided.
 
