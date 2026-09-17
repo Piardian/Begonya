@@ -65,6 +65,21 @@ python -m calibration.collect_surprises --start 2015-01-01 --end 2025-12-31
 The collector writes only rows containing numeric `actual` and `forecast` values and stores provider provenance, source URL, event timestamp and the point-in-time flag. It does not silently substitute the provider's proprietary `TEForecast` for the consensus `Forecast` field.
 
 ### 6. Fit Surprise Sigmas
-Run the calibration module against the populated CSV and choose chronological cutoffs explicitly. The fitter refuses to create empirical sigmas when the minimum observation count is not met.
+Choose chronological cutoffs so the calibration period precedes validation, and validation precedes out-of-sample data:
+```bash
+python -m calibration.fit_sigmas \
+  --calibration-end 2020-12-31 \
+  --validation-end 2023-12-31 \
+  --min-observations 30 \
+  --required-indicator cpi \
+  --required-indicator core_cpi \
+  --required-indicator nfp \
+  --required-indicator unemployment \
+  --required-indicator pmi \
+  --required-indicator gdp \
+  --required-indicator retail_sales
+```
+
+The fitter refuses malformed rows, non-PIT rows, non-Trading-Economics rows, insufficient sample sizes, and missing empirical sigmas. The resulting JSON profile can be loaded into `MacroMetricsCalculator(surprise_sigmas=...)`; the built-in values remain explicitly labeled as uncalibrated compatibility defaults until such a profile is supplied.
 
 The checked-in CSV is intentionally empty until provider-backed data is collected; no fabricated observations are committed.
