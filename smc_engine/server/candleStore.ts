@@ -1,7 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { Symbol } from './universe';
-import { paperOutcomeTracker } from './paperOutcomeTracker';
 export type { Symbol } from './universe';
 
 export type Timeframe = '1m' | '15m' | '1h' | '4h';
@@ -97,6 +96,8 @@ export class CandleStore {
     }
 
     if (timeframe === '15m') {
+      // Dynamic import avoids a module-initialization cycle between the candle store and tracker.
+      const { paperOutcomeTracker } = require('./paperOutcomeTracker') as typeof import('./paperOutcomeTracker');
       paperOutcomeTracker.update(symbol, candles);
     }
   }
