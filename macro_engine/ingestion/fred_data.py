@@ -8,7 +8,11 @@ import urllib.request
 from typing import Any, Dict, List, Optional, Tuple
 
 from config import FRED_API_KEY
-from data_quality import DataUnavailableError, REQUIRED_FRED_FIELDS
+from data_quality import (
+    DataUnavailableError,
+    REQUIRED_ECONOMIC_FRED_FIELDS,
+    REQUIRED_FRED_FIELDS,
+)
 
 logger = logging.getLogger("FredDataIngestion")
 
@@ -16,7 +20,7 @@ logger = logging.getLogger("FredDataIngestion")
 class FredDataIngestion:
     """Fetch FRED observations using an explicit real-time vintage when replaying."""
 
-    FRED_SERIES = {
+    BASE_FRED_SERIES = {
         "WALCL": "WALCL",
         "RRPONTSYD": "RRPONTSYD",
         "WTREGEN": "WTREGEN",
@@ -31,6 +35,41 @@ class FredDataIngestion:
         "DE10Y": "IRLTLT01DEM156N",
     }
 
+    ECONOMIC_FRED_SERIES = {
+        # Inflation: year-over-year rates from price-index series.
+        "CPI_YOY": "CPIAUCSL",
+        "CORE_CPI_YOY": "CPILFESL",
+        "PCE_YOY": "PCEPI",
+        "CORE_PCE_YOY": "PCEPILFE",
+        # Labor market.
+        "PAYEMS": "PAYEMS",
+        "UNRATE": "UNRATE",
+        "AHE_YOY": "CES0500000003",
+        # Growth/activity.
+        "GDP_QOQ_SAAR": "A191RL1Q225SBEA",
+        "INDPRO": "INDPRO",
+        "RSAFS": "RSAFS",
+        # Treasury curve.
+        "DGS3MO": "DGS3MO",
+        "DGS2": "DGS2",
+        "DGS5": "DGS5",
+        "DGS10": "DGS10",
+        "DGS30": "DGS30",
+        "T10Y2Y": "T10Y2Y",
+        "T10Y3M": "T10Y3M",
+    }
+
+    # FRED's pc1 transform returns percent change from one year ago.
+    FRED_UNITS = {
+        "CPI_YOY": "pc1",
+        "CORE_CPI_YOY": "pc1",
+        "PCE_YOY": "pc1",
+        "CORE_PCE_YOY": "pc1",
+        "AHE_YOY": "pc1",
+    }
+
+    FRED_SERIES = {**BASE_FRED_SERIES, **ECONOMIC_FRED_SERIES}
+
     def __init__(self, api_key: str = FRED_API_KEY, timeout: int = 8):
         self.api_key = api_key
         self.timeout = timeout
@@ -41,6 +80,7 @@ class FredDataIngestion:
         start: dt.date,
         end: dt.date,
         realtime_end: Optional[dt.date] = None,
+        units: Optional[str] = None,
     ) -> List[Tuple[dt.date, float]]:
         if not self.api_key:
             raise DataUnavailableError("FRED_API_KEY is not configured")
@@ -55,8 +95,10 @@ class FredDataIngestion:
             "limit": 1000,
         }
         if realtime_end is not None:
-            # ALFRED/FRED real-time period: exclude observations revised after replay date.
+            # FRED real-time period: exclude observations revised after replay date.
             params["realtime_end"] = realtime_end.isoformat()
+        if units is not None:
+            params["units"] = units
 
         url = (
             "https://api.stlouisfed.org/fred/series/observations?"
@@ -92,7 +134,10 @@ class FredDataIngestion:
         return rows
 
     def _current_and_4w(
-        self, series_id: str, as_of: dt.date
+        self,
+        series_id: str,
+        as_of: dt.date,
+        units: Optional[str] = None,
     ) -> Tuple[float, float, dt.date, dt.date]:
         target = as_of - dt.timedelta(days=28)
         rows = self._get_observations(
@@ -100,6 +145,7 @@ class FredDataIngestion:
             target - dt.timedelta(days=90),
             as_of,
             realtime_end=as_of,
+            units=units,
         )
         rows_sorted = sorted(rows, key=lambda x: x[0])
         current_date, current = rows_sorted[-1]
@@ -120,8 +166,10 @@ class FredDataIngestion:
         results: Dict[str, Any] = {}
         observation_dates: Dict[str, str] = {}
         prior_dates: Dict[str, str] = {}
+        economic_observation_dates: Dict[str, str] = {}
+        economic_prior_dates: Dict[str, str] = {}
 
-        for logical_name, series_id in self.FRED_SERIES.items():
+        for logical_name, series_id in self.BASE_FRED_SERIES.items():
             current, prior, current_date, prior_date = self._current_and_4w(
                 series_id, as_of
             )
@@ -130,7 +178,18 @@ class FredDataIngestion:
             observation_dates[logical_name] = current_date.isoformat()
             prior_dates[logical_name] = prior_date.isoformat()
 
-        missing = REQUIRED_FRED_FIELDS - set(results)
+        for logical_name, series_id in self.ECONOMIC_FRED_SERIES.items():
+            current, prior, current_date, prior_date = self._current_and_4w(
+                series_id,
+                as_of,
+                units=self.FRED_UNITS.get(logical_name),
+            )
+            results[logical_name] = current
+            results[f"{logical_name}_4W_AGO"] = prior
+            economic_observation_dates[logical_name] = current_date.isoformat()
+            economic_prior_dates[logical_name] = prior_date.isoformat()
+
+        missing = (REQUIRED_FRED_FIELDS | REQUIRED_ECONOMIC_FRED_FIELDS) - set(results)
         if missing:
             raise DataUnavailableError(
                 "Missing FRED fields: " + ", ".join(sorted(missing))
@@ -146,9 +205,11 @@ class FredDataIngestion:
             "vintage_end": as_of.isoformat(),
             "observation_dates": observation_dates,
             "prior_4w_dates": prior_dates,
+            "economic_observation_dates": economic_observation_dates,
+            "economic_prior_4w_dates": economic_prior_dates,
         }
         logger.info(
-            "[FRED] current/prior observations loaded at vintage=%s; synthetic baselines disabled",
+            "[FRED] base+economic observations loaded at vintage=%s; synthetic baselines disabled",
             as_of.isoformat(),
         )
         return results
