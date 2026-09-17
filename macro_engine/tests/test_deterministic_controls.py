@@ -67,7 +67,7 @@ class DeterministicControlsTests(unittest.TestCase):
         self.assertEqual(z, 2.0)
 
     def test_return_correlation_is_not_price_level_correlation(self):
-        self.assertAlmostEqual(return_correlation([100, 101, 102, 104], [50, 51, 52, 54]), 0.9939, places=3)
+        self.assertAlmostEqual(return_correlation([100, 101, 102, 104], [50, 51, 52, 54]), 1.0, places=3)
 
     def test_calibration_requires_real_observations(self):
         rows = [

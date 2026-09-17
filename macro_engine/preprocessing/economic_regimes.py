@@ -48,7 +48,7 @@ def _delta(data: Mapping[str, Any], key: str) -> Optional[float]:
     prior = _num(data, f"{key}_4W_AGO")
     if current is None or prior is None:
         return None
-    return current - prior
+    return round(current - prior, 6)
 
 
 def _pct_change(data: Mapping[str, Any], key: str) -> Optional[float]:
@@ -62,9 +62,11 @@ def _pct_change(data: Mapping[str, Any], key: str) -> Optional[float]:
 def _direction(delta: Optional[float], threshold: float) -> str:
     if delta is None:
         return "UNAVAILABLE"
-    if delta > threshold:
+    val = round(delta, 6)
+    thresh = round(threshold, 6)
+    if val >= thresh:
         return "RISING"
-    if delta < -threshold:
+    if val <= -thresh:
         return "FALLING"
     return "STABLE"
 
@@ -226,11 +228,14 @@ def build_economic_regime_snapshot(
     services_activity_delta = _delta(fred, "ISM_SERVICES_ACTIVITY")
     manufacturing_state = _pmi_state(manufacturing_pmi, manufacturing_pmi_delta)
     services_state = _pmi_state(services_activity, services_activity_delta)
-    pmi_signal = "MIXED"
-    if manufacturing_state.startswith("EXPANDING") and services_state.startswith("EXPANDING"):
+    if manufacturing_state == "UNAVAILABLE" and services_state == "UNAVAILABLE":
+        pmi_signal = "UNAVAILABLE"
+    elif manufacturing_state.startswith("EXPANDING") and services_state.startswith("EXPANDING"):
         pmi_signal = "BROAD_EXPANSION"
     elif manufacturing_state.startswith("CONTRACTING") and services_state.startswith("CONTRACTING"):
         pmi_signal = "BROAD_CONTRACTION"
+    else:
+        pmi_signal = "MIXED"
 
     return {
         "status": "COMPLETE",
@@ -270,7 +275,11 @@ def build_economic_regime_snapshot(
             "services_business_activity": services_activity,
             "services_business_activity_change_4w": services_activity_delta,
             "services_state": services_state,
-            "services_measure_note": "NMFBAI is the ISM Non-Manufacturing Business Activity Index, used as a services-sector activity proxy; no synthetic headline Services PMI is constructed.",
+            "services_measure_note": (
+                "ISM series discontinued on FRED; marked UNAVAILABLE (no synthetic data injected)."
+                if pmi_signal == "UNAVAILABLE"
+                else "NMFBAI is the ISM Non-Manufacturing Business Activity Index, used as a services-sector activity proxy; no synthetic headline Services PMI is constructed."
+            ),
         },
         "rate_curve_regime": {
             "dgs3mo_pct": three_month,

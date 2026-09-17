@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import logging
+import re
 import urllib.parse
 import urllib.request
 from typing import Any, Dict, List, Optional, Tuple
@@ -15,6 +16,16 @@ from data_quality import (
 )
 
 logger = logging.getLogger("FredDataIngestion")
+
+
+def _mask_api_key(text: str, key: Optional[str] = None) -> str:
+    if not text:
+        return text
+    clean = str(text)
+    if key and len(key) >= 6:
+        clean = clean.replace(key, "REDACTED_FRED_KEY")
+    clean = re.sub(r"api_key=[a-zA-Z0-9_-]+", "api_key=REDACTED", clean)
+    return clean
 
 
 class FredDataIngestion:
@@ -115,9 +126,10 @@ class FredDataIngestion:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 body = json.loads(resp.read().decode("utf-8"))
         except Exception as exc:
+            masked_msg = _mask_api_key(str(exc), self.api_key)
             raise DataUnavailableError(
-                f"FRED request failed for {series_id}: {exc}"
-            ) from exc
+                f"FRED request failed for {series_id}: {masked_msg}"
+            ) from None
 
         rows: List[Tuple[dt.date, float]] = []
         for obs in body.get("observations", []):
@@ -143,11 +155,6 @@ class FredDataIngestion:
         as_of: dt.date,
         units: Optional[str] = None,
     ) -> Tuple[float, float, dt.date, dt.date]:
-        if series_id in ("NAPM", "NMFBAI"):
-            current = 47.2 if series_id == "NAPM" else 51.5
-            prior_value = 46.8 if series_id == "NAPM" else 51.4
-            return current, prior_value, as_of, as_of - dt.timedelta(days=28)
-
         target = as_of - dt.timedelta(days=28)
         rows = self._get_observations(
             series_id,
@@ -277,6 +284,15 @@ class FredDataIngestion:
             prior_dates[logical_name] = prior_date.isoformat()
 
         for logical_name, series_id in self.ECONOMIC_FRED_SERIES.items():
+            if series_id in ("NAPM", "NMFBAI"):
+                # ISM discontinued public redistribution on FRED.
+                # Explicitly record as None / unavailable; never fabricate fake proxy values or dates.
+                results[logical_name] = None
+                results[f"{logical_name}_4W_AGO"] = None
+                economic_observation_dates[logical_name] = "UNAVAILABLE"
+                economic_prior_dates[logical_name] = "UNAVAILABLE"
+                continue
+
             current, prior, current_date, prior_date = self._current_and_4w(
                 series_id,
                 as_of,
@@ -297,6 +313,7 @@ class FredDataIngestion:
         results["data_quality"] = {
             "provider": "FRED",
             "fallback_used": False,
+            "ism_status": "UNAVAILABLE",
             "as_of": as_of.isoformat(),
             "vintage_end": as_of.isoformat(),
             "observation_dates": observation_dates,
@@ -305,8 +322,8 @@ class FredDataIngestion:
             "economic_prior_4w_dates": economic_prior_dates,
             "economic_transformations": {
                 **{key: f"FRED {units} transform from {series_id}" for key, series_id in self.ECONOMIC_FRED_SERIES.items() if (units := self.FRED_UNITS.get(key))},
-                "ISM_MANUFACTURING_PMI": "direct NAPM observation",
-                "ISM_SERVICES_ACTIVITY": "direct NMFBAI observation; services business activity proxy, not headline PMI",
+                "ISM_MANUFACTURING_PMI": "UNAVAILABLE (publisher discontinued public series NAPM on FRED; no synthetic data substituted)",
+                "ISM_SERVICES_ACTIVITY": "UNAVAILABLE (publisher discontinued public series NMFBAI on FRED; no synthetic data substituted)",
                 "SOFR": "direct New York Fed SOFR observation via FRED",
             },
         }

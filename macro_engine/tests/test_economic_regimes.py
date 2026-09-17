@@ -108,7 +108,7 @@ class EconomicRegimeTests(unittest.TestCase):
         result = build_economic_regime_snapshot({})
         self.assertEqual(result["status"], "UNAVAILABLE")
         self.assertIn("CPI_YOY", result["missing_fields"])
-        self.assertIn("ISM_SERVICES_ACTIVITY", result["missing_fields"])
+        self.assertIn("PAYEMS", result["missing_fields"])
         self.assertNotIn("inflation_regime", result)
 
 

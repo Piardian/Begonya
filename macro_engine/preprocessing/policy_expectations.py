@@ -135,7 +135,22 @@ def _usd_ois_curve(market_data: Optional[Mapping[str, Any]]) -> Dict[str, Any]:
             continue
         rows.append({"tenor": str(tenor), "rate_pct": round(rate, 6)})
 
-    rows.sort(key=lambda row: row["tenor"])
+    def _tenor_key(t_str: str) -> float:
+        t = str(t_str).strip().upper()
+        try:
+            if t.endswith("D"):
+                return float(t[:-1]) / 365.0
+            if t.endswith("W"):
+                return float(t[:-1]) * 7.0 / 365.0
+            if t.endswith("M"):
+                return float(t[:-1]) / 12.0
+            if t.endswith("Y"):
+                return float(t[:-1])
+        except ValueError:
+            pass
+        return 999.0
+
+    rows.sort(key=lambda row: _tenor_key(row["tenor"]))
     if not rows:
         return {
             "status": "UNAVAILABLE",

@@ -32,6 +32,11 @@ REQUIRED_ECONOMIC_FRED_FIELDS = {
     "GDP_QOQ_SAAR", "INDPRO", "RSAFS",
     "DGS3MO", "DGS2", "DGS5", "DGS10", "DGS30",
     "T10Y2Y", "T10Y3M", "SOFR",
+}
+
+# ISM discontinued public redistribution of NAPM/NMFBAI on FRED.
+# Kept optional with explicit UNAVAILABLE status unless an authorized proxy is configured.
+OPTIONAL_ECONOMIC_FRED_FIELDS = {
     "ISM_MANUFACTURING_PMI", "ISM_SERVICES_ACTIVITY",
 }
 

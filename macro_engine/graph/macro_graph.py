@@ -43,6 +43,16 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             raw_fred,
             market_data=raw_market,
         )
+
+        fred_dq = raw_fred.get("data_quality", {})
+        processed["data_quality"]["fred_provider"] = fred_dq.get("provider", "FRED")
+        processed["data_quality"]["ism_status"] = fred_dq.get("ism_status", "UNAVAILABLE")
+        processed["data_quality"]["calendar_provider"] = "Caller" if events_provided else "ForexFactory"
+        processed["data_quality"]["calendar_status"] = (
+            "CALLER_SUPPLIED" if events_provided else getattr(self.cal_ingest, "get_last_status", lambda: "UNKNOWN")()
+        )
+        processed["data_quality"]["calendar_fail_closed"] = any(e.get("fail_closed") for e in events)
+
         return {
             "raw_market": raw_market,
             "raw_fred": raw_fred,
