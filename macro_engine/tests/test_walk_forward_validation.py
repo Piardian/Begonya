@@ -49,6 +49,21 @@ class WalkForwardValidationTests(unittest.TestCase):
         self.assertEqual(report["folds"][-1]["validation_year"], 2025)
         self.assertEqual(report["folds"][0]["methods"]["mad"]["status"], "ok")
         self.assertEqual(report["folds"][0]["methods"]["std"]["status"], "ok")
+        self.assertIsNotNone(report["folds"][0]["delta_std_target_error"])
+
+    def test_evaluate_rows_flags_small_sample_and_unclipped_z(self):
+        # 10 observations with large surprise: should NOT be clipped to 4.0 or 10.0
+        rows = [
+            {"indicator_type": "cpi", "actual": 25.0, "forecast": 0.0}
+            for _ in range(10)
+        ]
+        result = evaluate_rows({"cpi": 1.0}, rows)
+        self.assertTrue(result["small_sample"])
+        self.assertEqual(result["sample_count"], 10)
+        # Raw unclipped Z should be exactly 25.0
+        self.assertAlmostEqual(result["mean_z"], 25.0, places=4)
+        self.assertIn("cpi", result["by_indicator"])
+        self.assertEqual(result["by_indicator"]["cpi"]["sample_count"], 10)
 
 
 if __name__ == "__main__":
