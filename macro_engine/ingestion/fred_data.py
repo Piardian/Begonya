@@ -1,77 +1,225 @@
-import logging
-import urllib.request
+from __future__ import annotations
+
+import datetime as dt
 import json
-from typing import Dict, Any
+import logging
+import urllib.parse
+import urllib.request
+from typing import Any, Dict, List, Optional, Tuple
+
 from config import FRED_API_KEY
+from data_quality import (
+    DataUnavailableError,
+    REQUIRED_ECONOMIC_FRED_FIELDS,
+    REQUIRED_FRED_FIELDS,
+)
 
 logger = logging.getLogger("FredDataIngestion")
 
+
 class FredDataIngestion:
-    """
-    Federal Reserve (FRED) resmi veritabanından makro likidite metriklerini çeker:
-    - WALCL: Fed Toplam Varlıkları / Bilanço Büyüklüğü
-    - RRPONTSYD: Gecelik Ters Repo (Reverse Repo / RRP) Hacmi
-    - WTREGEN: Hazine Genel Hesabı (TGA - Treasury General Account)
-    - T10YIE: 10 Yıllık Başa Baş Enflasyon Beklentisi (Breakeven Inflation)
-    - M2SL: M2 Para Arzı
-    """
-    SERIES = {
-        "WALCL": "Fed Balance Sheet (Assets)",
-        "RRPONTSYD": "Overnight Reverse Repurchase Agreements (RRP)",
-        "WTREGEN": "Treasury General Account (TGA)",
-        "T10YIE": "10-Year Breakeven Inflation Rate",
-        "DFII10": "10-Year TIPS Constant Maturity Rate (Direct Market Real Yield)",
-        "BAMLH0A0HYM2": "ICE BofA US High Yield Index Option-Adjusted Spread (HY OAS)",
-        "NFCI": "Chicago Fed National Financial Conditions Index",
-        "ICSA": "Initial Jobless Claims (Haftalık Öncü İstihdam Başvuruları)",
-        "M2SL": "M2 Money Supply"
+    """Fetch FRED observations using an explicit real-time vintage when replaying."""
+
+    BASE_FRED_SERIES = {
+        "WALCL": "WALCL",
+        "RRPONTSYD": "RRPONTSYD",
+        "WTREGEN": "WTREGEN",
+        "T10YIE": "T10YIE",
+        "DFII10": "DFII10",
+        "DFF": "DFF",
+        "SOFR": "SOFR",
+        "BAMLH0A0HYM2": "BAMLH0A0HYM2",
+        "NFCI": "NFCI",
+        "ICSA": "ICSA",
+        "M2SL": "M2SL",
+        # OECD Germany 10Y government bond yield, monthly, via FRED.
+        "DE10Y": "IRLTLT01DEM156N",
     }
 
-    def __init__(self, api_key: str = FRED_API_KEY):
+    ECONOMIC_FRED_SERIES = {
+        # Inflation: year-over-year rates from price-index series.
+        "CPI_YOY": "CPIAUCSL",
+        "CORE_CPI_YOY": "CPILFESL",
+        "PCE_YOY": "PCEPI",
+        "CORE_PCE_YOY": "PCEPILFE",
+        # Labor market.
+        "PAYEMS": "PAYEMS",
+        "UNRATE": "UNRATE",
+        "AHE_YOY": "CES0500000003",
+        # Growth/activity.
+        "GDP_QOQ_SAAR": "A191RL1Q225SBEA",
+        "INDPRO": "INDPRO",
+        "RSAFS": "RSAFS",
+        # Treasury curve.
+        "DGS3MO": "DGS3MO",
+        "DGS2": "DGS2",
+        "DGS5": "DGS5",
+        "DGS10": "DGS10",
+        "DGS30": "DGS30",
+        "T10Y2Y": "T10Y2Y",
+        "T10Y3M": "T10Y3M",
+        # ISM diffusion measures. Services uses Business Activity Index, not a synthetic headline.
+        "ISM_MANUFACTURING_PMI": "NAPM",
+        "ISM_SERVICES_ACTIVITY": "NMFBAI",
+    }
+
+    # FRED's pc1 transform returns percent change from one year ago.
+    FRED_UNITS = {
+        "CPI_YOY": "pc1",
+        "CORE_CPI_YOY": "pc1",
+        "PCE_YOY": "pc1",
+        "CORE_PCE_YOY": "pc1",
+        "AHE_YOY": "pc1",
+    }
+
+    FRED_SERIES = {**BASE_FRED_SERIES, **ECONOMIC_FRED_SERIES}
+
+    def __init__(self, api_key: str = FRED_API_KEY, timeout: int = 8):
         self.api_key = api_key
+        self.timeout = timeout
 
-    def fetch_liquidity_metrics(self) -> Dict[str, Any]:
-        """FRED serilerini sorgular veya güncel baz hat verilerini döndürür."""
-        results = {}
-        if self.api_key:
-            for series_id in self.SERIES:
-                try:
-                    url = f"https://api.stlouisfed.org/fred/series/observations?series_id={series_id}&api_key={self.api_key}&file_type=json&sort_order=desc&limit=5"
-                    req = urllib.request.Request(url, headers={"User-Agent": "MacroAGIAgent/1.0"})
-                    with urllib.request.urlopen(req, timeout=5) as resp:
-                        data = json.loads(resp.read().decode('utf-8'))
-                        obs = data.get('observations', [])
-                        if obs:
-                            val = float(obs[0].get('value', 0.0))
-                            results[series_id] = val
-                except Exception as e:
-                    logger.debug(f"FRED API {series_id} çekilemedi: {e}")
+    def _get_observations(
+        self,
+        series_id: str,
+        start: dt.date,
+        end: dt.date,
+        realtime_end: Optional[dt.date] = None,
+        units: Optional[str] = None,
+    ) -> List[Tuple[dt.date, float]]:
+        if not self.api_key:
+            raise DataUnavailableError("FRED_API_KEY is not configured")
 
-        # Eğer API anahtarı yoksa veya veriler eksikse, güncel ve 4 hafta önceki baz hat verilerini yükle
-        baseline = {
-            "WALCL": 7180000.0,           # Fed Bilançosu Güncel (~7.18T)
-            "WALCL_4W_AGO": 7240000.0,    # 4 Hafta Önce (~7.24T -> QT ile -$60B küçüldü)
-            "RRPONTSYD": 290.0,           # Ters Repo Güncel (~$290B)
-            "RRPONTSYD_4W_AGO": 340.0,    # 4 Hafta Önce (~$340B -> -$50B sisteme likidite aktı)
-            "WTREGEN": 780000.0,          # TGA Güncel (~$780B)
-            "WTREGEN_4W_AGO": 730000.0,   # 4 Hafta Önce (~$730B -> +$50B vergi/borçlanma ile çekildi)
-            "T10YIE": 2.15,               # 10Y Breakeven Enflasyon (~%2.15)
-            "DFII10": 1.95,               # 10Y Doğrudan TIPS Reel Getirisi (~%1.95)
-            "BAMLH0A0HYM2": 3.28,         # ABD Yüksek Getirili Şirket Tahvil Makası (HY OAS ~%3.28 Sakin Kredi Piyasası)
-            "NFCI": -0.52,                # Chicago Fed Finansal Koşullar Endeksi (<-0.50 Gevşek/Akıcı Koşullar)
-            "ICSA": 218.0,                # Haftalık İlk İşsizlik Başvuruları (~218K Sağlıklı İstihdam Bandı: 210K-230K)
-            "DE10Y": 2.40,                # Almanya 10 Yıllık Gösterge Tahvil Faizi (Bund Yield ~%2.40)
-            "DE10Y_4W_AGO": 2.48,         # Almanya 10Y 4 Hafta Önceki Faiz (~%2.48 -> -8 bps)
-            "M2SL": 21100.0               # M2 Para Arzı (~21.1T)
+        params = {
+            "series_id": series_id,
+            "api_key": self.api_key,
+            "file_type": "json",
+            "observation_start": start.isoformat(),
+            "observation_end": end.isoformat(),
+            "sort_order": "asc",
+            "limit": 1000,
         }
+        if realtime_end is not None:
+            params["realtime_end"] = realtime_end.isoformat()
+        if units is not None:
+            params["units"] = units
 
-        for k, v in baseline.items():
-            if k not in results or results[k] == 0.0:
-                results[k] = v
+        url = (
+            "https://api.stlouisfed.org/fred/series/observations?"
+            + urllib.parse.urlencode(params)
+        )
+        req = urllib.request.Request(
+            url, headers={"User-Agent": "BegonyaMacroEngine/1.0"}
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                body = json.loads(resp.read().decode("utf-8"))
+        except Exception as exc:
+            raise DataUnavailableError(
+                f"FRED request failed for {series_id}: {exc}"
+            ) from exc
 
+        rows: List[Tuple[dt.date, float]] = []
+        for obs in body.get("observations", []):
+            raw_value = obs.get("value")
+            if raw_value in (None, "") or raw_value == ".":
+                continue
+            try:
+                value = float(raw_value)
+                date = dt.date.fromisoformat(obs["date"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            rows.append((date, value))
+
+        if not rows:
+            raise DataUnavailableError(
+                f"FRED returned no numeric observations for {series_id}"
+            )
+        return rows
+
+    def _current_and_4w(
+        self,
+        series_id: str,
+        as_of: dt.date,
+        units: Optional[str] = None,
+    ) -> Tuple[float, float, dt.date, dt.date]:
+        target = as_of - dt.timedelta(days=28)
+        rows = self._get_observations(
+            series_id,
+            target - dt.timedelta(days=90),
+            as_of,
+            realtime_end=as_of,
+            units=units,
+        )
+        rows_sorted = sorted(rows, key=lambda x: x[0])
+        current_candidates = [row for row in rows_sorted if row[0] <= as_of]
+        if not current_candidates:
+            raise DataUnavailableError(f"No observation on or before {as_of.isoformat()} for {series_id}")
+        current_date, current = current_candidates[-1]
+
+        prior = [row for row in rows_sorted if row[0] <= target]
+        if not prior:
+            raise DataUnavailableError(
+                f"No usable 4-week historical observation for {series_id} "
+                f"before {target.isoformat()}"
+            )
+        prior_date, prior_value = prior[-1]
+        return current, prior_value, current_date, prior_date
+
+    def fetch_liquidity_metrics(
+        self, as_of: Optional[dt.date] = None
+    ) -> Dict[str, Any]:
+        as_of = as_of or dt.date.today()
+        results: Dict[str, Any] = {}
+        observation_dates: Dict[str, str] = {}
+        prior_dates: Dict[str, str] = {}
+        economic_observation_dates: Dict[str, str] = {}
+        economic_prior_dates: Dict[str, str] = {}
+
+        for logical_name, series_id in self.BASE_FRED_SERIES.items():
+            current, prior, current_date, prior_date = self._current_and_4w(
+                series_id, as_of
+            )
+            results[logical_name] = current
+            results[f"{logical_name}_4W_AGO"] = prior
+            observation_dates[logical_name] = current_date.isoformat()
+            prior_dates[logical_name] = prior_date.isoformat()
+
+        for logical_name, series_id in self.ECONOMIC_FRED_SERIES.items():
+            current, prior, current_date, prior_date = self._current_and_4w(
+                series_id,
+                as_of,
+                units=self.FRED_UNITS.get(logical_name),
+            )
+            results[logical_name] = current
+            results[f"{logical_name}_4W_AGO"] = prior
+            economic_observation_dates[logical_name] = current_date.isoformat()
+            economic_prior_dates[logical_name] = prior_date.isoformat()
+
+        missing = (REQUIRED_FRED_FIELDS | REQUIRED_ECONOMIC_FRED_FIELDS) - set(results)
+        if missing:
+            raise DataUnavailableError(
+                "Missing FRED fields: " + ", ".join(sorted(missing))
+            )
+
+        results["M2SL_SOURCE_DATE"] = observation_dates["M2SL"]
+        results["data_quality"] = {
+            "provider": "FRED",
+            "fallback_used": False,
+            "as_of": as_of.isoformat(),
+            "vintage_end": as_of.isoformat(),
+            "observation_dates": observation_dates,
+            "prior_4w_dates": prior_dates,
+            "economic_observation_dates": economic_observation_dates,
+            "economic_prior_4w_dates": economic_prior_dates,
+            "economic_transformations": {
+                **{key: f"FRED {units} transform from {series_id}" for key, series_id in self.ECONOMIC_FRED_SERIES.items() if (units := self.FRED_UNITS.get(key))},
+                "ISM_MANUFACTURING_PMI": "direct NAPM observation",
+                "ISM_SERVICES_ACTIVITY": "direct NMFBAI observation; services business activity proxy, not headline PMI",
+                "SOFR": "direct New York Fed SOFR observation via FRED",
+            },
+        }
         logger.info(
-            f"🏛️ [FRED LİKİDİTE] Bilanço: ${results['WALCL']/1000000:.2f}T | "
-            f"RRP: ${results['RRPONTSYD']:.1f}B | TGA: ${results['WTREGEN']/1000:.1f}B | "
-            f"Breakeven Enflasyon: %{results['T10YIE']}"
+            "[FRED] base+economic observations loaded at vintage=%s; synthetic baselines disabled",
+            as_of.isoformat(),
         )
         return results
