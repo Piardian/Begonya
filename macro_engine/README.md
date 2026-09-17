@@ -55,7 +55,7 @@ python -m unittest discover -s tests -p "test_*.py" -v
 ```
 
 ### 5. Collect Historical Surprise Observations
-Trading Economics historical calendar data is used as the provider-backed source for calibration. The API provides historical actual and consensus forecast fields and documents point-in-time calendar data for backtesting. citeturn700684search0turn648268search0
+Trading Economics historical calendar data is the configured provider-backed source for calibration. Its calendar API provides historical actual values and consensus/forecast fields, including point-in-time data for backtesting.
 
 Set `TRADING_ECONOMICS_API_KEY`, then run:
 ```bash
