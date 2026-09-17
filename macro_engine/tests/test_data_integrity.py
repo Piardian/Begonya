@@ -1,8 +1,24 @@
+import datetime as dt
 import unittest
 from unittest.mock import patch
 
 from data_quality import DataUnavailableError
 from preprocessing.metrics import MacroMetricsCalculator
+
+
+class _FakeResponse:
+    def __init__(self, payload):
+        self.payload = payload
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def read(self):
+        import json
+        return json.dumps(self.payload).encode("utf-8")
 
 
 class DataIntegrityTests(unittest.TestCase):
@@ -28,17 +44,18 @@ class DataIntegrityTests(unittest.TestCase):
         helper = DeterministicMacroMetricsTests("runTest")
         market = helper.base_market()
         fred = helper.base_fred()
+        as_of = dt.datetime(2023, 9, 20, 12, 0)
         first = calc.process_all_macro_data(
             market,
             fred,
             [],
-            as_of_datetime=__import__("datetime").datetime(2023, 9, 20, 12, 0),
+            as_of_datetime=as_of,
         )
         second = calc.process_all_macro_data(
             market,
             fred,
             [],
-            as_of_datetime=__import__("datetime").datetime(2023, 9, 20, 12, 0),
+            as_of_datetime=as_of,
         )
         self.assertEqual(first, second)
 
@@ -68,6 +85,22 @@ class DataIntegrityTests(unittest.TestCase):
             result["fed_forward_path_analysis"]["fed_policy_rate_source"],
             "LEGACY_STATIC_5.33_FALLBACK",
         )
+
+    def test_fred_replay_uses_as_of_as_vintage_end(self):
+        from ingestion.fred_data import FredDataIngestion
+
+        payload = {"observations": [{"date": "2023-03-10", "value": "4.20"}]}
+        client = FredDataIngestion(api_key="test")
+        with patch("ingestion.fred_data.urllib.request.urlopen", return_value=_FakeResponse(payload)) as mocked:
+            rows = client._get_observations(
+                "DFF",
+                dt.date(2023, 3, 1),
+                dt.date(2023, 3, 13),
+                realtime_end=dt.date(2023, 3, 13),
+            )
+        self.assertEqual(rows, [(dt.date(2023, 3, 10), 4.20)])
+        request = mocked.call_args.args[0]
+        self.assertIn("realtime_end=2023-03-13", request.full_url)
 
 
 if __name__ == "__main__":
