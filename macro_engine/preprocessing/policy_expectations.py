@@ -44,7 +44,7 @@ def _front_fed_funds_future(
 
     return {
         "status": "AVAILABLE",
-        "source": data.get("source") or "Yahoo Finance ZQ=F / CME 30-Day Fed Funds Futures",
+        "source": data.get("source") or "caller-supplied 30-Day Fed Funds Futures (e.g. CME/ZQ=F)",
         "contract": data.get("contract_month") or data.get("contract"),
         "contract_price": round(price, 6),
         "market_implied_rate_pct": round(implied_rate, 6),
@@ -66,7 +66,6 @@ def _fed_funds_futures_curve(
             "methodology_warning": "No multi-contract Fed Funds futures curve supplied.",
         }
 
-    rows = []
     if isinstance(raw, Mapping):
         iterable = [dict(contract=str(k), price=v) for k, v in raw.items()]
     elif isinstance(raw, list):
@@ -78,6 +77,7 @@ def _fed_funds_futures_curve(
             "methodology_warning": "Fed Funds futures curve must be a mapping or list of contract rows.",
         }
 
+    rows = []
     for item in iterable:
         contract = item.get("contract_month") or item.get("contract")
         price = _number(item.get("price"))
