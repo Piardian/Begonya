@@ -32,6 +32,19 @@ class DeterministicControlsTests(unittest.TestCase):
         event[0]["time"] = "2026-01-01T11:44:00+00:00"
         self.assertFalse(event_freeze_status(event, now)["active"])
 
+    def test_malformed_high_impact_event_fails_closed(self):
+        now = dt.datetime(2026, 1, 1, 12, 0, tzinfo=dt.timezone.utc)
+        missing_time = [{"title": "FOMC", "impact": "High"}]
+        invalid_time = [{"title": "CPI", "impact": "High", "time": "not-a-date"}]
+
+        result = event_freeze_status(missing_time, now)
+        self.assertTrue(result["active"])
+        self.assertTrue(result["uncertain"])
+
+        result = event_freeze_status(invalid_time, now)
+        self.assertTrue(result["active"])
+        self.assertTrue(result["uncertain"])
+
     def test_stale_data_fails_closed(self):
         with self.assertRaises(DataUnavailableError):
             validate_freshness("DE10Y", dt.date(2026, 1, 1), dt.date(2026, 3, 1), "monthly")
