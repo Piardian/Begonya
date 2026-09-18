@@ -148,44 +148,15 @@ describe('PaperOutcomeTracker', () => {
 
     expect(tracker.get('ambiguous-long')?.outcome).toBe('UNKNOWN');
   });
-  test('uses the nearest favorable liquidity magnet or opposing obstacle instead of forcing 2R', () => {
+
+  test('uses the nearest favorable context target inside the 2R-5R window', () => {
     const { tracker } = makeTracker();
-    tracker.registerCandidate(candidate('target-liquidity', 'long', {
+    tracker.registerCandidate(candidate('target-context', 'long', {
       liquidityMagnet: {
         type: 'EQH',
-        priceLevel: 1.1015,
+        priceLevel: 1.1035,
         pointsCount: 2,
-        distancePips: 15,
-        isActive: true,
-        description: 'test EQH',
-      },
-      opposingObstacle: {
-        hasObstacle: true,
-        obstacleType: 'OB',
-        timeframe: '15m',
-        level: { low: 1.1030, high: 1.1040 },
-        distancePips: 30,
-        warningText: 'test obstacle',
-      },
-    }));
-    tracker.update('EURUSD', [
-      candle(2_000, 1.1020, 1.1000, 1.0992, 1.0996),
-    ]);
-
-    const result = tracker.get('target-liquidity');
-    expect(result?.status).toBe('OPEN');
-    expect(result?.targetSource).toBe('LIQUIDITY_MAGNET');
-    expect(result?.takeProfit).toBeCloseTo(1.1015, 6);
-  });
-
-  test('caps target at the opposing obstacle when liquidity is beyond it', () => {
-    const { tracker } = makeTracker();
-    tracker.registerCandidate(candidate('target-obstacle', 'long', {
-      liquidityMagnet: {
-        type: 'EQH',
-        priceLevel: 1.1050,
-        pointsCount: 2,
-        distancePips: 50,
+        distancePips: 35,
         isActive: true,
         description: 'test EQH',
       },
@@ -202,10 +173,67 @@ describe('PaperOutcomeTracker', () => {
       candle(2_000, 1.1020, 1.1000, 1.0992, 1.0996),
     ]);
 
-    const result = tracker.get('target-obstacle');
+    const result = tracker.get('target-context');
     expect(result?.status).toBe('OPEN');
     expect(result?.targetSource).toBe('OPPOSING_OBSTACLE');
     expect(result?.takeProfit).toBeCloseTo(1.1025, 6);
   });
 
+  test('ignores context targets below 2R and falls back to exactly 2R', () => {
+    const { tracker } = makeTracker();
+    tracker.registerCandidate(candidate('target-below-2r', 'long', {
+      liquidityMagnet: {
+        type: 'EQH',
+        priceLevel: 1.1015,
+        pointsCount: 2,
+        distancePips: 15,
+        isActive: true,
+        description: 'too close',
+      },
+      opposingObstacle: {
+        hasObstacle: true,
+        obstacleType: 'OB',
+        timeframe: '15m',
+        level: { low: 1.1018, high: 1.1022 },
+        distancePips: 18,
+        warningText: 'too close',
+      },
+    }));
+    tracker.update('EURUSD', [
+      candle(2_000, 1.1020, 1.1000, 1.0992, 1.0996),
+    ]);
+
+    const result = tracker.get('target-below-2r');
+    expect(result?.targetSource).toBe('RR_FALLBACK');
+    expect(result?.takeProfit).toBeCloseTo(1.1026, 6);
+  });
+
+  test('ignores context targets above 5R and falls back to exactly 2R', () => {
+    const { tracker } = makeTracker();
+    tracker.registerCandidate(candidate('target-above-5r', 'long', {
+      liquidityMagnet: {
+        type: 'EQH',
+        priceLevel: 1.1100,
+        pointsCount: 2,
+        distancePips: 100,
+        isActive: true,
+        description: 'too far',
+      },
+      opposingObstacle: {
+        hasObstacle: true,
+        obstacleType: 'OB',
+        timeframe: '15m',
+        level: { low: 1.1090, high: 1.1095 },
+        distancePips: 90,
+        warningText: 'too far',
+      },
+    }));
+    tracker.update('EURUSD', [
+      candle(2_000, 1.1020, 1.1000, 1.0992, 1.0996),
+    ]);
+
+    const result = tracker.get('target-above-5r');
+    expect(result?.targetSource).toBe('RR_FALLBACK');
+    expect(result?.takeProfit).toBeCloseTo(1.1026, 6);
+  });
 });
