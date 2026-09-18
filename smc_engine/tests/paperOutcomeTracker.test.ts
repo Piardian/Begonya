@@ -6,12 +6,14 @@ import { PaperOutcomeTracker } from '../server/paperOutcomeTracker';
 import type { NotificationCandidate } from '../server/pipeline';
 import type { StoredCandle } from '../server/candleStore';
 import type { OrderBlock, StructureEvent, SwingPoint } from '../src/types';
+import type { LiquidityMagnet } from '../src/liquidityMagnetDetector';
+import type { OpposingObstacle } from '../src/opposingObstacleDetector';
 
 function candle(timestamp: number, open: number, high: number, low: number, close: number): StoredCandle {
   return { timestamp, open, high, low, close };
 }
 
-function candidate(signalId: string, direction: 'long' | 'short' = 'long'): NotificationCandidate {
+function candidate(signalId: string, direction: 'long' | 'short' = 'long', extras?: { liquidityMagnet?: LiquidityMagnet | null; opposingObstacle?: OpposingObstacle | null }): NotificationCandidate {
   const brokenSwing: SwingPoint = {
     type: direction === 'long' ? 'high' : 'low',
     price: direction === 'long' ? 1.101 : 1.099,
@@ -73,6 +75,8 @@ function candidate(signalId: string, direction: 'long' | 'short' = 'long'): Noti
     pd4H: direction === 'long' ? 'discount' : 'premium',
     pd1H: direction === 'long' ? 'discount' : 'premium',
     pd15M: direction === 'long' ? 'discount' : 'premium',
+    liquidityMagnet: extras?.liquidityMagnet,
+    opposingObstacle: extras?.opposingObstacle,
   } as unknown as NotificationCandidate;
 }
 
@@ -144,4 +148,64 @@ describe('PaperOutcomeTracker', () => {
 
     expect(tracker.get('ambiguous-long')?.outcome).toBe('UNKNOWN');
   });
+  test('uses the nearest favorable liquidity magnet or opposing obstacle instead of forcing 2R', () => {
+    const { tracker } = makeTracker();
+    tracker.registerCandidate(candidate('target-liquidity', 'long', {
+      liquidityMagnet: {
+        type: 'EQH',
+        priceLevel: 1.1015,
+        pointsCount: 2,
+        distancePips: 15,
+        isActive: true,
+        description: 'test EQH',
+      },
+      opposingObstacle: {
+        hasObstacle: true,
+        obstacleType: 'OB',
+        timeframe: '15m',
+        level: { low: 1.1030, high: 1.1040 },
+        distancePips: 30,
+        warningText: 'test obstacle',
+      },
+    }));
+    tracker.update('EURUSD', [
+      candle(2_000, 1.1020, 1.1000, 1.0992, 1.0996),
+    ]);
+
+    const result = tracker.get('target-liquidity');
+    expect(result?.status).toBe('OPEN');
+    expect(result?.targetSource).toBe('LIQUIDITY_MAGNET');
+    expect(result?.takeProfit).toBeCloseTo(1.1015, 6);
+  });
+
+  test('caps target at the opposing obstacle when liquidity is beyond it', () => {
+    const { tracker } = makeTracker();
+    tracker.registerCandidate(candidate('target-obstacle', 'long', {
+      liquidityMagnet: {
+        type: 'EQH',
+        priceLevel: 1.1050,
+        pointsCount: 2,
+        distancePips: 50,
+        isActive: true,
+        description: 'test EQH',
+      },
+      opposingObstacle: {
+        hasObstacle: true,
+        obstacleType: 'OB',
+        timeframe: '15m',
+        level: { low: 1.1025, high: 1.1035 },
+        distancePips: 25,
+        warningText: 'test obstacle',
+      },
+    }));
+    tracker.update('EURUSD', [
+      candle(2_000, 1.1020, 1.1000, 1.0992, 1.0996),
+    ]);
+
+    const result = tracker.get('target-obstacle');
+    expect(result?.status).toBe('OPEN');
+    expect(result?.targetSource).toBe('OPPOSING_OBSTACLE');
+    expect(result?.takeProfit).toBeCloseTo(1.1025, 6);
+  });
+
 });
