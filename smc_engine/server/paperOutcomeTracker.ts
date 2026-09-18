@@ -20,9 +20,11 @@ export interface TrackedSignal {
   maximumFavorableExcursion: number; maximumAdverseExcursion: number;
   status: 'WAITING_ENTRY' | 'OPEN' | 'CLOSED'; outcome?: PaperOutcomeType;
   exitTimestamp?: number; exitReason?: string; targetSource?: TargetSource;
+  targetCandidates?: readonly TargetCandidate[];
 }
 
 interface TrackerState { version: 1; signals: Record<string, TrackedSignal>; }
+interface TargetCandidate { price: number; source: Exclude<TargetSource, 'RR_FALLBACK'>; }
 
 export interface PaperOutcomeTrackerConfig {
   readonly entryExpiryMs: number; readonly maxHoldBars: number; readonly riskReward: number;
@@ -50,10 +52,10 @@ export class PaperOutcomeTracker {
     const target = resolveTarget(candidate, zone);
     this.state.signals[signalId] = {
       signalId, symbol: candidate.symbol, direction: candidate.tradeDirection, signalTimestamp,
-      zoneLow: zone.low, zoneHigh: zone.high, entryPrice: null, stopLoss: null, takeProfit: null,
+      zoneLow: zone.low, zoneHigh: zone.high, entryPrice: null, stopLoss: null, takeProfit: target.price,
       riskDistance: null, entryTriggeredAt: null, lastProcessedCandleTimestamp: signalTimestamp,
       beArmed: false, maximumFavorableExcursion: 0, maximumAdverseExcursion: 0, status: 'WAITING_ENTRY',
-      takeProfit: target.price, targetSource: target.source,
+      targetSource: target.source, targetCandidates: target.candidates,
     };
     this.persist();
   }
@@ -89,7 +91,12 @@ export class PaperOutcomeTracker {
         this.close(signal,'UNKNOWN',candle.timestamp,'Invalid synthetic risk distance prevented deterministic outcome calculation.');
         return {changed:true,closed:true};
       }
-      if (signal.takeProfit === null) signal.takeProfit = signal.direction === 'long' ? entryPrice + riskDistance*this.config.riskReward : entryPrice - riskDistance*this.config.riskReward;
+
+      const minimumTargetDistance = riskDistance * this.config.riskReward;
+      const target = resolveEntryTarget(signal, entryPrice, minimumTargetDistance);
+      signal.takeProfit = target.price;
+      signal.targetSource = target.source;
+
       const targetIsInvalid = signal.direction === 'long' ? signal.takeProfit <= entryPrice : signal.takeProfit >= entryPrice;
       if (targetIsInvalid) {
         this.close(signal,'UNKNOWN',candle.timestamp,'No valid favorable target was available from the liquidity/obstacle model.');
@@ -126,25 +133,32 @@ export class PaperOutcomeTracker {
   private persist():void{const dir=path.dirname(this.statePath);fs.mkdirSync(dir,{recursive:true});const temp=`${this.statePath}.${process.pid}.${Date.now()}.tmp`;fs.writeFileSync(temp,JSON.stringify(this.state,null,2),'utf8');try{fs.renameSync(temp,this.statePath);}catch{fs.copyFileSync(temp,this.statePath);try{fs.unlinkSync(temp);}catch{}}}
 }
 
-function resolveTarget(candidate: NotificationCandidate, zone:{low:number;high:number}): {price:number|null;source:TargetSource}{
-  const direction=candidate.tradeDirection; const entryReference=direction==='long'?zone.high:zone.low;
-  const favorableTargets:number[]=[];
+function resolveTarget(candidate: NotificationCandidate, zone:{low:number;high:number}): {price:number|null;source:TargetSource;candidates:readonly TargetCandidate[]} {
+  const direction=candidate.tradeDirection;
+  const entryReference=direction==='long'?zone.high:zone.low;
+  const candidates: TargetCandidate[]=[];
   const liquidity=candidate.liquidityMagnet;
   if(liquidity?.isActive){
     const favorable=direction==='long'?liquidity.priceLevel>entryReference:liquidity.priceLevel<entryReference;
-    if(favorable) favorableTargets.push(liquidity.priceLevel);
+    if(favorable) candidates.push({price:liquidity.priceLevel,source:'LIQUIDITY_MAGNET'});
   }
   const obstacle=candidate.opposingObstacle;
   if(obstacle?.hasObstacle && obstacle.level){
     const obstacleTarget=direction==='long'?obstacle.level.low:obstacle.level.high;
     const favorable=direction==='long'?obstacleTarget>entryReference:obstacleTarget<entryReference;
-    if(favorable) favorableTargets.push(obstacleTarget);
+    if(favorable) candidates.push({price:obstacleTarget,source:'OPPOSING_OBSTACLE'});
   }
-  if(!favorableTargets.length) return {price:null,source:'RR_FALLBACK'};
-  const price=direction==='long'?Math.min(...favorableTargets):Math.max(...favorableTargets);
-  const source = liquidity?.isActive && Math.abs(liquidity.priceLevel-price)<Number.EPSILON ? 'LIQUIDITY_MAGNET'
-    : obstacle?.hasObstacle ? 'OPPOSING_OBSTACLE' : 'RR_FALLBACK';
-  return {price,source};
+  return {price:null,source:'RR_FALLBACK',candidates};
+}
+
+function resolveEntryTarget(signal:TrackedSignal,entryPrice:number,minimumTargetDistance:number): {price:number;source:TargetSource} {
+  const direction=signal.direction;
+  const fallback=direction==='long'?entryPrice+minimumTargetDistance:entryPrice-minimumTargetDistance;
+  const candidates=(signal.targetCandidates ?? [])
+    .filter(target => direction==='long' ? target.price >= fallback : target.price <= fallback)
+    .sort((a,b)=>direction==='long'?a.price-b.price:b.price-a.price);
+  if(!candidates.length) return {price:fallback,source:'RR_FALLBACK'};
+  return {price:candidates[0].price,source:candidates[0].source};
 }
 
 function touchesZone(candle:StoredCandle,zoneLow:number,zoneHigh:number):boolean{return candle.high>=zoneLow&&candle.low<=zoneHigh;}
