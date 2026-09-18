@@ -28,10 +28,11 @@ interface TargetCandidate { price: number; source: Exclude<TargetSource, 'RR_FAL
 
 export interface PaperOutcomeTrackerConfig {
   readonly entryExpiryMs: number; readonly maxHoldBars: number; readonly riskReward: number;
-  readonly breakEvenAtR: number; readonly stopBufferPips: number;
+  readonly maxTargetR: number; readonly breakEvenAtR: number; readonly stopBufferPips: number;
 }
 const DEFAULT_CONFIG: PaperOutcomeTrackerConfig = Object.freeze({
-  entryExpiryMs: 48 * 60 * 60 * 1000, maxHoldBars: 96, riskReward: 2, breakEvenAtR: 1, stopBufferPips: 2,
+  entryExpiryMs: 48 * 60 * 60 * 1000, maxHoldBars: 96, riskReward: 2, maxTargetR: 5,
+  breakEvenAtR: 1, stopBufferPips: 2,
 });
 
 export class PaperOutcomeTracker {
@@ -93,7 +94,8 @@ export class PaperOutcomeTracker {
       }
 
       const minimumTargetDistance = riskDistance * this.config.riskReward;
-      const target = resolveEntryTarget(signal, entryPrice, minimumTargetDistance);
+      const maximumTargetDistance = riskDistance * this.config.maxTargetR;
+      const target = resolveEntryTarget(signal, entryPrice, minimumTargetDistance, maximumTargetDistance);
       signal.takeProfit = target.price;
       signal.targetSource = target.source;
 
@@ -151,11 +153,13 @@ function resolveTarget(candidate: NotificationCandidate, zone:{low:number;high:n
   return {price:null,source:'RR_FALLBACK',candidates};
 }
 
-function resolveEntryTarget(signal:TrackedSignal,entryPrice:number,minimumTargetDistance:number): {price:number;source:TargetSource} {
+function resolveEntryTarget(signal:TrackedSignal,entryPrice:number,minimumTargetDistance:number,maximumTargetDistance:number): {price:number;source:TargetSource} {
   const direction=signal.direction;
   const fallback=direction==='long'?entryPrice+minimumTargetDistance:entryPrice-minimumTargetDistance;
   const candidates=(signal.targetCandidates ?? [])
-    .filter(target => direction==='long' ? target.price >= fallback : target.price <= fallback)
+    .filter(target => direction==='long'
+      ? target.price >= fallback && target.price <= entryPrice + maximumTargetDistance
+      : target.price <= fallback && target.price >= entryPrice - maximumTargetDistance)
     .sort((a,b)=>direction==='long'?a.price-b.price:b.price-a.price);
   if(!candidates.length) return {price:fallback,source:'RR_FALLBACK'};
   return {price:candidates[0].price,source:candidates[0].source};
