@@ -29,7 +29,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger("HistoricalReplay")
 
 
-def _complete_synthetic_fred(values: Dict[str, Any]) -> Dict[str, Any]:
+def _complete_synthetic_fred(values: Dict[str, Any], raw_market: Dict[str, Any]) -> Dict[str, Any]:
     """Fill the explicit synthetic replay contract without touching production fallbacks."""
     defaults = {
         "DFF": 4.33, "DFF_4W_AGO": 4.33, "SOFR": 4.33,
@@ -63,6 +63,20 @@ def _complete_synthetic_fred(values: Dict[str, Any]) -> Dict[str, Any]:
     }
     completed = dict(defaults)
     completed.update(values)
+
+    # Preserve scenario-specific Treasury shocks from the synthetic market fixture.
+    us2 = raw_market.get("US02Y", {})
+    us10 = raw_market.get("US10Y", {})
+    if isinstance(us2, dict) and isinstance(us2.get("value"), (int, float)):
+        completed["DGS2"] = float(us2["value"])
+        completed["DGS2_4W_AGO"] = float(us2.get("month_ago", us2["value"]))
+        completed["DGS2_5D_AGO"] = float(us2.get("val_5d_ago", us2["value"]))
+    if isinstance(us10, dict) and isinstance(us10.get("value"), (int, float)):
+        completed["DGS10"] = float(us10["value"])
+        completed["DGS10_4W_AGO"] = float(us10.get("month_ago", us10["value"]))
+        completed["DGS10_5D_AGO"] = float(us10.get("val_5d_ago", us10["value"]))
+    completed["T10Y2Y"] = completed["DGS10"] - completed["DGS2"]
+    completed["T10Y2Y_4W_AGO"] = completed["DGS10_4W_AGO"] - completed["DGS2_4W_AGO"]
     completed["data_quality"] = {
         "provider": "synthetic_historical_replay_fixture",
         "fixture_type": "synthetic_historical_replay",
@@ -110,7 +124,7 @@ def run_scenario_october_2023() -> Dict[str, Any]:
         {"title": "Core CPI m/m", "actual": "0.3%", "forecast": "0.3%"},
         {"title": "Unemployment Rate", "actual": "3.8%", "forecast": "3.7%"}
     ]
-    return calc.process_all_macro_data(raw_market, _complete_synthetic_fred(raw_fred), events, as_of_date=__synthetic_as_of_date(raw_market))
+    return calc.process_all_macro_data(raw_market, _complete_synthetic_fred(raw_fred, raw_market), events, as_of_date=__synthetic_as_of_date(raw_market))
 
 
 def run_scenario_march_2023_svb() -> Dict[str, Any]:
