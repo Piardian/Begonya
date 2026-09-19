@@ -667,10 +667,10 @@ export class MacroGateAdapter {
     // ──────────────────────────────────────────────────────────────────────────
     // 2. KATMAN: ASİMETRİK PİYASA VE ENSTRÜMAN MUTLAK KALKANLARI
     // ──────────────────────────────────────────────────────────────────────────
-    // A) ALTIN (XAUUSD / GOLD) SHORT KURALI: Mali Hakimiyet & Egemen Borç Kalkanı
+    // A) ALTIN (XAUUSD / GOLD): Short requires the explicit macro SHORT_ONLY gate.
+    // Do not infer a directional short merely from a crisis state.
     if ((cleanSym.includes('XAU') || cleanSym.includes('GOLD')) && tradeDirection === 'short') {
-      const isCashDash = riskScore >= 0.90 && regime.includes('Deflationary');
-      if (!isCashDash) {
+      if (macroBias !== 'SHORT_ONLY') {
         return this.buildVetoResult(
           cleanSym,
           macroKey,
@@ -681,7 +681,7 @@ export class MacroGateAdapter {
           btcDecoupling,
           rationale,
           smcScore,
-          '🛑 VETO: Mali Hakimiyet Çağında Altında SHORT Kesinlikle Yasaktır (Fiziki Rezerv Talebi / Egemen Borç Kalkanı)'
+          '🛑 VETO: XAUUSD SHORT için deterministic makro gate SHORT_ONLY değil.'
         );
       }
     }
