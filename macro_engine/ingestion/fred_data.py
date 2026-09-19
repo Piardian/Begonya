@@ -191,11 +191,6 @@ class FredDataIngestion:
             prior_value = round(prior_value / 1000.0, 1)
         return current, prior_value, current_date, prior_date
 
-    def _fetch_baseline_metrics(self, as_of: Optional[dt.date] = None) -> Dict[str, Any]:
-        raise DataUnavailableError(
-            "FRED_API_KEY is not configured; synthetic FRED baseline data is disabled."
-        )
-
     def fetch_liquidity_metrics(
         self, as_of: Optional[dt.date] = None
     ) -> Dict[str, Any]:
