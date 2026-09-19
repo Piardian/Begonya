@@ -307,6 +307,21 @@ describe('Begonya Asymmetric Short & Multiplicative Gating Tests', () => {
     expect(longRes.gateStatusMessage).toContain('SHORT_ONLY iken LONG Açılamaz');
   });
 
+  it('15B. TEK TARAF YÖNLÜ KANIT ÇAPRAZI: +1 AUD vs 0 CAD yön üretmez', () => {
+    writeMockGate({
+      regime_state: {
+        cross_currency_scores: { AUD: 1, CAD: 0 },
+      },
+    });
+    const adapter = MacroGateAdapter.getInstance();
+    const result = adapter.evaluateCandidate('AUDCAD', 'long', 90);
+
+    expect(result.allowed).toBe(false);
+    expect(result.action).toBe('VETO');
+    expect(result.macroBias).toBe('NEUTRAL_ALL');
+    expect(result.gateStatusMessage).toContain('nötr / yönsüzdür');
+  });
+
   it('16. AUDCAD DENGELİ SENTETİK ÇAPRAZ NÖTR VETO: Emtialar dengeliyken yönsüz olduğu için işlem engellenir', () => {
     writeMockGate({
       regime_state: {
