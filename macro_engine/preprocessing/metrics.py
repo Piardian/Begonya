@@ -34,6 +34,9 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
     # series. Treating it as daily incorrectly rejects legitimate 5-7 day gaps
     # between observations. Keep the weekly freshness contract explicit.
     FRED_FREQUENCIES={"WALCL":"weekly","RRPONTSYD":"daily","WTREGEN":"weekly","T10YIE":"daily","DFII10":"daily","DFF":"daily","BAMLH0A0HYM2":"daily","NFCI":"weekly","ICSA":"weekly","M2SL":"monthly","DE10Y":"monthly"}
+    # NFCI is weekly-ending-Friday but the provider vintage can lag the observation date.
+    # Keep the generic weekly contract at 10d; allow NFCI up to 14d only for this known release-lag profile.
+    FRED_MAX_AGE_DAYS={"NFCI":14}
     def __init__(self,as_of_date:Optional[dt.date]=None,surprise_sigmas:Optional[Mapping[str,float]]=None): super().__init__(); self.as_of_date=as_of_date; self.surprise_sigmas=dict(surprise_sigmas or self.DEFAULT_SURPRISE_SIGMAS)
     @classmethod
     def from_calibration_profile(cls,profile_path:Optional[Path]=None,allow_default_fallback:bool=False,**kwargs:Any):
@@ -68,7 +71,7 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
             if n in fred_data and fred_data[n] is not None:validate_numeric_range(n,fred_data[n],lo,hi)
     def _validate_fred_freshness(self,fred_data:Dict[str,Any],as_of:Optional[dt.date])->Dict[str,int]:
         if as_of is None:return {}
-        obs=fred_data.get("data_quality",{}).get("observation_dates",{});return {f:validate_freshness(f,dt.date.fromisoformat(str(v)),as_of,self.FRED_FREQUENCIES.get(f,"unknown")) for f,v in obs.items()}
+        obs=fred_data.get("data_quality",{}).get("observation_dates",{});return {f:validate_freshness(f,dt.date.fromisoformat(str(v)),as_of,self.FRED_FREQUENCIES.get(f,"unknown"),self.FRED_MAX_AGE_DAYS.get(f)) for f,v in obs.items()}
     def process_all_macro_data(self,market_data:Dict[str,Any],fred_data:Dict[str,Any],calendar_events:List[Dict[str,Any]],as_of_date:Optional[dt.date]=None,as_of_datetime:Optional[dt.datetime]=None,previous_regime_state:Optional[Mapping[str,Any]]=None,now_utc:Optional[dt.datetime]=None)->Dict[str,Any]:
         validate_market_payload(market_data);validate_fred_payload(fred_data);self._validate_key_ranges(market_data,fred_data);as_of=as_of_date or self.as_of_date;fresh=self._validate_fred_freshness(fred_data,as_of);ed=as_of_datetime or (dt.datetime.combine(as_of,dt.time.max,tzinfo=dt.timezone.utc) if as_of else None);events=[normalize_calendar_event(e) for e in calendar_events];freeze=event_freeze_status(events,now_utc=now_utc or ed) if (now_utc or ed) else None
         with _fixed_legacy_date(as_of,ed,previous_regime_state):r=super().process_all_macro_data(market_data,fred_data,events)
