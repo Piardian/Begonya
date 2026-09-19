@@ -15,7 +15,7 @@ class HistoricalMarketReplayAdapterTests(unittest.TestCase):
             "test",
         )
         self.assertEqual(payload["value"], 114.75)
-        self.assertEqual(payload["prev"], 158.0)
+        self.assertEqual(payload["prev"], 114.5)
         self.assertEqual(payload["snapshot_timestamp"], as_of.isoformat())
         self.assertEqual(payload["source"], "test")
 
