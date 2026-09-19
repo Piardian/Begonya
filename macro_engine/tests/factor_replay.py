@@ -88,10 +88,9 @@ def _alignment(rows: List[Dict[str, Any]], factors: List[str]) -> List[Dict[str,
             row = dict(row)
             row["_alignment"] = -1
             out.append(row)
-        else:
-            row = dict(row)
-            row["_alignment"] = 0
-            out.append(row)
+        # Mixed or neutral factor states are not "alignment" observations.
+        # They remain analyzable at factor level but are excluded from the
+        # full-alignment cohort to keep the cohort definition deterministic.
     return out
 
 
