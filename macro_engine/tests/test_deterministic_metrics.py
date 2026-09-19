@@ -71,8 +71,8 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
             "CA3M_INTERBANK": 3.0, "CA3M_INTERBANK_4W_AGO": 3.0,
             "AU3M_INTERBANK": 4.0, "AU3M_INTERBANK_4W_AGO": 4.0,
             "NZ3M_INTERBANK": 4.0, "NZ3M_INTERBANK_4W_AGO": 4.0,
-            "JP3M_INTERBANK": 2.0, "JP3M_INTERBANK_4W_AGO": 2.1,
-            "CH3M_INTERBANK": 1.0, "CH3M_INTERBANK_4W_AGO": 1.1,
+            "JP3M_INTERBANK": 2.0, "JP3M_INTERBANK_4W_AGO": 2.0,
+            "CH3M_INTERBANK": 1.0, "CH3M_INTERBANK_4W_AGO": 1.0,
             "DGS2_5D_AGO": 4.05, "DGS10_5D_AGO": 4.02,
         }
 
@@ -181,6 +181,19 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
         market = self.base_market()
         market["VIX"] = {**market["VIX"], "value": 30.0, "pct_rank_60d": 95.0}
         result = self.run_metrics(market=market)
+        scores = result["cross_pairs_analysis"]["currency_scores"]
+        self.assertEqual(scores["JPY"], 0)
+        self.assertEqual(scores["CHF"], 0)
+
+    def test_local_rate_and_safe_haven_alignment_confirms_jpy_chf(self):
+        market = self.base_market()
+        market["VIX"] = {**market["VIX"], "value": 30.0, "pct_rank_60d": 95.0}
+        fred = {
+            **self.base_fred(),
+            "JP3M_INTERBANK": 2.1, "JP3M_INTERBANK_4W_AGO": 2.0,
+            "CH3M_INTERBANK": 1.1, "CH3M_INTERBANK_4W_AGO": 1.0,
+        }
+        result = self.run_metrics(market=market, fred=fred)
         scores = result["cross_pairs_analysis"]["currency_scores"]
         self.assertEqual(scores["JPY"], 1)
         self.assertEqual(scores["CHF"], 1)
