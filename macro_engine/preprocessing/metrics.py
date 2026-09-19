@@ -36,7 +36,7 @@ def _fixed_legacy_date(as_of_date: Optional[dt.date], as_of_datetime: Optional[d
 
 class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
     DEFAULT_SURPRISE_SIGMAS={"cpi":.12,"core_cpi":.10,"nfp":50000.,"unemployment":.15,"pmi":1.5,"gdp":.50,"retail_sales":.40,"generic":1.0}
-    FRED_FREQUENCIES={"WALCL":"weekly","RRPONTSYD":"daily","WTREGEN":"daily","T10YIE":"daily","DFII10":"daily","DFF":"daily","BAMLH0A0HYM2":"daily","NFCI":"weekly","ICSA":"weekly","M2SL":"monthly","DE10Y":"monthly"}
+    FRED_FREQUENCIES={"WALCL":"weekly","RRPONTSYD":"daily","WTREGEN":"daily","T10YIE":"daily","DFII10":"daily","DFF":"daily","BAMLH0A0HYM2":"daily","NFCI":"weekly","ICSA":"weekly","M2SL":"monthly","DE10Y":"monthly","ECBDFR":"daily","SONIA":"daily"}
 
     @staticmethod
     def _build_fred_yield_curve(fred_data: Mapping[str, Any]) -> Optional[Dict[str, Any]]:
@@ -97,12 +97,12 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
                 f"DGS10 4W {delta_10y_4w:+.1f} bps; DGS2 4W {delta_2y_4w:+.1f} bps."
             ),
             "delta_spread_1d_bps": None,
-            "delta_spread_5d_bps": None,
+            "delta_spread_5d_bps": (None if not isinstance(fred_data.get("DGS2_5D_AGO"), (int, float)) or not isinstance(fred_data.get("DGS10_5D_AGO"), (int, float)) else round(((float(fred_data["DGS10"]) - float(fred_data["DGS2"])) - (float(fred_data["DGS10_5D_AGO"]) - float(fred_data["DGS2_5D_AGO"]))) * 100.0, 1)),
             "delta_spread_20d_bps": delta_spread_4w,
             "delta_10y_4w_bps": delta_10y_4w,
             "delta_02y_4w_bps": delta_2y_4w,
-            "delta_10y_5d_bps": None,
-            "delta_02y_5d_bps": None,
+            "delta_10y_5d_bps": None if not isinstance(fred_data.get("DGS10_5D_AGO"), (int, float)) else round((float(fred_data["DGS10"]) - float(fred_data["DGS10_5D_AGO"])) * 100.0, 1),
+            "delta_02y_5d_bps": None if not isinstance(fred_data.get("DGS2_5D_AGO"), (int, float)) else round((float(fred_data["DGS2"]) - float(fred_data["DGS2_5D_AGO"])) * 100.0, 1),
             "is_trend_significant": trend_significant,
             "source": "FRED DGS10 / DGS2 / T10Y2Y",
         }
@@ -150,86 +150,151 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         if as_of is None:return {}
         obs=fred_data.get("data_quality",{}).get("observation_dates",{});return {f:validate_freshness(f,dt.date.fromisoformat(str(v)),as_of,self.FRED_FREQUENCIES.get(f,"unknown")) for f,v in obs.items()}
     @staticmethod
-    def _apply_strict_cross_currency_gates(
+    @staticmethod
+    def _strict_sign(value: Optional[float], threshold: float) -> int:
+        if value is None:
+            return 0
+        if value >= threshold:
+            return 1
+        if value <= -threshold:
+            return -1
+        return 0
+
+    @staticmethod
+    def _available_market_number(market_data: Mapping[str, Any], name: str, key: str = "value") -> Optional[float]:
+        item = market_data.get(name)
+        value = item.get(key) if isinstance(item, Mapping) else None
+        return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else None
+
+    @classmethod
+    def _rebuild_currency_scores(
+        cls,
         result: Dict[str, Any],
         market_data: Mapping[str, Any],
+        fred_data: Mapping[str, Any],
     ) -> None:
-        """Rebuild cross-pair gates only from available currency-driver scores.
+        """Build currency scores from auditable, direction-consistent factors.
 
-        A missing local sovereign yield is an unavailable input, not a neutral/positive
-        economic observation. JPY/CHF remain non-directional until direct local-rate
-        inputs are supplied to avoid treating generic safe-haven proxies as full macro
-        models.
+        A contradictory pair of factors produces NEUTRAL rather than allowing
+        one factor to override another. JPY/CHF remain unavailable until direct
+        local policy/rate inputs are provided.
         """
-        cross = result.setdefault("cross_pairs_analysis", {})
-        raw_scores = dict(cross.get("currency_scores", {}))
-        scores: Dict[str, Optional[int]] = {key: int(value) if isinstance(value, (int, float)) else None for key, value in raw_scores.items()}
+        vix = cls._available_market_number(market_data, "VIX") or 15.0
+        dxy_4w = cls._available_market_number(market_data, "DXY", "change_pct_4w")
+        brent_20d = cls._available_market_number(market_data, "BRENT", "change_pct_4w")
+        copper_gold = result.get("regime_state", {}).get("copper_gold_delta_4w_pct")
+        iron_ore = result.get("regime_state", {}).get("iron_ore_roc_20d")
+        dairy = result.get("regime_state", {}).get("dairy_gdt_roc_20d")
+        energy_penalty = bool(result.get("terms_of_trade_energy_analysis", {}).get("eurusd_energy_penalty"))
 
-        local_rate_requirements = {
-            "CAD": "CA02Y",
-            "EUR": "DE02Y",
-            "GBP": "GB02Y",
-            "AUD": "AU02Y",
-            "NZD": "NZ02Y",
+        us2 = fred_data.get("DGS2")
+        us2_4w = fred_data.get("DGS2_4W_AGO")
+        us2_gap_4w = None
+        if isinstance(us2, (int, float)) and isinstance(us2_4w, (int, float)):
+            us2_gap_4w = float(us2) - float(us2_4w)
+
+        def local_us_spread_delta(field: str) -> Optional[float]:
+            now = cls._available_market_number(market_data, field)
+            old = cls._available_market_number(market_data, field, "val_5d_ago")
+            us_now = float(us2) if isinstance(us2, (int, float)) else None
+            us_old = cls._available_market_number({"US02Y": {"value": fred_data.get("DGS2_5D_AGO")}}, "US02Y")
+            if None in (now, old, us_now, us_old):
+                return None
+            return ((now - us_now) - (old - us_old)) * 100.0
+
+        def majority(factors: list[int]) -> Optional[int]:
+            usable=[x for x in factors if x != 0]
+            if not usable:
+                return None
+            pos=sum(x>0 for x in usable); neg=sum(x<0 for x in usable)
+            if pos > 0 and neg > 0:
+                return 0
+            return 1 if pos >= 2 or (pos == 1 and len(usable) == 1) else -1
+
+        cad_yield = cls._strict_sign(local_us_spread_delta("CA02Y"), 5.0)
+        cad_comm = cls._strict_sign(brent_20d, 3.0)
+        cad_risk = -1 if vix >= 24.0 else (1 if vix < 16.0 else 0)
+        cad_score = majority([cad_yield, cad_comm, cad_risk])
+
+        aud_yield = cls._strict_sign(local_us_spread_delta("AU02Y"), 5.0)
+        aud_comm = 1 if isinstance(copper_gold,(int,float)) and isinstance(iron_ore,(int,float)) and copper_gold > 0 and iron_ore > 0 else (-1 if isinstance(copper_gold,(int,float)) and isinstance(iron_ore,(int,float)) and copper_gold < 0 and iron_ore < 0 else 0)
+        aud_risk = -1 if vix >= 22.0 else (1 if vix < 16.0 else 0)
+        aud_score = majority([aud_yield, aud_comm, aud_risk])
+
+        nz_yield = cls._strict_sign(
+            ((cls._available_market_number(market_data, "AU02Y", "change_pct_5d") or 0.0) -
+             (cls._available_market_number(market_data, "NZ02Y", "change_pct_5d") or 0.0)),
+            0.01,
+        )
+        au_nz_now = cls._available_market_number(market_data, "AU02Y")
+        nz_now = cls._available_market_number(market_data, "NZ02Y")
+        au_nz_old = cls._available_market_number(market_data, "AU02Y", "val_5d_ago")
+        nz_old = cls._available_market_number(market_data, "NZ02Y", "val_5d_ago")
+        if None not in (au_nz_now, nz_now, au_nz_old, nz_old):
+            nz_yield = cls._strict_sign(((au_nz_now - nz_now) - (au_nz_old - nz_old)) * 100.0, 3.0)
+        dairy_factor = cls._strict_sign(dairy, 0.5)
+        nz_risk = -1 if vix >= 20.0 else (1 if vix < 16.0 else 0)
+        nz_score = majority([nz_yield, dairy_factor, nz_risk])
+
+        ecb = fred_data.get("ECBDFR")
+        ecb_4w = fred_data.get("ECBDFR_4W_AGO")
+        sonia = fred_data.get("SONIA")
+        sonia_4w = fred_data.get("SONIA_4W_AGO")
+        dff = fred_data.get("DFF")
+        dff_4w = fred_data.get("DFF_4W_AGO")
+
+        eur_policy = None
+        if all(isinstance(x,(int,float)) for x in (ecb,ecb_4w,dff,dff_4w)):
+            eur_policy = cls._strict_sign(((float(ecb)-float(dff))-(float(ecb_4w)-float(dff_4w)))*100.0, 5.0)
+        de_spread_delta = result.get("regime_state",{}).get("spread_de_us_2y_delta_5d")
+        if not isinstance(de_spread_delta,(int,float)):
+            de_spread_delta = None
+        eur_market = cls._strict_sign(de_spread_delta, 5.0)
+        eur_energy = -1 if energy_penalty else 0
+        eur_score = majority([eur_policy or 0, eur_market or 0, eur_energy])
+
+        gb_policy = None
+        if all(isinstance(x,(int,float)) for x in (sonia,sonia_4w,dff,dff_4w)):
+            gb_policy = cls._strict_sign(((float(sonia)-float(dff))-(float(sonia_4w)-float(dff_4w)))*100.0, 5.0)
+        gb_market = cls._strict_sign(result.get("regime_state",{}).get("spread_gb_us_2y_delta_5d"), 5.0)
+        gb_risk = -1 if vix >= 25.0 else 0
+        gb_score = majority([gb_policy or 0, gb_market or 0, gb_risk])
+
+        usd_policy = None
+        if all(isinstance(x,(int,float)) for x in (us2,us2_4w,dff,dff_4w)):
+            usd_policy = cls._strict_sign(((float(us2)-float(dff))-(float(us2_4w)-float(dff_4w)))*100.0, 5.0)
+        usd_momentum = cls._strict_sign(dxy_4w, 0.5)
+        usd_score = majority([usd_policy or 0, usd_momentum or 0])
+
+        scores = {
+            "CAD": cad_score, "AUD": aud_score, "NZD": nz_score,
+            "EUR": eur_score, "GBP": gb_score, "USD": usd_score,
+            "JPY": None, "CHF": None,
         }
-        for currency, field in local_rate_requirements.items():
-            if not isinstance(market_data.get(field), Mapping) or market_data[field].get("value") is None:
-                scores[currency] = None
 
-        # USD is supported by the direct FRED DGS2 + market DXY inputs.
-        dxy = market_data.get("DXY")
-        if not isinstance(dxy, Mapping) or dxy.get("value") is None:
-            scores["USD"] = None
-        if not isinstance(market_data.get("CA02Y"), Mapping) and scores.get("CAD") is not None:
-            scores["CAD"] = None
-
-        # No direct local 2Y input exists in the current provider contract for JPY/CHF.
-        scores["JPY"] = None
-        scores["CHF"] = None
+        cross = result.setdefault("cross_pairs_analysis", {})
+        cross["currency_scores"] = scores
+        cross["directional_input_status"] = {k: ("AVAILABLE" if v is not None else "UNAVAILABLE") for k,v in scores.items()}
 
         pair_drivers = {
-            "AUDCAD": ("AUD", "CAD"),
-            "CADJPY": ("CAD", "JPY"),
-            "GBPJPY": ("GBP", "JPY"),
-            "AUDJPY": ("AUD", "JPY"),
-            "EURGBP": ("EUR", "GBP"),
-            "EURAUD": ("EUR", "AUD"),
-            "NZDCAD": ("NZD", "CAD"),
-            "EURJPY": ("EUR", "JPY"),
-            "USDCAD": ("USD", "CAD"),
-            "USDJPY": ("USD", "JPY"),
-            "GBPUSD": ("GBP", "USD"),
-            "AUDUSD": ("AUD", "USD"),
-            "NZDUSD": ("NZD", "USD"),
-            "USDCHF": ("USD", "CHF"),
-            "EURCHF": ("EUR", "CHF"),
-            "GBPCHF": ("GBP", "CHF"),
-            "AUDCHF": ("AUD", "CHF"),
-            "CADCHF": ("CAD", "CHF"),
-            "NZDCHF": ("NZD", "CHF"),
-            "CHFJPY": ("CHF", "JPY"),
-            "EURUSD": ("EUR", "USD"),
+            "AUDCAD": ("AUD", "CAD"), "CADJPY": ("CAD", "JPY"), "GBPJPY": ("GBP", "JPY"),
+            "AUDJPY": ("AUD", "JPY"), "EURGBP": ("EUR", "GBP"), "EURAUD": ("EUR", "AUD"),
+            "NZDCAD": ("NZD", "CAD"), "EURJPY": ("EUR", "JPY"), "USDCAD": ("USD", "CAD"),
+            "USDJPY": ("USD", "JPY"), "GBPUSD": ("GBP", "USD"), "AUDUSD": ("AUD", "USD"),
+            "NZDUSD": ("NZD", "USD"), "USDCHF": ("USD", "CHF"), "EURCHF": ("EUR", "CHF"),
+            "GBPCHF": ("GBP", "CHF"), "AUDCHF": ("AUD", "CHF"), "CADCHF": ("CAD", "CHF"),
+            "NZDCHF": ("NZD", "CHF"), "CHFJPY": ("CHF", "JPY"), "EURUSD": ("EUR", "USD"),
         }
-
-        strict_gates: Dict[str, str] = {}
-        for pair, (base, quote) in pair_drivers.items():
-            base_score = scores.get(base)
-            quote_score = scores.get(quote)
-            if base_score is None or quote_score is None:
+        gates = {}
+        for pair,(base,quote) in pair_drivers.items():
+            bs,qs=scores.get(base),scores.get(quote)
+            if bs is None or qs is None:
                 continue
-            diff = base_score - quote_score
-            strict_gates[pair] = "LONG_ONLY" if diff > 0 else "SHORT_ONLY" if diff < 0 else "NEUTRAL_RANGE"
-
-        cross["currency_scores"] = scores
-        cross["cross_gates"] = strict_gates
-        cross["directional_input_status"] = {
-            currency: ("AVAILABLE" if score is not None else "UNAVAILABLE")
-            for currency, score in scores.items()
-        }
-
-        regime_state = result.setdefault("regime_state", {})
-        regime_state["cross_currency_scores"] = scores
-        regime_state["cross_pair_gates"] = strict_gates
+            diff=bs-qs
+            gates[pair]="LONG_ONLY" if diff>0 else "SHORT_ONLY" if diff<0 else "NEUTRAL_RANGE"
+        cross["cross_gates"]=gates
+        result.setdefault("regime_state",{})["cross_currency_scores"]=scores
+        result["regime_state"]["cross_pair_gates"]=gates
 
     def process_all_macro_data(self,market_data:Dict[str,Any],fred_data:Dict[str,Any],calendar_events:List[Dict[str,Any]],as_of_date:Optional[dt.date]=None,as_of_datetime:Optional[dt.datetime]=None,previous_regime_state:Optional[Mapping[str,Any]]=None,now_utc:Optional[dt.datetime]=None)->Dict[str,Any]:
         validate_market_payload(market_data);validate_fred_payload(
@@ -241,22 +306,35 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         dgs2_4w = fred_data.get("DGS2_4W_AGO")
         if isinstance(dgs2, (int, float)) and isinstance(dgs2_4w, (int, float)):
             legacy_market["US02Y"] = {
-                "value": float(dgs2), "prev": float(dgs2), "val_5d_ago": float(dgs2),
+                "value": float(dgs2), "prev": float(dgs2), "val_5d_ago": float(fred_data.get("DGS2_5D_AGO", dgs2)),
                 "month_ago": float(dgs2_4w), "change_pct": 0.0, "change_pct_5d": 0.0,
                 "change_pct_4w": round(((float(dgs2) - float(dgs2_4w)) / float(dgs2_4w)) * 100.0, 2) if dgs2_4w else 0.0,
                 "pct_rank_60d": 50.0, "history_close": [float(dgs2_4w), float(dgs2)]
             }
         with _fixed_legacy_date(as_of,ed,previous_regime_state):r=super().process_all_macro_data(legacy_market,fred_data,events)
+        # Keep legacy consumers on the same FRED constant-maturity Treasury source.
+        if isinstance(fred_data.get("DGS10"), (int, float)):
+            legacy_market["US10Y"] = {
+                "value": float(fred_data["DGS10"]),
+                "prev": float(fred_data.get("DGS10_5D_AGO", fred_data["DGS10"])),
+                "val_5d_ago": float(fred_data.get("DGS10_5D_AGO", fred_data["DGS10"])),
+                "month_ago": float(fred_data.get("DGS10_4W_AGO", fred_data["DGS10"])),
+                "change_pct": 0.0,
+                "change_pct_5d": 0.0,
+                "change_pct_4w": 0.0,
+                "pct_rank_60d": 50.0,
+                "history_close": [float(fred_data.get("DGS10_4W_AGO", fred_data["DGS10"])), float(fred_data["DGS10"])]
+            }
         fred_curve = self._build_fred_yield_curve(fred_data)
         if fred_curve is not None:
             r["yield_curve"] = fred_curve
-        self._apply_strict_cross_currency_gates(r, market_data)
+        self._rebuild_currency_scores(r, market_data, fred_data)
         if freeze is not None:r.setdefault("cross_pairs_analysis",{})["event_freeze"]=freeze;r.setdefault("regime_state",{})["event_freeze_active"]=bool(freeze["active"])
         dgs2_for_policy = float(dgs2) if isinstance(dgs2, (int, float)) else float(r.get("fed_forward_path_analysis",{}).get("us02y_yield",legacy_market.get("US02Y",{}).get("value",0.0)))
         r["fed_forward_path_analysis"]=self.calculate_fed_forward_path(dgs2_for_policy,fred_data.get("DFF"),None)
         r["fed_forward_path_analysis"]["dgs2_4w_change_bps"] = None if not isinstance(dgs2_4w, (int, float)) else round((dgs2_for_policy - float(dgs2_4w)) * 100.0, 1)
         r["fed_forward_path_analysis"]["policy_rate_gap_2y_dff_bps"] = None if fred_data.get("DFF") is None else round((dgs2_for_policy - float(fred_data["DFF"])) * 100.0, 1)
-        r.setdefault("regime_state",{})["state_source"]="explicit_previous_regime_state" if previous_regime_state is not None else "default_inactive_state";r["dxy_oil_correlation_method"]="pearson_on_period_returns";r["data_quality"]={"fallback_used":False,"synthetic_fallback_used":False,"fallback_fields":[]};r["validation"]={"fred_freshness_days":fresh}
+        r.setdefault("regime_state",{})["state_source"]="explicit_previous_regime_state" if previous_regime_state is not None else "default_inactive_state";r["dxy_oil_correlation_method"]="pearson_on_period_returns";r["data_quality"]={"fallback_used":False,"synthetic_fallback_used":False,"fallback_fields":[],"treasury_curve_source":"FRED_DGS2_DGS10_T10Y2Y","treasury_5d_history_available":bool(fred_data.get("DGS2_5D_AGO") is not None and fred_data.get("DGS10_5D_AGO") is not None)};r["validation"]={"fred_freshness_days":fresh}
         if float(market_data.get("VIX",{}).get("value",0) or 0)>=40 and isinstance(r.get("credit_spread_analysis"),dict):
             stress=str(r["credit_spread_analysis"].get("stress_level","")).lower()
             if "distress" in stress or "şiddetli kredi krizi" in stress:r.setdefault("gold_fiscal_dominance",{})["is_cash_dash"]=True;r["gold_fiscal_dominance"]["gold_short_allowed"]=True
