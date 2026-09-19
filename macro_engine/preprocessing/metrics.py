@@ -523,7 +523,6 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
             }
 
         self._rebuild_currency_scores(r, market_data, fred_data)
-        r["asset_macro_gates"] = self._build_asset_macro_gates(r, market_data, fred_data)
         if freeze is not None:r.setdefault("cross_pairs_analysis",{})["event_freeze"]=freeze;r.setdefault("regime_state",{})["event_freeze_active"]=bool(freeze["active"])
         dgs2_for_policy = float(dgs2) if isinstance(dgs2, (int, float)) else float(r.get("fed_forward_path_analysis",{}).get("us02y_yield",legacy_market.get("US02Y",{}).get("value",0.0)))
         r["fed_forward_path_analysis"]=self.calculate_fed_forward_path(dgs2_for_policy,fred_data.get("DFF"),None)
@@ -533,4 +532,5 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         if float(market_data.get("VIX",{}).get("value",0) or 0)>=40 and isinstance(r.get("credit_spread_analysis"),dict):
             stress=str(r["credit_spread_analysis"].get("stress_level","")).lower()
             if "distress" in stress or "şiddetli kredi krizi" in stress:r.setdefault("gold_fiscal_dominance",{})["is_cash_dash"]=True;r["gold_fiscal_dominance"]["gold_short_allowed"]=True
+        r["asset_macro_gates"] = self._build_asset_macro_gates(r, market_data, fred_data)
         return r
