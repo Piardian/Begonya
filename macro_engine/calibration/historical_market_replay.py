@@ -11,7 +11,9 @@ import yfinance as yf
 from calibration.replay import run_replay
 from config import MARKET_SYMBOLS
 from ingestion.mt5_market_data import MT5MarketDataIngestion, mt5
+from ingestion.fred_data import FredDataIngestion
 from preprocessing.metrics import MacroMetricsCalculator
+from data_quality import REQUIRED_MARKET_FIELDS
 
 
 class HistoricalMarketReplayIngestion(MT5MarketDataIngestion):
@@ -119,6 +121,24 @@ def build_market_snapshot(ingestion: HistoricalMarketReplayIngestion, symbols: I
     return snapshot
 
 
+def build_real_snapshot(as_of: dt.datetime, symbols: Iterable[str]) -> Dict[str, Any]:
+    market = build_market_snapshot(HistoricalMarketReplayIngestion(), symbols, as_of)
+    fred = FredDataIngestion().fetch_liquidity_metrics(as_of=as_of.date())
+    return {
+        "schema_version": 1,
+        "timestamp": as_of.isoformat(),
+        "market": market,
+        "fred": fred,
+        "calendar_events": [],
+        "metadata": {
+            "market_source_policy": market["_metadata"]["source_policy"],
+            "fred_provider": fred.get("data_quality", {}).get("provider"),
+            "calendar_status": "UNAVAILABLE_HISTORICAL_PROVIDER",
+            "promotion_eligible": False,
+        },
+    }
+
+
 def load_rows(path: Path) -> List[Mapping[str, Any]]:
     rows = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(rows, list):
@@ -152,13 +172,41 @@ def replay_dataset(path: Path) -> List[Dict[str, Any]]:
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Research-only historical macro replay")
-    parser.add_argument("--dataset", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--dataset", type=Path)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--as-of", type=str)
+    parser.add_argument("--symbols", nargs="+", default=sorted(REQUIRED_MARKET_FIELDS))
     return parser.parse_args()
 
 
 def main() -> None:
     args = _parse_args()
+    if args.as_of:
+        as_of = dt.datetime.fromisoformat(args.as_of.replace("Z", "+00:00"))
+        if as_of.tzinfo is None:
+            as_of = as_of.replace(tzinfo=dt.timezone.utc)
+        as_of = as_of.astimezone(dt.timezone.utc)
+        snapshot = build_real_snapshot(as_of, args.symbols)
+        result = process_snapshot(
+            snapshot["market"], snapshot["fred"], snapshot["calendar_events"],
+            as_of_date=as_of.date(), as_of_datetime=as_of,
+            now_utc=as_of, previous_regime_state={},
+        )
+        from graph.macro_graph import MacroWorkflowEngine
+        gate = MacroWorkflowEngine._build_deterministic_gates(result)
+        output = {
+            "timestamp": snapshot["timestamp"],
+            "metadata": snapshot["metadata"],
+            "execution_bias_gates": gate,
+            "data_quality": result.get("data_quality", {}),
+        }
+        if args.output:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(json.dumps(output, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+        print(json.dumps(output, ensure_ascii=False, indent=2, default=str))
+        return
+    if not args.dataset or not args.output:
+        raise SystemExit("--dataset/--output or --as-of is required")
     results = replay_dataset(args.dataset)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(results, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
