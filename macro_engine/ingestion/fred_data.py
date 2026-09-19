@@ -47,6 +47,12 @@ class FredDataIngestion:
         "DE10Y": "IRLTLT01DEM156N",
         "ECBDFR": "ECBDFR",
         "SONIA": "IUDSOIA",
+        # OECD Main Economic Indicators: current monthly local short-rate market proxies.
+        "CA3M_INTERBANK": "IR3TIB01CAM156N",
+        "AU3M_INTERBANK": "IR3TIB01AUM156N",
+        "NZ3M_INTERBANK": "IR3TIB01NZM156N",
+        "JP3M_INTERBANK": "IR3TIB01JPM156N",
+        "CH3M_INTERBANK": "IR3TIB01CHM156N",
     }
 
     ECONOMIC_FRED_SERIES = {
