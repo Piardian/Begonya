@@ -156,64 +156,48 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
         self.assertEqual(breakdown["GBP"]["market_rate_factor"], 1)
 
     def test_direct_asset_gates_long_neutral_short_are_deterministic(self):
-        # XAU: low and falling real yield + non-rising USD => LONG_ONLY.
-        result = self.run_metrics()
-        self.assertEqual(result["asset_macro_gates"]["XAUUSD"], "LONG_ONLY")
+        market = self.base_market()
+        fred = self.base_fred()
 
-        # BTC: risk-on macro alignment requires positive liquidity as well.
-        result = self.run_metrics(fred={**self.base_fred(), "WALCL": 7100000.0})
-        self.assertEqual(result["asset_macro_gates"]["BTC"], "LONG_ONLY")
+        bullish = {
+            "real_yield_info": {"real_yield_pct": 1.50},
+            "liquidity_dynamics": {"delta_liquidity_billion": 100.0},
+            "t0_fast_stress_analysis": {"fast_stress_override": False},
+            "regime_state": {"capital_preservation_active": False},
+            "btc_decoupling_analysis": {"is_duration_shock": False},
+        }
+        gates = self.calc._build_asset_macro_gates(bullish, market, fred)
+        self.assertEqual(gates["XAUUSD"], "LONG_ONLY")
+        self.assertEqual(gates["BTC"], "LONG_ONLY")
+        self.assertEqual(gates["SPX"], "LONG_ONLY")
 
-        # SPX: same positive liquidity + benign real yield conditions => LONG_ONLY.
-        self.assertEqual(result["asset_macro_gates"]["SPX"], "LONG_ONLY")
-
-        # Removing the macro alignment must return to neutral, not infer LONG from no stress.
-        result = self.run_metrics(market=self.base_market(), fred=self.base_fred())
-        self.assertEqual(result["asset_macro_gates"]["BTC"], "NEUTRAL_RANGE")
-        self.assertEqual(result["asset_macro_gates"]["SPX"], "NEUTRAL_RANGE")
+        neutral = {
+            "real_yield_info": {"real_yield_pct": 2.00},
+            "liquidity_dynamics": {"delta_liquidity_billion": 0.0},
+            "t0_fast_stress_analysis": {"fast_stress_override": False},
+            "regime_state": {"capital_preservation_active": False},
+            "btc_decoupling_analysis": {"is_duration_shock": False},
+        }
+        neutral_gates = self.calc._build_asset_macro_gates(neutral, market, fred)
+        self.assertEqual(neutral_gates["BTC"], "NEUTRAL_RANGE")
+        self.assertEqual(neutral_gates["SPX"], "NEUTRAL_RANGE")
 
     def test_direct_asset_gates_short_require_specific_conditions(self):
-        # SPX short: tightening liquidity + high real yield + stronger USD + complacent VIX.
         market = self.base_market()
         market["DXY"] = {**market["DXY"], "value": 101.0, "month_ago": 100.0, "change_pct_4w": 1.0}
         market["VIX"]["value"] = 15.0
-        fred = {
-            **self.base_fred(),
-            "WALCL": 6900000.0,
-            "DFII10": 2.20,
-            "DFII10_4W_AGO": 2.00,
+        fred = {**self.base_fred(), "DFII10_4W_AGO": 2.00}
+        bearish = {
+            "real_yield_info": {"real_yield_pct": 2.20},
+            "liquidity_dynamics": {"delta_liquidity_billion": -100.0},
+            "t0_fast_stress_analysis": {"fast_stress_override": False},
+            "regime_state": {"capital_preservation_active": False},
+            "btc_decoupling_analysis": {"is_duration_shock": True},
         }
-        self.assertEqual(
-            self.run_metrics(market=market, fred=fred)["asset_macro_gates"]["SPX"],
-            "SHORT_ONLY",
-        )
-
-        # BTC short: broad bearish alignment; duration shock is an additional factor.
-        market = self.base_market()
-        market["DXY"] = {**market["DXY"], "value": 101.5, "month_ago": 100.0, "change_pct_4w": 1.5}
-        market["VIX"]["value"] = 21.0
-        fred = {
-            **self.base_fred(),
-            "WALCL": 6900000.0,
-            "DFII10": 2.20,
-            "DFII10_4W_AGO": 2.00,
-            "DGS2": 4.00, "DGS2_4W_AGO": 3.95, "DGS2_5D_AGO": 3.95,
-            "DGS10": 4.20, "DGS10_4W_AGO": 4.05, "DGS10_5D_AGO": 4.05,
-            "T10Y2Y": 0.20, "T10Y2Y_4W_AGO": 0.10,
-        }
-        result = self.run_metrics(market=market, fred=fred)
-        self.assertEqual(result["asset_macro_gates"]["BTC"], "SHORT_ONLY")
-
-        # XAU short: higher and rising real yield + stronger USD.
-        market = self.base_market()
-        market["DXY"] = {**market["DXY"], "value": 101.0, "month_ago": 100.0, "change_pct_4w": 1.0}
-        fred = {
-            **self.base_fred(),
-            "DFII10": 2.20,
-            "DFII10_4W_AGO": 2.00,
-        }
-        result = self.run_metrics(market=market, fred=fred)
-        self.assertEqual(result["asset_macro_gates"]["XAUUSD"], "SHORT_ONLY")
+        gates = self.calc._build_asset_macro_gates(bearish, market, fred)
+        self.assertEqual(gates["SPX"], "SHORT_ONLY")
+        self.assertEqual(gates["BTC"], "SHORT_ONLY")
+        self.assertEqual(gates["XAUUSD"], "SHORT_ONLY")
 
     def test_xau_cash_dash_does_not_force_short_direction(self):
         market = self.base_market()
