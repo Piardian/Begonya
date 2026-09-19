@@ -432,8 +432,8 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
                 "change_pct_4w": round(((float(dgs2) - float(dgs2_4w)) / float(dgs2_4w)) * 100.0, 2) if dgs2_4w else 0.0,
                 "pct_rank_60d": 50.0, "history_close": [float(dgs2_4w), float(dgs2)]
             }
-        with _fixed_legacy_date(as_of,ed,previous_regime_state):r=super().process_all_macro_data(legacy_market,fred_data,events)
-        # Keep legacy consumers on the same FRED constant-maturity Treasury source.
+        # Keep every legacy Treasury-dependent calculation on the same FRED
+        # constant-maturity source before legacy processing begins.
         if isinstance(fred_data.get("DGS10"), (int, float)):
             legacy_market["US10Y"] = {
                 "value": float(fred_data["DGS10"]),
@@ -446,6 +446,7 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
                 "pct_rank_60d": 50.0,
                 "history_close": [float(fred_data.get("DGS10_4W_AGO", fred_data["DGS10"])), float(fred_data["DGS10"])]
             }
+        with _fixed_legacy_date(as_of,ed,previous_regime_state):r=super().process_all_macro_data(legacy_market,fred_data,events)
         fred_curve = self._build_fred_yield_curve(fred_data)
         if fred_curve is not None:
             r["yield_curve"] = fred_curve
