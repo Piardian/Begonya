@@ -125,13 +125,16 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
         self.assertTrue(result["gold_fiscal_dominance"]["is_cash_dash"])
         self.assertTrue(result["gold_fiscal_dominance"]["gold_short_allowed"])
 
-    def test_currency_safe_havens(self):
+    def test_currency_safe_havens_do_not_create_directional_fx_gates_without_local_rates(self):
         market = self.base_market()
         market["VIX"] = {**market["VIX"], "value": 30.0, "pct_rank_60d": 95.0}
         result = self.run_metrics(market=market)
-        scores = result["cross_pairs_analysis"]["currency_scores"]
-        self.assertEqual(scores["JPY"], 1)
-        self.assertEqual(scores["CHF"], 1)
+        status = result["cross_pairs_analysis"]["directional_input_status"]
+        gates = result["cross_pairs_analysis"]["cross_gates"]
+        self.assertEqual(status["JPY"], "UNAVAILABLE")
+        self.assertEqual(status["CHF"], "UNAVAILABLE")
+        self.assertNotIn("USDJPY", gates)
+        self.assertNotIn("USDCHF", gates)
 
     def test_explicit_hysteresis_state(self):
         market = self.base_market()
