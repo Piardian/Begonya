@@ -76,7 +76,7 @@ describe('Begonya Asymmetric Short & Multiplicative Gating Tests', () => {
     expect(result.begonyaScore).toBe(0);
     expect(result.riskMultiplier).toBe(0.0);
     expect(result.action).toBe('VETO');
-    expect(result.gateStatusMessage).toContain('Mali Hakimiyet');
+    expect(result.gateStatusMessage).toContain('deterministic makro gate SHORT_ONLY değil');
   });
 
   it('2. XAUUSD LONG ONAYI: Altında Long yönünde makro kapı açıktır (G_macro = 1)', () => {
@@ -91,6 +91,21 @@ describe('Begonya Asymmetric Short & Multiplicative Gating Tests', () => {
     expect(result.begonyaScore).toBe(92);
     expect(result.scoreTier).toBe('A+');
     expect(result.riskMultiplier).toBe(1.00);
+  });
+
+  it('2B. XAUUSD SHORT: Deterministic SHORT_ONLY gate mevcutsa short yönü engellenmez', () => {
+    writeMockGate({
+      execution_bias_gates: { XAUUSD: 'SHORT_ONLY' },
+      asset_biases: { XAUUSD: 'Bearish' },
+      volatility_risk_score: 0.35,
+      regime_state: { vix_pct_60d: 40.0 }
+    });
+    const adapter = MacroGateAdapter.getInstance();
+    const result = adapter.evaluateCandidate('XAUUSD', 'short', 90);
+
+    expect(result.allowed).toBe(true);
+    expect(result.action).toBe('PROCEED');
+    expect(result.macroBias).toBe('SHORT_ONLY');
   });
 
   it('3. BORSA GECİKME TUZAĞI: VIX yüksekken endekste gecikmiş short VETO edilir (G_macro = 0)', () => {
