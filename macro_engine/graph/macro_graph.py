@@ -83,11 +83,12 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             "LONG_ONLY": "LONG_ONLY",
             "NEUTRAL_RANGE": "NEUTRAL_RANGE",
         }
+        asset_gates = metrics.get("asset_macro_gates", {})
         base_gates = {
-            "XAUUSD": "SHORT_ONLY" if gold_short else "NEUTRAL_RANGE",
-            "BTC": btc_map.get(btc_base, "DEFENSIVE_HOLD"),
+            "XAUUSD": str(asset_gates.get("XAUUSD", "NEUTRAL_RANGE")),
+            "BTC": str(asset_gates.get("BTC", "DEFENSIVE_HOLD")),
             "EURUSD": "NEUTRAL_RANGE",
-            "SPX": "DEFENSIVE_HOLD" if fast_stress else "NEUTRAL_RANGE",
+            "SPX": str(asset_gates.get("SPX", "NEUTRAL_RANGE")),
         }
         cross = metrics.get("cross_pairs_analysis", {}).get("cross_gates", {})
         base_gates.update({str(k): str(v) for k, v in cross.items() if isinstance(v, str)})
