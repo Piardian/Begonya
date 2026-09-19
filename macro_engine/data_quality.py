@@ -22,6 +22,7 @@ REQUIRED_FRED_FIELDS = {
     "WALCL", "WALCL_4W_AGO", "RRPONTSYD", "RRPONTSYD_4W_AGO",
     "WTREGEN", "WTREGEN_4W_AGO", "T10YIE", "DFII10", "DFF", "SOFR",
     "BAMLH0A0HYM2", "NFCI", "ICSA", "DE10Y", "DE10Y_4W_AGO",
+    "ECBDFR", "SONIA",
 }
 
 # Extended economic regime panel. These are kept separate from the legacy
