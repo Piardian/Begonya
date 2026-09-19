@@ -1,6 +1,6 @@
 import unittest
 
-from tests.factor_replay import analyze, split_rows
+from factor_replay import analyze, split_rows
 
 
 class FactorReplayTests(unittest.TestCase):
