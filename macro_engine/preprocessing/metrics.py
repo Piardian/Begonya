@@ -36,7 +36,7 @@ def _fixed_legacy_date(as_of_date: Optional[dt.date], as_of_datetime: Optional[d
 
 class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
     DEFAULT_SURPRISE_SIGMAS={"cpi":.12,"core_cpi":.10,"nfp":50000.,"unemployment":.15,"pmi":1.5,"gdp":.50,"retail_sales":.40,"generic":1.0}
-    FRED_FREQUENCIES={"WALCL":"weekly","RRPONTSYD":"daily","WTREGEN":"daily","T10YIE":"daily","DFII10":"daily","DFF":"daily","BAMLH0A0HYM2":"daily","NFCI":"weekly","ICSA":"weekly","M2SL":"monthly","DE10Y":"monthly","ECBDFR":"daily","SONIA":"daily","CA3M_INTERBANK":"monthly","AU3M_INTERBANK":"monthly","NZ3M_INTERBANK":"monthly","JP3M_INTERBANK":"monthly","CH3M_INTERBANK":"monthly"}
+    FRED_FREQUENCIES={"WALCL":"weekly","RRPONTSYD":"daily","WTREGEN":"daily","T10YIE":"daily","DFII10":"daily","DFF":"daily","BAMLH0A0HYM2":"daily","NFCI":"weekly","ICSA":"weekly","M2SL":"monthly","DE10Y":"monthly","GB10Y":"monthly","US10Y_OECD":"monthly","ECBDFR":"daily","SONIA":"daily","CA3M_INTERBANK":"monthly","AU3M_INTERBANK":"monthly","NZ3M_INTERBANK":"monthly","JP3M_INTERBANK":"monthly","CH3M_INTERBANK":"monthly"}
 
     @staticmethod
     def _build_fred_yield_curve(fred_data: Mapping[str, Any]) -> Optional[Dict[str, Any]]:
@@ -246,17 +246,21 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         eur_policy = None
         if all(isinstance(x,(int,float)) for x in (ecb,ecb_4w,dff,dff_4w)):
             eur_policy = cls._strict_sign(((float(ecb)-float(dff))-(float(ecb_4w)-float(dff_4w)))*100.0, 5.0)
-        de_spread_delta = result.get("regime_state",{}).get("spread_de_us_2y_delta_5d")
-        if not isinstance(de_spread_delta,(int,float)):
-            de_spread_delta = None
-        eur_market = cls._strict_sign(de_spread_delta, 5.0)
+        def monthly_us_local_spread_delta(local_key: str) -> Optional[float]:
+            local_now, local_prev = fred_data.get(local_key), fred_data.get(f"{local_key}_4W_AGO")
+            us_now, us_prev = fred_data.get("US10Y_OECD"), fred_data.get("US10Y_OECD_4W_AGO")
+            if not all(isinstance(x, (int, float)) for x in (local_now, local_prev, us_now, us_prev)):
+                return None
+            return ((float(local_now) - float(us_now)) - (float(local_prev) - float(us_prev))) * 100.0
+
+        eur_market = cls._strict_sign(monthly_us_local_spread_delta("DE10Y"), 5.0)
         eur_energy = -1 if energy_penalty else 0
         eur_score = consensus([eur_policy, eur_market, eur_energy])
 
         gb_policy = None
         if all(isinstance(x,(int,float)) for x in (sonia,sonia_4w,dff,dff_4w)):
             gb_policy = cls._strict_sign(((float(sonia)-float(dff))-(float(sonia_4w)-float(dff_4w)))*100.0, 5.0)
-        gb_market = cls._strict_sign(result.get("regime_state",{}).get("spread_gb_us_2y_delta_5d"), 5.0)
+        gb_market = cls._strict_sign(monthly_us_local_spread_delta("GB10Y"), 5.0)
         gb_risk = None if vix is None else (-1 if vix >= 25.0 else 0)
         gb_score = consensus([gb_policy, gb_market, gb_risk])
 
