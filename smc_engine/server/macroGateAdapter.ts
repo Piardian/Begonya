@@ -397,13 +397,15 @@ export class MacroGateAdapter {
     const baseSym = mapping.base_currency ?? 'Base';
     const quoteSym = mapping.quote_currency ?? 'Quote';
 
-    if (netScore > 0) {
+    // A +1 base versus 0 quote (or vice versa) is not enough evidence for a
+    // directional FX gate. Only a +2/-2 divergence (opposite scores) is directional.
+    if (netScore >= 2) {
       return {
         direction: 'LONG',
         reason: `Sentetik Çapraz: ${baseSym} (${baseRes.reason}) vs ${quoteSym} (${quoteRes.reason}) -> Net Skor: +${netScore} (LONG)`,
       };
     }
-    if (netScore < 0) {
+    if (netScore <= -2) {
       return {
         direction: 'SHORT',
         reason: `Sentetik Çapraz: ${baseSym} (${baseRes.reason}) vs ${quoteSym} (${quoteRes.reason}) -> Net Skor: ${netScore} (SHORT)`,
