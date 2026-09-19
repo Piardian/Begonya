@@ -416,7 +416,7 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
             ])
             if btc_long >= 3 and btc_short == 0:
                 gates["BTC"] = "LONG_ONLY"
-            elif btc_short >= 3 and btc_long == 0:
+            elif btc_short >= 3 and btc_long < 3:
                 gates["BTC"] = "SHORT_ONLY"
             else:
                 gates["BTC"] = "NEUTRAL_RANGE"
