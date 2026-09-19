@@ -422,6 +422,84 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         fred_curve = self._build_fred_yield_curve(fred_data)
         if fred_curve is not None:
             r["yield_curve"] = fred_curve
+        # Replace legacy fixed labor-cycle placeholders with observed FRED values.
+        if all(isinstance(fred_data.get(k), (int, float)) for k in ("UNRATE", "ICSA")):
+            payroll_now = fred_data.get("PAYEMS")
+            payroll_prior = fred_data.get("PAYEMS_4W_AGO")
+            payroll_change = (
+                float(payroll_now) - float(payroll_prior)
+                if isinstance(payroll_now, (int, float)) and isinstance(payroll_prior, (int, float))
+                else None
+            )
+            unemployment = float(fred_data["UNRATE"])
+            claims = float(fred_data["ICSA"])
+            labor_strong = (
+                unemployment <= 4.3
+                and isinstance(payroll_change, (int, float))
+                and payroll_change >= 150.0
+                and claims <= 240.0
+            )
+            r["cycle_diagnosis"] = {
+                "unemployment_rate": unemployment,
+                "nfp_value": payroll_change,
+                "nfp_value_source": "FRED PAYEMS 4W change proxy; not a release-calendar NFP observation",
+                "icsa_claims": claims,
+                "is_labor_strong": labor_strong,
+                "us_domestic_cycle": (
+                    "Late-Cycle Domestic Resilience (observed labor data)"
+                    if labor_strong else
+                    "Labor Cooling / Weakening (observed labor data)"
+                ),
+                "global_macro_cycle": r.get("cycle_diagnosis", {}).get(
+                    "global_macro_cycle", "UNAVAILABLE"
+                ),
+                "regime_diagnosis": r.get("cycle_diagnosis", {}).get(
+                    "regime_diagnosis", "UNAVAILABLE"
+                ),
+                "rationale": (
+                    f"FRED UNRATE %{unemployment:.2f}, PAYEMS 4W değişimi "
+                    f"{payroll_change:+.1f}K ve ICSA {claims:.1f}K kullanıldı; "
+                    "NFP alanı release-day NFP yerine istihdam seviyesi değişiminin açıkça etiketlenmiş proxy'sidir."
+                ),
+            }
+            reaction = dict(r.get("fed_reaction_function", {}))
+            reaction["driver"] = (
+                f"FRED işsizlik %{unemployment:.2f}, PAYEMS 4W değişimi "
+                f"{payroll_change:+.1f}K, ICSA {claims:.1f}K ve enerji koşulları üzerinden değerlendiriliyor."
+            )
+            r["fed_reaction_function"] = reaction
+
+        # Make the Transatlantic spread explicitly 4-week/monthly-frequency based
+        # rather than presenting a monthly German yield as a 20-day observation.
+        de_now = fred_data.get("DE10Y")
+        de_prev = fred_data.get("DE10Y_4W_AGO")
+        us10_now = fred_data.get("DGS10")
+        us10_prev = fred_data.get("DGS10_4W_AGO")
+        if all(isinstance(x, (int, float)) for x in (de_now, de_prev, us10_now, us10_prev)):
+            spread_bps = round((float(us10_now) - float(de_now)) * 100.0, 1)
+            previous_spread_bps = round((float(us10_prev) - float(de_prev)) * 100.0, 1)
+            change_bps = round(spread_bps - previous_spread_bps, 1)
+            r["transatlantic_analysis"] = {
+                "us10y": float(us10_now),
+                "de10y_bund": float(de_now),
+                "spread_bps": spread_bps,
+                "delta_spread_4w_bps": change_bps,
+                "delta_spread_20d_bps": None,
+                "frequency_note": "US DGS10 is daily; German IRLTLT01DEM156N observation is monthly. Comparison is explicitly 4-week/monthly-vintage based.",
+                "direction": (
+                    "ABD Lehine Genişliyor" if change_bps > 5.0
+                    else "Euro/Almanya Lehine Daralıyor" if change_bps < -5.0
+                    else "Dengeli / Yatay"
+                ),
+                "implication": (
+                    "US-DE yield spread widened versus the prior monthly observation."
+                    if change_bps > 5.0
+                    else "US-DE yield spread narrowed versus the prior monthly observation."
+                    if change_bps < -5.0
+                    else "US-DE yield spread changed within the neutral 5bp band."
+                ),
+            }
+
         self._rebuild_currency_scores(r, market_data, fred_data)
         r["asset_macro_gates"] = self._build_asset_macro_gates(r, market_data, fred_data)
         if freeze is not None:r.setdefault("cross_pairs_analysis",{})["event_freeze"]=freeze;r.setdefault("regime_state",{})["event_freeze_active"]=bool(freeze["active"])
