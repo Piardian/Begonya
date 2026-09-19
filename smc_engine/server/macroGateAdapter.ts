@@ -490,27 +490,27 @@ export class MacroGateAdapter {
     const mapped = symbolMap.mappings[cleanSym];
     const macroKey = mapped?.macro_key ?? cleanSym;
 
-    // Failsafe: Eğer makro veri henüz üretilmemişse
+    // Fail-closed: Makro gate yoksa yön tayini yapılamaz ve işlem açılmaz.
     if (!payload) {
       const smcScore = typeof smcGradeScore === 'number' ? Math.min(100, Math.max(10, smcGradeScore)) : 75;
       return {
-        allowed: true,
-        action: 'NEUTRAL_CAUTION',
+        allowed: false,
+        action: 'VETO',
         symbol: cleanSym,
         mappedMacroKey: macroKey,
         tradeDirection,
         macroBias: 'NO_DATA',
         primaryRegime: 'Uninitialized Regime',
-        riskMultiplier: 0.50,
-        capitalPreservationMode: false,
+        riskMultiplier: 0.0,
+        capitalPreservationMode: true,
         btcDecouplingActive: false,
-        macroRationale: 'Makro kapı verisi bulunamadı. Failsafe 0.50x risk ile devam ediliyor.',
-        gateStatusMessage: '⚠️ Makro veri aktif değil (Failsafe 0.50x)',
-        macroGateMultiplier: 1,
+        macroRationale: 'Makro kapı verisi bulunamadı. Gerçek makro yön doğrulanamadığı için fail-closed uygulanıyor.',
+        gateStatusMessage: 'Makro veri aktif değil; işlem açılmaz.',
+        macroGateMultiplier: 0,
         smcTechnicalScore: smcScore,
-        begonyaScore: Math.round(smcScore * 0.7),
-        scoreTier: 'B',
-        tierRationale: 'Veri yok; kontrollü nötr işlem (0.50x risk)',
+        begonyaScore: 0,
+        scoreTier: 'D',
+        tierRationale: 'Makro veri yok; yönlü işlem için yeterli kanıt bulunmuyor.',
       };
     }
 
