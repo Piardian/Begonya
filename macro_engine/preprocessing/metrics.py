@@ -5,7 +5,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional
 from config import BIAS_GATE_FILE
 from core.deterministic_controls import event_freeze_status, normalize_calendar_event, signed_surprise_zscore, validate_freshness, validate_numeric_range
-from data_quality import DataUnavailableError, validate_fred_payload, validate_market_payload
+from data_quality import (
+    DataUnavailableError,
+    REQUIRED_ECONOMIC_FRED_FIELDS,
+    REQUIRED_FRED_FIELDS,
+    validate_fred_payload,
+    validate_market_payload,
+)
 from preprocessing.metrics_legacy import MacroMetricsCalculator as _LegacyMacroMetricsCalculator
 
 @contextmanager
@@ -124,7 +130,14 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         return {"real_yield_pct":y,"yield_source":src,"pressure_on_gold":p,"description":f"10Y Reel Getiri: %{y} [{src}] (Altın baskısı: {p})"}
     @staticmethod
     def calculate_fed_forward_path(us02y:float,dff:Optional[float],us02y_5d:Optional[float]=None)->Dict[str,Any]:
-        if dff is None:return {"fed_policy_rate_pct":5.33,"fed_policy_rate_source":"LEGACY_STATIC_5.33_FALLBACK","us02y_yield":us02y,"implied_rate_gap_bps":round((us02y-5.33)*100,1),"delta_02y_5d_bps":None if us02y_5d is None else round((us02y-us02y_5d)*100,1)}
+        if dff is None:return {
+            "fed_policy_rate_pct":None,
+            "fed_policy_rate_source":"UNAVAILABLE",
+            "us02y_yield":us02y,
+            "implied_rate_gap_bps":None,
+            "delta_02y_5d_bps":None if us02y_5d is None else round((us02y-us02y_5d)*100,1),
+            "rate_expectation_signal":"UNAVAILABLE"
+        }
         gap=round((us02y-dff)*100,1);return {"fed_policy_rate_pct":round(dff,3),"fed_policy_rate_source":"FRED DFF","implied_rate_gap_bps":gap,"delta_02y_5d_bps":None if us02y_5d is None else round((us02y-us02y_5d)*100,1),"rate_expectation_signal":"Market-implied easing" if gap<=-25 else "Market-implied tightening" if gap>=25 else "Near-policy / neutral pricing"}
     @staticmethod
     def _validate_key_ranges(market_data:Dict[str,Any],fred_data:Dict[str,Any])->None:
@@ -137,7 +150,10 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         if as_of is None:return {}
         obs=fred_data.get("data_quality",{}).get("observation_dates",{});return {f:validate_freshness(f,dt.date.fromisoformat(str(v)),as_of,self.FRED_FREQUENCIES.get(f,"unknown")) for f,v in obs.items()}
     def process_all_macro_data(self,market_data:Dict[str,Any],fred_data:Dict[str,Any],calendar_events:List[Dict[str,Any]],as_of_date:Optional[dt.date]=None,as_of_datetime:Optional[dt.datetime]=None,previous_regime_state:Optional[Mapping[str,Any]]=None,now_utc:Optional[dt.datetime]=None)->Dict[str,Any]:
-        validate_market_payload(market_data);validate_fred_payload(fred_data);self._validate_key_ranges(market_data,fred_data);as_of=as_of_date or self.as_of_date;fresh=self._validate_fred_freshness(fred_data,as_of);ed=as_of_datetime or (dt.datetime.combine(as_of,dt.time.max,tzinfo=dt.timezone.utc) if as_of else None);events=[normalize_calendar_event(e) for e in calendar_events];freeze=event_freeze_status(events,now_utc=now_utc or ed) if (now_utc or ed) else None
+        validate_market_payload(market_data);validate_fred_payload(
+            fred_data,
+            required_fields=(REQUIRED_FRED_FIELDS | REQUIRED_ECONOMIC_FRED_FIELDS),
+        );self._validate_key_ranges(market_data,fred_data);as_of=as_of_date or self.as_of_date;fresh=self._validate_fred_freshness(fred_data,as_of);ed=as_of_datetime or (dt.datetime.combine(as_of,dt.time.max,tzinfo=dt.timezone.utc) if as_of else None);events=[normalize_calendar_event(e) for e in calendar_events];freeze=event_freeze_status(events,now_utc=now_utc or ed) if (now_utc or ed) else None
         legacy_market = dict(market_data)
         dgs2 = fred_data.get("DGS2")
         dgs2_4w = fred_data.get("DGS2_4W_AGO")
