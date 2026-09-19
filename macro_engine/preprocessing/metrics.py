@@ -150,9 +150,9 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         if as_of is None:return {}
         obs=fred_data.get("data_quality",{}).get("observation_dates",{});return {f:validate_freshness(f,dt.date.fromisoformat(str(v)),as_of,self.FRED_FREQUENCIES.get(f,"unknown")) for f,v in obs.items()}
     @staticmethod
-    def _strict_sign(value: Optional[float], threshold: float) -> int:
+    def _strict_sign(value: Optional[float], threshold: float) -> Optional[int]:
         if value is None:
-            return 0
+            return None
         if value >= threshold:
             return 1
         if value <= -threshold:
@@ -201,17 +201,18 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
                 return None
             return ((now - us_now) - (old - us_old)) * 100.0
 
-        def consensus(factors: list[int]) -> Optional[int]:
-            """Require two independent aligned factors for a directional currency state."""
-            pos=sum(x > 0 for x in factors)
-            neg=sum(x < 0 for x in factors)
+        def consensus(factors: list[Optional[int]]) -> Optional[int]:
+            """None means no usable factor; 0 means usable evidence but no direction."""
+            usable = [x for x in factors if x is not None]
+            if not usable:
+                return None
+            pos = sum(x > 0 for x in usable)
+            neg = sum(x < 0 for x in usable)
             if pos >= 2 and neg == 0:
                 return 1
             if neg >= 2 and pos == 0:
                 return -1
-            if pos > 0 and neg > 0:
-                return 0
-            return None
+            return 0
 
         cad_yield = cls._strict_sign(local_us_spread_delta("CA02Y"), 5.0)
         cad_comm = cls._strict_sign(brent_20d, 3.0)
@@ -219,7 +220,12 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         cad_score = consensus([cad_yield, cad_comm, cad_risk])
 
         aud_yield = cls._strict_sign(local_us_spread_delta("AU02Y"), 5.0)
-        aud_comm = 1 if isinstance(copper_gold,(int,float)) and isinstance(iron_ore,(int,float)) and copper_gold > 0 and iron_ore > 0 else (-1 if isinstance(copper_gold,(int,float)) and isinstance(iron_ore,(int,float)) and copper_gold < 0 and iron_ore < 0 else 0)
+        aud_comm = (
+            1 if isinstance(copper_gold,(int,float)) and isinstance(iron_ore,(int,float)) and copper_gold > 0 and iron_ore > 0
+            else -1 if isinstance(copper_gold,(int,float)) and isinstance(iron_ore,(int,float)) and copper_gold < 0 and iron_ore < 0
+            else 0 if isinstance(copper_gold,(int,float)) and isinstance(iron_ore,(int,float))
+            else None
+        )
         aud_risk = -1 if vix >= 22.0 else (1 if vix < 16.0 else 0)
         aud_score = consensus([aud_yield, aud_comm, aud_risk])
 
@@ -253,20 +259,36 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
             de_spread_delta = None
         eur_market = cls._strict_sign(de_spread_delta, 5.0)
         eur_energy = -1 if energy_penalty else 0
-        eur_score = consensus([eur_policy or 0, eur_market or 0, eur_energy])
+        eur_score = consensus([eur_policy, eur_market, eur_energy])
 
         gb_policy = None
         if all(isinstance(x,(int,float)) for x in (sonia,sonia_4w,dff,dff_4w)):
             gb_policy = cls._strict_sign(((float(sonia)-float(dff))-(float(sonia_4w)-float(dff_4w)))*100.0, 5.0)
         gb_market = cls._strict_sign(result.get("regime_state",{}).get("spread_gb_us_2y_delta_5d"), 5.0)
         gb_risk = -1 if vix >= 25.0 else 0
-        gb_score = consensus([gb_policy or 0, gb_market or 0, gb_risk])
+        gb_score = consensus([gb_policy, gb_market, gb_risk])
 
         usd_policy = None
         if all(isinstance(x,(int,float)) for x in (us2,us2_4w,dff,dff_4w)):
             usd_policy = cls._strict_sign(((float(us2)-float(dff))-(float(us2_4w)-float(dff_4w)))*100.0, 5.0)
         usd_momentum = cls._strict_sign(dxy_4w, 0.5)
-        usd_score = consensus([usd_policy or 0, usd_momentum or 0])
+        usd_score = consensus([usd_policy, usd_momentum])
+
+        required_local = {"CAD": "CA02Y", "AUD": "AU02Y", "NZD": "NZ02Y"}
+        for currency, field in required_local.items():
+            if cls._available_market_number(market_data, field) is None:
+                if currency == "CAD":
+                    cad_score = None
+                elif currency == "AUD":
+                    aud_score = None
+                elif currency == "NZD":
+                    nz_score = None
+        if not all(isinstance(x, (int, float)) for x in (ecb, dff)):
+            eur_score = None
+        if not all(isinstance(x, (int, float)) for x in (sonia, dff)):
+            gb_score = None
+        if not all(isinstance(x, (int, float)) for x in (us2, dff, dxy_4w)):
+            usd_score = None
 
         scores = {
             "CAD": cad_score, "AUD": aud_score, "NZD": nz_score,
