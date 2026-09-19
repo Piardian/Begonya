@@ -187,13 +187,14 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
         result = self.run_metrics(market=market, fred=fred)
         self.assertEqual(result["asset_macro_gates"]["XAUUSD"], "SHORT_ONLY")
 
-    def test_xau_cash_dash_is_not_auto_directional(self):
+    def test_xau_cash_dash_does_not_force_short_direction(self):
         market = self.base_market()
         market["VIX"]["value"] = 68.0
         fred = {**self.base_fred(), "BAMLH0A0HYM2": 9.0}
         result = self.run_metrics(market=market, fred=fred)
         self.assertTrue(result["gold_fiscal_dominance"]["gold_short_allowed"])
-        self.assertEqual(result["asset_macro_gates"]["XAUUSD"], "LONG_ONLY")
+        # Acute stress is not itself a directional short signal.
+        self.assertNotEqual(result["asset_macro_gates"]["XAUUSD"], "SHORT_ONLY")
 
     def test_observed_dff_is_authoritative(self):
         result = self.run_metrics()
@@ -217,7 +218,7 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
         self.assertTrue(result["gold_fiscal_dominance"]["is_cash_dash"])
         self.assertTrue(result["gold_fiscal_dominance"]["gold_short_allowed"])
 
-    def test_local_short_rate_and_safe_haven_can_confirm_jpy_chf_direction(self):
+    def test_jpy_chf_remain_neutral_without_rate_alignment(self):
         market = self.base_market()
         market["VIX"] = {**market["VIX"], "value": 30.0, "pct_rank_60d": 95.0}
         result = self.run_metrics(market=market)
