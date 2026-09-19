@@ -34,8 +34,8 @@ def _fetch(ingestion: FredDataIngestion, series_id: str, start: dt.date, end: dt
     return ingestion._get_observations(series_id, start, end)
 
 
-def build(start: dt.date, end: dt.date, api_key: str) -> List[Dict[str, str]]:
-    ingestion = FredDataIngestion(api_key=api_key)
+def build(start: dt.date, end: dt.date, api_key: str, ingestion: FredDataIngestion | None = None) -> List[Dict[str, str]]:
+    ingestion = ingestion or FredDataIngestion(api_key=api_key)
     output: List[Dict[str, str]] = []
     for pair, (series_id, invert) in FX_SERIES.items():
         for date, value in _fetch(ingestion, series_id, start, end):
