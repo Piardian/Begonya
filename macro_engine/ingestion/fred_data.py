@@ -43,8 +43,10 @@ class FredDataIngestion:
         "NFCI": "NFCI",
         "ICSA": "ICSA",
         "M2SL": "M2SL",
-        # OECD Germany 10Y government bond yield, monthly, via FRED.
+        # OECD monthly sovereign yields from the same provider/frequency for cross-country comparisons.
         "DE10Y": "IRLTLT01DEM156N",
+        "GB10Y": "IRLTLT01GBM156N",
+        "US10Y_OECD": "IRLTLT01USM156N",
         "ECBDFR": "ECBDFR",
         "SONIA": "IUDSOIA",
         # OECD Main Economic Indicators: current monthly local short-rate market proxies.
