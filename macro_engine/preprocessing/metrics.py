@@ -241,16 +241,13 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         aud_risk = -1 if vix >= 22.0 else (1 if vix < 16.0 else 0)
         aud_score = consensus([aud_yield, aud_short, aud_comm, aud_risk])
 
-        nz_yield = cls._strict_sign(
-            ((cls._available_market_number(market_data, "AU02Y", "change_pct_5d") or 0.0) -
-             (cls._available_market_number(market_data, "NZ02Y", "change_pct_5d") or 0.0)),
-            0.01,
-        )
+        nz_yield = None
         au_nz_now = cls._available_market_number(market_data, "AU02Y")
         nz_now = cls._available_market_number(market_data, "NZ02Y")
         au_nz_old = cls._available_market_number(market_data, "AU02Y", "val_5d_ago")
         nz_old = cls._available_market_number(market_data, "NZ02Y", "val_5d_ago")
         if None not in (au_nz_now, nz_now, au_nz_old, nz_old):
+            # AU-NZ 2Y spread change in basis points.
             nz_yield = cls._strict_sign(((au_nz_now - nz_now) - (au_nz_old - nz_old)) * 100.0, 3.0)
         dairy_factor = cls._strict_sign(dairy, 0.5)
         nz_short = cls._strict_sign(interbank_us_gap_delta("NZ3M_INTERBANK"), 5.0)
