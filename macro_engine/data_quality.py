@@ -23,6 +23,8 @@ REQUIRED_FRED_FIELDS = {
     "WTREGEN", "WTREGEN_4W_AGO", "T10YIE", "DFII10", "DFF", "SOFR",
     "BAMLH0A0HYM2", "NFCI", "ICSA", "DE10Y", "DE10Y_4W_AGO",
     "ECBDFR", "SONIA",
+    "CA3M_INTERBANK", "AU3M_INTERBANK", "NZ3M_INTERBANK",
+    "JP3M_INTERBANK", "CH3M_INTERBANK",
 }
 
 # Extended economic regime panel. These are kept separate from the legacy
