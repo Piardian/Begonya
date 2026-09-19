@@ -202,15 +202,6 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
                 return None
             return ((float(local) - float(dff)) - (float(local_4w) - float(dff_4w))) * 100.0
 
-        def local_us_spread_delta(field: str) -> Optional[float]:
-            now = cls._available_market_number(market_data, field)
-            old = cls._available_market_number(market_data, field, "val_5d_ago")
-            us_now = float(us2) if isinstance(us2, (int, float)) else None
-            us_old = cls._available_market_number({"US02Y": {"value": fred_data.get("DGS2_5D_AGO")}}, "US02Y")
-            if None in (now, old, us_now, us_old):
-                return None
-            return ((now - us_now) - (old - us_old)) * 100.0
-
         def consensus(factors: list[Optional[int]]) -> Optional[int]:
             """None means no usable factor; 0 means usable evidence but no direction."""
             usable = [x for x in factors if x is not None]
@@ -224,14 +215,14 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
                 return -1
             return 0
 
-        cad_yield = cls._strict_sign(local_us_spread_delta("CA02Y"), 5.0)
-        cad_short = cls._strict_sign(interbank_us_gap_delta("CA3M_INTERBANK"), 5.0)
+        cad_yield = cls._strict_sign(interbank_us_gap_delta("CA3M_INTERBANK"), 5.0)
+        cad_short = None
         cad_comm = cls._strict_sign(brent_20d, 3.0)
         cad_risk = None if vix is None else (-1 if vix >= 24.0 else (1 if vix < 16.0 else 0))
         cad_score = consensus([cad_yield, cad_short, cad_comm, cad_risk])
 
-        aud_yield = cls._strict_sign(local_us_spread_delta("AU02Y"), 5.0)
-        aud_short = cls._strict_sign(interbank_us_gap_delta("AU3M_INTERBANK"), 5.0)
+        aud_yield = cls._strict_sign(interbank_us_gap_delta("AU3M_INTERBANK"), 5.0)
+        aud_short = None
         aud_comm = (
             1 if isinstance(copper_gold,(int,float)) and isinstance(iron_ore,(int,float)) and copper_gold > 0 and iron_ore > 0
             else -1 if isinstance(copper_gold,(int,float)) and isinstance(iron_ore,(int,float)) and copper_gold < 0 and iron_ore < 0
@@ -241,18 +232,12 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         aud_risk = None if vix is None else (-1 if vix >= 22.0 else (1 if vix < 16.0 else 0))
         aud_score = consensus([aud_yield, aud_short, aud_comm, aud_risk])
 
-        nz_yield = None
-        au_nz_now = cls._available_market_number(market_data, "AU02Y")
-        nz_now = cls._available_market_number(market_data, "NZ02Y")
-        au_nz_old = cls._available_market_number(market_data, "AU02Y", "val_5d_ago")
-        nz_old = cls._available_market_number(market_data, "NZ02Y", "val_5d_ago")
-        if None not in (au_nz_now, nz_now, au_nz_old, nz_old):
-            # AU-NZ 2Y spread change in basis points.
-            nz_yield = cls._strict_sign(((au_nz_now - nz_now) - (au_nz_old - nz_old)) * 100.0, 3.0)
+        nz_yield = cls._strict_sign(interbank_us_gap_delta("NZ3M_INTERBANK"), 5.0)
+        nz_short = None
         dairy_factor = cls._strict_sign(dairy, 0.5)
         nz_short = cls._strict_sign(interbank_us_gap_delta("NZ3M_INTERBANK"), 5.0)
         nz_risk = None if vix is None else (-1 if vix >= 20.0 else (1 if vix < 16.0 else 0))
-        nz_score = consensus([nz_yield, nz_short, dairy_factor, nz_risk])
+        nz_score = consensus([nz_yield, dairy_factor, nz_risk])
 
         ecb = fred_data.get("ECBDFR")
         ecb_4w = fred_data.get("ECBDFR_4W_AGO")
@@ -289,15 +274,6 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         chf_risk = None if vix is None else (1 if (vix >= 22.0 or bool(result.get("t0_fast_stress_analysis", {}).get("fast_stress_override"))) else (-1 if vix < 17.0 else 0))
         chf_score = consensus([ch_rate, chf_risk])
 
-        required_local = {"CAD": "CA02Y", "AUD": "AU02Y", "NZD": "NZ02Y"}
-        for currency, field in required_local.items():
-            if cls._available_market_number(market_data, field) is None:
-                if currency == "CAD":
-                    cad_score = None
-                elif currency == "AUD":
-                    aud_score = None
-                elif currency == "NZD":
-                    nz_score = None
         if not all(isinstance(x, (int, float)) for x in (ecb, dff)):
             eur_score = None
         if not all(isinstance(x, (int, float)) for x in (sonia, dff)):
@@ -314,14 +290,14 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         cross = result.setdefault("cross_pairs_analysis", {})
         cross["currency_scores"] = scores
         cross["currency_breakdown"] = {
-            "CAD": {"score": cad_score, "yield_2y_factor": cad_yield, "short_rate_factor": cad_short, "oil_factor": cad_comm, "risk_factor": cad_risk},
-            "AUD": {"score": aud_score, "yield_2y_factor": aud_yield, "short_rate_factor": aud_short, "commodity_factor": aud_comm, "risk_factor": aud_risk},
-            "NZD": {"score": nz_score, "yield_2y_factor": nz_yield, "short_rate_factor": nz_short, "dairy_factor": dairy_factor, "risk_factor": nz_risk},
-            "EUR": {"score": eur_score, "policy_factor": eur_policy, "market_rate_factor": eur_market, "energy_factor": eur_energy},
-            "GBP": {"score": gb_score, "policy_factor": gb_policy, "market_rate_factor": gb_market, "risk_factor": gb_risk},
+            "CAD": {"score": cad_score, "short_rate_diff_momentum_factor": cad_yield, "oil_factor": cad_comm, "risk_factor": cad_risk},
+            "AUD": {"score": aud_score, "short_rate_diff_momentum_factor": aud_yield, "commodity_factor": aud_comm, "risk_factor": aud_risk},
+            "NZD": {"score": nz_score, "short_rate_diff_momentum_factor": nz_yield, "dairy_factor": dairy_factor, "risk_factor": nz_risk},
+            "EUR": {"score": eur_score, "policy_differential_momentum_factor": eur_policy, "market_rate_factor": eur_market, "energy_factor": eur_energy},
+            "GBP": {"score": gb_score, "policy_differential_momentum_factor": gb_policy, "market_rate_factor": gb_market, "risk_factor": gb_risk},
             "USD": {"score": usd_score, "policy_repricing_factor": usd_policy, "dxy_factor": usd_momentum},
-            "JPY": {"score": jpy_score, "short_rate_factor": jp_rate, "safe_haven_factor": jpy_risk},
-            "CHF": {"score": chf_score, "short_rate_factor": ch_rate, "safe_haven_factor": chf_risk},
+            "JPY": {"score": jpy_score, "short_rate_diff_momentum_factor": jp_rate, "safe_haven_factor": jpy_risk},
+            "CHF": {"score": chf_score, "short_rate_diff_momentum_factor": ch_rate, "safe_haven_factor": chf_risk},
         }
         cross["directional_input_status"] = {k: ("AVAILABLE" if v is not None else "UNAVAILABLE") for k,v in scores.items()}
 
