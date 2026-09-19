@@ -298,6 +298,98 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         result.setdefault("regime_state",{})["cross_currency_scores"]=scores
         result["regime_state"]["cross_pair_gates"]=gates
 
+    @classmethod
+    def _build_asset_macro_gates(
+        cls,
+        result: Dict[str, Any],
+        market_data: Mapping[str, Any],
+        fred_data: Mapping[str, Any],
+    ) -> Dict[str, str]:
+        """Deterministic macro direction for the three direct assets.
+
+        Thresholds are inherited from the existing rule contract and are deliberately
+        conservative: no stress/absence-of-stress is treated as directional evidence
+        by itself. Each LONG_ONLY state requires independent macro alignment.
+        """
+        def market_value(name: str, key: str = "value") -> Optional[float]:
+            item = market_data.get(name)
+            value = item.get(key) if isinstance(item, Mapping) else None
+            return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else None
+
+        real_yield = result.get("real_yield_info", {}).get("real_yield_pct")
+        real_yield_prior = fred_data.get("DFII10_4W_AGO")
+        real_yield_delta = (
+            float(real_yield) - float(real_yield_prior)
+            if isinstance(real_yield, (int, float)) and isinstance(real_yield_prior, (int, float))
+            else None
+        )
+        dxy_4w = market_value("DXY", "change_pct_4w")
+        vix = market_value("VIX") or 0.0
+        liq_delta = result.get("liquidity_dynamics", {}).get("delta_liquidity_billion")
+        liq_delta = float(liq_delta) if isinstance(liq_delta, (int, float)) else None
+
+        fast_stress = bool(result.get("t0_fast_stress_analysis", {}).get("fast_stress_override"))
+        capital_preservation = bool(result.get("regime_state", {}).get("capital_preservation_active"))
+        duration_shock = bool(result.get("btc_decoupling_analysis", {}).get("is_duration_shock"))
+        gold_short = bool(result.get("gold_fiscal_dominance", {}).get("gold_short_allowed"))
+        equity_short = bool(result.get("equity_short_regime", {}).get("equity_short_allowed"))
+
+        gates: Dict[str, str] = {}
+
+        # XAUUSD: extreme USD-liquidity dash is the only explicit SHORT regime.
+        # LONG requires low/declining real yields AND non-rising USD.
+        if gold_short:
+            gates["XAUUSD"] = "SHORT_ONLY"
+        elif (
+            isinstance(real_yield, (int, float))
+            and float(real_yield) < 1.90
+            and isinstance(real_yield_delta, (int, float))
+            and float(real_yield_delta) <= 0.0
+            and isinstance(dxy_4w, (int, float))
+            and float(dxy_4w) <= 0.0
+        ):
+            gates["XAUUSD"] = "LONG_ONLY"
+        else:
+            gates["XAUUSD"] = "NEUTRAL_RANGE"
+
+        # BTC: duration shock -> SHORT; acute stress -> HOLD; LONG requires
+        # expanding net liquidity + benign real yields + non-rising USD.
+        if duration_shock:
+            gates["BTC"] = "SHORT_ONLY"
+        elif fast_stress or capital_preservation:
+            gates["BTC"] = "DEFENSIVE_HOLD"
+        elif (
+            isinstance(liq_delta, (int, float))
+            and float(liq_delta) > 0.0
+            and isinstance(real_yield, (int, float))
+            and float(real_yield) < 1.90
+            and isinstance(dxy_4w, (int, float))
+            and float(dxy_4w) <= 0.0
+            and vix < 25.0
+        ):
+            gates["BTC"] = "LONG_ONLY"
+        else:
+            gates["BTC"] = "NEUTRAL_RANGE"
+
+        # SPX/NAS100: retain the existing pre-storm SHORT condition; LONG needs
+        # positive liquidity, benign real yields and no fast stress.
+        if equity_short:
+            gates["SPX"] = "SHORT_ONLY"
+        elif (
+            not fast_stress
+            and not capital_preservation
+            and isinstance(liq_delta, (int, float))
+            and float(liq_delta) > 0.0
+            and isinstance(real_yield, (int, float))
+            and float(real_yield) < 1.90
+            and vix < 22.0
+        ):
+            gates["SPX"] = "LONG_ONLY"
+        else:
+            gates["SPX"] = "NEUTRAL_RANGE"
+
+        return gates
+
     def process_all_macro_data(self,market_data:Dict[str,Any],fred_data:Dict[str,Any],calendar_events:List[Dict[str,Any]],as_of_date:Optional[dt.date]=None,as_of_datetime:Optional[dt.datetime]=None,previous_regime_state:Optional[Mapping[str,Any]]=None,now_utc:Optional[dt.datetime]=None)->Dict[str,Any]:
         validate_market_payload(market_data);validate_fred_payload(
             fred_data,
@@ -331,6 +423,7 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         if fred_curve is not None:
             r["yield_curve"] = fred_curve
         self._rebuild_currency_scores(r, market_data, fred_data)
+        r["asset_macro_gates"] = self._build_asset_macro_gates(r, market_data, fred_data)
         if freeze is not None:r.setdefault("cross_pairs_analysis",{})["event_freeze"]=freeze;r.setdefault("regime_state",{})["event_freeze_active"]=bool(freeze["active"])
         dgs2_for_policy = float(dgs2) if isinstance(dgs2, (int, float)) else float(r.get("fed_forward_path_analysis",{}).get("us02y_yield",legacy_market.get("US02Y",{}).get("value",0.0)))
         r["fed_forward_path_analysis"]=self.calculate_fed_forward_path(dgs2_for_policy,fred_data.get("DFF"),None)
