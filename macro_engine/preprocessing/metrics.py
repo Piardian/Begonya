@@ -178,7 +178,7 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         one factor to override another. JPY/CHF use current local short-rate market data
         plus safe-haven evidence; they remain neutral when the evidence disagrees.
         """
-        vix = cls._available_market_number(market_data, "VIX") or 15.0
+        vix = cls._available_market_number(market_data, "VIX")
         dxy_4w = cls._available_market_number(market_data, "DXY", "change_pct_4w")
         brent_20d = cls._available_market_number(market_data, "BRENT", "change_pct_4w")
         copper_gold = result.get("regime_state", {}).get("copper_gold_delta_4w_pct")
@@ -227,7 +227,7 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         cad_yield = cls._strict_sign(local_us_spread_delta("CA02Y"), 5.0)
         cad_short = cls._strict_sign(interbank_us_gap_delta("CA3M_INTERBANK"), 5.0)
         cad_comm = cls._strict_sign(brent_20d, 3.0)
-        cad_risk = -1 if vix >= 24.0 else (1 if vix < 16.0 else 0)
+        cad_risk = None if vix is None else (-1 if vix >= 24.0 else (1 if vix < 16.0 else 0))
         cad_score = consensus([cad_yield, cad_short, cad_comm, cad_risk])
 
         aud_yield = cls._strict_sign(local_us_spread_delta("AU02Y"), 5.0)
@@ -238,7 +238,7 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
             else 0 if isinstance(copper_gold,(int,float)) and isinstance(iron_ore,(int,float))
             else None
         )
-        aud_risk = -1 if vix >= 22.0 else (1 if vix < 16.0 else 0)
+        aud_risk = None if vix is None else (-1 if vix >= 22.0 else (1 if vix < 16.0 else 0))
         aud_score = consensus([aud_yield, aud_short, aud_comm, aud_risk])
 
         nz_yield = None
@@ -251,7 +251,7 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
             nz_yield = cls._strict_sign(((au_nz_now - nz_now) - (au_nz_old - nz_old)) * 100.0, 3.0)
         dairy_factor = cls._strict_sign(dairy, 0.5)
         nz_short = cls._strict_sign(interbank_us_gap_delta("NZ3M_INTERBANK"), 5.0)
-        nz_risk = -1 if vix >= 20.0 else (1 if vix < 16.0 else 0)
+        nz_risk = None if vix is None else (-1 if vix >= 20.0 else (1 if vix < 16.0 else 0))
         nz_score = consensus([nz_yield, nz_short, dairy_factor, nz_risk])
 
         ecb = fred_data.get("ECBDFR")
@@ -272,7 +272,7 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         if all(isinstance(x,(int,float)) for x in (sonia,sonia_4w,dff,dff_4w)):
             gb_policy = cls._strict_sign(((float(sonia)-float(dff))-(float(sonia_4w)-float(dff_4w)))*100.0, 5.0)
         gb_market = cls._strict_sign(result.get("regime_state",{}).get("spread_gb_us_2y_delta_5d"), 5.0)
-        gb_risk = -1 if vix >= 25.0 else 0
+        gb_risk = None if vix is None else (-1 if vix >= 25.0 else 0)
         gb_score = consensus([gb_policy, gb_market, gb_risk])
 
         usd_policy = None
@@ -282,11 +282,11 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         usd_score = consensus([usd_policy, usd_momentum])
 
         jp_rate = cls._strict_sign(interbank_us_gap_delta("JP3M_INTERBANK"), 5.0)
-        jpy_risk = 1 if (vix >= 22.0 or bool(result.get("t0_fast_stress_analysis", {}).get("fast_stress_override"))) else (-1 if vix < 17.0 else 0)
+        jpy_risk = None if vix is None else (1 if (vix >= 22.0 or bool(result.get("t0_fast_stress_analysis", {}).get("fast_stress_override"))) else (-1 if vix < 17.0 else 0))
         jpy_score = consensus([jp_rate, jpy_risk])
 
         ch_rate = cls._strict_sign(interbank_us_gap_delta("CH3M_INTERBANK"), 5.0)
-        chf_risk = 1 if (vix >= 22.0 or bool(result.get("t0_fast_stress_analysis", {}).get("fast_stress_override"))) else (-1 if vix < 17.0 else 0)
+        chf_risk = None if vix is None else (1 if (vix >= 22.0 or bool(result.get("t0_fast_stress_analysis", {}).get("fast_stress_override"))) else (-1 if vix < 17.0 else 0))
         chf_score = consensus([ch_rate, chf_risk])
 
         required_local = {"CAD": "CA02Y", "AUD": "AU02Y", "NZD": "NZ02Y"}
@@ -371,7 +371,7 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
             else None
         )
         dxy_4w = market_value("DXY", "change_pct_4w")
-        vix = market_value("VIX") or 0.0
+        vix = market_value("VIX")
         liq_delta = result.get("liquidity_dynamics", {}).get("delta_liquidity_billion")
         liq_delta = float(liq_delta) if isinstance(liq_delta, (int, float)) else None
 
@@ -412,7 +412,7 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
             and float(real_yield) < 1.90
             and isinstance(dxy_4w, (int, float))
             and float(dxy_4w) <= 0.0
-            and vix < 25.0
+            and isinstance(vix, (int, float)) and vix < 25.0
         ):
             gates["BTC"] = "LONG_ONLY"
         else:
@@ -429,7 +429,7 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
             and float(liq_delta) > 0.0
             and isinstance(real_yield, (int, float))
             and float(real_yield) < 1.90
-            and vix < 22.0
+            and isinstance(vix, (int, float)) and vix < 22.0
         ):
             gates["SPX"] = "LONG_ONLY"
         else:
