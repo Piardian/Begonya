@@ -35,8 +35,9 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
     # between observations. Keep the weekly freshness contract explicit.
     FRED_FREQUENCIES={"WALCL":"weekly","RRPONTSYD":"daily","WTREGEN":"weekly","T10YIE":"daily","DFII10":"daily","DFF":"daily","BAMLH0A0HYM2":"daily","NFCI":"weekly","ICSA":"weekly","M2SL":"monthly","DE10Y":"monthly"}
     # NFCI is weekly-ending-Friday but the provider vintage can lag the observation date.
-    # Keep the generic weekly contract at 10d; allow NFCI up to 14d only for this known release-lag profile.
-    FRED_MAX_AGE_DAYS={"NFCI":14}
+    # M2SL is monthly, but the H.6 release schedule can leave the latest observation ~2 months old
+    # at month-start. Keep the generic monthly contract at 45d and allow only this series to 75d.
+    FRED_MAX_AGE_DAYS={"NFCI":14,"M2SL":75}
     def __init__(self,as_of_date:Optional[dt.date]=None,surprise_sigmas:Optional[Mapping[str,float]]=None): super().__init__(); self.as_of_date=as_of_date; self.surprise_sigmas=dict(surprise_sigmas or self.DEFAULT_SURPRISE_SIGMAS)
     @classmethod
     def from_calibration_profile(cls,profile_path:Optional[Path]=None,allow_default_fallback:bool=False,**kwargs:Any):
