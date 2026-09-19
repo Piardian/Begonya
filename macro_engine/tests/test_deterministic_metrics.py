@@ -48,6 +48,8 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
             "T10YIE": 2.0, "DFII10": 1.5, "DFII10_4W_AGO": 1.6, "DFF": 4.33, "DFF_4W_AGO": 4.33, "SOFR": 4.33,
             "BAMLH0A0HYM2": 3.0, "NFCI": -0.2, "ICSA": 220.0,
             "DE10Y": 2.0, "DE10Y_4W_AGO": 2.0,
+            "GB10Y": 4.0, "GB10Y_4W_AGO": 4.0,
+            "US10Y_OECD": 4.5, "US10Y_OECD_4W_AGO": 4.5,
             "CPI_YOY": 3.0, "CPI_YOY_4W_AGO": 3.1,
             "CORE_CPI_YOY": 3.2, "CORE_CPI_YOY_4W_AGO": 3.3,
             "PCE_YOY": 2.6, "PCE_YOY_4W_AGO": 2.7,
@@ -110,6 +112,20 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
         self.assertEqual(result["yield_curve"]["source"], "FRED DGS10 / DGS2 / T10Y2Y")
         self.assertEqual(result["yield_curve"]["spread_bps"], 0.0)
         self.assertEqual(result["yield_curve"]["delta_spread_20d_bps"], 5.0)
+
+    def test_fx_sovereign_spreads_use_matched_monthly_frequency(self):
+        fred = self.base_fred()
+        fred.update({
+            "DE10Y": 2.00, "DE10Y_4W_AGO": 2.10,
+            "US10Y_OECD": 4.00, "US10Y_OECD_4W_AGO": 4.20,
+            "GB10Y": 4.00, "GB10Y_4W_AGO": 4.10,
+        })
+        result = self.run_metrics(fred=fred)
+        breakdown = result["cross_pairs_analysis"]["currency_breakdown"]
+        # US-DE spread narrowed by 20bp -> EUR market factor positive.
+        self.assertEqual(breakdown["EUR"]["market_rate_factor"], 1)
+        # US-GB spread narrowed by 10bp -> GBP market factor positive.
+        self.assertEqual(breakdown["GBP"]["market_rate_factor"], 1)
 
     def test_direct_asset_gates_long_neutral_short_are_deterministic(self):
         # XAU: low and falling real yield + non-rising USD => LONG_ONLY.
