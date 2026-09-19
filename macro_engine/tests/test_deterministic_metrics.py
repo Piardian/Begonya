@@ -45,9 +45,27 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
             "WALCL": 7000000.0, "WALCL_4W_AGO": 7000000.0,
             "RRPONTSYD": 300.0, "RRPONTSYD_4W_AGO": 300.0,
             "WTREGEN": 700000.0, "WTREGEN_4W_AGO": 700000.0,
-            "T10YIE": 2.0, "DFII10": 1.5, "DFF": 4.33,
+            "T10YIE": 2.0, "DFII10": 1.5, "DFF": 4.33, "SOFR": 4.33,
             "BAMLH0A0HYM2": 3.0, "NFCI": -0.2, "ICSA": 220.0,
             "DE10Y": 2.0, "DE10Y_4W_AGO": 2.0,
+            "CPI_YOY": 3.0, "CPI_YOY_4W_AGO": 3.1,
+            "CORE_CPI_YOY": 3.2, "CORE_CPI_YOY_4W_AGO": 3.3,
+            "PCE_YOY": 2.6, "PCE_YOY_4W_AGO": 2.7,
+            "CORE_PCE_YOY": 2.8, "CORE_PCE_YOY_4W_AGO": 2.9,
+            "PAYEMS": 158000.0, "PAYEMS_4W_AGO": 157900.0,
+            "UNRATE": 4.0, "UNRATE_4W_AGO": 4.0,
+            "AHE_YOY": 3.6, "AHE_YOY_4W_AGO": 3.7,
+            "GDP_QOQ_SAAR": 2.4, "GDP_QOQ_SAAR_4W_AGO": 2.4,
+            "INDPRO": 102.0, "INDPRO_4W_AGO": 101.5,
+            "RSAFS": 105.0, "RSAFS_4W_AGO": 104.0,
+            "RRSFS": 104.0, "RRSFS_4W_AGO": 103.0,
+            "DGS3MO": 5.0, "DGS3MO_4W_AGO": 5.1,
+            "DGS2": 4.0, "DGS2_4W_AGO": 4.1,
+            "DGS5": 4.0, "DGS5_4W_AGO": 4.1,
+            "DGS10": 4.0, "DGS10_4W_AGO": 4.1,
+            "DGS30": 4.2, "DGS30_4W_AGO": 4.3,
+            "T10Y2Y": 0.0, "T10Y2Y_4W_AGO": 0.0,
+            "T10Y3M": -1.0, "T10Y3M_4W_AGO": -1.1,
         }
 
     def test_yield_curve_noise_and_boundaries(self):
@@ -72,6 +90,18 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
         result = self.calc.calculate_real_yield(0.70, dfii10_tips=-0.15, breakeven_10y=0.85)
         self.assertEqual(result["real_yield_pct"], -0.15)
         self.assertIn("FRED DFII10", result["yield_source"])
+
+    def test_fred_treasury_curve_is_authoritative(self):
+        fred = self.base_fred()
+        fred.update({
+            "DGS2": 4.00, "DGS2_4W_AGO": 4.10,
+            "DGS10": 4.00, "DGS10_4W_AGO": 4.05,
+            "T10Y2Y": 0.00, "T10Y2Y_4W_AGO": -0.05,
+        })
+        result = self.run_metrics(fred=fred)
+        self.assertEqual(result["yield_curve"]["source"], "FRED DGS10 / DGS2 / T10Y2Y")
+        self.assertEqual(result["yield_curve"]["spread_bps"], 0.0)
+        self.assertEqual(result["yield_curve"]["delta_spread_20d_bps"], 5.0)
 
     def test_observed_dff_is_authoritative(self):
         result = self.run_metrics()
