@@ -91,7 +91,8 @@ class HistoricalReplayAndDeterminismTests(unittest.TestCase):
     def test_replay_scenarios_are_documented_as_synthetic_fixtures(self):
         with patch("preprocessing.metrics.BIAS_GATE_FILE", self.gate_path):
             result = run_scenario_march_2020_covid()
-        self.assertTrue(result["data_quality"]["fallback_used"])
+        self.assertFalse(result["data_quality"]["fallback_used"])
+        self.assertTrue(result["data_quality"]["synthetic_fixture"])
         self.assertIn("DFF", result["data_quality"]["fallback_fields"])
 
     def test_real_yield_negative_tips_is_not_lost_from_raw_result(self):
