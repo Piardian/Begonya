@@ -113,6 +113,34 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
         self.assertEqual(result["yield_curve"]["spread_bps"], 0.0)
         self.assertEqual(result["yield_curve"]["delta_spread_20d_bps"], 5.0)
 
+    def test_fx_rate_level_is_separate_from_rate_momentum(self):
+        fred = self.base_fred()
+        # EUR policy rate is 50bp below DFF: level is bearish for EUR.
+        fred.update({
+            "ECBDFR": 3.50, "DFF": 4.00,
+            "ECBDFR_4W_AGO": 3.50, "DFF_4W_AGO": 4.00,
+        })
+        result = self.run_metrics(fred=fred)
+        eur = result["cross_pairs_analysis"]["currency_breakdown"]["EUR"]
+        self.assertEqual(eur["policy_differential_level_factor"], -1)
+        self.assertEqual(eur["policy_differential_momentum_factor"], 0)
+
+    def test_eurusd_requires_two_sided_currency_evidence(self):
+        fred = self.base_fred()
+        # Make EUR clearly positive while USD remains neutral.
+        fred.update({
+            "ECBDFR": 5.00, "DFF": 4.00,
+            "ECBDFR_4W_AGO": 4.90, "DFF_4W_AGO": 4.00,
+            "DE10Y": 4.50, "DE10Y_4W_AGO": 4.30,
+            "US10Y_OECD": 4.00, "US10Y_OECD_4W_AGO": 4.00,
+        })
+        result = self.run_metrics(fred=fred)
+        scores = result["cross_pairs_analysis"]["currency_scores"]
+        gates = result["cross_pairs_analysis"]["cross_gates"]
+        self.assertEqual(scores["EUR"], 1)
+        self.assertIn("EURUSD", gates)
+        self.assertEqual(gates["EURUSD"], "NEUTRAL_RANGE")
+
     def test_fx_sovereign_spreads_use_matched_monthly_frequency(self):
         fred = self.base_fred()
         fred.update({
