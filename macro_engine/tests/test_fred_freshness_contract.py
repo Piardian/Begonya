@@ -24,6 +24,18 @@ class FredFreshnessContractTests(unittest.TestCase):
         freshness = calculator._validate_fred_freshness(fred, dt.date(2024, 10, 1))
         self.assertEqual(freshness["NFCI"], 11)
 
+    def test_m2sl_accepts_normal_month_start_release_lag(self):
+        calculator = MacroMetricsCalculator(as_of_date=dt.date(2024, 10, 1))
+        fred = {"data_quality": {"observation_dates": {"M2SL": "2024-08-01"}}}
+        freshness = calculator._validate_fred_freshness(fred, dt.date(2024, 10, 1))
+        self.assertEqual(freshness["M2SL"], 61)
+
+    def test_m2sl_still_rejects_excessive_staleness(self):
+        calculator = MacroMetricsCalculator(as_of_date=dt.date(2024, 10, 1))
+        fred = {"data_quality": {"observation_dates": {"M2SL": "2024-07-01"}}}
+        with self.assertRaises(DataUnavailableError):
+            calculator._validate_fred_freshness(fred, dt.date(2024, 10, 1))
+
     def test_nfci_still_rejects_excessive_staleness(self):
         calculator = MacroMetricsCalculator(as_of_date=dt.date(2024, 10, 1))
         fred = {"data_quality": {"observation_dates": {"NFCI": "2024-09-16"}}}
