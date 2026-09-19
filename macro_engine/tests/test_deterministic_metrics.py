@@ -185,6 +185,18 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
         self.assertEqual(scores["JPY"], 0)
         self.assertEqual(scores["CHF"], 0)
 
+    def test_cross_gate_requires_full_two_sided_divergence(self):
+        result = self.run_metrics()
+        gates = result["cross_pairs_analysis"]["cross_gates"]
+        # Fixture intentionally has mixed/neutral currency evidence, so there
+        # must not be a one-point base-vs-quote directional gate.
+        for pair, gate in gates.items():
+            base, quote = pair[:3], pair[3:]
+            scores = result["cross_pairs_analysis"]["currency_scores"]
+            if scores.get(base) is not None and scores.get(quote) is not None:
+                diff = scores[base] - scores[quote]
+                self.assertEqual(gate, "LONG_ONLY" if diff >= 2 else "SHORT_ONLY" if diff <= -2 else "NEUTRAL_RANGE")
+
     def test_local_rate_and_safe_haven_alignment_confirms_jpy_chf(self):
         market = self.base_market()
         market["VIX"] = {**market["VIX"], "value": 30.0, "pct_rank_60d": 95.0}
