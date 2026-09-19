@@ -76,7 +76,8 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
         gold_short = bool(metrics.get("gold_fiscal_dominance", {}).get("gold_short_allowed", False))
         btc_base = metrics.get("btc_decoupling_analysis", {}).get("recommended_btc_gate", "DEFENSIVE_HOLD")
         btc_map = {
-            "LONG_ONLY_ALLOWED_IF_DEBASEMENT": "LONG_ONLY",
+            # This is explicitly conditional, not a blanket LONG_ONLY gate.
+            "LONG_ONLY_ALLOWED_IF_DEBASEMENT": "NEUTRAL_RANGE",
             "SHORT_ONLY": "SHORT_ONLY",
             "DEFENSIVE_HOLD": "DEFENSIVE_HOLD",
             "LONG_ONLY": "LONG_ONLY",
