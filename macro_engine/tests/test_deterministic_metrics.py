@@ -45,7 +45,7 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
             "WALCL": 7000000.0, "WALCL_4W_AGO": 7000000.0,
             "RRPONTSYD": 300.0, "RRPONTSYD_4W_AGO": 300.0,
             "WTREGEN": 700000.0, "WTREGEN_4W_AGO": 700000.0,
-            "T10YIE": 2.0, "DFII10": 1.5, "DFF": 4.33, "SOFR": 4.33,
+            "T10YIE": 2.0, "DFII10": 1.5, "DFII10_4W_AGO": 1.6, "DFF": 4.33, "DFF_4W_AGO": 4.33, "SOFR": 4.33,
             "BAMLH0A0HYM2": 3.0, "NFCI": -0.2, "ICSA": 220.0,
             "DE10Y": 2.0, "DE10Y_4W_AGO": 2.0,
             "CPI_YOY": 3.0, "CPI_YOY_4W_AGO": 3.1,
