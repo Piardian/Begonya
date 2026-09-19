@@ -17,3 +17,18 @@ class MarketDataIngestion(_LegacyMarketDataIngestion):
         raise DataUnavailableError(
             f"Market data unavailable for {name}; synthetic fallback is disabled."
         )
+
+    def fetch_current_prices(self) -> Dict[str, Any]:
+        results = super().fetch_current_prices()
+        validate_market_payload(results, required_fields=REQUIRED_MARKET_FIELDS)
+        short_hist = sorted(
+            f"{name}({len(data.get('history_close', []))})"
+            for name, data in results.items()
+            if isinstance(data, dict) and name in REQUIRED_MARKET_FIELDS
+            and len(data.get("history_close", [])) < 6
+        )
+        if short_hist:
+            raise DataUnavailableError(
+                "Insufficient market history for deterministic deltas: " + ", ".join(short_hist)
+            )
+        return results
