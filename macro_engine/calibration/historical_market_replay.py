@@ -120,6 +120,10 @@ def build_market_snapshot(ingestion: HistoricalMarketReplayIngestion, symbols: I
     }
     return snapshot
 
+DEFAULT_REPLAY_SYMBOLS = [
+    "DXY", "GOLD", "BRENT", "US10Y", "US02Y", "BTC", "COPPER", "VIX", "HYG", "LQD", "SOL"
+]
+
 
 def build_real_snapshot(as_of: dt.datetime, symbols: Iterable[str]) -> Dict[str, Any]:
     market = build_market_snapshot(HistoricalMarketReplayIngestion(), symbols, as_of)
@@ -175,7 +179,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--dataset", type=Path)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--as-of", type=str)
-    parser.add_argument("--symbols", nargs="+", default=sorted(REQUIRED_MARKET_FIELDS))
+    parser.add_argument("--symbols", nargs="+", default=DEFAULT_REPLAY_SYMBOLS)
     return parser.parse_args()
 
 
