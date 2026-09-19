@@ -73,16 +73,6 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
     def _build_deterministic_gates(metrics: Mapping[str, Any]) -> Dict[str, Any]:
         freeze = bool(metrics.get("cross_pairs_analysis", {}).get("event_freeze", {}).get("active", False))
         fast_stress = bool(metrics.get("t0_fast_stress_analysis", {}).get("fast_stress_override", False))
-        gold_short = bool(metrics.get("gold_fiscal_dominance", {}).get("gold_short_allowed", False))
-        btc_base = metrics.get("btc_decoupling_analysis", {}).get("recommended_btc_gate", "DEFENSIVE_HOLD")
-        btc_map = {
-            # This is explicitly conditional, not a blanket LONG_ONLY gate.
-            "LONG_ONLY_ALLOWED_IF_DEBASEMENT": "NEUTRAL_RANGE",
-            "SHORT_ONLY": "SHORT_ONLY",
-            "DEFENSIVE_HOLD": "DEFENSIVE_HOLD",
-            "LONG_ONLY": "LONG_ONLY",
-            "NEUTRAL_RANGE": "NEUTRAL_RANGE",
-        }
         asset_gates = metrics.get("asset_macro_gates", {})
         base_gates = {
             "XAUUSD": str(asset_gates.get("XAUUSD", "NEUTRAL_RANGE")),
