@@ -48,6 +48,21 @@ describe('Begonya Asymmetric Short & Multiplicative Gating Tests', () => {
     fs.writeFileSync(sharedGatePath, JSON.stringify(fullPayload, null, 2), 'utf-8');
   }
 
+  it('0. MAKRO DATA YOK: Gate dosyası yoksa işlem fail-closed olur', () => {
+    if (fs.existsSync(sharedGatePath)) fs.unlinkSync(sharedGatePath);
+    const adapter = MacroGateAdapter.getInstance();
+    const result = adapter.evaluateCandidate('EURUSD', 'long', 95);
+
+    expect(result.allowed).toBe(false);
+    expect(result.action).toBe('VETO');
+    expect(result.macroGateMultiplier).toBe(0);
+    expect(result.riskMultiplier).toBe(0.0);
+    expect(result.macroBias).toBe('NO_DATA');
+    expect(result.begonyaScore).toBe(0);
+    expect(result.gateStatusMessage).toContain('işlem açılmaz');
+    expect(result.macroRationale).toContain('fail-closed');
+  });
+
   it('1. XAUUSD SHORT YASAĞI: Mali hakimiyet çağında altında short kesinlikle kilitlenir (G_macro = 0)', () => {
     writeMockGate({
       execution_bias_gates: { XAUUSD: 'NEUTRAL_RANGE' }
