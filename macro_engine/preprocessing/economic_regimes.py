@@ -32,6 +32,8 @@ FREQUENCIES = {
     "T10Y2Y": "daily",
     "T10Y3M": "daily",
     "SOFR": "daily",
+    "ECBDFR": "daily",
+    "SONIA": "daily",
     "ISM_MANUFACTURING_PMI": "monthly",
     "ISM_SERVICES_ACTIVITY": "monthly",
 }
