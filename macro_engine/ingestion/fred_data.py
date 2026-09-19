@@ -61,6 +61,8 @@ class FredDataIngestion:
         "GDP_QOQ_SAAR": "A191RL1Q225SBEA",
         "INDPRO": "INDPRO",
         "RSAFS": "RSAFS",
+        # Real retail sales, used for real consumption/growth diagnostics.
+        "RRSFS": "RRSFS",
         # Treasury curve.
         "DGS3MO": "DGS3MO",
         "DGS2": "DGS2",
@@ -182,9 +184,9 @@ class FredDataIngestion:
         return current, prior_value, current_date, prior_date
 
     def _fetch_baseline_metrics(self, as_of: Optional[dt.date] = None) -> Dict[str, Any]:
-        as_of = as_of or dt.date.today()
-        as_of_str = as_of.isoformat()
-        prior_str = (as_of - dt.timedelta(days=28)).isoformat()
+        raise DataUnavailableError(
+            "FRED_API_KEY is not configured; synthetic FRED baseline data is disabled."
+        )
         results = {
             "WALCL": 7180000.0,
             "WALCL_4W_AGO": 7220000.0,
@@ -265,8 +267,9 @@ class FredDataIngestion:
     ) -> Dict[str, Any]:
         as_of = as_of or dt.date.today()
         if not self.api_key:
-            logger.warning("[FRED] FRED_API_KEY tanımlanmamış; güvenilir Federal Reserve baz hattı yükleniyor...")
-            return self._fetch_baseline_metrics(as_of)
+            raise DataUnavailableError(
+                "FRED_API_KEY is not configured; real FRED observations are required."
+            )
 
         results: Dict[str, Any] = {}
         observation_dates: Dict[str, str] = {}
