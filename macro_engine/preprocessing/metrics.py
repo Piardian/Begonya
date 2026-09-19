@@ -36,7 +36,7 @@ def _fixed_legacy_date(as_of_date: Optional[dt.date], as_of_datetime: Optional[d
 
 class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
     DEFAULT_SURPRISE_SIGMAS={"cpi":.12,"core_cpi":.10,"nfp":50000.,"unemployment":.15,"pmi":1.5,"gdp":.50,"retail_sales":.40,"generic":1.0}
-    FRED_FREQUENCIES={"WALCL":"weekly","RRPONTSYD":"daily","WTREGEN":"daily","T10YIE":"daily","DFII10":"daily","DFF":"daily","BAMLH0A0HYM2":"daily","NFCI":"weekly","ICSA":"weekly","M2SL":"monthly","DE10Y":"monthly","ECBDFR":"daily","SONIA":"daily"}
+    FRED_FREQUENCIES={"WALCL":"weekly","RRPONTSYD":"daily","WTREGEN":"daily","T10YIE":"daily","DFII10":"daily","DFF":"daily","BAMLH0A0HYM2":"daily","NFCI":"weekly","ICSA":"weekly","M2SL":"monthly","DE10Y":"monthly","ECBDFR":"daily","SONIA":"daily","CA3M_INTERBANK":"monthly","AU3M_INTERBANK":"monthly","NZ3M_INTERBANK":"monthly","JP3M_INTERBANK":"monthly","CH3M_INTERBANK":"monthly"}
 
     @staticmethod
     def _build_fred_yield_curve(fred_data: Mapping[str, Any]) -> Optional[Dict[str, Any]]:
