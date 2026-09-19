@@ -4,6 +4,8 @@ from factor_replay import analyze, split_rows
 
 
 class FactorReplayTests(unittest.TestCase):
+    """Replay cohorts must exclude mixed/neutral states from full alignment.""
+
     def setUp(self):
         self.rows = [
             {"timestamp": "2024-01-01", "pair": "EURUSD", "rate_level": 1, "rate_momentum": 1, "ret_1d": 0.20, "ret_3d": 0.40},
