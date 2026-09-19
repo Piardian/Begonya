@@ -49,7 +49,6 @@ MARKET_SYMBOLS = {
     "BRENT": "BZ=F",
     "WTI": "CL=F",
     "US10Y": "^TNX",
-    "US02Y": "2YY=F",
     "BTC": "BTC-USD",
     "SPX": "^GSPC",
     "COPPER": "HG=F",
