@@ -175,8 +175,8 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         """Build currency scores from auditable, direction-consistent factors.
 
         A contradictory pair of factors produces NEUTRAL rather than allowing
-        one factor to override another. JPY/CHF remain unavailable until direct
-        local policy/rate inputs are provided.
+        one factor to override another. JPY/CHF use current local short-rate market data
+        plus safe-haven evidence; they remain neutral when the evidence disagrees.
         """
         vix = cls._available_market_number(market_data, "VIX") or 15.0
         dxy_4w = cls._available_market_number(market_data, "DXY", "change_pct_4w")
@@ -295,7 +295,7 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         required_local = {"CAD": "CA02Y", "AUD": "AU02Y", "NZD": "NZ02Y"}
         for currency, field in required_local.items():
             if cls._available_market_number(market_data, field) is None:
-                    if currency == "CAD":
+                if currency == "CAD":
                     cad_score = None
                 elif currency == "AUD":
                     aud_score = None
