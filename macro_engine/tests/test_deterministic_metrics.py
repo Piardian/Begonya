@@ -68,6 +68,11 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
             "T10Y3M": -1.0, "T10Y3M_4W_AGO": -1.1,
             "ECBDFR": 3.0, "ECBDFR_4W_AGO": 3.0,
             "SONIA": 4.0, "SONIA_4W_AGO": 4.0,
+            "CA3M_INTERBANK": 3.0, "CA3M_INTERBANK_4W_AGO": 3.0,
+            "AU3M_INTERBANK": 4.0, "AU3M_INTERBANK_4W_AGO": 4.0,
+            "NZ3M_INTERBANK": 4.0, "NZ3M_INTERBANK_4W_AGO": 4.0,
+            "JP3M_INTERBANK": 2.0, "JP3M_INTERBANK_4W_AGO": 2.1,
+            "CH3M_INTERBANK": 1.0, "CH3M_INTERBANK_4W_AGO": 1.1,
             "DGS2_5D_AGO": 4.05, "DGS10_5D_AGO": 4.02,
         }
 
@@ -172,16 +177,27 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
         self.assertTrue(result["gold_fiscal_dominance"]["is_cash_dash"])
         self.assertTrue(result["gold_fiscal_dominance"]["gold_short_allowed"])
 
-    def test_currency_safe_havens_do_not_create_directional_fx_gates_without_local_rates(self):
+    def test_local_short_rate_and_safe_haven_can_confirm_jpy_chf_direction(self):
         market = self.base_market()
         market["VIX"] = {**market["VIX"], "value": 30.0, "pct_rank_60d": 95.0}
         result = self.run_metrics(market=market)
-        status = result["cross_pairs_analysis"]["directional_input_status"]
-        gates = result["cross_pairs_analysis"]["cross_gates"]
-        self.assertEqual(status["JPY"], "UNAVAILABLE")
-        self.assertEqual(status["CHF"], "UNAVAILABLE")
-        self.assertNotIn("USDJPY", gates)
-        self.assertNotIn("USDCHF", gates)
+        scores = result["cross_pairs_analysis"]["currency_scores"]
+        self.assertEqual(scores["JPY"], 1)
+        self.assertEqual(scores["CHF"], 1)
+
+    def test_currency_safe_havens_remain_neutral_without_aligned_evidence(self):
+        market = self.base_market()
+        market["VIX"] = {**market["VIX"], "value": 30.0, "pct_rank_60d": 95.0}
+        # Force the local short-rate move to oppose safe-haven demand.
+        fred = {
+            **self.base_fred(),
+            "JP3M_INTERBANK": 2.1, "JP3M_INTERBANK_4W_AGO": 2.0,
+            "CH3M_INTERBANK": 1.1, "CH3M_INTERBANK_4W_AGO": 1.0,
+        }
+        result = self.run_metrics(market=market, fred=fred)
+        scores = result["cross_pairs_analysis"]["currency_scores"]
+        self.assertEqual(scores["JPY"], 0)
+        self.assertEqual(scores["CHF"], 0)
 
     def test_explicit_hysteresis_state(self):
         market = self.base_market()
