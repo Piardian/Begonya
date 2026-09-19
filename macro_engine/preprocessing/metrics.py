@@ -438,9 +438,9 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
                 isinstance(dxy_4w, (int, float)) and float(dxy_4w) >= 0.5,
                 isinstance(vix, (int, float)) and float(vix) < 18.0,
             ])
-            if spx_long >= 3 and spx_short == 0:
+            if spx_long >= 3 and spx_short < 4:
                 gates["SPX"] = "LONG_ONLY"
-            elif spx_short == 4 and spx_long == 0:
+            elif spx_short == 4:
                 gates["SPX"] = "SHORT_ONLY"
             else:
                 gates["SPX"] = "NEUTRAL_RANGE"
