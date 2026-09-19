@@ -397,13 +397,15 @@ export class MacroGateAdapter {
     const baseSym = mapping.base_currency ?? 'Base';
     const quoteSym = mapping.quote_currency ?? 'Quote';
 
-    if (netScore > 0) {
+    // A +1 base versus 0 quote (or vice versa) is not enough evidence for a
+    // directional FX gate. Only a +2/-2 divergence (opposite scores) is directional.
+    if (netScore >= 2) {
       return {
         direction: 'LONG',
         reason: `Sentetik Çapraz: ${baseSym} (${baseRes.reason}) vs ${quoteSym} (${quoteRes.reason}) -> Net Skor: +${netScore} (LONG)`,
       };
     }
-    if (netScore < 0) {
+    if (netScore <= -2) {
       return {
         direction: 'SHORT',
         reason: `Sentetik Çapraz: ${baseSym} (${baseRes.reason}) vs ${quoteSym} (${quoteRes.reason}) -> Net Skor: ${netScore} (SHORT)`,
@@ -490,27 +492,27 @@ export class MacroGateAdapter {
     const mapped = symbolMap.mappings[cleanSym];
     const macroKey = mapped?.macro_key ?? cleanSym;
 
-    // Failsafe: Eğer makro veri henüz üretilmemişse
+    // Fail-closed: Makro gate yoksa yön tayini yapılamaz ve işlem açılmaz.
     if (!payload) {
       const smcScore = typeof smcGradeScore === 'number' ? Math.min(100, Math.max(10, smcGradeScore)) : 75;
       return {
-        allowed: true,
-        action: 'NEUTRAL_CAUTION',
+        allowed: false,
+        action: 'VETO',
         symbol: cleanSym,
         mappedMacroKey: macroKey,
         tradeDirection,
         macroBias: 'NO_DATA',
         primaryRegime: 'Uninitialized Regime',
-        riskMultiplier: 0.50,
-        capitalPreservationMode: false,
+        riskMultiplier: 0.0,
+        capitalPreservationMode: true,
         btcDecouplingActive: false,
-        macroRationale: 'Makro kapı verisi bulunamadı. Failsafe 0.50x risk ile devam ediliyor.',
-        gateStatusMessage: '⚠️ Makro veri aktif değil (Failsafe 0.50x)',
-        macroGateMultiplier: 1,
+        macroRationale: 'Makro kapı verisi bulunamadı. Gerçek makro yön doğrulanamadığı için fail-closed uygulanıyor.',
+        gateStatusMessage: 'Makro veri aktif değil; işlem açılmaz.',
+        macroGateMultiplier: 0,
         smcTechnicalScore: smcScore,
-        begonyaScore: Math.round(smcScore * 0.7),
-        scoreTier: 'B',
-        tierRationale: 'Veri yok; kontrollü nötr işlem (0.50x risk)',
+        begonyaScore: 0,
+        scoreTier: 'D',
+        tierRationale: 'Makro veri yok; yönlü işlem için yeterli kanıt bulunmuyor.',
       };
     }
 
@@ -665,10 +667,10 @@ export class MacroGateAdapter {
     // ──────────────────────────────────────────────────────────────────────────
     // 2. KATMAN: ASİMETRİK PİYASA VE ENSTRÜMAN MUTLAK KALKANLARI
     // ──────────────────────────────────────────────────────────────────────────
-    // A) ALTIN (XAUUSD / GOLD) SHORT KURALI: Mali Hakimiyet & Egemen Borç Kalkanı
+    // A) ALTIN (XAUUSD / GOLD): Short requires the explicit macro SHORT_ONLY gate.
+    // Do not infer a directional short merely from a crisis state.
     if ((cleanSym.includes('XAU') || cleanSym.includes('GOLD')) && tradeDirection === 'short') {
-      const isCashDash = riskScore >= 0.90 && regime.includes('Deflationary');
-      if (!isCashDash) {
+      if (macroBias !== 'SHORT_ONLY') {
         return this.buildVetoResult(
           cleanSym,
           macroKey,
@@ -679,7 +681,7 @@ export class MacroGateAdapter {
           btcDecoupling,
           rationale,
           smcScore,
-          '🛑 VETO: Mali Hakimiyet Çağında Altında SHORT Kesinlikle Yasaktır (Fiziki Rezerv Talebi / Egemen Borç Kalkanı)'
+          '🛑 VETO: XAUUSD SHORT için deterministic makro gate SHORT_ONLY değil.'
         );
       }
     }

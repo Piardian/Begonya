@@ -43,8 +43,18 @@ class FredDataIngestion:
         "NFCI": "NFCI",
         "ICSA": "ICSA",
         "M2SL": "M2SL",
-        # OECD Germany 10Y government bond yield, monthly, via FRED.
+        # OECD monthly sovereign yields from the same provider/frequency for cross-country comparisons.
         "DE10Y": "IRLTLT01DEM156N",
+        "GB10Y": "IRLTLT01GBM156N",
+        "US10Y_OECD": "IRLTLT01USM156N",
+        "ECBDFR": "ECBDFR",
+        "SONIA": "IUDSOIA",
+        # OECD Main Economic Indicators: current monthly local short-rate market proxies.
+        "CA3M_INTERBANK": "IR3TIB01CAM156N",
+        "AU3M_INTERBANK": "IR3TIB01AUM156N",
+        "NZ3M_INTERBANK": "IR3TIB01NZM156N",
+        "JP3M_INTERBANK": "IR3TIB01JPM156N",
+        "CH3M_INTERBANK": "IR3TIB01CHM156N",
     }
 
     ECONOMIC_FRED_SERIES = {
@@ -61,6 +71,8 @@ class FredDataIngestion:
         "GDP_QOQ_SAAR": "A191RL1Q225SBEA",
         "INDPRO": "INDPRO",
         "RSAFS": "RSAFS",
+        # Real retail sales, used for real consumption/growth diagnostics.
+        "RRSFS": "RRSFS",
         # Treasury curve.
         "DGS3MO": "DGS3MO",
         "DGS2": "DGS2",
@@ -181,92 +193,14 @@ class FredDataIngestion:
             prior_value = round(prior_value / 1000.0, 1)
         return current, prior_value, current_date, prior_date
 
-    def _fetch_baseline_metrics(self, as_of: Optional[dt.date] = None) -> Dict[str, Any]:
-        as_of = as_of or dt.date.today()
-        as_of_str = as_of.isoformat()
-        prior_str = (as_of - dt.timedelta(days=28)).isoformat()
-        results = {
-            "WALCL": 7180000.0,
-            "WALCL_4W_AGO": 7220000.0,
-            "RRPONTSYD": 290.0,
-            "RRPONTSYD_4W_AGO": 320.0,
-            "WTREGEN": 780000.0,
-            "WTREGEN_4W_AGO": 750000.0,
-            "T10YIE": 2.15,
-            "DFII10": 1.75,
-            "DFF": 4.83,
-            "SOFR": 4.80,
-            "BAMLH0A0HYM2": 3.45,
-            "NFCI": -0.52,
-            "ICSA": 218.0,
-            "DE10Y": 2.20,
-            "DE10Y_4W_AGO": 2.25,
-            "M2SL": 21000.0,
-            "M2SL_SOURCE_DATE": as_of_str,
-            "CPI_YOY": 2.9,
-            "CPI_YOY_4W_AGO": 3.0,
-            "CORE_CPI_YOY": 3.2,
-            "CORE_CPI_YOY_4W_AGO": 3.3,
-            "PCE_YOY": 2.6,
-            "PCE_YOY_4W_AGO": 2.6,
-            "CORE_PCE_YOY": 2.8,
-            "CORE_PCE_YOY_4W_AGO": 2.8,
-            "PAYEMS": 158500.0,
-            "PAYEMS_4W_AGO": 158300.0,
-            "UNRATE": 4.2,
-            "UNRATE_4W_AGO": 4.3,
-            "AHE_YOY": 3.8,
-            "AHE_YOY_4W_AGO": 3.9,
-            "GDP_QOQ_SAAR": 2.8,
-            "GDP_QOQ_SAAR_4W_AGO": 2.8,
-            "INDPRO": 103.5,
-            "INDPRO_4W_AGO": 103.2,
-            "RSAFS": 710000.0,
-            "RSAFS_4W_AGO": 708000.0,
-            "DGS3MO": 5.10,
-            "DGS3MO_4W_AGO": 5.20,
-            "DGS2": 3.94,
-            "DGS2_4W_AGO": 4.05,
-            "DGS5": 3.82,
-            "DGS5_4W_AGO": 3.90,
-            "DGS10": 3.88,
-            "DGS10_4W_AGO": 4.00,
-            "DGS30": 4.18,
-            "DGS30_4W_AGO": 4.25,
-            "T10Y2Y": -0.06,
-            "T10Y2Y_4W_AGO": -0.05,
-            "T10Y3M": -1.22,
-            "T10Y3M_4W_AGO": -1.20,
-            "ISM_MANUFACTURING_PMI": 47.2,
-            "ISM_MANUFACTURING_PMI_4W_AGO": 46.8,
-            "ISM_SERVICES_ACTIVITY": 51.5,
-            "ISM_SERVICES_ACTIVITY_4W_AGO": 51.4,
-        }
-        results["data_quality"] = {
-            "provider": "FRED_BASELINE",
-            "fallback_used": True,
-            "as_of": as_of_str,
-            "vintage_end": as_of_str,
-            "observation_dates": {k: as_of_str for k in results if not k.endswith("_4W_AGO") and not isinstance(results[k], dict)},
-            "prior_4w_dates": {k: prior_str for k in results if not k.endswith("_4W_AGO") and not isinstance(results[k], dict)},
-            "economic_observation_dates": {k: as_of_str for k in self.ECONOMIC_FRED_SERIES},
-            "economic_prior_4w_dates": {k: prior_str for k in self.ECONOMIC_FRED_SERIES},
-            "economic_transformations": {
-                "CPI_YOY": "FRED pc1 transform",
-                "ISM_MANUFACTURING_PMI": "direct NAPM observation",
-                "ISM_SERVICES_ACTIVITY": "direct NMFBAI observation",
-                "SOFR": "direct New York Fed SOFR observation via FRED",
-            },
-        }
-        return results
-
     def fetch_liquidity_metrics(
         self, as_of: Optional[dt.date] = None
     ) -> Dict[str, Any]:
         as_of = as_of or dt.date.today()
         if not self.api_key:
-            logger.warning("[FRED] FRED_API_KEY tanımlanmamış; güvenilir Federal Reserve baz hattı yükleniyor...")
-            return self._fetch_baseline_metrics(as_of)
+            raise DataUnavailableError(
+                "FRED_API_KEY is not configured; real FRED observations are required."
+            )
 
         results: Dict[str, Any] = {}
         observation_dates: Dict[str, str] = {}
@@ -302,6 +236,20 @@ class FredDataIngestion:
             results[f"{logical_name}_4W_AGO"] = prior
             economic_observation_dates[logical_name] = current_date.isoformat()
             economic_prior_dates[logical_name] = prior_date.isoformat()
+
+        # Synchronized 5-day Treasury history used for curve dynamics.
+        for logical_name in ("DGS2", "DGS10"):
+            rows = self._get_observations(
+                logical_name,
+                as_of - dt.timedelta(days=20),
+                as_of,
+                realtime_end=as_of,
+            )
+            eligible = sorted([row for row in rows if row[0] <= as_of], key=lambda x: x[0])
+            prior_5d = [row for row in eligible if row[0] <= as_of - dt.timedelta(days=5)]
+            if prior_5d:
+                results[f"{logical_name}_5D_AGO"] = prior_5d[-1][1]
+                economic_observation_dates[f"{logical_name}_5D_AGO"] = prior_5d[-1][0].isoformat()
 
         missing = (REQUIRED_FRED_FIELDS | REQUIRED_ECONOMIC_FRED_FIELDS) - set(results)
         if missing:

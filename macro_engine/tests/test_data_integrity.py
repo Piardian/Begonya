@@ -71,21 +71,12 @@ class DataIntegrityTests(unittest.TestCase):
         self.assertEqual(result["delta_02y_5d_bps"], -15.0)
         self.assertEqual(result["rate_expectation_signal"], "Market-implied easing")
 
-    def test_missing_dff_is_explicitly_reported_as_fallback(self):
-        from tests.test_deterministic_metrics import DeterministicMacroMetricsTests
-        helper = DeterministicMacroMetricsTests("runTest")
-        market = helper.base_market()
-        fred = helper.base_fred()
-        del fred["DFF"]
-
-        result = MacroMetricsCalculator().process_all_macro_data(market, fred, [])
-
-        self.assertTrue(result["data_quality"]["fallback_used"])
-        self.assertEqual(result["data_quality"]["fallback_fields"], ["DFF"])
-        self.assertEqual(
-            result["fed_forward_path_analysis"]["fed_policy_rate_source"],
-            "LEGACY_STATIC_5.33_FALLBACK",
-        )
+    def test_missing_fred_key_fails_closed(self):
+        from ingestion.fred_data import FredDataIngestion
+        with self.assertRaises(DataUnavailableError):
+            FredDataIngestion(api_key="").fetch_liquidity_metrics(
+                as_of=dt.date(2026, 9, 17)
+            )
 
     def test_fred_replay_uses_as_of_as_vintage_end(self):
         from ingestion.fred_data import FredDataIngestion
@@ -102,6 +93,15 @@ class DataIntegrityTests(unittest.TestCase):
         self.assertEqual(rows, [(dt.date(2023, 3, 10), 4.20)])
         request = mocked.call_args.args[0]
         self.assertIn("realtime_end=2023-03-13", request.full_url)
+
+    def test_missing_dff_has_no_static_policy_fallback(self):
+        result = MacroMetricsCalculator.calculate_fed_forward_path(
+            us02y=3.80,
+            dff=None,
+        )
+        self.assertIsNone(result["fed_policy_rate_pct"])
+        self.assertEqual(result["fed_policy_rate_source"], "UNAVAILABLE")
+        self.assertIsNone(result["implied_rate_gap_bps"])
 
     def test_fred_api_key_is_redacted_in_exceptions(self):
         from ingestion.fred_data import _mask_api_key, FredDataIngestion

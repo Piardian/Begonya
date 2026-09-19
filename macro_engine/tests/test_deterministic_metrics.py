@@ -11,7 +11,7 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
             market or self.base_market(),
             fred or self.base_fred(),
             events or [],
-            previous_regime_state=previous_state,
+            previous_regime_state=(previous_state if previous_state is not None else {"capital_preservation_active": False}),
             now_utc=now,
         )
 
@@ -45,9 +45,37 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
             "WALCL": 7000000.0, "WALCL_4W_AGO": 7000000.0,
             "RRPONTSYD": 300.0, "RRPONTSYD_4W_AGO": 300.0,
             "WTREGEN": 700000.0, "WTREGEN_4W_AGO": 700000.0,
-            "T10YIE": 2.0, "DFII10": 1.5, "DFF": 4.33,
+            "T10YIE": 2.0, "DFII10": 1.5, "DFII10_4W_AGO": 1.6, "DFF": 4.33, "DFF_4W_AGO": 4.33, "SOFR": 4.33,
             "BAMLH0A0HYM2": 3.0, "NFCI": -0.2, "ICSA": 220.0,
             "DE10Y": 2.0, "DE10Y_4W_AGO": 2.0,
+            "GB10Y": 4.0, "GB10Y_4W_AGO": 4.0,
+            "US10Y_OECD": 4.5, "US10Y_OECD_4W_AGO": 4.5,
+            "CPI_YOY": 3.0, "CPI_YOY_4W_AGO": 3.1,
+            "CORE_CPI_YOY": 3.2, "CORE_CPI_YOY_4W_AGO": 3.3,
+            "PCE_YOY": 2.6, "PCE_YOY_4W_AGO": 2.7,
+            "CORE_PCE_YOY": 2.8, "CORE_PCE_YOY_4W_AGO": 2.9,
+            "PAYEMS": 158000.0, "PAYEMS_4W_AGO": 157900.0,
+            "UNRATE": 4.0, "UNRATE_4W_AGO": 4.0,
+            "AHE_YOY": 3.6, "AHE_YOY_4W_AGO": 3.7,
+            "GDP_QOQ_SAAR": 2.4, "GDP_QOQ_SAAR_4W_AGO": 2.4,
+            "INDPRO": 102.0, "INDPRO_4W_AGO": 101.5,
+            "RSAFS": 105.0, "RSAFS_4W_AGO": 104.0,
+            "RRSFS": 104.0, "RRSFS_4W_AGO": 103.0,
+            "DGS3MO": 5.0, "DGS3MO_4W_AGO": 5.1,
+            "DGS2": 4.0, "DGS2_4W_AGO": 4.1,
+            "DGS5": 4.0, "DGS5_4W_AGO": 4.1,
+            "DGS10": 4.0, "DGS10_4W_AGO": 4.1,
+            "DGS30": 4.2, "DGS30_4W_AGO": 4.3,
+            "T10Y2Y": 0.0, "T10Y2Y_4W_AGO": 0.0,
+            "T10Y3M": -1.0, "T10Y3M_4W_AGO": -1.1,
+            "ECBDFR": 3.0, "ECBDFR_4W_AGO": 3.0,
+            "SONIA": 4.0, "SONIA_4W_AGO": 4.0,
+            "CA3M_INTERBANK": 3.0, "CA3M_INTERBANK_4W_AGO": 3.0,
+            "AU3M_INTERBANK": 4.0, "AU3M_INTERBANK_4W_AGO": 4.0,
+            "NZ3M_INTERBANK": 4.0, "NZ3M_INTERBANK_4W_AGO": 4.0,
+            "JP3M_INTERBANK": 2.0, "JP3M_INTERBANK_4W_AGO": 2.0,
+            "CH3M_INTERBANK": 1.0, "CH3M_INTERBANK_4W_AGO": 1.0,
+            "DGS2_5D_AGO": 4.05, "DGS10_5D_AGO": 4.02,
         }
 
     def test_yield_curve_noise_and_boundaries(self):
@@ -73,6 +101,113 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
         self.assertEqual(result["real_yield_pct"], -0.15)
         self.assertIn("FRED DFII10", result["yield_source"])
 
+    def test_fred_treasury_curve_is_authoritative(self):
+        fred = self.base_fred()
+        fred.update({
+            "DGS2": 4.00, "DGS2_4W_AGO": 4.10,
+            "DGS10": 4.00, "DGS10_4W_AGO": 4.05,
+            "T10Y2Y": 0.00, "T10Y2Y_4W_AGO": -0.05,
+        })
+        result = self.run_metrics(fred=fred)
+        self.assertEqual(result["yield_curve"]["source"], "FRED DGS10 / DGS2 / T10Y2Y")
+        self.assertEqual(result["yield_curve"]["spread_bps"], 0.0)
+        self.assertEqual(result["yield_curve"]["delta_spread_20d_bps"], 5.0)
+
+    def test_fx_rate_level_is_separate_from_rate_momentum(self):
+        fred = self.base_fred()
+        # EUR policy rate is 50bp below DFF: level is bearish for EUR.
+        fred.update({
+            "ECBDFR": 3.50, "DFF": 4.00,
+            "ECBDFR_4W_AGO": 3.50, "DFF_4W_AGO": 4.00,
+        })
+        result = self.run_metrics(fred=fred)
+        eur = result["cross_pairs_analysis"]["currency_breakdown"]["EUR"]
+        self.assertEqual(eur["policy_differential_level_factor"], -1)
+        self.assertEqual(eur["policy_differential_momentum_factor"], 0)
+
+    def test_eurusd_requires_two_sided_currency_evidence(self):
+        fred = self.base_fred()
+        # Make EUR clearly positive while USD remains neutral.
+        fred.update({
+            "ECBDFR": 5.00, "DFF": 4.00,
+            "ECBDFR_4W_AGO": 4.90, "DFF_4W_AGO": 4.00,
+            "DE10Y": 4.50, "DE10Y_4W_AGO": 4.30,
+            "US10Y_OECD": 4.00, "US10Y_OECD_4W_AGO": 4.00,
+        })
+        result = self.run_metrics(fred=fred)
+        scores = result["cross_pairs_analysis"]["currency_scores"]
+        gates = result["cross_pairs_analysis"]["cross_gates"]
+        self.assertEqual(scores["EUR"], 1)
+        self.assertIn("EURUSD", gates)
+        self.assertEqual(gates["EURUSD"], "NEUTRAL_RANGE")
+
+    def test_fx_sovereign_spreads_use_matched_monthly_frequency(self):
+        fred = self.base_fred()
+        fred.update({
+            "DE10Y": 2.00, "DE10Y_4W_AGO": 2.10,
+            "US10Y_OECD": 4.00, "US10Y_OECD_4W_AGO": 4.20,
+            "GB10Y": 4.00, "GB10Y_4W_AGO": 4.10,
+        })
+        result = self.run_metrics(fred=fred)
+        breakdown = result["cross_pairs_analysis"]["currency_breakdown"]
+        # US-DE spread narrowed by 20bp -> EUR market factor positive.
+        self.assertEqual(breakdown["EUR"]["market_rate_factor"], 1)
+        # US-GB spread narrowed by 10bp -> GBP market factor positive.
+        self.assertEqual(breakdown["GBP"]["market_rate_factor"], 1)
+
+    def test_direct_asset_gates_long_neutral_short_are_deterministic(self):
+        market = self.base_market()
+        fred = self.base_fred()
+
+        bullish = {
+            "real_yield_info": {"real_yield_pct": 1.50},
+            "liquidity_dynamics": {"delta_liquidity_billion": 100.0},
+            "t0_fast_stress_analysis": {"fast_stress_override": False},
+            "regime_state": {"capital_preservation_active": False},
+            "btc_decoupling_analysis": {"is_duration_shock": False},
+        }
+        gates = self.calc._build_asset_macro_gates(bullish, market, fred)
+        self.assertEqual(gates["XAUUSD"], "LONG_ONLY")
+        self.assertEqual(gates["BTC"], "LONG_ONLY")
+        self.assertEqual(gates["SPX"], "LONG_ONLY")
+
+        neutral = {
+            "real_yield_info": {"real_yield_pct": 2.00},
+            "liquidity_dynamics": {"delta_liquidity_billion": 0.0},
+            "t0_fast_stress_analysis": {"fast_stress_override": False},
+            "regime_state": {"capital_preservation_active": False},
+            "btc_decoupling_analysis": {"is_duration_shock": False},
+        }
+        neutral_gates = self.calc._build_asset_macro_gates(neutral, market, fred)
+        self.assertEqual(neutral_gates["BTC"], "NEUTRAL_RANGE")
+        self.assertEqual(neutral_gates["SPX"], "NEUTRAL_RANGE")
+
+    def test_direct_asset_gates_short_require_specific_conditions(self):
+        market = self.base_market()
+        market["DXY"] = {**market["DXY"], "value": 101.0, "month_ago": 100.0, "change_pct_4w": 1.0}
+        market["VIX"]["value"] = 15.0
+        fred = {**self.base_fred(), "DFII10_4W_AGO": 2.00}
+        bearish = {
+            "real_yield_info": {"real_yield_pct": 2.20},
+            "liquidity_dynamics": {"delta_liquidity_billion": -100.0},
+            "t0_fast_stress_analysis": {"fast_stress_override": False},
+            "regime_state": {"capital_preservation_active": False},
+            "btc_decoupling_analysis": {"is_duration_shock": True},
+        }
+        gates = self.calc._build_asset_macro_gates(bearish, market, fred)
+        self.assertEqual(gates["SPX"], "SHORT_ONLY")
+        self.assertEqual(gates["BTC"], "SHORT_ONLY")
+        self.assertEqual(gates["XAUUSD"], "SHORT_ONLY")
+
+    def test_xau_cash_dash_does_not_force_short_direction(self):
+        market = self.base_market()
+        market["VIX"]["value"] = 68.0
+        fred = {**self.base_fred(), "BAMLH0A0HYM2": 9.0}
+        result = self.run_metrics(market=market, fred=fred)
+        self.assertTrue(result["gold_fiscal_dominance"]["gold_short_allowed"])
+        # Acute stress is not itself a directional short signal.
+        self.assertNotEqual(result["asset_macro_gates"]["XAUUSD"], "SHORT_ONLY")
+
     def test_observed_dff_is_authoritative(self):
         result = self.run_metrics()
         self.assertEqual(result["fed_forward_path_analysis"]["fed_policy_rate_source"], "FRED DFF")
@@ -95,13 +230,54 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
         self.assertTrue(result["gold_fiscal_dominance"]["is_cash_dash"])
         self.assertTrue(result["gold_fiscal_dominance"]["gold_short_allowed"])
 
-    def test_currency_safe_havens(self):
+    def test_jpy_chf_remain_neutral_without_rate_alignment(self):
         market = self.base_market()
         market["VIX"] = {**market["VIX"], "value": 30.0, "pct_rank_60d": 95.0}
         result = self.run_metrics(market=market)
         scores = result["cross_pairs_analysis"]["currency_scores"]
-        self.assertEqual(scores["JPY"], 1)
-        self.assertEqual(scores["CHF"], 1)
+        self.assertEqual(scores["JPY"], 0)
+        self.assertEqual(scores["CHF"], 0)
+
+    def test_cross_gate_requires_full_two_sided_divergence(self):
+        result = self.run_metrics()
+        gates = result["cross_pairs_analysis"]["cross_gates"]
+        # Fixture intentionally has mixed/neutral currency evidence, so there
+        # must not be a one-point base-vs-quote directional gate.
+        for pair, gate in gates.items():
+            base, quote = pair[:3], pair[3:]
+            scores = result["cross_pairs_analysis"]["currency_scores"]
+            if scores.get(base) is not None and scores.get(quote) is not None:
+                diff = scores[base] - scores[quote]
+                self.assertEqual(gate, "LONG_ONLY" if diff >= 2 else "SHORT_ONLY" if diff <= -2 else "NEUTRAL_RANGE")
+
+    def test_local_rate_and_safe_haven_alignment_confirms_jpy_chf(self):
+        market = self.base_market()
+        market["VIX"] = {**market["VIX"], "value": 30.0, "pct_rank_60d": 95.0}
+        fred = {
+            **self.base_fred(),
+            "JP3M_INTERBANK": 2.1, "JP3M_INTERBANK_4W_AGO": 2.0,
+            "CH3M_INTERBANK": 1.1, "CH3M_INTERBANK_4W_AGO": 1.0,
+        }
+        result = self.run_metrics(market=market, fred=fred)
+        scores = result["cross_pairs_analysis"]["currency_scores"]
+        # Local rate momentum is opposed by the USD rate level; safe-haven demand alone
+        # cannot override the contradiction under the two-factor consensus rule.
+        self.assertEqual(scores["JPY"], 0)
+        self.assertEqual(scores["CHF"], 0)
+
+    def test_currency_safe_havens_remain_neutral_without_aligned_evidence(self):
+        market = self.base_market()
+        market["VIX"] = {**market["VIX"], "value": 30.0, "pct_rank_60d": 95.0}
+        # Force the local short-rate move to oppose safe-haven demand.
+        fred = {
+            **self.base_fred(),
+            "JP3M_INTERBANK": 2.1, "JP3M_INTERBANK_4W_AGO": 2.0,
+            "CH3M_INTERBANK": 1.1, "CH3M_INTERBANK_4W_AGO": 1.0,
+        }
+        result = self.run_metrics(market=market, fred=fred)
+        scores = result["cross_pairs_analysis"]["currency_scores"]
+        self.assertEqual(scores["JPY"], 0)
+        self.assertEqual(scores["CHF"], 0)
 
     def test_explicit_hysteresis_state(self):
         market = self.base_market()

@@ -48,6 +48,21 @@ describe('Begonya Asymmetric Short & Multiplicative Gating Tests', () => {
     fs.writeFileSync(sharedGatePath, JSON.stringify(fullPayload, null, 2), 'utf-8');
   }
 
+  it('0. MAKRO DATA YOK: Gate dosyası yoksa işlem fail-closed olur', () => {
+    if (fs.existsSync(sharedGatePath)) fs.unlinkSync(sharedGatePath);
+    const adapter = MacroGateAdapter.getInstance();
+    const result = adapter.evaluateCandidate('EURUSD', 'long', 95);
+
+    expect(result.allowed).toBe(false);
+    expect(result.action).toBe('VETO');
+    expect(result.macroGateMultiplier).toBe(0);
+    expect(result.riskMultiplier).toBe(0.0);
+    expect(result.macroBias).toBe('NO_DATA');
+    expect(result.begonyaScore).toBe(0);
+    expect(result.gateStatusMessage).toContain('işlem açılmaz');
+    expect(result.macroRationale).toContain('fail-closed');
+  });
+
   it('1. XAUUSD SHORT YASAĞI: Mali hakimiyet çağında altında short kesinlikle kilitlenir (G_macro = 0)', () => {
     writeMockGate({
       execution_bias_gates: { XAUUSD: 'NEUTRAL_RANGE' }
@@ -61,7 +76,7 @@ describe('Begonya Asymmetric Short & Multiplicative Gating Tests', () => {
     expect(result.begonyaScore).toBe(0);
     expect(result.riskMultiplier).toBe(0.0);
     expect(result.action).toBe('VETO');
-    expect(result.gateStatusMessage).toContain('Mali Hakimiyet');
+    expect(result.gateStatusMessage).toContain('deterministic makro gate SHORT_ONLY değil');
   });
 
   it('2. XAUUSD LONG ONAYI: Altında Long yönünde makro kapı açıktır (G_macro = 1)', () => {
@@ -76,6 +91,21 @@ describe('Begonya Asymmetric Short & Multiplicative Gating Tests', () => {
     expect(result.begonyaScore).toBe(92);
     expect(result.scoreTier).toBe('A+');
     expect(result.riskMultiplier).toBe(1.00);
+  });
+
+  it('2B. XAUUSD SHORT: Deterministic SHORT_ONLY gate mevcutsa short yönü engellenmez', () => {
+    writeMockGate({
+      execution_bias_gates: { XAUUSD: 'SHORT_ONLY' },
+      asset_biases: { XAUUSD: 'Bearish' },
+      volatility_risk_score: 0.35,
+      regime_state: { vix_pct_60d: 40.0 }
+    });
+    const adapter = MacroGateAdapter.getInstance();
+    const result = adapter.evaluateCandidate('XAUUSD', 'short', 90);
+
+    expect(result.allowed).toBe(true);
+    expect(result.action).toBe('PROCEED');
+    expect(result.macroBias).toBe('SHORT_ONLY');
   });
 
   it('3. BORSA GECİKME TUZAĞI: VIX yüksekken endekste gecikmiş short VETO edilir (G_macro = 0)', () => {
@@ -290,6 +320,21 @@ describe('Begonya Asymmetric Short & Multiplicative Gating Tests', () => {
     expect(longRes.macroGateMultiplier).toBe(0);
     expect(longRes.action).toBe('VETO');
     expect(longRes.gateStatusMessage).toContain('SHORT_ONLY iken LONG Açılamaz');
+  });
+
+  it('15B. TEK TARAF YÖNLÜ KANIT ÇAPRAZI: +1 AUD vs 0 CAD yön üretmez', () => {
+    writeMockGate({
+      regime_state: {
+        cross_currency_scores: { AUD: 1, CAD: 0 },
+      },
+    });
+    const adapter = MacroGateAdapter.getInstance();
+    const result = adapter.evaluateCandidate('AUDCAD', 'long', 90);
+
+    expect(result.allowed).toBe(false);
+    expect(result.action).toBe('VETO');
+    expect(result.macroBias).toBe('NEUTRAL_ALL');
+    expect(result.gateStatusMessage).toContain('nötr / yönsüzdür');
   });
 
   it('16. AUDCAD DENGELİ SENTETİK ÇAPRAZ NÖTR VETO: Emtialar dengeliyken yönsüz olduğu için işlem engellenir', () => {

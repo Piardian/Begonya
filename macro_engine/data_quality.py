@@ -9,11 +9,12 @@ class DataUnavailableError(RuntimeError):
 
 
 REQUIRED_MARKET_FIELDS = {
-    "DXY", "GOLD", "BRENT", "US10Y", "US02Y", "BTC", "COPPER", "VIX",
-    "HYG", "LQD", "CA02Y", "DE02Y", "GB02Y", "AU02Y", "NZ02Y", "SOL",
+    "DXY", "GOLD", "BRENT", "US10Y", "BTC", "COPPER", "VIX",
+    "HYG", "LQD", "SOL",
 }
 
 OPTIONAL_MARKET_FIELDS = {
+    "US02Y", "CA02Y", "DE02Y", "GB02Y", "AU02Y", "NZ02Y",
     "IRON_ORE", "DAIRY_GDT", "SPX", "WTI", "FED_FUNDS_FUTURES",
 }
 
@@ -21,6 +22,10 @@ REQUIRED_FRED_FIELDS = {
     "WALCL", "WALCL_4W_AGO", "RRPONTSYD", "RRPONTSYD_4W_AGO",
     "WTREGEN", "WTREGEN_4W_AGO", "T10YIE", "DFII10", "DFF", "SOFR",
     "BAMLH0A0HYM2", "NFCI", "ICSA", "DE10Y", "DE10Y_4W_AGO",
+    "ECBDFR", "SONIA",
+    "GB10Y", "US10Y_OECD",
+    "CA3M_INTERBANK", "AU3M_INTERBANK", "NZ3M_INTERBANK",
+    "JP3M_INTERBANK", "CH3M_INTERBANK",
 }
 
 # Extended economic regime panel. These are kept separate from the legacy
@@ -29,7 +34,7 @@ REQUIRED_FRED_FIELDS = {
 REQUIRED_ECONOMIC_FRED_FIELDS = {
     "CPI_YOY", "CORE_CPI_YOY", "PCE_YOY", "CORE_PCE_YOY",
     "PAYEMS", "UNRATE", "AHE_YOY",
-    "GDP_QOQ_SAAR", "INDPRO", "RSAFS",
+    "GDP_QOQ_SAAR", "INDPRO", "RSAFS", "RRSFS",
     "DGS3MO", "DGS2", "DGS5", "DGS10", "DGS30",
     "T10Y2Y", "T10Y3M", "SOFR",
 }
