@@ -4,7 +4,7 @@ from factor_replay import analyze, split_rows
 
 
 class FactorReplayTests(unittest.TestCase):
-    """Replay cohorts must exclude mixed/neutral states from full alignment.""
+    """Replay cohorts must exclude mixed/neutral states from full alignment."""
 
     def setUp(self):
         self.rows = [
