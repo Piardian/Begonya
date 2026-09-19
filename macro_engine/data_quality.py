@@ -9,11 +9,12 @@ class DataUnavailableError(RuntimeError):
 
 
 REQUIRED_MARKET_FIELDS = {
-    "DXY", "GOLD", "BRENT", "US10Y", "US02Y", "BTC", "COPPER", "VIX",
-    "HYG", "LQD", "CA02Y", "DE02Y", "GB02Y", "AU02Y", "NZ02Y", "SOL",
+    "DXY", "GOLD", "BRENT", "US10Y", "BTC", "COPPER", "VIX",
+    "HYG", "LQD", "SOL",
 }
 
 OPTIONAL_MARKET_FIELDS = {
+    "US02Y", "CA02Y", "DE02Y", "GB02Y", "AU02Y", "NZ02Y",
     "IRON_ORE", "DAIRY_GDT", "SPX", "WTI", "FED_FUNDS_FUTURES",
 }
 
@@ -29,7 +30,7 @@ REQUIRED_FRED_FIELDS = {
 REQUIRED_ECONOMIC_FRED_FIELDS = {
     "CPI_YOY", "CORE_CPI_YOY", "PCE_YOY", "CORE_PCE_YOY",
     "PAYEMS", "UNRATE", "AHE_YOY",
-    "GDP_QOQ_SAAR", "INDPRO", "RSAFS",
+    "GDP_QOQ_SAAR", "INDPRO", "RSAFS", "RRSFS",
     "DGS3MO", "DGS2", "DGS5", "DGS10", "DGS30",
     "T10Y2Y", "T10Y3M", "SOFR",
 }
