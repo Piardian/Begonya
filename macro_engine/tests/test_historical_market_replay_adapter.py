@@ -10,7 +10,7 @@ class HistoricalMarketReplayAdapterTests(unittest.TestCase):
         as_of = dt.datetime(2023, 10, 15, 12, tzinfo=dt.timezone.utc)
         payload = HistoricalMarketReplayIngestion._build_payload(
             "DXY",
-            [100.0 + i for i in range(60)],
+            [100.0 + (i * 0.25) for i in range(60)],
             as_of,
             "test",
         )
