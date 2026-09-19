@@ -308,7 +308,7 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         scores = {
             "CAD": cad_score, "AUD": aud_score, "NZD": nz_score,
             "EUR": eur_score, "GBP": gb_score, "USD": usd_score,
-            "JPY": None, "CHF": None,
+            "JPY": jpy_score, "CHF": chf_score,
         }
 
         cross = result.setdefault("cross_pairs_analysis", {})
