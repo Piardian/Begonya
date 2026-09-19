@@ -15,7 +15,7 @@ class FakeFred:
 
 class FxHistoryTests(unittest.TestCase):
     def test_expected_fred_series_and_orientation(self):
-        rows = build(dt.date(2024, 1, 1), dt.date(2024, 1, 3), "dummy")
+        rows = build(dt.date(2024, 1, 1), dt.date(2024, 1, 3), "dummy", ingestion=FakeFred())
         self.assertEqual({r["pair"] for r in rows}, set(FX_SERIES))
         self.assertEqual(len(rows), 7)
         self.assertEqual(rows[0]["fx_close"], "2.0000000000")
