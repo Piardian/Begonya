@@ -11,7 +11,7 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
             market or self.base_market(),
             fred or self.base_fred(),
             events or [],
-            previous_regime_state=previous_state,
+            previous_regime_state=(previous_state if previous_state is not None else {"capital_preservation_active": False}),
             now_utc=now,
         )
 
@@ -276,8 +276,10 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
         }
         result = self.run_metrics(market=market, fred=fred)
         scores = result["cross_pairs_analysis"]["currency_scores"]
-        self.assertEqual(scores["JPY"], 1)
-        self.assertEqual(scores["CHF"], 1)
+        # Local rate momentum is opposed by the USD rate level; safe-haven demand alone
+        # cannot override the contradiction under the two-factor consensus rule.
+        self.assertEqual(scores["JPY"], 0)
+        self.assertEqual(scores["CHF"], 0)
 
     def test_currency_safe_havens_remain_neutral_without_aligned_evidence(self):
         market = self.base_market()
