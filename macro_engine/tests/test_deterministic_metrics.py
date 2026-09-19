@@ -66,6 +66,9 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
             "DGS30": 4.2, "DGS30_4W_AGO": 4.3,
             "T10Y2Y": 0.0, "T10Y2Y_4W_AGO": 0.0,
             "T10Y3M": -1.0, "T10Y3M_4W_AGO": -1.1,
+            "ECBDFR": 3.0, "ECBDFR_4W_AGO": 3.0,
+            "SONIA": 4.0, "SONIA_4W_AGO": 4.0,
+            "DGS2_5D_AGO": 4.05, "DGS10_5D_AGO": 4.02,
         }
 
     def test_yield_curve_noise_and_boundaries(self):
@@ -102,6 +105,50 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
         self.assertEqual(result["yield_curve"]["source"], "FRED DGS10 / DGS2 / T10Y2Y")
         self.assertEqual(result["yield_curve"]["spread_bps"], 0.0)
         self.assertEqual(result["yield_curve"]["delta_spread_20d_bps"], 5.0)
+
+    def test_direct_asset_gates_long_neutral_short_are_deterministic(self):
+        # XAU: low and falling real yield + non-rising USD => LONG_ONLY.
+        result = self.run_metrics()
+        self.assertEqual(result["asset_macro_gates"]["XAUUSD"], "LONG_ONLY")
+
+        # BTC: risk-on macro alignment requires positive liquidity as well.
+        result = self.run_metrics(fred={**self.base_fred(), "WALCL": 7100000.0})
+        self.assertEqual(result["asset_macro_gates"]["BTC"], "LONG_ONLY")
+
+        # SPX: same positive liquidity + benign real yield conditions => LONG_ONLY.
+        self.assertEqual(result["asset_macro_gates"]["SPX"], "LONG_ONLY")
+
+        # Removing the macro alignment must return to neutral, not infer LONG from no stress.
+        result = self.run_metrics(market=self.base_market(), fred=self.base_fred())
+        self.assertEqual(result["asset_macro_gates"]["BTC"], "NEUTRAL_RANGE")
+        self.assertEqual(result["asset_macro_gates"]["SPX"], "NEUTRAL_RANGE")
+
+    def test_direct_asset_gates_short_require_specific_conditions(self):
+        market = self.base_market()
+        market["VIX"]["value"] = 15.0
+        fred = {**self.base_fred(), "WALCL": 6900000.0}
+        self.assertEqual(
+            self.run_metrics(market=market, fred=fred)["asset_macro_gates"]["SPX"],
+            "SHORT_ONLY",
+        )
+
+        # Bear steepening / 10Y shock => BTC SHORT_ONLY.
+        market = self.base_market()
+        fred = {
+            **self.base_fred(),
+            "DGS2": 4.00, "DGS2_4W_AGO": 3.95, "DGS2_5D_AGO": 3.95,
+            "DGS10": 4.20, "DGS10_4W_AGO": 4.05, "DGS10_5D_AGO": 4.05,
+            "T10Y2Y": 0.20, "T10Y2Y_4W_AGO": 0.10,
+        }
+        result = self.run_metrics(market=market, fred=fred)
+        self.assertEqual(result["asset_macro_gates"]["BTC"], "SHORT_ONLY")
+
+    def test_xau_cash_dash_short_is_explicit_exception(self):
+        market = self.base_market()
+        market["VIX"]["value"] = 68.0
+        fred = {**self.base_fred(), "BAMLH0A0HYM2": 9.0}
+        result = self.run_metrics(market=market, fred=fred)
+        self.assertEqual(result["asset_macro_gates"]["XAUUSD"], "SHORT_ONLY")
 
     def test_observed_dff_is_authoritative(self):
         result = self.run_metrics()
