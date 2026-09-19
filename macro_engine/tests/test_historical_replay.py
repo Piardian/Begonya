@@ -93,7 +93,7 @@ class HistoricalReplayAndDeterminismTests(unittest.TestCase):
             result = run_scenario_march_2020_covid()
         self.assertFalse(result["data_quality"]["fallback_used"])
         self.assertTrue(result["data_quality"]["synthetic_fixture"])
-        self.assertIn("DFF", result["data_quality"]["fallback_fields"])
+        self.assertEqual(result["data_quality"]["fallback_fields"], [])
 
     def test_real_yield_negative_tips_is_not_lost_from_raw_result(self):
         result = MacroMetricsCalculator.calculate_real_yield(
