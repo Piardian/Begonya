@@ -149,6 +149,88 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
     def _validate_fred_freshness(self,fred_data:Dict[str,Any],as_of:Optional[dt.date])->Dict[str,int]:
         if as_of is None:return {}
         obs=fred_data.get("data_quality",{}).get("observation_dates",{});return {f:validate_freshness(f,dt.date.fromisoformat(str(v)),as_of,self.FRED_FREQUENCIES.get(f,"unknown")) for f,v in obs.items()}
+    @staticmethod
+    def _apply_strict_cross_currency_gates(
+        result: Dict[str, Any],
+        market_data: Mapping[str, Any],
+    ) -> None:
+        """Rebuild cross-pair gates only from available currency-driver scores.
+
+        A missing local sovereign yield is an unavailable input, not a neutral/positive
+        economic observation. JPY/CHF remain non-directional until direct local-rate
+        inputs are supplied to avoid treating generic safe-haven proxies as full macro
+        models.
+        """
+        cross = result.setdefault("cross_pairs_analysis", {})
+        raw_scores = dict(cross.get("currency_scores", {}))
+        scores: Dict[str, Optional[int]] = {key: int(value) if isinstance(value, (int, float)) else None for key, value in raw_scores.items()}
+
+        local_rate_requirements = {
+            "CAD": "CA02Y",
+            "EUR": "DE02Y",
+            "GBP": "GB02Y",
+            "AUD": "AU02Y",
+            "NZD": "NZ02Y",
+        }
+        for currency, field in local_rate_requirements.items():
+            if not isinstance(market_data.get(field), Mapping) or market_data[field].get("value") is None:
+                scores[currency] = None
+
+        # USD is supported by the direct FRED DGS2 + market DXY inputs.
+        dxy = market_data.get("DXY")
+        if not isinstance(dxy, Mapping) or dxy.get("value") is None:
+            scores["USD"] = None
+        if not isinstance(market_data.get("CA02Y"), Mapping) and scores.get("CAD") is not None:
+            scores["CAD"] = None
+
+        # No direct local 2Y input exists in the current provider contract for JPY/CHF.
+        scores["JPY"] = None
+        scores["CHF"] = None
+
+        pair_drivers = {
+            "AUDCAD": ("AUD", "CAD"),
+            "CADJPY": ("CAD", "JPY"),
+            "GBPJPY": ("GBP", "JPY"),
+            "AUDJPY": ("AUD", "JPY"),
+            "EURGBP": ("EUR", "GBP"),
+            "EURAUD": ("EUR", "AUD"),
+            "NZDCAD": ("NZD", "CAD"),
+            "EURJPY": ("EUR", "JPY"),
+            "USDCAD": ("USD", "CAD"),
+            "USDJPY": ("USD", "JPY"),
+            "GBPUSD": ("GBP", "USD"),
+            "AUDUSD": ("AUD", "USD"),
+            "NZDUSD": ("NZD", "USD"),
+            "USDCHF": ("USD", "CHF"),
+            "EURCHF": ("EUR", "CHF"),
+            "GBPCHF": ("GBP", "CHF"),
+            "AUDCHF": ("AUD", "CHF"),
+            "CADCHF": ("CAD", "CHF"),
+            "NZDCHF": ("NZD", "CHF"),
+            "CHFJPY": ("CHF", "JPY"),
+            "EURUSD": ("EUR", "USD"),
+        }
+
+        strict_gates: Dict[str, str] = {}
+        for pair, (base, quote) in pair_drivers.items():
+            base_score = scores.get(base)
+            quote_score = scores.get(quote)
+            if base_score is None or quote_score is None:
+                continue
+            diff = base_score - quote_score
+            strict_gates[pair] = "LONG_ONLY" if diff > 0 else "SHORT_ONLY" if diff < 0 else "NEUTRAL_RANGE"
+
+        cross["currency_scores"] = scores
+        cross["cross_gates"] = strict_gates
+        cross["directional_input_status"] = {
+            currency: ("AVAILABLE" if score is not None else "UNAVAILABLE")
+            for currency, score in scores.items()
+        }
+
+        regime_state = result.setdefault("regime_state", {})
+        regime_state["cross_currency_scores"] = scores
+        regime_state["cross_pair_gates"] = strict_gates
+
     def process_all_macro_data(self,market_data:Dict[str,Any],fred_data:Dict[str,Any],calendar_events:List[Dict[str,Any]],as_of_date:Optional[dt.date]=None,as_of_datetime:Optional[dt.datetime]=None,previous_regime_state:Optional[Mapping[str,Any]]=None,now_utc:Optional[dt.datetime]=None)->Dict[str,Any]:
         validate_market_payload(market_data);validate_fred_payload(
             fred_data,
@@ -168,6 +250,7 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         fred_curve = self._build_fred_yield_curve(fred_data)
         if fred_curve is not None:
             r["yield_curve"] = fred_curve
+        self._apply_strict_cross_currency_gates(r, market_data)
         if freeze is not None:r.setdefault("cross_pairs_analysis",{})["event_freeze"]=freeze;r.setdefault("regime_state",{})["event_freeze_active"]=bool(freeze["active"])
         dgs2_for_policy = float(dgs2) if isinstance(dgs2, (int, float)) else float(r.get("fed_forward_path_analysis",{}).get("us02y_yield",legacy_market.get("US02Y",{}).get("value",0.0)))
         r["fed_forward_path_analysis"]=self.calculate_fed_forward_path(dgs2_for_policy,fred_data.get("DFF"),None)
