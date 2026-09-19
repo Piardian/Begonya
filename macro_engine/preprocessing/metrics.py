@@ -440,7 +440,7 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
             ])
             if spx_long >= 3 and spx_short == 0:
                 gates["SPX"] = "LONG_ONLY"
-            elif spx_short >= 3 and spx_long == 0:
+            elif spx_short == 4 and spx_long == 0:
                 gates["SPX"] = "SHORT_ONLY"
             else:
                 gates["SPX"] = "NEUTRAL_RANGE"
