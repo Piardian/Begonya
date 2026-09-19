@@ -23,6 +23,7 @@ FREQUENCIES = {
     "GDP_QOQ_SAAR": "quarterly",
     "INDPRO": "monthly",
     "RSAFS": "monthly",
+    "RRSFS": "monthly",
     "DGS3MO": "daily",
     "DGS2": "daily",
     "DGS5": "daily",
@@ -189,7 +190,7 @@ def build_economic_regime_snapshot(
         labor_regime = "UNAVAILABLE"
 
     industrial_change = _pct_change(fred, "INDPRO")
-    retail_change = _pct_change(fred, "RSAFS")
+    retail_change = _pct_change(fred, "RRSFS")
     gdp_growth = _num(fred, "GDP_QOQ_SAAR")
     if gdp_growth is not None and industrial_change is not None and retail_change is not None:
         if gdp_growth < 0.0 and industrial_change < 0.0 and retail_change < 0.0:
@@ -265,7 +266,7 @@ def build_economic_regime_snapshot(
             "signal": growth_regime,
             "real_gdp_qoq_saar_pct": gdp_growth,
             "industrial_production_change_pct_4w": industrial_change,
-            "retail_sales_change_pct_4w": retail_change,
+            "real_retail_sales_change_pct_4w": retail_change,
         },
         "pmi_regime": {
             "signal": pmi_signal,
