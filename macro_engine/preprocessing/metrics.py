@@ -534,7 +534,17 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         r["fed_forward_path_analysis"]=self.calculate_fed_forward_path(dgs2_for_policy,fred_data.get("DFF"),None)
         r["fed_forward_path_analysis"]["dgs2_4w_change_bps"] = None if not isinstance(dgs2_4w, (int, float)) else round((dgs2_for_policy - float(dgs2_4w)) * 100.0, 1)
         r["fed_forward_path_analysis"]["policy_rate_gap_2y_dff_bps"] = None if fred_data.get("DFF") is None else round((dgs2_for_policy - float(fred_data["DFF"])) * 100.0, 1)
-        r.setdefault("regime_state",{})["state_source"]="explicit_previous_regime_state" if previous_regime_state is not None else "default_inactive_state";r["dxy_oil_correlation_method"]="pearson_on_period_returns";r["data_quality"]={"fallback_used":False,"synthetic_fallback_used":False,"fallback_fields":[],"treasury_curve_source":"FRED_DGS2_DGS10_T10Y2Y","treasury_5d_history_available":bool(fred_data.get("DGS2_5D_AGO") is not None and fred_data.get("DGS10_5D_AGO") is not None)};r["validation"]={"fred_freshness_days":fresh}
+        r.setdefault("regime_state",{})["state_source"]="explicit_previous_regime_state" if previous_regime_state is not None else "default_inactive_state";r["dxy_oil_correlation_method"]="pearson_on_period_returns"
+        source_quality = dict(fred_data.get("data_quality", {})) if isinstance(fred_data.get("data_quality"), Mapping) else {}
+        source_quality.update({
+            "fallback_used": bool(source_quality.get("fallback_used", False)),
+            "synthetic_fallback_used": bool(source_quality.get("synthetic_fallback_used", False)),
+            "fallback_fields": list(source_quality.get("fallback_fields", [])),
+            "treasury_curve_source":"FRED_DGS2_DGS10_T10Y2Y",
+            "treasury_5d_history_available": bool(fred_data.get("DGS2_5D_AGO") is not None and fred_data.get("DGS10_5D_AGO") is not None),
+        })
+        r["data_quality"] = source_quality
+        r["validation"]={"fred_freshness_days":fresh}
         if float(market_data.get("VIX",{}).get("value",0) or 0)>=40 and isinstance(r.get("credit_spread_analysis"),dict):
             stress=str(r["credit_spread_analysis"].get("stress_level","")).lower()
             if "distress" in stress or "şiddetli kredi krizi" in stress:r.setdefault("gold_fiscal_dominance",{})["is_cash_dash"]=True;r["gold_fiscal_dominance"]["gold_short_allowed"]=True
