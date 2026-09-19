@@ -45,6 +45,8 @@ class FredDataIngestion:
         "M2SL": "M2SL",
         # OECD Germany 10Y government bond yield, monthly, via FRED.
         "DE10Y": "IRLTLT01DEM156N",
+        "ECBDFR": "ECBDFR",
+        "SONIA": "IUDSOIA",
     }
 
     ECONOMIC_FRED_SERIES = {
@@ -231,6 +233,20 @@ class FredDataIngestion:
             results[f"{logical_name}_4W_AGO"] = prior
             economic_observation_dates[logical_name] = current_date.isoformat()
             economic_prior_dates[logical_name] = prior_date.isoformat()
+
+        # Synchronized 5-day Treasury history used for curve dynamics.
+        for logical_name in ("DGS2", "DGS10"):
+            rows = self._get_observations(
+                logical_name,
+                as_of - dt.timedelta(days=20),
+                as_of,
+                realtime_end=as_of,
+            )
+            eligible = sorted([row for row in rows if row[0] <= as_of], key=lambda x: x[0])
+            prior_5d = [row for row in eligible if row[0] <= as_of - dt.timedelta(days=5)]
+            if prior_5d:
+                results[f"{logical_name}_5D_AGO"] = prior_5d[-1][1]
+                economic_observation_dates[f"{logical_name}_5D_AGO"] = prior_5d[-1][0].isoformat()
 
         missing = (REQUIRED_FRED_FIELDS | REQUIRED_ECONOMIC_FRED_FIELDS) - set(results)
         if missing:
