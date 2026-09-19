@@ -332,11 +332,11 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         market_data: Mapping[str, Any],
         fred_data: Mapping[str, Any],
     ) -> Dict[str, str]:
-        """Deterministic macro direction for the three direct assets.
+        """Build symmetric deterministic directional gates for direct assets.
 
-        Thresholds are inherited from the existing rule contract and are deliberately
-        conservative: no stress/absence-of-stress is treated as directional evidence
-        by itself. Each LONG_ONLY state requires independent macro alignment.
+        LONG_ONLY and SHORT_ONLY require independent aligned evidence. A risk state
+        alone is never converted into a directional short; acute stress is HOLD.
+        Thresholds remain the existing contract and require later OOS calibration.
         """
         def market_value(name: str, key: str = "value") -> Optional[float]:
             item = market_data.get(name)
@@ -358,62 +358,79 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         fast_stress = bool(result.get("t0_fast_stress_analysis", {}).get("fast_stress_override"))
         capital_preservation = bool(result.get("regime_state", {}).get("capital_preservation_active"))
         duration_shock = bool(result.get("btc_decoupling_analysis", {}).get("is_duration_shock"))
-        gold_short = bool(result.get("gold_fiscal_dominance", {}).get("gold_short_allowed"))
-        equity_short = bool(result.get("equity_short_regime", {}).get("equity_short_allowed"))
+
+        def count_true(flags: list[bool]) -> int:
+            return sum(1 for flag in flags if flag)
 
         gates: Dict[str, str] = {}
 
-        # XAUUSD: extreme USD-liquidity dash is the only explicit SHORT regime.
-        # LONG requires low/declining real yields AND non-rising USD.
-        if gold_short:
-            gates["XAUUSD"] = "SHORT_ONLY"
-        elif (
-            isinstance(real_yield, (int, float))
-            and float(real_yield) < 1.90
-            and isinstance(real_yield_delta, (int, float))
-            and float(real_yield_delta) <= 0.0
-            and isinstance(dxy_4w, (int, float))
-            and float(dxy_4w) <= 0.0
-        ):
+        # XAUUSD: real-yield opportunity cost + USD direction are the primary
+        # macro drivers. Direction is symmetric; cash-dash is diagnostic only.
+        xau_long = count_true([
+            isinstance(real_yield, (int, float)) and float(real_yield) < 1.90,
+            isinstance(real_yield_delta, (int, float)) and float(real_yield_delta) <= 0.0,
+            isinstance(dxy_4w, (int, float)) and float(dxy_4w) <= 0.0,
+        ])
+        xau_short = count_true([
+            isinstance(real_yield, (int, float)) and float(real_yield) > 1.90,
+            isinstance(real_yield_delta, (int, float)) and float(real_yield_delta) >= 0.0,
+            isinstance(dxy_4w, (int, float)) and float(dxy_4w) >= 0.5,
+        ])
+        if xau_long == 3:
             gates["XAUUSD"] = "LONG_ONLY"
+        elif xau_short == 3:
+            gates["XAUUSD"] = "SHORT_ONLY"
         else:
             gates["XAUUSD"] = "NEUTRAL_RANGE"
 
-        # BTC: duration shock -> SHORT; acute stress -> HOLD; LONG requires
-        # expanding net liquidity + benign real yields + non-rising USD.
-        if duration_shock:
-            gates["BTC"] = "SHORT_ONLY"
-        elif fast_stress or capital_preservation:
+        # BTC: acute stress/capital preservation is HOLD. Direction requires
+        # broad alignment across liquidity, real yields, USD and volatility.
+        if fast_stress or capital_preservation:
             gates["BTC"] = "DEFENSIVE_HOLD"
-        elif (
-            isinstance(liq_delta, (int, float))
-            and float(liq_delta) > 0.0
-            and isinstance(real_yield, (int, float))
-            and float(real_yield) < 1.90
-            and isinstance(dxy_4w, (int, float))
-            and float(dxy_4w) <= 0.0
-            and isinstance(vix, (int, float)) and vix < 25.0
-        ):
-            gates["BTC"] = "LONG_ONLY"
         else:
-            gates["BTC"] = "NEUTRAL_RANGE"
+            btc_long = count_true([
+                isinstance(liq_delta, (int, float)) and float(liq_delta) > 0.0,
+                isinstance(real_yield, (int, float)) and float(real_yield) < 1.90,
+                isinstance(dxy_4w, (int, float)) and float(dxy_4w) <= 0.0,
+                isinstance(vix, (int, float)) and float(vix) < 25.0,
+            ])
+            btc_short = count_true([
+                isinstance(liq_delta, (int, float)) and float(liq_delta) < -30.0,
+                isinstance(real_yield, (int, float)) and float(real_yield) > 1.90,
+                isinstance(dxy_4w, (int, float)) and float(dxy_4w) >= 0.5,
+                isinstance(vix, (int, float)) and float(vix) >= 25.0,
+                duration_shock,
+            ])
+            if btc_long >= 3 and btc_short == 0:
+                gates["BTC"] = "LONG_ONLY"
+            elif btc_short >= 3 and btc_long == 0:
+                gates["BTC"] = "SHORT_ONLY"
+            else:
+                gates["BTC"] = "NEUTRAL_RANGE"
 
-        # SPX/NAS100: retain the existing pre-storm SHORT condition; LONG needs
-        # positive liquidity, benign real yields and no fast stress.
-        if equity_short:
-            gates["SPX"] = "SHORT_ONLY"
-        elif (
-            not fast_stress
-            and not capital_preservation
-            and isinstance(liq_delta, (int, float))
-            and float(liq_delta) > 0.0
-            and isinstance(real_yield, (int, float))
-            and float(real_yield) < 1.90
-            and isinstance(vix, (int, float)) and vix < 22.0
-        ):
-            gates["SPX"] = "LONG_ONLY"
+        # SPX/NAS100: directional short requires tightening + higher real
+        # yields/stronger USD + complacency. High-volatility regimes remain HOLD.
+        if fast_stress or capital_preservation:
+            gates["SPX"] = "DEFENSIVE_HOLD"
         else:
-            gates["SPX"] = "NEUTRAL_RANGE"
+            spx_long = count_true([
+                isinstance(liq_delta, (int, float)) and float(liq_delta) > 0.0,
+                isinstance(real_yield, (int, float)) and float(real_yield) < 1.90,
+                isinstance(dxy_4w, (int, float)) and float(dxy_4w) <= 0.0,
+                isinstance(vix, (int, float)) and float(vix) < 22.0,
+            ])
+            spx_short = count_true([
+                isinstance(liq_delta, (int, float)) and float(liq_delta) < -30.0,
+                isinstance(real_yield, (int, float)) and float(real_yield) > 1.90,
+                isinstance(dxy_4w, (int, float)) and float(dxy_4w) >= 0.5,
+                isinstance(vix, (int, float)) and float(vix) < 18.0,
+            ])
+            if spx_long >= 3 and spx_short == 0:
+                gates["SPX"] = "LONG_ONLY"
+            elif spx_short >= 3 and spx_long == 0:
+                gates["SPX"] = "SHORT_ONLY"
+            else:
+                gates["SPX"] = "NEUTRAL_RANGE"
 
         return gates
 
