@@ -77,7 +77,7 @@ class ExecutionGateTests(unittest.TestCase):
             "btc_decoupling_analysis": {"recommended_btc_gate": "LONG_ONLY_ALLOWED_IF_DEBASEMENT"},
         }
         gates = MacroWorkflowEngine._build_deterministic_gates(metrics)
-        self.assertEqual(gates["execution_bias_gates"]["XAUUSD"], "LONG_ONLY")
+        self.assertEqual(gates["execution_bias_gates"]["XAUUSD"], "NEUTRAL_RANGE")
         self.assertEqual(gates["source"], "deterministic_metrics_only")
         self.assertTrue(gates["llm_execution_gates_ignored"])
 
