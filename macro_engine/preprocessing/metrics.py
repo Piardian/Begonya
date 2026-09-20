@@ -164,6 +164,8 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
                 ),
             }
             r.setdefault("regime_state", {})["cross_pair_gates"] = dict(cross["cross_gates"])
+            r["regime_state"]["cross_currency_scores"] = dict(cross["currency_scores"])
+            r["regime_state"]["cross_currency_breakdown"] = dict(cross["currency_breakdown"])
 
         market_price_context = {}
         for symbol in (
