@@ -275,7 +275,7 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
         # GBPUSD: legacy relative-value direction must agree with official
         # UK Bank Rate versus US policy rate. If the local policy input is absent
         # or contradicts the legacy direction, suppress the directional gate.
-        cross_gates_raw = cross_analysis.get("cross_gates", {}) or {}
+        cross_gates_raw = dict(cross_analysis.get("cross_gates", {}) or {})
         gbpusd_legacy = str(cross_gates_raw.get("GBPUSD", "NEUTRAL_RANGE"))
         uk_panel = metrics.get("economic_regime_snapshot", {}).get("uk_policy", {})
         us_minus_uk = uk_panel.get("us_minus_uk_policy_spread_bps")
@@ -292,7 +292,7 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
 
         # USDCAD: legacy relative-value direction must agree with the
         # official Canada policy rate versus the US policy rate.
-        cross_gates_raw = cross_analysis.get("cross_gates", {}) or {}
+        cross_gates_raw = dict(cross_analysis.get("cross_gates", {}) or {})
         usdcad_legacy = str(cross_gates_raw.get("USDCAD", "NEUTRAL_RANGE"))
         ca_panel = metrics.get("economic_regime_snapshot", {}).get("canada_policy", {})
         us_minus_ca = ca_panel.get("us_minus_ca_policy_spread_bps")
