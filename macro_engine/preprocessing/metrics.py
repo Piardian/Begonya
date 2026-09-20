@@ -68,8 +68,25 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         return {"real_yield_pct":y,"yield_source":src,"pressure_on_gold":p,"description":f"10Y Reel Getiri: %{y} [{src}] (Altın baskısı: {p})"}
     @staticmethod
     def calculate_fed_forward_path(us02y:float,dff:Optional[float],us02y_5d:Optional[float]=None)->Dict[str,Any]:
-        if dff is None:return {"fed_policy_rate_pct":5.33,"fed_policy_rate_source":"LEGACY_STATIC_5.33_FALLBACK","us02y_yield":us02y,"implied_rate_gap_bps":round((us02y-5.33)*100,1),"delta_02y_5d_bps":None if us02y_5d is None else round((us02y-us02y_5d)*100,1)}
-        gap=round((us02y-dff)*100,1);return {"fed_policy_rate_pct":round(dff,3),"fed_policy_rate_source":"FRED DFF","implied_rate_gap_bps":gap,"delta_02y_5d_bps":None if us02y_5d is None else round((us02y-us02y_5d)*100,1),"rate_expectation_signal":"Market-implied easing" if gap<=-25 else "Market-implied tightening" if gap>=25 else "Near-policy / neutral pricing"}
+        if dff is None:
+            return {
+                "fed_policy_rate_pct": 5.33,
+                "fed_policy_rate_source": "LEGACY_STATIC_5.33_FALLBACK",
+                "us02y_yield": us02y,
+                "implied_rate_gap_bps": round((us02y-5.33)*100,1),
+                "delta_02y_5d_bps": None if us02y_5d is None else round((us02y-us02y_5d)*100,1),
+                "interpretation_warning": "US02Y-DFF is a policy-rate/yield spread; it is not a total rate-cut estimate.",
+            }
+        gap=round((us02y-dff)*100,1)
+        return {
+            "fed_policy_rate_pct":round(dff,3),
+            "fed_policy_rate_source":"FRED DFF",
+            "us02y_yield":us02y,
+            "implied_rate_gap_bps":gap,
+            "delta_02y_5d_bps":None if us02y_5d is None else round((us02y-us02y_5d)*100,1),
+            "rate_expectation_signal":"Market-implied easing" if gap<=-25 else "Market-implied tightening" if gap>=25 else "Near-policy / neutral pricing",
+            "interpretation_warning":"US02Y-DFF is a market-vs-current-policy spread; it is not a meeting-count or guaranteed total rate-cut estimate.",
+        }
     @staticmethod
     def _validate_key_ranges(market_data:Dict[str,Any],fred_data:Dict[str,Any])->None:
         for n,lo,hi in [("DXY",0,500),("GOLD",0,10000),("BRENT",0,500),("US10Y",-5,20),("US02Y",-5,20),("BTC",0,2000000),("COPPER",0,20),("VIX",0,200),("HYG",0,200),("LQD",0,300)]:
