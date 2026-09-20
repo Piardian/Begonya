@@ -100,7 +100,7 @@ def run_scenario_march_2023_svb() -> Dict[str, Any]:
         {"title": "Non-Farm Employment Change", "actual": "311K", "forecast": "225K"},
         {"title": "Unemployment Rate", "actual": "3.6%", "forecast": "3.4%"}
     ]
-    return calc.process_all_macro_data(raw_market, raw_fred, events)
+    return _mark_synthetic_fixture(calc.process_all_macro_data(raw_market, raw_fred, events))
 
 
 def run_scenario_march_2020_covid() -> Dict[str, Any]:
@@ -133,7 +133,7 @@ def run_scenario_march_2020_covid() -> Dict[str, Any]:
     events = [
         {"title": "Initial Jobless Claims", "actual": "3300K", "forecast": "250K"}
     ]
-    return calc.process_all_macro_data(raw_market, raw_fred, events)
+    return _mark_synthetic_fixture(calc.process_all_macro_data(raw_market, raw_fred, events))
 
 
 def main():
