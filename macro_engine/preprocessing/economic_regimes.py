@@ -222,6 +222,16 @@ def build_economic_regime_snapshot(
     policy_gap_bps = (two_year - dff) * 100.0 if two_year is not None and dff is not None else None
     sofr_gap_bps = (sofr - dff) * 100.0 if sofr is not None and dff is not None else None
 
+    ea_hicp = _num(fred, "EA_HICP_YOY")
+    ea_hicp_delta = _delta(fred, "EA_HICP_YOY")
+    ecb_deposit_rate = _num(fred, "ECB_DEPOSIT_RATE")
+    ecb_deposit_delta = _delta(fred, "ECB_DEPOSIT_RATE")
+    us_minus_ecb_bps = (
+        (dff - ecb_deposit_rate) * 100.0
+        if dff is not None and ecb_deposit_rate is not None
+        else None
+    )
+
     manufacturing_pmi = _num(fred, "ISM_MANUFACTURING_PMI")
     manufacturing_pmi_delta = _delta(fred, "ISM_MANUFACTURING_PMI")
     services_activity = _num(fred, "ISM_SERVICES_ACTIVITY")
@@ -295,6 +305,21 @@ def build_economic_regime_snapshot(
             "two_ten_inverted": bool(two_ten_spread is not None and two_ten_spread < 0.0),
             "three_ten_inverted": bool(three_ten_spread is not None and three_ten_spread < 0.0),
             "two_year_minus_dff_bps": policy_gap_bps,
+        },
+        "euro_area_macro": {
+            "status": "COMPLETE" if ea_hicp is not None and ecb_deposit_rate is not None else "PARTIAL",
+            "hicp_yoy_pct": ea_hicp,
+            "hicp_change_pp_4w": ea_hicp_delta,
+            "hicp_direction": (
+                "RISING" if ea_hicp_delta is not None and ea_hicp_delta >= 0.10
+                else "FALLING" if ea_hicp_delta is not None and ea_hicp_delta <= -0.10
+                else "STABLE" if ea_hicp_delta is not None
+                else "UNAVAILABLE"
+            ),
+            "ecb_deposit_rate_pct": ecb_deposit_rate,
+            "ecb_deposit_rate_change_pp_4w": ecb_deposit_delta,
+            "us_minus_ecb_policy_spread_bps": us_minus_ecb_bps,
+            "source_note": "Euro-area HICP from Eurostat via FRED; ECB Deposit Facility Rate from ECB via FRED.",
         },
         "policy_regime": {
             "dff_pct": dff,
