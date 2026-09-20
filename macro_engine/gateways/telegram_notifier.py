@@ -21,19 +21,24 @@ def sanitize_unverified_price_levels(text: str) -> str:
     """Remove explicit price/level claims from free-form LLM prose."""
     if not text:
         return ""
+
     patterns = [
-        r"(?:\\$|€|£)\\s*\\d[\\d,]*(?:\\.\\d+)?(?:\\s*[-–]\\s*(?:\\$|€|£)?\\s*\\d[\\d,]*(?:\\.\\d+)?)?",
-        r"\\b(?:XAUUSD|GOLD|BTCUSD|BTC|DXY|SPX|NAS100|EURUSD|USDJPY|GBPUSD|USDCAD|USDCHF)\\s*(?:[:=]\\s*)?\\d[\\d,]*(?:\\.\\d+)?(?:\\s*[-–]\\s*\\d[\\d,]*(?:\\.\\d+)?)?",
+        # Currency-qualified prices/ranges: "$66,000", "$2,650-$2,680".
+        r"(?:[$€£]\s*)\d[\d,]*(?:\.\d+)?(?:\s*[-–]\s*(?:[$€£]\s*)?\d[\d,]*(?:\.\d+)?)?",
+        # Asset-qualified prices/ranges: "XAUUSD 2650-2680", "DXY 100.50".
+        r"\b(?:XAUUSD|GOLD|BTCUSD|BTC|DXY|SPX|NAS100|EURUSD|USDJPY|GBPUSD|USDCAD|USDCHF)\s*(?:[:=]\s*)?(?:[$€£]\s*)?\d[\d,]*(?:\.\d+)?(?:\s*[-–]\s*(?:[$€£]\s*)?\d[\d,]*(?:\.\d+)?)?",
     ]
+
     import re
     cleaned = str(text)
     changed = False
     for pattern in patterns:
         cleaned, count = re.subn(pattern, "", cleaned, flags=re.IGNORECASE)
         changed = changed or count > 0
+
     if changed:
-        cleaned = re.sub(r"\\s{2,}", " ", cleaned)
-        cleaned = re.sub(r"\\(\\s*\\)", "", cleaned)
+        cleaned = re.sub(r"\s{2,}", " ", cleaned)
+        cleaned = re.sub(r"\(\s*\)", "", cleaned)
         cleaned += " [Doğrulanmış teknik fiyat seviyesi bu makro katmanda üretilmiyor.]"
     return cleaned.strip()
 
