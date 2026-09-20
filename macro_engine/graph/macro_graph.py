@@ -71,11 +71,8 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
 
     @staticmethod
     def _build_deterministic_gates(metrics: Mapping[str, Any]) -> Dict[str, Any]:
-        freeze = bool(
-            metrics.get("cross_pairs_analysis", {})
-            .get("event_freeze", {})
-            .get("active", False)
-        )
+        cross_analysis = metrics.get("cross_pairs_analysis", {})
+        freeze = bool(cross_analysis.get("event_freeze", {}).get("active", False))
         fast_stress = bool(
             metrics.get("t0_fast_stress_analysis", {})
             .get("fast_stress_override", False)
@@ -86,40 +83,102 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
         delta_10y_5d = yield_curve.get("delta_10y_5d_bps")
         bear_steepening = yield_curve.get("regime") == "Bear Steepening"
 
-        # XAUUSD: deterministic macro gate from real yield / duration shock.
+        dxy = metrics.get("dxy_trend_analysis", {})
+        dxy_delta_20d = dxy.get("delta_20d_pct")
+        liquidity = metrics.get("liquidity_dynamics", {})
+        liquidity_delta = liquidity.get("delta_liquidity_billion")
+        nfci = metrics.get("financial_conditions_analysis", {}).get("nfci_value")
+        credit = metrics.get("credit_spread_analysis", {})
+        credit_stress = str(credit.get("stress_level", ""))
+
+        evidence: Dict[str, Any] = {}
+
+        # XAUUSD: LONG_ONLY requires two independent supportive channels.
         gold_short = bool(
             metrics.get("gold_fiscal_dominance", {})
             .get("gold_short_allowed", False)
         )
+        xau_bullish = []
+        xau_bearish = []
+        if isinstance(real_yield, (int, float)):
+            (xau_bullish if float(real_yield) < 1.90 else xau_bearish).append(
+                f"real_yield={'supportive' if float(real_yield) < 1.90 else 'restrictive'}:{float(real_yield):.2f}%"
+            )
+        if isinstance(dxy_delta_20d, (int, float)):
+            (xau_bullish if float(dxy_delta_20d) < -0.5 else xau_bearish if float(dxy_delta_20d) > 0.5 else []).append(
+                f"DXY_20d={float(dxy_delta_20d):+.2f}%"
+            ) if abs(float(dxy_delta_20d)) > 0.5 else None
+        if isinstance(liquidity_delta, (int, float)):
+            (xau_bullish if float(liquidity_delta) > 0 else xau_bearish).append(
+                f"net_liquidity_4w={float(liquidity_delta):+.1f}B"
+            )
+        if isinstance(nfci, (int, float)) and float(nfci) < 0:
+            xau_bullish.append(f"NFCI={float(nfci):+.2f}")
+        if bear_steepening:
+            xau_bearish.append("bear_steepening")
+        if isinstance(delta_10y_5d, (int, float)) and float(delta_10y_5d) >= 10.0:
+            xau_bearish.append(f"10Y_5d={float(delta_10y_5d):+.1f}bps")
         if gold_short:
             xau_base = "SHORT_ONLY"
-        elif real_yield is None:
-            xau_base = "NEUTRAL_RANGE"
-        elif float(real_yield) >= 1.90 or bear_steepening or (
-            isinstance(delta_10y_5d, (int, float)) and float(delta_10y_5d) >= 10.0
-        ):
-            xau_base = "NEUTRAL_RANGE"
-        else:
+        elif len(xau_bullish) >= 2 and not xau_bearish:
             xau_base = "LONG_ONLY"
+        else:
+            xau_base = "NEUTRAL_RANGE"
+        evidence["XAUUSD"] = {
+            "bullish_factors": xau_bullish,
+            "bearish_factors": xau_bearish,
+            "minimum_for_long_only": 2,
+        }
 
-        # BTC: retain the deterministic decoupling/stress classification.
-        btc_base_raw = metrics.get("btc_decoupling_analysis", {}).get(
+        # BTC: "no stress" is not enough. Require at least two independent
+        # macro supports for LONG_ONLY and reject when clear bearish evidence exists.
+        btc_bullish = []
+        btc_bearish = []
+        if isinstance(real_yield, (int, float)):
+            (btc_bullish if float(real_yield) < 1.90 else btc_bearish).append(
+                f"real_yield:{float(real_yield):.2f}%"
+            )
+        if isinstance(dxy_delta_20d, (int, float)):
+            if float(dxy_delta_20d) < -0.5:
+                btc_bullish.append(f"DXY_20d:{float(dxy_delta_20d):+.2f}%")
+            elif float(dxy_delta_20d) > 0.5:
+                btc_bearish.append(f"DXY_20d:{float(dxy_delta_20d):+.2f}%")
+        if isinstance(liquidity_delta, (int, float)):
+            (btc_bullish if float(liquidity_delta) > 0 else btc_bearish).append(
+                f"net_liquidity_4w:{float(liquidity_delta):+.1f}B"
+            )
+        if isinstance(nfci, (int, float)):
+            (btc_bullish if float(nfci) < 0 else btc_bearish).append(
+                f"NFCI:{float(nfci):+.2f}"
+            )
+        if bear_steepening:
+            btc_bearish.append("bear_steepening")
+        if isinstance(delta_10y_5d, (int, float)) and float(delta_10y_5d) >= 10.0:
+            btc_bearish.append(f"10Y_5d:{float(delta_10y_5d):+.1f}bps")
+        if isinstance(credit_stress, str) and "Distress" in credit_stress:
+            btc_bearish.append("credit_distress")
+
+        legacy_btc = metrics.get("btc_decoupling_analysis", {}).get(
             "recommended_btc_gate", "DEFENSIVE_HOLD"
         )
-        btc_map = {
-            "LONG_ONLY_ALLOWED_IF_DEBASEMENT": "LONG_ONLY",
-            "SHORT_ONLY": "SHORT_ONLY",
-            "DEFENSIVE_HOLD": "DEFENSIVE_HOLD",
-            "LONG_ONLY": "LONG_ONLY",
-            "NEUTRAL_RANGE": "NEUTRAL_RANGE",
+        if fast_stress:
+            btc_base = "DEFENSIVE_HOLD"
+        elif "SHORT_ONLY" in str(legacy_btc).upper() and bear_steepening:
+            btc_base = "SHORT_ONLY"
+        elif len(btc_bullish) >= 2 and not btc_bearish:
+            btc_base = "LONG_ONLY"
+        else:
+            btc_base = "NEUTRAL_RANGE"
+        evidence["BTC"] = {
+            "bullish_factors": btc_bullish,
+            "bearish_factors": btc_bearish,
+            "legacy_recommendation": legacy_btc,
+            "minimum_for_long_only": 2,
         }
-        btc_base = btc_map.get(btc_base_raw, "DEFENSIVE_HOLD")
 
-        # EURUSD: require both a transatlantic-rate signal and dollar confirmation.
+        # EURUSD: require rate-spread evidence plus dollar confirmation.
         transatlantic = metrics.get("transatlantic_analysis", {})
         spread_bps = transatlantic.get("spread_bps")
-        dxy = metrics.get("dxy_trend_analysis", {})
-        dxy_delta_20d = dxy.get("delta_20d_pct")
         energy_penalty = bool(
             metrics.get("terms_of_trade_energy_analysis", {})
             .get("eurusd_energy_penalty", False)
@@ -144,16 +203,24 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             eur_base = "LONG_ONLY"
         else:
             eur_base = "NEUTRAL_RANGE"
+        evidence["EURUSD"] = {
+            "gate_basis": "transatlantic spread + DXY confirmation + energy penalty",
+            "transatlantic_spread_bps": spread_bps,
+            "dxy_delta_20d_pct": dxy_delta_20d,
+            "energy_penalty": energy_penalty,
+        }
 
-        # SPX: directional short requires the pre-existing two-condition
-        # complacency/liquidity rule; otherwise no directional claim is made.
-        spx_base = (
-            "SHORT_ONLY"
-            if bool(metrics.get("equity_short_regime", {}).get("equity_short_allowed", False))
-            else "NEUTRAL_RANGE"
+        spx_allowed = bool(
+            metrics.get("equity_short_regime", {})
+            .get("equity_short_allowed", False)
         )
+        spx_base = "SHORT_ONLY" if spx_allowed else "NEUTRAL_RANGE"
+        evidence["SPX"] = {
+            "gate_basis": "equity_short_regime; otherwise neutral",
+            "equity_short_allowed": spx_allowed,
+        }
 
-        cross = metrics.get("cross_pairs_analysis", {}).get("cross_gates", {})
+        cross = cross_analysis.get("cross_gates", {})
         base_gates = {
             "XAUUSD": xau_base,
             "BTC": btc_base,
@@ -163,6 +230,13 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
         base_gates.update(
             {str(k): str(v) for k, v in cross.items() if isinstance(v, str)}
         )
+
+        # If BTC is not long-permitted, a legacy SOL long gate must not bypass it.
+        if base_gates.get("BTC") != "LONG_ONLY" and base_gates.get("SOL") == "LONG_ONLY":
+            base_gates["SOL"] = "NEUTRAL_RANGE"
+            evidence["SOL"] = {
+                "gate_basis": "BTC parent gate is not LONG_ONLY; SOL cannot bypass parent crypto regime."
+            }
 
         resolved: Dict[str, str] = {}
         reasons: Dict[str, str] = {}
@@ -176,31 +250,6 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             resolved[symbol] = decision["gate"]
             reasons[symbol] = decision["reason"]
 
-        evidence = {
-            "XAUUSD": {
-                "gate_basis": "gold_fiscal_dominance OR real_yield>=1.90 OR bear_steepening OR delta_10y_5d>=10bps",
-                "real_yield_pct": real_yield,
-                "bear_steepening": bear_steepening,
-                "delta_10y_5d_bps": delta_10y_5d,
-            },
-            "BTC": {
-                "gate_basis": "btc_decoupling_analysis + systemic stress controls",
-                "recommended_base_gate": btc_base_raw,
-            },
-            "EURUSD": {
-                "gate_basis": "transatlantic spread + DXY confirmation + energy penalty",
-                "transatlantic_spread_bps": spread_bps,
-                "dxy_delta_20d_pct": dxy_delta_20d,
-                "energy_penalty": energy_penalty,
-            },
-            "SPX": {
-                "gate_basis": "equity_short_regime; otherwise neutral",
-                "equity_short_allowed": bool(
-                    metrics.get("equity_short_regime", {}).get("equity_short_allowed", False)
-                ),
-            },
-        }
-
         return {
             "execution_bias_gates": resolved,
             "gate_reasons": reasons,
@@ -210,7 +259,6 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             "precedence": ["EVENT_FREEZE", "SYSTEMIC_STRESS", "BASE_BIAS"],
             "llm_execution_gates_ignored": True,
         }
-
     def _node_gate_export(self, state: MacroGraphState) -> Dict[str, Any]:
         """Export execution gates derived only from deterministic metrics; LLM gates are advisory and ignored."""
         final_dict = state.get("final_output") or {}
