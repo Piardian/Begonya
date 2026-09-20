@@ -361,6 +361,20 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
     deterministic = pipeline_result.get("deterministic_execution_gates") or {}
     gates = deterministic.get("execution_bias_gates") or {}
     gate_source = deterministic.get("source", "UNAVAILABLE")
+    gate_evidence = deterministic.get("evidence") or {}
+    gate_reasons = deterministic.get("gate_reasons") or {}
+
+    def evidence_line(symbol: str) -> str:
+        item = gate_evidence.get(symbol, {})
+        bullish = item.get("bullish_factors", [])
+        bearish = item.get("bearish_factors", [])
+        if bullish or bearish:
+            return (
+                f"└ {symbol}: +{len(bullish)} destekleyici | "
+                f"-{len(bearish)} karşıt"
+            )
+        basis = item.get("gate_basis")
+        return f"└ {symbol}: {html.escape(str(basis or gate_reasons.get(symbol, 'Kanıt özeti yok')))}"
     
     # Risk Durumu İkonu
     risk_icon = (
@@ -556,6 +570,9 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
 • <b>Bitcoin (BTCUSD):</b> {btc_gate}
 • <b>Euro (EURUSD)  :</b> {eur_gate}
 • <b>Endeks (SPX/NAS):</b> {spx_gate}
+{evidence_line("XAUUSD")}
+{evidence_line("BTC")}
+{evidence_line("EURUSD")}
 
 💵 <b>GÜNÜN DOLAR MAJÖRLERİ RADARI (USD MAJORS):</b>
 • <b>USDJPY :</b> {usdjpy_gate} <i>(Carry Çözülmesi vs US02Y Getirisi)</i>
