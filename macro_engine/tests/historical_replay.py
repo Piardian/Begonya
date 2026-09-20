@@ -45,6 +45,7 @@ def run_scenario_october_2023() -> Dict[str, Any]:
         "DXY": {"value": 106.5, "prev": 106.2, "val_5d_ago": 105.8, "month_ago": 104.5, "change_pct": 0.28, "change_pct_5d": 0.66},
         "BTC": {"value": 28500.0, "prev": 28200.0, "val_5d_ago": 27500.0, "month_ago": 26000.0, "change_pct": 1.0, "change_pct_5d": 3.6},
         "EUR_BOND": {"value": 175.0, "prev": 176.0, "val_5d_ago": 178.0, "month_ago": 182.0, "change_pct": -0.56, "change_pct_5d": -1.68},
+        "SOL": {"value": 20.0, "prev": 19.5, "val_5d_ago": 19.0, "month_ago": 18.0, "change_pct": 2.56, "change_pct_5d": 5.26},
         "SOL": {"value": 20.0, "prev": 19.5, "val_5d_ago": 19.0, "month_ago": 18.0, "change_pct": 2.56, "change_pct_5d": 5.26}
     }
     raw_fred = {
@@ -79,6 +80,7 @@ def run_scenario_march_2023_svb() -> Dict[str, Any]:
         "DXY": {"value": 103.5, "prev": 105.0, "val_5d_ago": 105.6, "month_ago": 104.0, "change_pct": -1.4, "change_pct_5d": -1.98},
         "BTC": {"value": 24500.0, "prev": 22000.0, "val_5d_ago": 20000.0, "month_ago": 22000.0, "change_pct": 11.3, "change_pct_5d": 22.5},
         "EUR_BOND": {"value": 182.0, "prev": 178.0, "val_5d_ago": 175.0, "month_ago": 176.0, "change_pct": 2.2, "change_pct_5d": 4.0},
+        "SOL": {"value": 20.0, "prev": 19.5, "val_5d_ago": 19.0, "month_ago": 18.0, "change_pct": 2.56, "change_pct_5d": 5.26},
         "SOL": {"value": 20.0, "prev": 19.5, "val_5d_ago": 19.0, "month_ago": 18.0, "change_pct": 2.56, "change_pct_5d": 5.26}
     }
     raw_fred = {
@@ -112,6 +114,7 @@ def run_scenario_march_2020_covid() -> Dict[str, Any]:
         "DXY": {"value": 102.8, "prev": 99.5, "val_5d_ago": 96.0, "month_ago": 99.0, "change_pct": 3.3, "change_pct_5d": 7.08},
         "BTC": {"value": 5200.0, "prev": 7800.0, "val_5d_ago": 8800.0, "month_ago": 9500.0, "change_pct": -33.3, "change_pct_5d": -40.9},
         "EUR_BOND": {"value": 165.0, "prev": 172.0, "val_5d_ago": 180.0, "month_ago": 178.0, "change_pct": -4.0, "change_pct_5d": -8.3},
+        "SOL": {"value": 20.0, "prev": 19.5, "val_5d_ago": 19.0, "month_ago": 18.0, "change_pct": 2.56, "change_pct_5d": 5.26},
         "SOL": {"value": 20.0, "prev": 19.5, "val_5d_ago": 19.0, "month_ago": 18.0, "change_pct": 2.56, "change_pct_5d": 5.26}
     }
     raw_fred = {
