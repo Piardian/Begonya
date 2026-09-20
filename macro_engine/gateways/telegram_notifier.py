@@ -341,15 +341,34 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
     au_nz_delta = regime_st.get("spread_au_nz_2y_delta_5d", 0.0)
     sol_btc_roc = sol_info.get("sol_btc_roc_5d", regime_st.get("sol_btc_roc_5d", 0.0))
     sol_4h_broken = regime_st.get("sol_btc_4h_structure_broken", False)
+    cross_data_quality = cross_analysis.get("data_quality", {})
+
+    market_price_context = metrics.get("market_price_context", {})
+
+    def price_snapshot(symbol: str, label: str, decimals: int = 2) -> str:
+        data = market_price_context.get(symbol, {})
+        value = data.get("value")
+        source = data.get("source") or "VERİ KAYNAĞI YOK"
+        if value is None:
+            return f"  └ {label}: VERİ YOK"
+        try:
+            price_text = f"{float(value):,.{decimals}f}"
+        except (TypeError, ValueError):
+            price_text = html.escape(str(value))
+        return f"  └ {label}: {price_text} | Kaynak: {html.escape(str(source))}"
 
     # NZDCAD radar notu (GDT bayat koruması devredeyse AU-NZ makasını göster)
-    if abs(dairy_roc) <= 0.01 and au_nz_delta != 0.0:
+    if cross_data_quality.get("status") == "UNAVAILABLE":
+        nzdcad_subtext = "Relative-value verisi eksik; yönlü NZDCAD kapısı devre dışı."
+    elif abs(dairy_roc) <= 0.01 and au_nz_delta != 0.0:
         nzdcad_subtext = f"GDT: Yatay | AU-NZ 2Y Δ: {au_nz_delta:+.1f} bps"
     else:
         nzdcad_subtext = f"GDT Süt İndeksi: %{dairy_roc:+.1f} | Petrol: %{brent_roc:+.1f}"
 
     # SOL radar notu (4H CHoCH kırılım uyarısı)
-    if sol_4h_broken:
+    if cross_data_quality.get("status") == "UNAVAILABLE":
+        sol_subtext = "Relative-value verisi eksik; yönlü SOL kapısı devre dışı."
+    elif sol_4h_broken:
         sol_subtext = f"SOL/BTC: %{sol_btc_roc:+.2f} | 🛑 4H Dip Kırıldı (Veto)"
     else:
         sol_subtext = f"SOL/BTC 5G İvme: %{sol_btc_roc:+.2f} | Kripto Yüksek Beta"
@@ -421,6 +440,13 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
   └ Dolar Endeksi (DXY): {_fmt(dxy_t.get('level'), '.2f')} ({html.escape(str(dxy_t.get('momentum_regime', 'VERİ YOK')))})
 • <b>4. Enerji Şoku & Dış Ticaret Hadleri:</b>
   └ Brent Petrol: ${_fmt(brent_val, '.1f')} (Euro Bölgesi Enerji Faturası Cezası: {'⚠️ AKTİF' if tot.get('eurusd_energy_penalty') else 'YOK'})
+
+💵 <b>DOĞRULANMIŞ FİYAT SNAPSHOT:</b>
+{price_snapshot("GOLD", "XAUUSD")}
+{price_snapshot("BTC", "BTCUSD")}
+{price_snapshot("DXY", "DXY")}
+{price_snapshot("BRENT", "Brent")}
+{price_snapshot("SPX", "SPX")}
 
 🛡️ <b>GÜNÜN İŞLEM KAPILARI (EXECUTION GATES):</b>
 └ Gate Kaynağı: <b>{html.escape(str(gate_source))}</b>
