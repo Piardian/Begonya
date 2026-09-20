@@ -29,9 +29,12 @@ class HistoricalMarketReplayIngestion(MT5MarketDataIngestion):
             rates = mt5.copy_rates_from(broker_sym, mt5.TIMEFRAME_D1, as_of, n_bars)
             if rates is None:
                 return None
+            # D1 timestamps identify bar opens. A bar opened earlier today is
+            # not necessarily closed at replay time; exclude the current day.
             rows = [
                 r for r in rates
-                if dt.datetime.fromtimestamp(int(r["time"]), tz=dt.timezone.utc) <= as_of
+                if dt.datetime.fromtimestamp(int(r["time"]), tz=dt.timezone.utc).date()
+                < as_of.date()
             ]
             if len(rows) < 2:
                 return None
@@ -56,6 +59,18 @@ class HistoricalMarketReplayIngestion(MT5MarketDataIngestion):
             )
             if hist.empty:
                 return None
+
+            # Yahoo daily history can include the current day's unfinished bar.
+            # Keep only completed calendar days for an intraday replay.
+            idx = hist.index
+            if getattr(idx, "tz", None) is not None:
+                valid = [ts.date() < as_of.date() for ts in idx]
+            else:
+                valid = [ts.date() < as_of.date() for ts in idx]
+            hist = hist.loc[valid]
+            if hist.empty:
+                return None
+
             closes = [float(x) for x in hist["Close"].dropna().tolist() if float(x) > 0][-n_bars:]
             if len(closes) < 2:
                 return None
@@ -116,7 +131,7 @@ def build_market_snapshot(ingestion: HistoricalMarketReplayIngestion, symbols: I
     snapshot["_metadata"] = {
         "timestamp": as_of.isoformat(),
         "source_policy": "MT5_FIRST_THEN_YAHOO_REAL_DATA_ONLY",
-        "lookahead_policy": "historical_rows_must_be_<=_as_of",
+        "lookahead_policy": "D1_current_calendar_day_excluded_for_intraday_replay",
     }
     return snapshot
 
@@ -127,7 +142,10 @@ DEFAULT_REPLAY_SYMBOLS = [
 
 def build_real_snapshot(as_of: dt.datetime, symbols: Iterable[str]) -> Dict[str, Any]:
     market = build_market_snapshot(HistoricalMarketReplayIngestion(), symbols, as_of)
-    fred = FredDataIngestion().fetch_liquidity_metrics(as_of=as_of.date())
+    # FRED vintages are date-granular. For intraday replay, use the prior UTC
+    # date so same-day releases/revisions cannot leak into an earlier timestamp.
+    fred_vintage_end = as_of.date() - dt.timedelta(days=1)
+    fred = FredDataIngestion().fetch_liquidity_metrics(as_of=fred_vintage_end)
     return {
         "schema_version": 1,
         "timestamp": as_of.isoformat(),
@@ -137,6 +155,7 @@ def build_real_snapshot(as_of: dt.datetime, symbols: Iterable[str]) -> Dict[str,
         "metadata": {
             "market_source_policy": market["_metadata"]["source_policy"],
             "fred_provider": fred.get("data_quality", {}).get("provider"),
+            "fred_vintage_end": fred_vintage_end.isoformat(),
             "calendar_status": "UNAVAILABLE_HISTORICAL_PROVIDER",
             "promotion_eligible": False,
         },
