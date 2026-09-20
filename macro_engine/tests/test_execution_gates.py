@@ -166,6 +166,35 @@ class ExecutionGateTests(unittest.TestCase):
         result = MacroWorkflowEngine._build_deterministic_gates(metrics)
         self.assertEqual(result["base_gates"]["EURUSD"], "LONG_ONLY")
 
+    def test_gbpusd_requires_uk_policy_confirmation(self):
+        metrics = {
+            "real_yield_info": {"real_yield_pct": 1.0},
+            "yield_curve": {"regime": "Range-bound Slope", "delta_10y_5d_bps": 1.0},
+            "t0_fast_stress_analysis": {"fast_stress_override": False},
+            "gold_fiscal_dominance": {"gold_short_allowed": False},
+            "btc_decoupling_analysis": {"recommended_btc_gate": "NEUTRAL_RANGE"},
+            "cross_pairs_analysis": {
+                "event_freeze": {"active": False},
+                "cross_gates": {"GBPUSD": "SHORT_ONLY"},
+            },
+            "terms_of_trade_energy_analysis": {"eurusd_energy_penalty": False},
+            "transatlantic_analysis": {"spread_bps": 100.0},
+            "dxy_trend_analysis": {"delta_20d_pct": 0.80},
+            "liquidity_dynamics": {"delta_liquidity_billion": 10.0},
+            "financial_conditions_analysis": {"nfci_value": -0.2},
+            "credit_spread_analysis": {"stress_level": "Sakin / Düşük Kredi Stresi"},
+            "economic_regime_snapshot": {
+                "uk_policy": {"us_minus_uk_policy_spread_bps": 10.0}
+            },
+            "equity_short_regime": {"equity_short_allowed": False},
+        }
+        result = MacroWorkflowEngine._build_deterministic_gates(metrics)
+        self.assertEqual(result["base_gates"].get("GBPUSD"), "NEUTRAL_RANGE")
+
+        metrics["economic_regime_snapshot"]["uk_policy"]["us_minus_uk_policy_spread_bps"] = 50.0
+        result = MacroWorkflowEngine._build_deterministic_gates(metrics)
+        self.assertEqual(result["base_gates"]["GBPUSD"], "SHORT_ONLY")
+
     def test_workflow_event_freeze_overrides_base_gate(self):
         metrics = {
             "cross_pairs_analysis": {
