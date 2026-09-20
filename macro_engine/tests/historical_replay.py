@@ -29,6 +29,12 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger("HistoricalReplay")
 
 
+def _mark_synthetic_fixture(result: Dict[str, Any]) -> Dict[str, Any]:
+    """Mark scenario data as synthetic test fixtures, not runtime fallbacks."""
+    result.setdefault("data_quality", {})["fixture_provenance"] = "SYNTHETIC_TEST_FIXTURE"
+    return result
+
+
 def run_scenario_october_2023() -> Dict[str, Any]:
     """Senaryo 1: Ekim 2023 - Hazine Tahvil Arzı Şoku (US10Y > %5.0)."""
     calc = MacroMetricsCalculator()
@@ -60,7 +66,7 @@ def run_scenario_october_2023() -> Dict[str, Any]:
         {"title": "Core CPI m/m", "actual": "0.3%", "forecast": "0.3%"},
         {"title": "Unemployment Rate", "actual": "3.8%", "forecast": "3.7%"}
     ]
-    return calc.process_all_macro_data(raw_market, raw_fred, events)
+    return _mark_synthetic_fixture(calc.process_all_macro_data(raw_market, raw_fred, events))
 
 
 def run_scenario_march_2023_svb() -> Dict[str, Any]:
