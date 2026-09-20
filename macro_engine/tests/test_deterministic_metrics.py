@@ -82,10 +82,28 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
         result = self.run_metrics(fred={**self.base_fred(), "WALCL": 7100000.0})
         self.assertEqual(result["liquidity_dynamics"]["delta_liquidity_billion"], 100.0)
 
-    def test_fast_stress(self):
+    def test_fast_stress_requires_confirmation(self):
         market = self.base_market()
         market["VIX"]["value"] = 23.0
-        self.assertTrue(self.run_metrics(market=market)["t0_fast_stress_analysis"]["fast_stress_override"])
+        market["HYG"] = {
+            **market["HYG"],
+            "prev": 82.0,
+            "val_5d_ago": 83.0,
+        }
+        result = self.run_metrics(market=market)
+        self.assertTrue(result["t0_fast_stress_analysis"]["fast_stress_override"])
+        self.assertGreaterEqual(result["t0_fast_stress_analysis"]["trigger_count"], 2)
+
+    def test_single_vix_jump_does_not_create_systemic_stress(self):
+        market = self.base_market()
+        market["VIX"] = {
+            **market["VIX"],
+            "value": 19.0,
+            "change_pct": 16.0,
+            "change_pct_5d": 20.0,
+        }
+        result = self.run_metrics(market=market)
+        self.assertFalse(result["t0_fast_stress_analysis"]["fast_stress_override"])
 
     def test_gold_cash_dash(self):
         market = self.base_market()
