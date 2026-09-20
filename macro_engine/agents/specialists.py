@@ -166,9 +166,12 @@ class MacroSpecialists:
         cross_analysis = metrics.get('cross_pairs_analysis', {})
         cross_gates = cross_analysis.get('cross_gates', {}) or regime_st.get('cross_pair_gates', {}) or {}
         market_price_context = metrics.get('market_price_context', {})
+        economic_panel = metrics.get('economic_regime_snapshot', {})
+        policy_panel = metrics.get('policy_expectations', {})
 
         prompt = f"""
-        Aşağıdaki iki uzman analist raporunu, doğrulanmış piyasa fiyat bağlamını ve çapraz piyasa metriklerini değerlendirip makro sentez üret:
+        Aşağıdaki iki uzman analist raporunu, doğrulanmış piyasa fiyat bağlamını, tam ekonomik paneli,
+        politika beklentilerini ve çapraz piyasa metriklerini değerlendirip makro sentez üret:
 
         [DOĞRULANMIŞ PİYASA FİYAT BAĞLAMI]:
         {market_price_context}
@@ -178,6 +181,17 @@ class MacroSpecialists:
         - Teknik destek/direnç bu makro katmanda hesaplanmıyorsa fiyat seviyesi verme.
         - Makro yön ile teknik giriş seviyesini birbirine karıştırma.
         
+        [TAM EKONOMİK PANEL - AYRI BOYUTLAR]:
+        - Enflasyon: {economic_panel.get('inflation_regime', {})}
+        - İstihdam: {economic_panel.get('labor_regime', {})}
+        - Büyüme: {economic_panel.get('growth_regime', {})}
+        - PMI/Sanayi: {economic_panel.get('pmi_regime', {})}
+        - Getiri Eğrisi: {economic_panel.get('rate_curve_regime', {})}
+        - Politika Rejimi: {economic_panel.get('policy_regime', {})}
+
+        [POLİTİKA BEKLENTİLERİ]:
+        {policy_panel}
+
         [AJAN 1 - LİKİDİTE, KREDİ VE TAHVİL]:
         - Likidite Rejimi: {liquidity.liquidity_regime}
         - Getiri Eğrisi Dinamiği: {liquidity.yield_curve_dynamic}
