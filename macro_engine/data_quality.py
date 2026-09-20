@@ -10,7 +10,11 @@ class DataUnavailableError(RuntimeError):
 
 REQUIRED_MARKET_FIELDS = {
     "DXY", "GOLD", "BRENT", "US10Y", "US02Y", "BTC", "COPPER", "VIX",
-    "HYG", "LQD", "CA02Y", "DE02Y", "GB02Y", "AU02Y", "NZ02Y", "SOL",
+    "HYG", "LQD", "SOL",
+}
+
+RELATIVE_VALUE_MARKET_FIELDS = {
+    "CA02Y", "DE02Y", "GB02Y", "AU02Y", "NZ02Y",
 }
 
 OPTIONAL_MARKET_FIELDS = {
