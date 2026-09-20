@@ -33,6 +33,8 @@ FREQUENCIES = {
     "SOFR": "daily",
     "ISM_MANUFACTURING_PMI": "monthly",
     "ISM_SERVICES_ACTIVITY": "monthly",
+    "EA_HICP_YOY": "monthly",
+    "ECB_DEPOSIT_RATE": "daily",
 }
 
 
