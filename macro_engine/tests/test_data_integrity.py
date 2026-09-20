@@ -77,7 +77,7 @@ class DataIntegrityTests(unittest.TestCase):
             dff=4.33,
             us02y_5d=3.95,
         )
-        self.assertIn("policy-rate/yield spread", result["interpretation_warning"])
+        self.assertIn("market-vs-current-policy spread", result["interpretation_warning"])
         self.assertIn("not a", result["interpretation_warning"])
 
     def test_missing_dff_fails_closed(self):
