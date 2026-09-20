@@ -103,12 +103,23 @@ class MacroEvidenceHardeningTests(unittest.TestCase):
         )
 
     def test_unverified_price_levels_are_removed_from_free_form_text(self):
-        text = "BTC $66,000 destek bölgesi; XAUUSD 2650-2680 bandı; DXY 100.50 direnç."
+        text = (
+            "BTC $66,000 destek bölgesi; XAUUSD 2650-2680 bandı; "
+            "DXY 100.50 direnç; BTCUSD=66,500 hedef."
+        )
         cleaned = sanitize_unverified_price_levels(text)
         self.assertNotIn("$66,000", cleaned)
         self.assertNotIn("2650-2680", cleaned)
         self.assertNotIn("DXY 100.50", cleaned)
+        self.assertNotIn("BTCUSD=66,500", cleaned)
         self.assertIn("Doğrulanmış teknik fiyat seviyesi", cleaned)
+
+    def test_price_sanitizer_preserves_non_price_macro_numbers(self):
+        text = "NFCI -0.56, DFF 4.83%, 5G spread +58.2 bps."
+        cleaned = sanitize_unverified_price_levels(text)
+        self.assertIn("NFCI -0.56", cleaned)
+        self.assertIn("DFF 4.83%", cleaned)
+        self.assertIn("+58.2 bps", cleaned)
 
 
 if __name__ == "__main__":
