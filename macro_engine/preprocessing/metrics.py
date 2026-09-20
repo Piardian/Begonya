@@ -39,11 +39,11 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
     # WTREGEN is FRED's weekly, Wednesday-ending Treasury General Account
     # series. Treating it as daily incorrectly rejects legitimate 5-7 day gaps
     # between observations. Keep the weekly freshness contract explicit.
-    FRED_FREQUENCIES={"WALCL":"weekly","RRPONTSYD":"daily","WTREGEN":"weekly","T10YIE":"daily","DFII10":"weekly","DFF":"daily","BAMLH0A0HYM2":"daily","NFCI":"weekly","ICSA":"weekly","M2SL":"monthly","DE10Y":"monthly"}
+    FRED_FREQUENCIES={"WALCL":"weekly","RRPONTSYD":"daily","WTREGEN":"weekly","T10YIE":"daily","DFII10":"weekly","DFF":"daily","BAMLH0A0HYM2":"daily","NFCI":"weekly","ICSA":"weekly","M2SL":"monthly","DE10Y":"monthly","EA_HICP_YOY":"monthly","ECB_DEPOSIT_RATE":"daily"}
     # NFCI is weekly-ending-Friday but the provider vintage can lag the observation date.
     # M2SL is monthly, but the H.6 release schedule can leave the latest observation ~2 months old
     # at month-start. Keep the generic monthly contract at 45d and allow only this series to 75d.
-    FRED_MAX_AGE_DAYS={"NFCI":14,"M2SL":75,"DE10Y":75}
+    FRED_MAX_AGE_DAYS={"NFCI":14,"M2SL":75,"DE10Y":75,"EA_HICP_YOY":75}
     # Monthly M2 and OECD DE10Y ages are observation-date age, not publication-date age.
     # These series stay explicitly research-only until release timestamps/vintages are available.
     def __init__(self,as_of_date:Optional[dt.date]=None,surprise_sigmas:Optional[Mapping[str,float]]=None): super().__init__(); self.as_of_date=as_of_date; self.surprise_sigmas=dict(surprise_sigmas or self.DEFAULT_SURPRISE_SIGMAS)
