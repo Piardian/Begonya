@@ -214,44 +214,22 @@ class MacroSpecialists:
         - Para Birimi Güç Puanları (3-Faktör): {regime_st.get('cross_currency_scores', {})}
         - Dolar Majörleri Kapıları: USDJPY: {cross_gates.get('USDJPY', 'NEUTRAL_RANGE')}, GBPUSD: {cross_gates.get('GBPUSD', 'NEUTRAL_RANGE')}, USDCAD: {cross_gates.get('USDCAD', 'NEUTRAL_RANGE')}, USDCHF: {cross_gates.get('USDCHF', 'NEUTRAL_RANGE')}
         
-        🚨 ZORUNLU KURUMSAL PORTFÖY VE RİSK YÖNETİMİ KURALLARI:
-        1. ALTIN (XAUUSD) - DİNAMİK MAKRO REJİM VE MALİ HAKİMİYET:
-           - Secular (Uzun Vadeli): ABD bütçe açıkları, egemen borç riski ve küresel merkez bankalarının dolarsızlaşma fiziki alımları nedeniyle Altın'a 'SHORT_ONLY' VERİLMEZ (yapısal kalkan).
-           - Taktik (Kısa Vadeli Getiri Şoku): Eğer 10Y Reel Getiri >= %1.90 ise veya Bear Steepening ile 10Y faizler sıçrıyorsa (Δ10Y_5d >= 10 bps), artan fırsat maliyeti ve süre riski nedeniyle Altın kapısı 'NEUTRAL_RANGE' (veya DEFENSIVE_HOLD) olarak belirlenmelidir. Böylece düşen bıçak tutulmaz, getiri baskısı bitene dek yeni Long kilitlenir.
-           - Yalnızca reel getiriler sakin (< %1.90) ve faiz şoku yokken 'LONG_ONLY' izni verilir.
-        2. BORSA ENDEKSLERİ (SPX/NAS100) VE ÇARPAN BASKISI:
-           - VIX >= 22.0 olduğunda borsa zaten düşmüştür; kurumsal short cover ve ayı piyasası rallisi riski nedeniyle hisselerde 'SHORT_ONLY' YASAKTIR!
-           - Endekslerde SHORT izni sadece fırtına öncesi sessizlikte verilebilir: VIX < 18.0 (Rehavet) ve Net Likidite daralırken.
-           - Bear Steepening veya 10Y getiri sıçramasında (Δ10Y >= 10 bps), teknoloji/büyüme hisselerinin (NAS100) iskonto çarpanları daralır (değerleme şoku). Bu durumda SPX kapısı 'NEUTRAL_RANGE' veya likidite çekiliyorsa 'SHORT_ONLY' olmalıdır.
-        3. BTC VE AYRIŞMA (BEAR STEEPENING & T-0 FAST STRESS):
-           - Eğer btc_decoupling_active True ise veya fast_stress_override / capital_preservation_mode True ise: BTC KESİNLİKLE 'LONG_ONLY' OLAMAZ!
-             * Bear Steepening faiz şokunda: BTC 'SHORT_ONLY' olmalı (hazine arz şoku & fon teminat tamamlama tasfiyeleri).
-             * T-0 Fast Stress veya Sermaye Koruma modunda (Brent şoku, VIX sıçraması, likidite daralması): BTC 'DEFENSIVE_HOLD' (veya NEUTRAL_RANGE) olarak kilitlenmelidir.
-           - Yalnızca piyasada stres yokken (fast_stress_override False, sermaye koruma pasif) ve tahvil oynaklığı sakinken BTC için fiat debasement temasıyla 'LONG_ONLY' izni verilebilir.
-        4. EURUSD VE ENERJİ ŞOKU + TRANSATLANTİK MAKAS (İKİ TARAFLI DENGE):
-           - Brent > $85 üzerindeyken Euro Bölgesi enerji ithalatçısıdır ve ticaret hadleri çöker.
-           - Transatlantik makas (+{transatlantic.get('spread_bps')} bps) ABD lehine açık kaldıkça sermaye Dolar'a akar ve pozitif swap (carry) avantajı EURUSD SHORT'u destekler. DXY momentumu zayıfsa NEUTRAL_RANGE uygula.
-        5. T-0 FAST STRESS & SERMAYE KORUMA MODU:
-           - Eğer fast_stress_override True ise: capital_preservation_mode = True yap, recommended_risk_multiplier = 0.25'e düşür!
-           - Çelişkiyi engelle: Metin ve taktiklerde tüm varlıklar için risk katsayısı olarak sadece 0.25x belirt (asla 0.50x veya 1.0x yazma).
-        6. EXECUTION BIAS GATES KILAVUZU:
-           - XAUUSD: Reel Getiri >= %1.90 veya Bear Steepening varsa 'NEUTRAL_RANGE'; sakinse 'LONG_ONLY'
-           - EURUSD: Transatlantik makas > +180 bps ve Brent yüksekse 'SHORT_ONLY' veya 'NEUTRAL_RANGE'
-           - BTC: Bear Steepening şokunda 'SHORT_ONLY'; T-0 stres / sermaye koruma modunda 'DEFENSIVE_HOLD'; sakin piyasada 'LONG_ONLY'
-           - SPX: Bear Steepening / faiz şoku / VIX yüksekse 'NEUTRAL_RANGE'; rehavet + likidite daralmasında 'SHORT_ONLY'
-            
-        7. ÜÇ KATMANLI ZAMAN UFKU STRATEJİSİ (HORIZON GUIDANCE):
-           - horizon_today: Bugünkü işlem seansı (M15 / Gün İçi) için makro yön, risk durumu ve gerekli teyit. Kesin fiyat seviyesi üretme.
-           - horizon_this_week: Bu haftalık (H4 / Swing) ufku için piyasa yönü ve kritik verilerin getiri eğrisine/paritelere etkisi. Kesin fiyat seviyesi üretme.
-           - horizon_this_month: Bu aylık (D1/W1) makro rejim rotası. Fed net likidite seyri, mali politika ve portföyün genel yönü. Kesin fiyat seviyesi üretme.
-           - TGA Sezonsallığı: Eğer TGA vergi dönemi aktifse ({liq_dyn.get('is_tga_tax_season')}), 4 haftalık net likidite düşüşünü geçici mevsimsel kamu tahsilatı olarak rasyonele ekle; kalıcı bir kriz gibi abartma.
-
-        8. DOLAR MAJÖRLERİ VE GÖRELİ DEĞER KURALLARI (USD MAJORS - USDJPY, GBPUSD, USDCAD, USDCHF):
-           - 3 Faktörlü para birimi puanları (USD, JPY, GBP, CAD, CHF, AUD, NZD) ve getiri farkı dinamiklerini rasyonele ve taktiklere yansıt.
-           - GBPUSD: BoE faiz indirim fiyatlaması ve GB-US makası aleyhteyse SHORT_ONLY odaklı ol.
-           - USDCAD: BoC faiz indirim baskısı petrolü eziyorsa LONG_ONLY; petrol güçlüyse NEUTRAL_RANGE.
-           - USDJPY: US 2Y faiz direnci ile JPY carry çözülmesi dengedeyse NEUTRAL_RANGE; JPY güvenli liman girişi baskınsa SHORT_ONLY.
-           - USDCHF: Dolar pozitif carry avantajı ile jeopolitik güvenli liman sığınağı dengedeyse NEUTRAL_RANGE.
+        ANALİZ SÖZLEŞMESİ:
+        1. VERİYİ ÖNCELE: Sonucu önceden varsayma. Her yönsel çıkarımı, onu destekleyen ölçülebilir faktörlerle açıkla.
+        2. TEK FAKTÖR YETMEZ: Bir varlık/parite için LONG/SHORT yönü tek bir göstergeye dayanıyorsa bunu düşük güven olarak belirt ve çatışma varsa nötr kal.
+        3. BAĞIMSIZ KANIT: Faiz/reel getiri, dolar momentumu, likidite/kredi, emtia/dış ticaret ve risk iştahı gibi farklı mekanizmaların aynı yönde olup olmadığını kontrol et.
+        4. VERİ EKSİKLİĞİ: Bir gerekli veri kaynağı "UNAVAILABLE", fallback veya stale ise o faktörü yok sayma; açıkça veri eksikliği olarak raporla ve kesin yön üretme.
+        5. GATE AYRIMI: execution_bias_gates alanı yalnızca advisory analizdir. Gerçek execution kararı deterministic gate katmanından gelir.
+        6. BTC: Debasement teması tek başına LONG gerekçesi değildir; likidite, reel faiz, dolar, kredi ve T-0 stres ile birlikte değerlendir.
+        7. XAUUSD: Reel getiri, dolar, risk iştahı ve enerji/enflasyon kanallarını birlikte değerlendir; yapısal görüşü kısa vadeli işlem yönüyle karıştırma.
+        8. EURUSD: US-DE faiz farkı seviyesini, değişimini, DXY momentumunu ve Euro enerji/terms-of-trade durumunu birlikte değerlendir.
+        9. USD MAJÖRLERİ / ÇAPRAZLAR: Ülke faiz farkının hem seviyesi hem değişimi; mevcut emtia/risk faktörleri ve veri yeterliliği ile birlikte değerlendir. Bir ülkenin yalnızca tek faktörü güçlü diye "ONLY" yönü dayatma.
+        10. FİYAT: [DOĞRULANMIŞ PİYASA FİYAT BAĞLAMI] dışında kesin fiyat, destek, direnç, hedef veya fiyat aralığı uydurma. Teknik seviye bu katmanda hesaplanmıyorsa sayı verme.
+        11. ZAMAN UFKU:
+           - horizon_today: Makro yön, risk durumu ve hangi teyidin bekleneceği. Kesin fiyat verme.
+           - horizon_this_week: Faiz, likidite, kredi ve yaklaşan makro olayların yön etkisi. Kesin fiyat verme.
+           - horizon_this_month: Makro rejim ve senaryo rotası. Kesin fiyat verme.
+        12. ÇATIŞMA RAPORU: Bullish ve bearish kanıtlar birlikte varsa ikisini de belirt; yapay kesinlik üretme.
         """
         system_instruction = (
             "Sen Küresel Bir Makro Hedge Fonunun Baş Yatırım Komitesi Başkanısın (CIO). "
