@@ -356,6 +356,7 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
     economic_panel = metrics.get("economic_regime_snapshot", {})
     policy_panel = metrics.get("policy_expectations", {})
     uk_policy = economic_panel.get("uk_policy", {})
+    canada_policy = economic_panel.get("canada_policy", {})
     
     # Authoritative execution layer: Telegram must not display the LLM advisory gate.
     deterministic = pipeline_result.get("deterministic_execution_gates") or {}
@@ -553,6 +554,7 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
   └ DFF: %{_fmt(policy_panel.get("effective_policy_rate", {}).get("dff_pct"), ".2f")} | SOFR: %{_fmt(policy_panel.get("effective_policy_rate", {}).get("sofr_pct"), ".2f")}
   └ 2Y - DFF: {_fmt(economic_panel.get("rate_curve_regime", {}).get("two_year_minus_dff_bps"), ".1f")} bps | Rejim: {html.escape(str(economic_panel.get("policy_regime", {}).get("market_vs_policy", "VERİ YOK")))}
   └ GBP yerel politika: Bank Rate %{_fmt(uk_policy.get("bank_rate_pct"), ".2f")} | US-UK politika farkı: {_fmt(uk_policy.get("us_minus_uk_policy_spread_bps"), ".1f")} bps | Kaynak: {html.escape(str(uk_policy.get("source", "VERİ YOK")))}
+  └ CAD yerel politika: BoC %{_fmt(canada_policy.get("policy_rate_pct"), ".2f")} | US-CA politika farkı: {_fmt(canada_policy.get("us_minus_ca_policy_spread_bps"), ".1f")} bps | Kaynak: {html.escape(str(canada_policy.get("source", "VERİ YOK")))}
 
 
 
