@@ -1,5 +1,6 @@
 import datetime as dt
 import unittest
+from unittest.mock import patch
 
 from ingestion.bank_of_england import BankOfEnglandDataIngestion
 
@@ -19,7 +20,7 @@ class BankOfEnglandTests(unittest.TestCase):
 
     def test_intraday_replay_uses_prior_rate_change(self):
         ingestion = BankOfEnglandDataIngestion()
-        with unittest.mock.patch(
+        with patch(
             "ingestion.bank_of_england.urllib.request.urlopen"
         ) as mocked:
             class Response:
