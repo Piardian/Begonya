@@ -228,7 +228,11 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             "SPX": spx_base,
         }
         base_gates.update(
-            {str(k): str(v) for k, v in cross.items() if isinstance(v, str)}
+            {
+                str(k): str(v)
+                for k, v in cross.items()
+                if isinstance(v, str) and str(k) not in base_gates
+            }
         )
 
         # If BTC is not long-permitted, a legacy SOL long gate must not bypass it.
