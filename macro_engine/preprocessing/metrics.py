@@ -38,6 +38,8 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
     # M2SL is monthly, but the H.6 release schedule can leave the latest observation ~2 months old
     # at month-start. Keep the generic monthly contract at 45d and allow only this series to 75d.
     FRED_MAX_AGE_DAYS={"NFCI":14,"M2SL":75,"DE10Y":75}
+    # Monthly M2 and OECD DE10Y ages are observation-date age, not publication-date age.
+    # These series stay explicitly research-only until release timestamps/vintages are available.
     def __init__(self,as_of_date:Optional[dt.date]=None,surprise_sigmas:Optional[Mapping[str,float]]=None): super().__init__(); self.as_of_date=as_of_date; self.surprise_sigmas=dict(surprise_sigmas or self.DEFAULT_SURPRISE_SIGMAS)
     @classmethod
     def from_calibration_profile(cls,profile_path:Optional[Path]=None,allow_default_fallback:bool=False,**kwargs:Any):
