@@ -66,12 +66,12 @@ class MacroSpecialists:
         - DXY Seviyesi: {dxy_trend.get('level')} | 20G Momentum: %{dxy_trend.get('delta_20d_pct')} ({dxy_trend.get('momentum_regime')})
         - Uyarı Notu: {dxy_trend.get('warning')}
         
-        KATİ ANALİZ KURALLARI:
-        1. T-0 PİYASA STRESİ: Eğer fast_stress_override True ise, haftalık gecikmeli FRED sakinliğini (NFCI/OAS) geçersiz kıl ve fast_stress_override alanını True yap!
-        2. DXY 100'ün altında ve negatif momentumdaysa Dolar Baskısı 'High' DEĞİL; 'Low' veya 'Neutral'dir.
-        3. Kredi Makası (HY OAS) %3.8'in altındaysa ve HYG/LQD sakinse kredi stresi 'Low / Benign'dir; piyasa likidite krizi yaşamamaktadır.
-        4. ICSA 218K seviyesindeyken istihdam piyasası sağlamdır; NFP'nin gücü haftalık olarak teyitlidir.
-        5. TGA VERGİ SEZONSALLIĞI: Eğer is_tga_tax_season True ise ({liq_dyn.get('is_tga_tax_season')}), likiditedeki düşüşün geçici federal vergi tahsilatından kaynaklandığını, kalıcı bir kredi/likidite krizi olmadığını özette belirt.
+        ANALİZ KURALLARI:
+        1. T-0 stres ile haftalık kredi/finansal koşullarını ayrı zaman ufukları olarak raporla; birini diğerinin "geçersiz kılması" varsayımını yapma.
+        2. DXY seviyesi ve momentumunu birlikte değerlendir; tek başına psikolojik eşik kullanarak yön zorlaması yapma.
+        3. HY OAS ile HYG/LQD'yi birlikte değerlendir; benign bir kredi spreadini "temerrüt riski yok" şeklinde yorumlama.
+        4. ICSA'yı kendi haftalık işsizlik başvurusu serisi olarak kullan; NFP'nin gerçekleşmesini teyit ettiği iddiasında bulunma.
+        5. TGA VERGİ SEZONSALLIĞI: Eğer is_tga_tax_season True ise ({liq_dyn.get('is_tga_tax_season')}), bunun likidite ölçümünü etkileyebileceğini belirt; kalıcı kriz sonucu çıkarma.
         """
         system_instruction = (
             "Sen Wall Street düzeyinde çalışan bir Baş Likidite, Kredi ve Tahvil Piyasası Analistisin. "
@@ -120,10 +120,11 @@ class MacroSpecialists:
         [STANDARTLAŞTIRILMIŞ SÜRPRİZLER (Z-SCORES)]:
         {metrics.get('surprises')}
         
-        KATİ ANALİZ KURALLARI:
-        1. İKTİSADİ TANIM: İşsizlik %4.1 ve NFP 190K iken kesinlikle 'Stagflation' DEME! ABD tarafında 'Late-Cycle Overheating' vardır. macro_quadrant olarak 'Late-Cycle Overheating' seç.
-        2. KÜRESEL AYRIŞMA: us_vs_global_divergence alanında ABD iç pazarının güçlü olduğunu, ancak düşen Bakır/Altın rasyosu ve yüksek petrol nedeniyle Avrupa ve Asya imalatının ezildiğini (US Exceptionalism vs Global Slowdown) açıkça belirt.
-        3. TRANSATLANTİK MAKAS: transatlantic_spread_bps değerini ({transatlantic.get('spread_bps')}) aktar; eurusd_terms_of_trade_penalty değerini {energy_tot.get('eurusd_energy_penalty')} olarak set et.
+        ANALİZ KURALLARI:
+        1. Makro dörtgeni yalnızca istihdamdan çıkarma; enflasyon, büyüme, aktivite ve enerji göstergelerini birlikte değerlendir.
+        2. ABD-küresel ayrışması varsa bunu ilgili ölçülebilir kanıtlarla açıkla; Bakır/Altın oranını tek başına küresel büyümenin kesin kanıtı gibi sunma.
+        3. Transatlantik spread seviyesini ve yönünü aktar; enerji/terms-of-trade cezasını ayrı bir kanal olarak değerlendir.
+        4. Bir ekonomik rejim için kanıtlar çatışıyorsa "MIXED" veya belirsizlik belirt; zorunlu etiketleme yapma.
         """
         system_instruction = (
             "Sen Bridgewater Associates standartlarında çalışan bir Kıdemli Makro Dörtgen ve Emtia Analistisin. "
@@ -246,9 +247,8 @@ class MacroSpecialists:
         12. ÇATIŞMA RAPORU: Bullish ve bearish kanıtlar birlikte varsa ikisini de belirt; yapay kesinlik üretme.
         """
         system_instruction = (
-            "Sen Küresel Bir Makro Hedge Fonunun Baş Yatırım Komitesi Başkanısın (CIO). "
-            "Bear Steepening'de BTC'yi altından ayırmayı, Transatlantik faiz makası ve enerji şokunda Euro tuzağına düşmemeyi, "
-            "Higher for Longer ortamında hisseye tavan koymayı ve histeresis ile piyasa titremesini (flickering) engellemeyi bilirsin."
+            "Sen küresel bir makro yatırım komitesi için kanıt-odaklı sentez üreten kıdemli bir makro stratejistsin. "
+            "Veri kaynaklarını, zaman ufuklarını, çelişkili sinyalleri ve belirsizliği açıkça ayır; sonuçları önceden varsayma."
         )
 
         logger.info("🧠 [Ajan 3: Baş Makro Stratejist] Asimetrik Rejim Sentezi Üretiyor...")
