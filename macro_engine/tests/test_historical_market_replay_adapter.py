@@ -26,6 +26,7 @@ class HistoricalMarketReplayAdapterTests(unittest.TestCase):
         as_of = dt.datetime(2023, 10, 15, 12, tzinfo=dt.timezone.utc)
         mock_mt5.TIMEFRAME_D1 = 1
         mock_mt5.copy_rates_from.return_value = [
+            {"time": int(dt.datetime(2023, 10, 13, tzinfo=dt.timezone.utc).timestamp()), "close": 105.0},
             {"time": int(dt.datetime(2023, 10, 14, tzinfo=dt.timezone.utc).timestamp()), "close": 110.0},
             {"time": int(dt.datetime(2023, 10, 15, tzinfo=dt.timezone.utc).timestamp()), "close": 120.0},
         ]
@@ -35,19 +36,20 @@ class HistoricalMarketReplayAdapterTests(unittest.TestCase):
             payload = ingestion._from_mt5("DXY", as_of, 10)
 
         self.assertEqual(payload["value"], 110.0)
-        self.assertEqual(payload["prev"], 110.0)
+        self.assertEqual(payload["prev"], 105.0)
 
     @patch("calibration.historical_market_replay.yf.Ticker")
     def test_yahoo_replay_excludes_unfinished_current_day(self, mock_ticker):
         as_of = dt.datetime(2023, 10, 15, 12, tzinfo=dt.timezone.utc)
         index = pd.DatetimeIndex(
             [
+                dt.datetime(2023, 10, 13, 0, tzinfo=dt.timezone.utc),
                 dt.datetime(2023, 10, 14, 0, tzinfo=dt.timezone.utc),
                 dt.datetime(2023, 10, 15, 0, tzinfo=dt.timezone.utc),
             ]
         )
         mock_ticker.return_value.history.return_value = pd.DataFrame(
-            {"Close": [110.0, 120.0]},
+            {"Close": [105.0, 110.0, 120.0]},
             index=index,
         )
 
