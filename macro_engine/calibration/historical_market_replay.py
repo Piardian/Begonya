@@ -14,6 +14,7 @@ from ingestion.mt5_market_data import MT5MarketDataIngestion, mt5
 from ingestion.fred_data import FredDataIngestion
 from preprocessing.metrics import MacroMetricsCalculator
 from data_quality import REQUIRED_MARKET_FIELDS
+from ingestion.bank_of_england import BankOfEnglandDataIngestion
 
 
 class HistoricalMarketReplayIngestion(MT5MarketDataIngestion):
@@ -146,6 +147,22 @@ def build_real_snapshot(as_of: dt.datetime, symbols: Iterable[str]) -> Dict[str,
     # date so same-day releases/revisions cannot leak into an earlier timestamp.
     fred_vintage_end = as_of.date() - dt.timedelta(days=1)
     fred = FredDataIngestion().fetch_liquidity_metrics(as_of=fred_vintage_end)
+
+    try:
+        uk_bank_rate = BankOfEnglandDataIngestion().fetch_bank_rate(as_of)
+    except Exception as exc:
+        uk_bank_rate = {
+            "status": "UNAVAILABLE",
+            "value": None,
+            "previous_value": None,
+            "observation_date": None,
+            "source": "Bank of England official Bank Rate (YWMB47D)",
+            "error": str(exc),
+        }
+    fred["UK_BANK_RATE"] = uk_bank_rate.get("value")
+    fred["UK_BANK_RATE_PREVIOUS"] = uk_bank_rate.get("previous_value")
+    fred["UK_BANK_RATE_SOURCE_DATE"] = uk_bank_rate.get("observation_date")
+    fred.setdefault("data_quality", {})["uk_bank_rate"] = uk_bank_rate
     return {
         "schema_version": 1,
         "timestamp": as_of.isoformat(),
