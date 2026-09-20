@@ -71,10 +71,41 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
 
     @staticmethod
     def _build_deterministic_gates(metrics: Mapping[str, Any]) -> Dict[str, Any]:
-        freeze = bool(metrics.get("cross_pairs_analysis", {}).get("event_freeze", {}).get("active", False))
-        fast_stress = bool(metrics.get("t0_fast_stress_analysis", {}).get("fast_stress_override", False))
-        gold_short = bool(metrics.get("gold_fiscal_dominance", {}).get("gold_short_allowed", False))
-        btc_base = metrics.get("btc_decoupling_analysis", {}).get("recommended_btc_gate", "DEFENSIVE_HOLD")
+        freeze = bool(
+            metrics.get("cross_pairs_analysis", {})
+            .get("event_freeze", {})
+            .get("active", False)
+        )
+        fast_stress = bool(
+            metrics.get("t0_fast_stress_analysis", {})
+            .get("fast_stress_override", False)
+        )
+
+        real_yield = metrics.get("real_yield_info", {}).get("real_yield_pct")
+        yield_curve = metrics.get("yield_curve", {})
+        delta_10y_5d = yield_curve.get("delta_10y_5d_bps")
+        bear_steepening = yield_curve.get("regime") == "Bear Steepening"
+
+        # XAUUSD: deterministic macro gate from real yield / duration shock.
+        gold_short = bool(
+            metrics.get("gold_fiscal_dominance", {})
+            .get("gold_short_allowed", False)
+        )
+        if gold_short:
+            xau_base = "SHORT_ONLY"
+        elif real_yield is None:
+            xau_base = "NEUTRAL_RANGE"
+        elif float(real_yield) >= 1.90 or bear_steepening or (
+            isinstance(delta_10y_5d, (int, float)) and float(delta_10y_5d) >= 10.0
+        ):
+            xau_base = "NEUTRAL_RANGE"
+        else:
+            xau_base = "LONG_ONLY"
+
+        # BTC: retain the deterministic decoupling/stress classification.
+        btc_base_raw = metrics.get("btc_decoupling_analysis", {}).get(
+            "recommended_btc_gate", "DEFENSIVE_HOLD"
+        )
         btc_map = {
             "LONG_ONLY_ALLOWED_IF_DEBASEMENT": "LONG_ONLY",
             "SHORT_ONLY": "SHORT_ONLY",
@@ -82,14 +113,57 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             "LONG_ONLY": "LONG_ONLY",
             "NEUTRAL_RANGE": "NEUTRAL_RANGE",
         }
-        base_gates = {
-            "XAUUSD": "SHORT_ONLY" if gold_short else "NEUTRAL_RANGE",
-            "BTC": btc_map.get(btc_base, "DEFENSIVE_HOLD"),
-            "EURUSD": "NEUTRAL_RANGE",
-            "SPX": "DEFENSIVE_HOLD" if fast_stress else "NEUTRAL_RANGE",
-        }
+        btc_base = btc_map.get(btc_base_raw, "DEFENSIVE_HOLD")
+
+        # EURUSD: require both a transatlantic-rate signal and dollar confirmation.
+        transatlantic = metrics.get("transatlantic_analysis", {})
+        spread_bps = transatlantic.get("spread_bps")
+        dxy = metrics.get("dxy_trend_analysis", {})
+        dxy_delta_20d = dxy.get("delta_20d_pct")
+        energy_penalty = bool(
+            metrics.get("terms_of_trade_energy_analysis", {})
+            .get("eurusd_energy_penalty", False)
+        )
+        if (
+            isinstance(spread_bps, (int, float))
+            and float(spread_bps) > 180.0
+            and isinstance(dxy_delta_20d, (int, float))
+            and float(dxy_delta_20d) > 0.5
+        ):
+            eur_base = "SHORT_ONLY"
+        elif energy_penalty or (
+            isinstance(spread_bps, (int, float)) and float(spread_bps) > 180.0
+        ):
+            eur_base = "NEUTRAL_RANGE"
+        elif (
+            isinstance(spread_bps, (int, float))
+            and float(spread_bps) < 0.0
+            and isinstance(dxy_delta_20d, (int, float))
+            and float(dxy_delta_20d) < -0.5
+        ):
+            eur_base = "LONG_ONLY"
+        else:
+            eur_base = "NEUTRAL_RANGE"
+
+        # SPX: directional short requires the pre-existing two-condition
+        # complacency/liquidity rule; otherwise no directional claim is made.
+        spx_base = (
+            "SHORT_ONLY"
+            if bool(metrics.get("equity_short_regime", {}).get("equity_short_allowed", False))
+            else "NEUTRAL_RANGE"
+        )
+
         cross = metrics.get("cross_pairs_analysis", {}).get("cross_gates", {})
-        base_gates.update({str(k): str(v) for k, v in cross.items() if isinstance(v, str)})
+        base_gates = {
+            "XAUUSD": xau_base,
+            "BTC": btc_base,
+            "EURUSD": eur_base,
+            "SPX": spx_base,
+        }
+        base_gates.update(
+            {str(k): str(v) for k, v in cross.items() if isinstance(v, str)}
+        )
+
         resolved: Dict[str, str] = {}
         reasons: Dict[str, str] = {}
         for symbol, base_bias in base_gates.items():
@@ -101,9 +175,37 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             )
             resolved[symbol] = decision["gate"]
             reasons[symbol] = decision["reason"]
+
+        evidence = {
+            "XAUUSD": {
+                "gate_basis": "gold_fiscal_dominance OR real_yield>=1.90 OR bear_steepening OR delta_10y_5d>=10bps",
+                "real_yield_pct": real_yield,
+                "bear_steepening": bear_steepening,
+                "delta_10y_5d_bps": delta_10y_5d,
+            },
+            "BTC": {
+                "gate_basis": "btc_decoupling_analysis + systemic stress controls",
+                "recommended_base_gate": btc_base_raw,
+            },
+            "EURUSD": {
+                "gate_basis": "transatlantic spread + DXY confirmation + energy penalty",
+                "transatlantic_spread_bps": spread_bps,
+                "dxy_delta_20d_pct": dxy_delta_20d,
+                "energy_penalty": energy_penalty,
+            },
+            "SPX": {
+                "gate_basis": "equity_short_regime; otherwise neutral",
+                "equity_short_allowed": bool(
+                    metrics.get("equity_short_regime", {}).get("equity_short_allowed", False)
+                ),
+            },
+        }
+
         return {
             "execution_bias_gates": resolved,
             "gate_reasons": reasons,
+            "base_gates": base_gates,
+            "evidence": evidence,
             "source": "deterministic_metrics_only",
             "precedence": ["EVENT_FREEZE", "SYSTEMIC_STRESS", "BASE_BIAS"],
             "llm_execution_gates_ignored": True,
