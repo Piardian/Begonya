@@ -305,9 +305,37 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
     raw_regime = strat.get("primary_regime", "Geç Döngü Aşırı Isınma")
     regime = REGIME_TR_MAP.get(raw_regime, raw_regime)
     
-    risk_score = strat.get("volatility_risk_score", 0.40)
-    risk_multiplier = strat.get("recommended_risk_multiplier", 1.0)
-    capital_pres = strat.get("capital_preservation_mode", False)
+    llm_risk_score = strat.get("volatility_risk_score")
+    llm_risk_multiplier = strat.get("recommended_risk_multiplier")
+    capital_pres = bool(strat.get("capital_preservation_mode", False))
+
+    credit_level = str(metrics.get("credit_spread_analysis", {}).get("stress_level", ""))
+    nfci_value = metrics.get("financial_conditions_analysis", {}).get("nfci_value")
+    vix_level = metrics.get("t0_fast_stress_analysis", {}).get("vix_level")
+    fast_stress_active = bool(metrics.get("t0_fast_stress_analysis", {}).get("fast_stress_override"))
+    deterministic_high_risk = (
+        fast_stress_active
+        or (isinstance(vix_level, (int, float)) and float(vix_level) >= 25.0)
+        or "Distress" in credit_level
+    )
+    deterministic_elevated_risk = (
+        not deterministic_high_risk
+        and (
+            (isinstance(vix_level, (int, float)) and float(vix_level) >= 20.0)
+            or "Orta Düzey" in credit_level
+            or (isinstance(nfci_value, (int, float)) and float(nfci_value) >= 0.5)
+        )
+    )
+    risk_state = (
+        "YÜKSEK / SAVUNMA"
+        if deterministic_high_risk
+        else "ORTA / TEMKİNLİ"
+        if deterministic_elevated_risk
+        else "DÜŞÜK / OLAĞAN"
+    )
+    deterministic_risk_multiplier = 0.25 if deterministic_high_risk else 0.50 if deterministic_elevated_risk else 0.85
+    risk_score = 1.0 if deterministic_high_risk else 0.60 if deterministic_elevated_risk else 0.20
+    risk_multiplier = deterministic_risk_multiplier
     
     # 3. Zengin Metrikler
     yc = metrics.get("yield_curve", {})
@@ -334,12 +362,13 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
     gate_source = deterministic.get("source", "UNAVAILABLE")
     
     # Risk Durumu İkonu
-    if capital_pres or risk_score >= 0.70:
-        risk_icon = "🛑 YÜKSEK (Sermaye Koruma Devrede)"
-    elif risk_score >= 0.50:
-        risk_icon = "⚠️ ORTA / TEMKİNLİ"
-    else:
-        risk_icon = "🟢 DÜŞÜK / OLAĞAN (Piyasa Sakin)"
+    risk_icon = (
+        "🛑 " + risk_state
+        if risk_state.startswith("YÜKSEK")
+        else "⚠️ " + risk_state
+        if risk_state.startswith("ORTA")
+        else "🟢 " + risk_state
+    )
         
     stress_status = "⚠️ DEVREDE (Oynaklık Yüksek)" if t0_stress.get("fast_stress_override") else "✅ Sakin (Olağan Seyir)"
     
@@ -480,9 +509,9 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
 ━━━━━━━━━━━━━━━━━━━━━━━━━━{event_freeze_banner}
 🏛️ <b>MAKRO PİYASA REJİMİ:</b>
 • <b>Döngü Teşhisi:</b> {regime}
-• <b>Sistemik Risk Seviyesi:</b> {risk_score:.2f} / 1.0 -> {risk_icon}
+• <b>Deterministik Risk Durumu:</b> {risk_icon}
 • <b>T-0 Anlık Piyasa Stresi:</b> {stress_status}
-• <b>Önerilen İşlem Boyutu:</b> <b>{risk_multiplier}x Lot</b>
+• <b>Deterministik Risk Çarpanı:</b> <b>{risk_multiplier}x</b>
 
 📊 <b>KURUMSAL MAKRO GÖSTERGELER & MATRİS:</b>
 • <b>1. İktisadi Büyüme & Sanayi:</b>
