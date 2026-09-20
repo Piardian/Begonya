@@ -214,6 +214,30 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
             r["regime_state"]["cross_currency_scores"] = dict(cross["currency_scores"])
             r["regime_state"]["cross_currency_breakdown"] = dict(cross["currency_breakdown"])
 
+        curve_consistency = {}
+        source_pairs = (
+            ("US02Y", "DGS2"),
+            ("US10Y", "DGS10"),
+        )
+        for market_symbol, fred_symbol in source_pairs:
+            market_value = market_data.get(market_symbol, {}).get("value")
+            fred_value = fred_data.get(fred_symbol)
+            if isinstance(market_value, (int, float)) and isinstance(fred_value, (int, float)):
+                delta_bps = round((float(market_value) - float(fred_value)) * 100.0, 1)
+                curve_consistency[market_symbol] = {
+                    "market_value_pct": float(market_value),
+                    "fred_value_pct": float(fred_value),
+                    "difference_bps": delta_bps,
+                    "status": "ALIGNED" if abs(delta_bps) <= 10.0 else "DIVERGENT",
+                }
+            else:
+                curve_consistency[market_symbol] = {
+                    "market_value_pct": market_value,
+                    "fred_value_pct": fred_value,
+                    "difference_bps": None,
+                    "status": "UNAVAILABLE",
+                }
+
         market_price_context = {}
         for symbol in (
             "GOLD", "BTC", "DXY", "BRENT", "SPX", "US10Y", "US02Y", "VIX"
@@ -233,6 +257,14 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
                 "fallback_used": bool(data.get("fallback_used")),
             }
         r["market_price_context"] = market_price_context
+        r["market_source_consistency"] = {
+            "treasury_curve": curve_consistency,
+            "warning": (
+                "Broker/market yield and FRED yield differ materially."
+                if any(item.get("status") == "DIVERGENT" for item in curve_consistency.values())
+                else None
+            ),
+        }
         r.setdefault("regime_state", {})["state_source"] = (
             "explicit_previous_regime_state"
             if previous_regime_state is not None
