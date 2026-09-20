@@ -8,6 +8,7 @@ from core.deterministic_controls import event_freeze_status, normalize_calendar_
 from data_quality import (
     DataUnavailableError,
     RELATIVE_VALUE_MARKET_FIELDS,
+    REQUIRED_MARKET_FIELDS,
     validate_fred_payload,
     validate_market_payload,
 )
@@ -69,14 +70,9 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
     @staticmethod
     def calculate_fed_forward_path(us02y:float,dff:Optional[float],us02y_5d:Optional[float]=None)->Dict[str,Any]:
         if dff is None:
-            return {
-                "fed_policy_rate_pct": 5.33,
-                "fed_policy_rate_source": "LEGACY_STATIC_5.33_FALLBACK",
-                "us02y_yield": us02y,
-                "implied_rate_gap_bps": round((us02y-5.33)*100,1),
-                "delta_02y_5d_bps": None if us02y_5d is None else round((us02y-us02y_5d)*100,1),
-                "interpretation_warning": "US02Y-DFF is a policy-rate/yield spread; it is not a total rate-cut estimate.",
-            }
+            raise DataUnavailableError(
+                "DFF is required for policy-path analysis; static policy-rate fallback is disabled."
+            )
         gap=round((us02y-dff)*100,1)
         return {
             "fed_policy_rate_pct":round(dff,3),
@@ -98,7 +94,25 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         if as_of is None:return {}
         obs=fred_data.get("data_quality",{}).get("observation_dates",{});return {f:validate_freshness(f,dt.date.fromisoformat(str(v)),as_of,self.FRED_FREQUENCIES.get(f,"unknown"),self.FRED_MAX_AGE_DAYS.get(f)) for f,v in obs.items()}
     def process_all_macro_data(self,market_data:Dict[str,Any],fred_data:Dict[str,Any],calendar_events:List[Dict[str,Any]],as_of_date:Optional[dt.date]=None,as_of_datetime:Optional[dt.datetime]=None,previous_regime_state:Optional[Mapping[str,Any]]=None,now_utc:Optional[dt.datetime]=None)->Dict[str,Any]:
-        validate_market_payload(market_data)
+        core_market_fields = set(REQUIRED_MARKET_FIELDS)
+        missing_market = sorted(name for name in core_market_fields if name not in market_data)
+        if missing_market:
+            raise DataUnavailableError(
+                "Core market inputs unavailable: " + ", ".join(missing_market)
+            )
+
+        core_fred_fields = {
+            "WALCL", "WALCL_4W_AGO", "RRPONTSYD", "RRPONTSYD_4W_AGO",
+            "WTREGEN", "WTREGEN_4W_AGO", "T10YIE", "DFII10", "DFF",
+            "BAMLH0A0HYM2", "NFCI", "ICSA", "DE10Y", "DE10Y_4W_AGO",
+        }
+        missing_fred = sorted(name for name in core_fred_fields if name not in fred_data)
+        if missing_fred:
+            raise DataUnavailableError(
+                "Core FRED inputs unavailable: " + ", ".join(missing_fred)
+            )
+
+        validate_market_payload(market_data, required_fields=core_market_fields)
         validate_fred_payload(fred_data)
         self._validate_key_ranges(market_data, fred_data)
 
