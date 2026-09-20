@@ -121,6 +121,20 @@ class EconomicRegimeTests(unittest.TestCase):
         self.assertEqual(euro["hicp_direction"], "FALLING")
         self.assertEqual(euro["us_minus_ecb_policy_spread_bps"], 83.0)
 
+    def test_canada_policy_panel_is_reported_when_input_exists(self):
+        fred = self.base_fred()
+        fred.update({
+            "CA_POLICY_RATE": 2.75,
+            "CA_POLICY_RATE_PREVIOUS": 3.00,
+        })
+        result = build_economic_regime_snapshot(
+            fred,
+            as_of=dt.date(2025, 4, 1),
+        )
+        canada = result["canada_policy"]
+        self.assertEqual(canada["status"], "COMPLETE")
+        self.assertEqual(canada["us_minus_ca_policy_spread_bps"], 158.0)
+
     def test_missing_fields_withhold_economic_narrative(self):
         result = build_economic_regime_snapshot({})
         self.assertEqual(result["status"], "UNAVAILABLE")
