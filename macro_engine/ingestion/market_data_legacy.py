@@ -57,7 +57,9 @@ class MarketDataIngestion:
                         "change_pct_5d": pct_change_5d,
                         "change_pct_4w": pct_change_4w,
                         "pct_rank_60d": pct_rank_60d,
-                        "history_close": hist['Close'].tolist()
+                        "history_close": hist['Close'].tolist(),
+                        "source": f"yfinance ({ticker})",
+                        "fallback_used": False
                     }
                 else:
                     if name in OPTIONAL_MARKET_FIELDS:
@@ -98,4 +100,16 @@ class MarketDataIngestion:
             "DAIRY_GDT": {"value": 3250.0, "prev": 3230.0, "val_5d_ago": 3200.0, "month_ago": 3150.0, "change_pct": 0.62, "change_pct_5d": 1.56, "change_pct_4w": 3.17, "history_close": [3200.0, 3215.0, 3230.0, 3250.0]},
             "NZ02Y": {"value": 3.80, "prev": 3.82, "val_5d_ago": 3.85, "month_ago": 3.95, "change_pct": -0.52, "change_pct_5d": -1.30, "change_pct_4w": -3.80, "history_close": [3.85, 3.84, 3.82, 3.80]}
         }
-        return fallbacks.get(name, {"value": 100.0, "prev": 100.0, "val_5d_ago": 100.0, "month_ago": 100.0, "change_pct": 0.0, "change_pct_5d": 0.0, "change_pct_4w": 0.0, "history_close": [100.0, 100.0]})
+        result = dict(fallbacks.get(name, {
+            "value": 100.0,
+            "prev": 100.0,
+            "val_5d_ago": 100.0,
+            "month_ago": 100.0,
+            "change_pct": 0.0,
+            "change_pct_5d": 0.0,
+            "change_pct_4w": 0.0,
+            "history_close": [100.0, 100.0],
+        }))
+        result["source"] = "LEGACY_STATIC_FALLBACK"
+        result["fallback_used"] = True
+        return result

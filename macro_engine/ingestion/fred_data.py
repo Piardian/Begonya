@@ -61,6 +61,9 @@ class FredDataIngestion:
         "GDP_QOQ_SAAR": "A191RL1Q225SBEA",
         "INDPRO": "INDPRO",
         "RSAFS": "RSAFS",
+        # Euro-area local macro inputs for EURUSD relative-value analysis.
+        "EA_HICP_YOY": "CP0000EZ19M086NEST",
+        "ECB_DEPOSIT_RATE": "ECBDFR",
         # Treasury curve.
         "DGS3MO": "DGS3MO",
         "DGS2": "DGS2",
@@ -81,6 +84,7 @@ class FredDataIngestion:
         "PCE_YOY": "pc1",
         "CORE_PCE_YOY": "pc1",
         "AHE_YOY": "pc1",
+        "EA_HICP_YOY": "pc1",
     }
 
     FRED_SERIES = {**BASE_FRED_SERIES, **ECONOMIC_FRED_SERIES}
@@ -181,6 +185,34 @@ class FredDataIngestion:
             prior_value = round(prior_value / 1000.0, 1)
         return current, prior_value, current_date, prior_date
 
+    def _current_and_previous_observation(
+        self,
+        series_id: str,
+        as_of: dt.date,
+        lookback_days: int = 450,
+    ) -> Tuple[float, float, dt.date, dt.date]:
+        """Return the latest observation and the immediately prior observation."""
+        rows = self._get_observations(
+            series_id,
+            as_of - dt.timedelta(days=lookback_days),
+            as_of,
+            realtime_end=as_of,
+        )
+        rows_sorted = sorted(rows, key=lambda x: x[0])
+        current_candidates = [row for row in rows_sorted if row[0] <= as_of]
+        if not current_candidates:
+            raise DataUnavailableError(
+                f"No observation on or before {as_of.isoformat()} for {series_id}"
+            )
+        current_date, current = current_candidates[-1]
+        previous = [row for row in rows_sorted if row[0] < current_date]
+        if not previous:
+            raise DataUnavailableError(
+                f"No previous observation available for {series_id}"
+            )
+        previous_date, previous_value = previous[-1]
+        return current, previous_value, current_date, previous_date
+
     def _fetch_baseline_metrics(self, as_of: Optional[dt.date] = None) -> Dict[str, Any]:
         as_of = as_of or dt.date.today()
         as_of_str = as_of.isoformat()
@@ -213,6 +245,8 @@ class FredDataIngestion:
             "CORE_PCE_YOY_4W_AGO": 2.8,
             "PAYEMS": 158500.0,
             "PAYEMS_4W_AGO": 158300.0,
+            "PAYEMS_MOM_CHANGE_K": 0.0,
+            "PAYEMS_PREV_OBS_DATE": prior_str,
             "UNRATE": 4.2,
             "UNRATE_4W_AGO": 4.3,
             "AHE_YOY": 3.8,
@@ -223,6 +257,12 @@ class FredDataIngestion:
             "INDPRO_4W_AGO": 103.2,
             "RSAFS": 710000.0,
             "RSAFS_4W_AGO": 708000.0,
+            "EA_HICP_YOY": 2.5,
+            "EA_HICP_YOY_4W_AGO": 2.6,
+            "ECB_DEPOSIT_RATE": 3.50,
+            "ECB_DEPOSIT_RATE_4W_AGO": 3.50,
+            "EA_HICP_SOURCE_DATE": as_of_str,
+            "ECB_DEPOSIT_RATE_SOURCE_DATE": as_of_str,
             "DGS3MO": 5.10,
             "DGS3MO_4W_AGO": 5.20,
             "DGS2": 3.94,
@@ -284,6 +324,13 @@ class FredDataIngestion:
             prior_dates[logical_name] = prior_date.isoformat()
 
         for logical_name, series_id in self.ECONOMIC_FRED_SERIES.items():
+            if logical_name == "PAYEMS":
+                payroll_current, payroll_previous, payroll_date, payroll_previous_date = self._current_and_previous_observation(
+                    series_id, as_of
+                )
+                results["PAYEMS_MOM_CHANGE_K"] = round(payroll_current - payroll_previous, 1)
+                results["PAYEMS_PREV_OBS_DATE"] = payroll_previous_date.isoformat()
+
             if series_id in ("NAPM", "NMFBAI"):
                 # ISM discontinued public redistribution on FRED.
                 # Explicitly record as None / unavailable; never fabricate fake proxy values or dates.
@@ -310,6 +357,8 @@ class FredDataIngestion:
             )
 
         results["M2SL_SOURCE_DATE"] = observation_dates["M2SL"]
+        results["EA_HICP_SOURCE_DATE"] = economic_observation_dates.get("EA_HICP_YOY")
+        results["ECB_DEPOSIT_RATE_SOURCE_DATE"] = economic_observation_dates.get("ECB_DEPOSIT_RATE")
         results["data_quality"] = {
             "provider": "FRED",
             "fallback_used": False,
@@ -320,6 +369,11 @@ class FredDataIngestion:
             "prior_4w_dates": prior_dates,
             "economic_observation_dates": economic_observation_dates,
             "economic_prior_4w_dates": economic_prior_dates,
+            "payems_previous_observation_date": results.get("PAYEMS_PREV_OBS_DATE"),
+            "euro_area_observation_dates": {
+                "EA_HICP_YOY": economic_observation_dates.get("EA_HICP_YOY"),
+                "ECB_DEPOSIT_RATE": economic_observation_dates.get("ECB_DEPOSIT_RATE"),
+            },
             "economic_transformations": {
                 **{key: f"FRED {units} transform from {series_id}" for key, series_id in self.ECONOMIC_FRED_SERIES.items() if (units := self.FRED_UNITS.get(key))},
                 "ISM_MANUFACTURING_PMI": "UNAVAILABLE (publisher discontinued public series NAPM on FRED; no synthetic data substituted)",

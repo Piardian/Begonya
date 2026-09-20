@@ -10,6 +10,8 @@ from graph.macro_graph_legacy import MacroGraphState, save_macro_gate_atomic
 from config import BIAS_GATE_FILE
 from preprocessing.economic_regimes import build_economic_regime_snapshot
 from preprocessing.policy_expectations import build_policy_expectations
+from ingestion.bank_of_england import BankOfEnglandDataIngestion
+from ingestion.bank_of_canada import BankOfCanadaDataIngestion
 
 
 class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
@@ -19,7 +21,41 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
         as_of = getattr(self, "_as_of_date", None)
         as_of_datetime = getattr(self, "_as_of_datetime", None)
         raw_market = self.market_ingest.fetch_current_prices()
+
+        try:
+            uk_bank_rate = BankOfEnglandDataIngestion().fetch_bank_rate(as_of_datetime)
+        except Exception as exc:
+            uk_bank_rate = {
+                "status": "UNAVAILABLE",
+                "value": None,
+                "previous_value": None,
+                "observation_date": None,
+                "source": "Bank of England official Bank Rate (YWMB47D)",
+                "error": str(exc),
+            }
+
+        try:
+            ca_policy_rate = BankOfCanadaDataIngestion().fetch_policy_rate(as_of_datetime)
+        except Exception as exc:
+            ca_policy_rate = {
+                "status": "UNAVAILABLE",
+                "value": None,
+                "previous_value": None,
+                "observation_date": None,
+                "source": "Bank of Canada official Target for the overnight rate (V39079)",
+                "error": str(exc),
+            }
+
         raw_fred = self.fred_ingest.fetch_liquidity_metrics(as_of=as_of)
+        raw_fred["UK_BANK_RATE"] = uk_bank_rate.get("value")
+        raw_fred["UK_BANK_RATE_PREVIOUS"] = uk_bank_rate.get("previous_value")
+        raw_fred["UK_BANK_RATE_SOURCE_DATE"] = uk_bank_rate.get("observation_date")
+        raw_fred.setdefault("data_quality", {})["uk_bank_rate"] = uk_bank_rate
+        raw_fred["CA_POLICY_RATE"] = ca_policy_rate.get("value")
+        raw_fred["CA_POLICY_RATE_PREVIOUS"] = ca_policy_rate.get("previous_value")
+        raw_fred["CA_POLICY_RATE_SOURCE_DATE"] = ca_policy_rate.get("observation_date")
+        raw_fred.setdefault("data_quality", {})["ca_policy_rate"] = ca_policy_rate
+
         supplied_events = state.get("calendar_events") or []
         events_provided = bool(state.get("calendar_events_supplied", False)) or bool(supplied_events)
         events = list(supplied_events) if events_provided else asyncio.run(self.cal_ingest.fetch_latest_events())
@@ -71,25 +107,238 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
 
     @staticmethod
     def _build_deterministic_gates(metrics: Mapping[str, Any]) -> Dict[str, Any]:
-        freeze = bool(metrics.get("cross_pairs_analysis", {}).get("event_freeze", {}).get("active", False))
-        fast_stress = bool(metrics.get("t0_fast_stress_analysis", {}).get("fast_stress_override", False))
-        gold_short = bool(metrics.get("gold_fiscal_dominance", {}).get("gold_short_allowed", False))
-        btc_base = metrics.get("btc_decoupling_analysis", {}).get("recommended_btc_gate", "DEFENSIVE_HOLD")
-        btc_map = {
-            "LONG_ONLY_ALLOWED_IF_DEBASEMENT": "LONG_ONLY",
-            "SHORT_ONLY": "SHORT_ONLY",
-            "DEFENSIVE_HOLD": "DEFENSIVE_HOLD",
-            "LONG_ONLY": "LONG_ONLY",
-            "NEUTRAL_RANGE": "NEUTRAL_RANGE",
+        cross_analysis = metrics.get("cross_pairs_analysis", {})
+        freeze = bool(cross_analysis.get("event_freeze", {}).get("active", False))
+        fast_stress = bool(
+            metrics.get("t0_fast_stress_analysis", {})
+            .get("fast_stress_override", False)
+        )
+
+        real_yield = metrics.get("real_yield_info", {}).get("real_yield_pct")
+        yield_curve = metrics.get("yield_curve", {})
+        delta_10y_5d = yield_curve.get("delta_10y_5d_bps")
+        bear_steepening = yield_curve.get("regime") == "Bear Steepening"
+
+        dxy = metrics.get("dxy_trend_analysis", {})
+        dxy_delta_20d = dxy.get("delta_20d_pct")
+        liquidity = metrics.get("liquidity_dynamics", {})
+        liquidity_delta = liquidity.get("delta_liquidity_billion")
+        nfci = metrics.get("financial_conditions_analysis", {}).get("nfci_value")
+        credit = metrics.get("credit_spread_analysis", {})
+        credit_stress = str(credit.get("stress_level", ""))
+
+        evidence: Dict[str, Any] = {}
+
+        # XAUUSD: LONG_ONLY requires two independent supportive channels.
+        gold_short = bool(
+            metrics.get("gold_fiscal_dominance", {})
+            .get("gold_short_allowed", False)
+        )
+        xau_bullish = []
+        xau_bearish = []
+        if isinstance(real_yield, (int, float)):
+            (xau_bullish if float(real_yield) < 1.90 else xau_bearish).append(
+                f"real_yield={'supportive' if float(real_yield) < 1.90 else 'restrictive'}:{float(real_yield):.2f}%"
+            )
+        if isinstance(dxy_delta_20d, (int, float)):
+            (xau_bullish if float(dxy_delta_20d) < -0.5 else xau_bearish if float(dxy_delta_20d) > 0.5 else []).append(
+                f"DXY_20d={float(dxy_delta_20d):+.2f}%"
+            ) if abs(float(dxy_delta_20d)) > 0.5 else None
+        if isinstance(liquidity_delta, (int, float)):
+            (xau_bullish if float(liquidity_delta) > 0 else xau_bearish).append(
+                f"net_liquidity_4w={float(liquidity_delta):+.1f}B"
+            )
+        if isinstance(nfci, (int, float)) and float(nfci) < 0:
+            xau_bullish.append(f"NFCI={float(nfci):+.2f}")
+        if bear_steepening:
+            xau_bearish.append("bear_steepening")
+        if isinstance(delta_10y_5d, (int, float)) and float(delta_10y_5d) >= 10.0:
+            xau_bearish.append(f"10Y_5d={float(delta_10y_5d):+.1f}bps")
+        if gold_short:
+            xau_base = "SHORT_ONLY"
+        elif len(xau_bullish) >= 2 and not xau_bearish:
+            xau_base = "LONG_ONLY"
+        else:
+            xau_base = "NEUTRAL_RANGE"
+        evidence["XAUUSD"] = {
+            "bullish_factors": xau_bullish,
+            "bearish_factors": xau_bearish,
+            "minimum_for_long_only": 2,
         }
+
+        # BTC: "no stress" is not enough. Require at least two independent
+        # macro supports for LONG_ONLY and reject when clear bearish evidence exists.
+        btc_bullish = []
+        btc_bearish = []
+        if isinstance(real_yield, (int, float)):
+            (btc_bullish if float(real_yield) < 1.90 else btc_bearish).append(
+                f"real_yield:{float(real_yield):.2f}%"
+            )
+        if isinstance(dxy_delta_20d, (int, float)):
+            if float(dxy_delta_20d) < -0.5:
+                btc_bullish.append(f"DXY_20d:{float(dxy_delta_20d):+.2f}%")
+            elif float(dxy_delta_20d) > 0.5:
+                btc_bearish.append(f"DXY_20d:{float(dxy_delta_20d):+.2f}%")
+        if isinstance(liquidity_delta, (int, float)):
+            (btc_bullish if float(liquidity_delta) > 0 else btc_bearish).append(
+                f"net_liquidity_4w:{float(liquidity_delta):+.1f}B"
+            )
+        if isinstance(nfci, (int, float)):
+            (btc_bullish if float(nfci) < 0 else btc_bearish).append(
+                f"NFCI:{float(nfci):+.2f}"
+            )
+        if bear_steepening:
+            btc_bearish.append("bear_steepening")
+        if isinstance(delta_10y_5d, (int, float)) and float(delta_10y_5d) >= 10.0:
+            btc_bearish.append(f"10Y_5d:{float(delta_10y_5d):+.1f}bps")
+        if isinstance(credit_stress, str) and "Distress" in credit_stress:
+            btc_bearish.append("credit_distress")
+
+        legacy_btc = metrics.get("btc_decoupling_analysis", {}).get(
+            "recommended_btc_gate", "DEFENSIVE_HOLD"
+        )
+        if fast_stress:
+            btc_base = "DEFENSIVE_HOLD"
+        elif "SHORT_ONLY" in str(legacy_btc).upper() and bear_steepening:
+            btc_base = "SHORT_ONLY"
+        elif len(btc_bullish) >= 2 and not btc_bearish:
+            btc_base = "LONG_ONLY"
+        else:
+            btc_base = "NEUTRAL_RANGE"
+        evidence["BTC"] = {
+            "bullish_factors": btc_bullish,
+            "bearish_factors": btc_bearish,
+            "legacy_recommendation": legacy_btc,
+            "minimum_for_long_only": 2,
+        }
+
+        # EURUSD: use both USD-side and EUR-side policy evidence.
+        transatlantic = metrics.get("transatlantic_analysis", {})
+        spread_bps = transatlantic.get("spread_bps")
+        energy_penalty = bool(
+            metrics.get("terms_of_trade_energy_analysis", {})
+            .get("eurusd_energy_penalty", False)
+        )
+        euro_panel = metrics.get("economic_regime_snapshot", {}).get("euro_area_macro", {})
+        us_minus_ecb = euro_panel.get("us_minus_ecb_policy_spread_bps")
+        hicp_direction = euro_panel.get("hicp_direction")
+
+        eur_bullish = []
+        eur_bearish = []
+        if isinstance(us_minus_ecb, (int, float)):
+            if float(us_minus_ecb) < 100.0:
+                eur_bullish.append(f"US-ECB policy spread:{float(us_minus_ecb):+.1f}bps")
+            elif float(us_minus_ecb) > 150.0:
+                eur_bearish.append(f"US-ECB policy spread:{float(us_minus_ecb):+.1f}bps")
+        if isinstance(spread_bps, (int, float)):
+            if float(spread_bps) < 150.0:
+                eur_bullish.append(f"US-DE 10Y spread:{float(spread_bps):+.1f}bps")
+            elif float(spread_bps) > 180.0:
+                eur_bearish.append(f"US-DE 10Y spread:{float(spread_bps):+.1f}bps")
+        if hicp_direction == "RISING":
+            eur_bullish.append("EA HICP:RISING")
+        elif hicp_direction == "FALLING":
+            eur_bearish.append("EA HICP:FALLING")
+        if energy_penalty:
+            eur_bearish.append("EA energy penalty")
+
+        dxy_confirm_bear = isinstance(dxy_delta_20d, (int, float)) and float(dxy_delta_20d) > 0.5
+        dxy_confirm_bull = isinstance(dxy_delta_20d, (int, float)) and float(dxy_delta_20d) < -0.5
+
+        if dxy_confirm_bear and (
+            (isinstance(us_minus_ecb, (int, float)) and float(us_minus_ecb) > 150.0)
+            or (isinstance(spread_bps, (int, float)) and float(spread_bps) > 180.0)
+            or energy_penalty
+        ):
+            eur_base = "SHORT_ONLY"
+        elif dxy_confirm_bull and (
+            isinstance(us_minus_ecb, (int, float))
+            and float(us_minus_ecb) < 100.0
+            and isinstance(spread_bps, (int, float))
+            and float(spread_bps) < 150.0
+        ):
+            eur_base = "LONG_ONLY"
+        else:
+            eur_base = "NEUTRAL_RANGE"
+
+        evidence["EURUSD"] = {
+            "gate_basis": "US-ECB policy spread + US-DE 10Y spread + DXY confirmation + EA inflation/energy context",
+            "us_minus_ecb_policy_spread_bps": us_minus_ecb,
+            "transatlantic_spread_bps": spread_bps,
+            "dxy_delta_20d_pct": dxy_delta_20d,
+            "hicp_direction": hicp_direction,
+            "energy_penalty": energy_penalty,
+            "bullish_factors": eur_bullish,
+            "bearish_factors": eur_bearish,
+        }
+
+        # Work on a private copy so gate construction never mutates input metrics.
+        cross_gates_raw = dict(cross_analysis.get("cross_gates", {}) or {})
+
+        # GBPUSD: legacy relative-value direction must agree with official
+        # UK Bank Rate versus US policy rate.
+        gbpusd_legacy = str(cross_gates_raw.get("GBPUSD", "NEUTRAL_RANGE"))
+        uk_panel = metrics.get("economic_regime_snapshot", {}).get("uk_policy", {})
+        us_minus_uk = uk_panel.get("us_minus_uk_policy_spread_bps")
+        gbpusd_confirmed = False
+        if isinstance(us_minus_uk, (int, float)):
+            if gbpusd_legacy == "SHORT_ONLY":
+                gbpusd_confirmed = float(us_minus_uk) > 25.0
+            elif gbpusd_legacy == "LONG_ONLY":
+                gbpusd_confirmed = float(us_minus_uk) < -25.0
+        if gbpusd_legacy in ("SHORT_ONLY", "LONG_ONLY") and not gbpusd_confirmed:
+            cross_gates_raw = dict(cross_gates_raw)
+            cross_gates_raw["GBPUSD"] = "NEUTRAL_RANGE"
+            cross_analysis["cross_gates"] = cross_gates_raw
+
+        # USDCAD: legacy relative-value direction must agree with the
+        # official Canada policy rate versus the US policy rate.
+        usdcad_legacy = str(cross_gates_raw.get("USDCAD", "NEUTRAL_RANGE"))
+        ca_panel = metrics.get("economic_regime_snapshot", {}).get("canada_policy", {})
+        us_minus_ca = ca_panel.get("us_minus_ca_policy_spread_bps")
+        usdcad_confirmed = False
+        if isinstance(us_minus_ca, (int, float)):
+            if usdcad_legacy == "LONG_ONLY":
+                usdcad_confirmed = float(us_minus_ca) > 25.0
+            elif usdcad_legacy == "SHORT_ONLY":
+                usdcad_confirmed = float(us_minus_ca) < -25.0
+        if usdcad_legacy in ("LONG_ONLY", "SHORT_ONLY") and not usdcad_confirmed:
+            cross_gates_raw = dict(cross_gates_raw)
+            cross_gates_raw["USDCAD"] = "NEUTRAL_RANGE"
+            cross_analysis["cross_gates"] = cross_gates_raw
+
+        spx_allowed = bool(
+            metrics.get("equity_short_regime", {})
+            .get("equity_short_allowed", False)
+        )
+        spx_base = "SHORT_ONLY" if spx_allowed else "NEUTRAL_RANGE"
+        evidence["SPX"] = {
+            "gate_basis": "equity_short_regime; otherwise neutral",
+            "equity_short_allowed": spx_allowed,
+        }
+
+        cross = cross_gates_raw
         base_gates = {
-            "XAUUSD": "SHORT_ONLY" if gold_short else "NEUTRAL_RANGE",
-            "BTC": btc_map.get(btc_base, "DEFENSIVE_HOLD"),
-            "EURUSD": "NEUTRAL_RANGE",
-            "SPX": "DEFENSIVE_HOLD" if fast_stress else "NEUTRAL_RANGE",
+            "XAUUSD": xau_base,
+            "BTC": btc_base,
+            "EURUSD": eur_base,
+            "SPX": spx_base,
         }
-        cross = metrics.get("cross_pairs_analysis", {}).get("cross_gates", {})
-        base_gates.update({str(k): str(v) for k, v in cross.items() if isinstance(v, str)})
+        base_gates.update(
+            {
+                str(k): str(v)
+                for k, v in cross.items()
+                if isinstance(v, str) and str(k) not in base_gates
+            }
+        )
+
+        # If BTC is not long-permitted, a legacy SOL long gate must not bypass it.
+        if base_gates.get("BTC") != "LONG_ONLY" and base_gates.get("SOL") == "LONG_ONLY":
+            base_gates["SOL"] = "NEUTRAL_RANGE"
+            evidence["SOL"] = {
+                "gate_basis": "BTC parent gate is not LONG_ONLY; SOL cannot bypass parent crypto regime."
+            }
+
         resolved: Dict[str, str] = {}
         reasons: Dict[str, str] = {}
         for symbol, base_bias in base_gates.items():
@@ -101,14 +350,16 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             )
             resolved[symbol] = decision["gate"]
             reasons[symbol] = decision["reason"]
+
         return {
             "execution_bias_gates": resolved,
             "gate_reasons": reasons,
+            "base_gates": base_gates,
+            "evidence": evidence,
             "source": "deterministic_metrics_only",
             "precedence": ["EVENT_FREEZE", "SYSTEMIC_STRESS", "BASE_BIAS"],
             "llm_execution_gates_ignored": True,
         }
-
     def _node_gate_export(self, state: MacroGraphState) -> Dict[str, Any]:
         """Export execution gates derived only from deterministic metrics; LLM gates are advisory and ignored."""
         final_dict = state.get("final_output") or {}
@@ -125,6 +376,9 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             "recommended_risk_multiplier": final_dict.get("recommended_risk_multiplier", 1.0),
             "execution_bias_gates": deterministic["execution_bias_gates"],
             "deterministic_execution_bias_gates": deterministic["execution_bias_gates"],
+            "deterministic_base_gates": deterministic.get("base_gates", {}),
+            "deterministic_gate_evidence": deterministic.get("evidence", {}),
+            "deterministic_gate_reasons": deterministic.get("gate_reasons", {}),
             "deterministic_gate_source": deterministic["source"],
             "gate_precedence": deterministic["precedence"],
             "llm_execution_gates_ignored": True,

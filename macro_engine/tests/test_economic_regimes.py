@@ -104,6 +104,37 @@ class EconomicRegimeTests(unittest.TestCase):
         self.assertEqual(panel["reprice_1d_bps"], -5.0)
         self.assertEqual(panel["reprice_5d_bps"], -20.0)
 
+    def test_euro_area_macro_panel_is_reported_when_inputs_exist(self):
+        fred = self.base_fred()
+        fred.update({
+            "EA_HICP_YOY": 2.5,
+            "EA_HICP_YOY_4W_AGO": 2.6,
+            "ECB_DEPOSIT_RATE": 3.50,
+            "ECB_DEPOSIT_RATE_4W_AGO": 3.50,
+        })
+        result = build_economic_regime_snapshot(
+            fred,
+            as_of=dt.date(2024, 3, 31),
+        )
+        euro = result["euro_area_macro"]
+        self.assertEqual(euro["status"], "COMPLETE")
+        self.assertEqual(euro["hicp_direction"], "FALLING")
+        self.assertEqual(euro["us_minus_ecb_policy_spread_bps"], 83.0)
+
+    def test_canada_policy_panel_is_reported_when_input_exists(self):
+        fred = self.base_fred()
+        fred.update({
+            "CA_POLICY_RATE": 2.75,
+            "CA_POLICY_RATE_PREVIOUS": 3.00,
+        })
+        result = build_economic_regime_snapshot(
+            fred,
+            as_of=dt.date(2024, 3, 31),
+        )
+        canada = result["canada_policy"]
+        self.assertEqual(canada["status"], "COMPLETE")
+        self.assertEqual(canada["us_minus_ca_policy_spread_bps"], 158.0)
+
     def test_missing_fields_withhold_economic_narrative(self):
         result = build_economic_regime_snapshot({})
         self.assertEqual(result["status"], "UNAVAILABLE")

@@ -79,11 +79,13 @@ class MacroEventScheduler:
             result = self.engine.run_pipeline()
             strat = result.get("final_output", {})
             regime = strat.get("primary_regime", "Bilinmiyor")
-            gates = strat.get("execution_bias_gates", {})
+            deterministic = result.get("deterministic_execution_gates", {})
+            gates = deterministic.get("execution_bias_gates", {})
             elapsed = round(time.time() - start_time, 2)
             logger.info(
                 f"✅ [MAKRO DÖNGÜ TAMAMLANDI - {elapsed}s] Rejim: {regime} | "
-                f"Kapılar: XAUUSD={gates.get('XAUUSD')}, EURUSD={gates.get('EURUSD')}, BTC={gates.get('BTC')}"
+                f"Deterministic Kapılar: XAUUSD={gates.get('XAUUSD')}, "
+                f"EURUSD={gates.get('EURUSD')}, BTC={gates.get('BTC')}"
             )
             return True
         except Exception as e:

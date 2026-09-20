@@ -513,11 +513,16 @@ class MacroMetricsCalculator:
         if brent_delta_1d_pct > 4.0 or brent_delta_5d_pct > 8.0:
             fast_stress_triggers.append(f"Brent Ani Emtia Şoku (1G Sıçrama: %{brent_delta_1d_pct:+.1f}, 5G: %{brent_delta_5d_pct:+.1f})")
 
-        fast_stress_override = len(fast_stress_triggers) > 0
+        # A single VIX percentage jump from a low base is not sufficient to
+        # declare systemic stress. Require either an extreme absolute VIX level
+        # or confirmation from at least two independent stress channels.
+        fast_stress_override = (vix_val >= 25.0) or (len(fast_stress_triggers) >= 2)
 
         t0_fast_stress_analysis = {
             "fast_stress_override": fast_stress_override,
             "triggers": fast_stress_triggers,
+            "trigger_count": len(fast_stress_triggers),
+            "confirmation_rule": "VIX>=25 alone OR >=2 independent stress triggers",
             "hyg_lqd_ratio": current_hyg_lqd,
             "hyg_lqd_delta_1d_pct": hyg_lqd_delta_1d_pct,
             "hyg_lqd_delta_5d_pct": hyg_lqd_delta_5d_pct,
@@ -858,8 +863,11 @@ class MacroMetricsCalculator:
 
         # D) Sentetik Çapraz & Majör Kur Kapıları (Relative Value Matrix)
         def _calc_cross_bias(base_s: int, quote_s: int) -> str:
+            # Directional ONLY requires a two-point separation between base and
+            # quote currency scores. A 1-point advantage is treated as
+            # insufficient evidence and remains neutral/range.
             diff = base_s - quote_s
-            return "LONG_ONLY" if diff > 0 else "SHORT_ONLY" if diff < 0 else "NEUTRAL_RANGE"
+            return "LONG_ONLY" if diff >= 2 else "SHORT_ONLY" if diff <= -2 else "NEUTRAL_RANGE"
 
         cross_gates = {
             # Çapraz Kurlar
