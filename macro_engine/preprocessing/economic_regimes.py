@@ -240,6 +240,14 @@ def build_economic_regime_snapshot(
         else None
     )
 
+    ca_policy_rate = _num(fred, "CA_POLICY_RATE")
+    ca_policy_rate_previous = _num(fred, "CA_POLICY_RATE_PREVIOUS")
+    us_minus_ca_bps = (
+        (dff - ca_policy_rate) * 100.0
+        if dff is not None and ca_policy_rate is not None
+        else None
+    )
+
     manufacturing_pmi = _num(fred, "ISM_MANUFACTURING_PMI")
     manufacturing_pmi_delta = _delta(fred, "ISM_MANUFACTURING_PMI")
     services_activity = _num(fred, "ISM_SERVICES_ACTIVITY")
@@ -313,6 +321,17 @@ def build_economic_regime_snapshot(
             "two_ten_inverted": bool(two_ten_spread is not None and two_ten_spread < 0.0),
             "three_ten_inverted": bool(three_ten_spread is not None and three_ten_spread < 0.0),
             "two_year_minus_dff_bps": policy_gap_bps,
+        },
+        "canada_policy": {
+            "status": "COMPLETE" if ca_policy_rate is not None else "UNAVAILABLE",
+            "policy_rate_pct": ca_policy_rate,
+            "previous_policy_rate_pct": ca_policy_rate_previous,
+            "us_minus_ca_policy_spread_bps": us_minus_ca_bps,
+            "source": fred.get("data_quality", {}).get("ca_policy_rate", {}).get(
+                "source", "Bank of Canada official Target for the overnight rate (V39079)"
+            ),
+            "observation_date": fred.get("CA_POLICY_RATE_SOURCE_DATE"),
+            "pit_note": fred.get("data_quality", {}).get("ca_policy_rate", {}).get("pit_rule"),
         },
         "uk_policy": {
             "status": "COMPLETE" if uk_bank_rate is not None else "UNAVAILABLE",
