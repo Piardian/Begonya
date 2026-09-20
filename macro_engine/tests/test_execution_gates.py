@@ -108,6 +108,28 @@ class ExecutionGateTests(unittest.TestCase):
         result = MacroWorkflowEngine._build_deterministic_gates(metrics)
         self.assertEqual(result["base_gates"]["XAUUSD"], "LONG_ONLY")
 
+    def test_eurusd_uses_euro_area_policy_evidence(self):
+        metrics = {
+            "real_yield_info": {"real_yield_pct": 1.5},
+            "yield_curve": {"regime": "Range-bound Slope", "delta_10y_5d_bps": 1.0},
+            "t0_fast_stress_analysis": {"fast_stress_override": False},
+            "gold_fiscal_dominance": {"gold_short_allowed": False},
+            "btc_decoupling_analysis": {"recommended_btc_gate": "LONG_ONLY_ALLOWED_IF_DEBASEMENT"},
+            "cross_pairs_analysis": {"event_freeze": {"active": False}, "cross_gates": {}},
+            "terms_of_trade_energy_analysis": {"eurusd_energy_penalty": False},
+            "transatlantic_analysis": {"spread_bps": 190.0},
+            "dxy_trend_analysis": {"delta_20d_pct": 0.80},
+            "economic_regime_snapshot": {
+                "euro_area_macro": {
+                    "us_minus_ecb_policy_spread_bps": 165.0,
+                    "hicp_direction": "FALLING",
+                }
+            },
+            "equity_short_regime": {"equity_short_allowed": False},
+        }
+        result = MacroWorkflowEngine._build_deterministic_gates(metrics)
+        self.assertEqual(result["base_gates"]["EURUSD"], "SHORT_ONLY")
+
     def test_eurusd_requires_dollar_confirmation_for_short(self):
         metrics = {
             "real_yield_info": {"real_yield_pct": 1.5},
