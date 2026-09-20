@@ -102,6 +102,7 @@ class ExecutionGateTests(unittest.TestCase):
             "t0_fast_stress_analysis": {"fast_stress_override": False},
             "gold_fiscal_dominance": {"gold_short_allowed": False},
             "cross_pairs_analysis": {"event_freeze": {"active": False}, "cross_gates": {}},
+            "liquidity_dynamics": {"delta_liquidity_billion": 10.0},
             "btc_decoupling_analysis": {"recommended_btc_gate": "LONG_ONLY_ALLOWED_IF_DEBASEMENT"},
             "liquidity_dynamics": {"delta_liquidity_billion": 10.0},
             "equity_short_regime": {"equity_short_allowed": False},
@@ -162,6 +163,12 @@ class ExecutionGateTests(unittest.TestCase):
             "terms_of_trade_energy_analysis": {"eurusd_energy_penalty": False},
             "transatlantic_analysis": {"spread_bps": -20.0},
             "dxy_trend_analysis": {"delta_20d_pct": -0.80},
+            "economic_regime_snapshot": {
+                "euro_area_macro": {
+                    "us_minus_ecb_policy_spread_bps": 80.0,
+                    "hicp_direction": "RISING",
+                }
+            },
             "economic_regime_snapshot": {
                 "euro_area_macro": {
                     "us_minus_ecb_policy_spread_bps": 80.0,
