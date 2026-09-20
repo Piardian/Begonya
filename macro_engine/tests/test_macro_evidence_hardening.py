@@ -83,20 +83,24 @@ class MacroEvidenceHardeningTests(unittest.TestCase):
 
 
     def test_one_point_currency_edge_remains_neutral(self):
-        from preprocessing.metrics_legacy import MacroMetricsCalculator as LegacyCalculator
-
-        # Verify the policy boundary directly: a 1-point currency score
-        # difference is not sufficient for a directional-only cross gate.
-        # The helper is local to the legacy processor, so reproduce the policy
-        # boundary with the same score range used by the engine.
-        def calc(base_score, quote_score):
-            diff = base_score - quote_score
-            return "LONG_ONLY" if diff >= 2 else "SHORT_ONLY" if diff <= -2 else "NEUTRAL_RANGE"
-
-        self.assertEqual(calc(1, 0), "NEUTRAL_RANGE")
-        self.assertEqual(calc(1, -1), "LONG_ONLY")
-        self.assertEqual(calc(-1, 0), "NEUTRAL_RANGE")
-        self.assertEqual(calc(-1, 1), "SHORT_ONLY")
+        market = {
+            **self.market,
+            "BRENT": {
+                **self.market["BRENT"],
+                "value": 83.2,
+                "month_ago": 80.0,
+                "change_pct_4w": 4.0,
+            },
+        }
+        result = self.calc.process_all_macro_data(market, self.fred, [])
+        # CAD gets a +1 commodity score while AUD remains neutral. The pair
+        # must not become directional on a one-point difference.
+        self.assertEqual(result["cross_pairs_analysis"]["currency_scores"]["CAD"], 1)
+        self.assertEqual(result["cross_pairs_analysis"]["currency_scores"]["AUD"], 0)
+        self.assertEqual(
+            result["cross_pairs_analysis"]["cross_gates"]["AUDCAD"],
+            "NEUTRAL_RANGE",
+        )
 
     def test_unverified_price_levels_are_removed_from_free_form_text(self):
         text = "BTC $66,000 destek bölgesi; XAUUSD 2650-2680 bandı; DXY 100.50 direnç."
