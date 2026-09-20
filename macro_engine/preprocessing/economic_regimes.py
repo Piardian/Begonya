@@ -232,6 +232,14 @@ def build_economic_regime_snapshot(
         else None
     )
 
+    uk_bank_rate = _num(fred, "UK_BANK_RATE")
+    uk_bank_rate_previous = _num(fred, "UK_BANK_RATE_PREVIOUS")
+    us_minus_uk_bps = (
+        (dff - uk_bank_rate) * 100.0
+        if dff is not None and uk_bank_rate is not None
+        else None
+    )
+
     manufacturing_pmi = _num(fred, "ISM_MANUFACTURING_PMI")
     manufacturing_pmi_delta = _delta(fred, "ISM_MANUFACTURING_PMI")
     services_activity = _num(fred, "ISM_SERVICES_ACTIVITY")
@@ -305,6 +313,17 @@ def build_economic_regime_snapshot(
             "two_ten_inverted": bool(two_ten_spread is not None and two_ten_spread < 0.0),
             "three_ten_inverted": bool(three_ten_spread is not None and three_ten_spread < 0.0),
             "two_year_minus_dff_bps": policy_gap_bps,
+        },
+        "uk_policy": {
+            "status": "COMPLETE" if uk_bank_rate is not None else "UNAVAILABLE",
+            "bank_rate_pct": uk_bank_rate,
+            "previous_bank_rate_pct": uk_bank_rate_previous,
+            "us_minus_uk_policy_spread_bps": us_minus_uk_bps,
+            "source": fred.get("data_quality", {}).get("uk_bank_rate", {}).get(
+                "source", "Bank of England official Bank Rate (YWMB47D)"
+            ),
+            "observation_date": fred.get("UK_BANK_RATE_SOURCE_DATE"),
+            "pit_note": fred.get("data_quality", {}).get("uk_bank_rate", {}).get("pit_rule"),
         },
         "euro_area_macro": {
             "status": "COMPLETE" if ea_hicp is not None and ecb_deposit_rate is not None else "PARTIAL",
