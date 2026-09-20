@@ -80,6 +80,17 @@ class DataIntegrityTests(unittest.TestCase):
         self.assertIn("market-vs-current-policy spread", result["interpretation_warning"])
         self.assertIn("not a", result["interpretation_warning"])
 
+    def test_missing_satellite_sol_does_not_block_core_macro(self):
+        from tests.test_deterministic_metrics import DeterministicMacroMetricsTests
+        helper = DeterministicMacroMetricsTests("runTest")
+        market = helper.base_market()
+        market.pop("SOL")
+        fred = helper.base_fred()
+
+        result = MacroMetricsCalculator().process_all_macro_data(market, fred, [])
+        self.assertIn("cycle_diagnosis", result)
+        self.assertIn("yield_curve", result)
+
     def test_missing_dff_fails_closed(self):
         from tests.test_deterministic_metrics import DeterministicMacroMetricsTests
         helper = DeterministicMacroMetricsTests("runTest")
