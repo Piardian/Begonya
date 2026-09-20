@@ -325,6 +325,8 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
     credit = metrics.get("credit_spread_analysis", {})
     cycle = metrics.get("cycle_diagnosis", {})
     claims = metrics.get("jobless_claims_analysis", {})
+    economic_panel = metrics.get("economic_regime_snapshot", {})
+    policy_panel = metrics.get("policy_expectations", {})
     
     # Authoritative execution layer: Telegram must not display the LLM advisory gate.
     deterministic = pipeline_result.get("deterministic_execution_gates") or {}
@@ -484,10 +486,10 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
 
 📊 <b>KURUMSAL MAKRO GÖSTERGELER & MATRİS:</b>
 • <b>1. İktisadi Büyüme & Sanayi:</b>
-  └ Bakır/Altın Rasyosu: {cg.get('current_ratio', 1.50)} (4 Haftalık İvme: %{cg.get('delta_4w_pct', -1.9)} -> {cg.get('momentum_signal', 'Zayıf İmalat')})
+  └ Bakır/Altın Rasyosu: {_fmt(cg.get('current_ratio'), '.3f')} (4 Haftalık İvme: %{_fmt(cg.get('delta_4w_pct'), '.2f')} -> {html.escape(str(cg.get('momentum_signal', 'VERİ YOK')))})
   └ İstihdam Piyasası: İşsizlik %{_fmt(cycle.get('unemployment_rate'), '.2f')} | NFP: {_fmt(cycle.get('nfp_value'), '.1f')}K | PAYEMS MoM: {_fmt(cycle.get('payroll_change_mom_k'), '.1f')}K | ICSA: {_fmt(claims.get('initial_claims_k'), '.1f')}K
 • <b>2. Kredi & Şirket İflas Riski:</b>
-  └ HY OAS Kredi Makası: %{credit.get('hy_oas_spread_pct', 3.28)} ({credit.get('stress_level', 'Sakin / Düşük Kredi Stresi')})
+  └ HY OAS Kredi Makası: %{_fmt(credit.get('hy_oas_spread_pct'), '.2f')} ({html.escape(str(credit.get('stress_level', 'VERİ YOK')))})
   └ HYG/LQD Canlı Oranı: {_fmt(t0_stress.get('hyg_lqd_ratio'), '.4f')} (ayrışma metriği)
   └ Chicago Fed Koşulları (NFCI): {_fmt(nfci.get('nfci_value'), '.2f')} ({html.escape(str(nfci.get('regime', 'VERİ YOK')))})
 • <b>3. Reel Faizler, Para & Likidite:</b>
@@ -498,6 +500,13 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
   └ Dolar Endeksi (DXY): {_fmt(dxy_t.get('level'), '.2f')} ({html.escape(str(dxy_t.get('momentum_regime', 'VERİ YOK')))})
 • <b>4. Enerji Şoku & Dış Ticaret Hadleri:</b>
   └ Brent Petrol: ${_fmt(brent_val, '.1f')} (Euro Bölgesi Enerji Faturası Cezası: {'⚠️ AKTİF' if tot.get('eurusd_energy_penalty') else 'YOK'})
+• <b>5. Enflasyon & Reel Aktivite:</b>
+  └ CPI: %{_fmt(economic_panel.get("inflation_regime", {}).get("cpi_yoy_pct"), ".2f")} | Core CPI: %{_fmt(economic_panel.get("inflation_regime", {}).get("core_cpi_yoy_pct"), ".2f")} | PCE: %{_fmt(economic_panel.get("inflation_regime", {}).get("pce_yoy_pct"), ".2f")}
+  └ Enflasyon Sinyali: {html.escape(str(economic_panel.get("inflation_regime", {}).get("signal", "VERİ YOK")))} | Büyüme: {html.escape(str(economic_panel.get("growth_regime", {}).get("signal", "VERİ YOK")))} | İşgücü: {html.escape(str(economic_panel.get("labor_regime", {}).get("signal", "VERİ YOK")))}
+• <b>6. Politika Beklentileri:</b>
+  └ DFF: %{_fmt(policy_panel.get("effective_policy_rate", {}).get("dff_pct"), ".2f")} | SOFR: %{_fmt(policy_panel.get("effective_policy_rate", {}).get("sofr_pct"), ".2f")}
+  └ 2Y - DFF: {_fmt(economic_panel.get("rate_curve_regime", {}).get("two_year_minus_dff_bps"), ".1f")} bps | Rejim: {html.escape(str(economic_panel.get("policy_regime", {}).get("market_vs_policy", "VERİ YOK")))}
+
 
 💵 <b>DOĞRULANMIŞ FİYAT SNAPSHOT:</b>
 {price_snapshot("GOLD", "XAUUSD")}
