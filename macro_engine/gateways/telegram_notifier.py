@@ -147,10 +147,11 @@ def build_three_horizon_strategy(
     capital_pres: bool,
     tot: Dict[str, Any],
     risk_multiplier: float = 1.0,
+    metrics: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Generate evidence-based horizon guidance without inventing price levels."""
 
-    metrics = strat.get("_metrics_context", {}) if isinstance(strat, dict) else {}
+    metrics = metrics or {}
     real_yield = metrics.get("real_yield_info", {}).get("real_yield_pct")
     transatlantic = metrics.get("transatlantic_analysis", {})
     spread_bps = transatlantic.get("spread_bps")
@@ -448,7 +449,15 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
     news_block = "\n".join(news_lines) if news_lines else "  • <i>Bugün için yüksek etkili kritik veri bulunmuyor.</i>"
 
     # 3 Zaman Ufku Stratejisi
-    horizon_strategy = build_three_horizon_strategy(strat, gates, risk_score, capital_pres, tot, risk_multiplier=risk_multiplier)
+    horizon_strategy = build_three_horizon_strategy(
+        strat,
+        gates,
+        risk_score,
+        capital_pres,
+        tot,
+        risk_multiplier=risk_multiplier,
+        metrics=metrics,
+    )
 
     # Brent Petrol Fiyatı (Öncelik: İşlenmiş gerçek değer)
     brent_val = (
