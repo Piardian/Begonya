@@ -10,6 +10,7 @@ from graph.macro_graph_legacy import MacroGraphState, save_macro_gate_atomic
 from config import BIAS_GATE_FILE
 from preprocessing.economic_regimes import build_economic_regime_snapshot
 from preprocessing.policy_expectations import build_policy_expectations
+from ingestion.bank_of_england import BankOfEnglandDataIngestion
 
 
 class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
@@ -20,6 +21,21 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
         as_of_datetime = getattr(self, "_as_of_datetime", None)
         raw_market = self.market_ingest.fetch_current_prices()
         raw_fred = self.fred_ingest.fetch_liquidity_metrics(as_of=as_of)
+        raw_fred["UK_BANK_RATE"] = uk_bank_rate.get("value")
+        raw_fred["UK_BANK_RATE_PREVIOUS"] = uk_bank_rate.get("previous_value")
+        raw_fred["UK_BANK_RATE_SOURCE_DATE"] = uk_bank_rate.get("observation_date")
+        raw_fred.setdefault("data_quality", {})["uk_bank_rate"] = uk_bank_rate
+        try:
+            uk_bank_rate = BankOfEnglandDataIngestion().fetch_bank_rate(as_of_datetime)
+        except Exception as exc:
+            uk_bank_rate = {
+                "status": "UNAVAILABLE",
+                "value": None,
+                "observation_date": None,
+                "source": "Bank of England official Bank Rate (YWMB47D)",
+                "error": str(exc),
+            }
+
         supplied_events = state.get("calendar_events") or []
         events_provided = bool(state.get("calendar_events_supplied", False)) or bool(supplied_events)
         events = list(supplied_events) if events_provided else asyncio.run(self.cal_ingest.fetch_latest_events())
