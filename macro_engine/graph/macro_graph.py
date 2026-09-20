@@ -11,6 +11,7 @@ from config import BIAS_GATE_FILE
 from preprocessing.economic_regimes import build_economic_regime_snapshot
 from preprocessing.policy_expectations import build_policy_expectations
 from ingestion.bank_of_england import BankOfEnglandDataIngestion
+from ingestion.bank_of_canada import BankOfCanadaDataIngestion
 
 
 class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
@@ -25,6 +26,10 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
         raw_fred["UK_BANK_RATE_PREVIOUS"] = uk_bank_rate.get("previous_value")
         raw_fred["UK_BANK_RATE_SOURCE_DATE"] = uk_bank_rate.get("observation_date")
         raw_fred.setdefault("data_quality", {})["uk_bank_rate"] = uk_bank_rate
+        raw_fred["CA_POLICY_RATE"] = ca_policy_rate.get("value")
+        raw_fred["CA_POLICY_RATE_PREVIOUS"] = ca_policy_rate.get("previous_value")
+        raw_fred["CA_POLICY_RATE_SOURCE_DATE"] = ca_policy_rate.get("observation_date")
+        raw_fred.setdefault("data_quality", {})["ca_policy_rate"] = ca_policy_rate
         try:
             uk_bank_rate = BankOfEnglandDataIngestion().fetch_bank_rate(as_of_datetime)
         except Exception as exc:
@@ -33,6 +38,18 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
                 "value": None,
                 "observation_date": None,
                 "source": "Bank of England official Bank Rate (YWMB47D)",
+                "error": str(exc),
+            }
+
+        try:
+            ca_policy_rate = BankOfCanadaDataIngestion().fetch_policy_rate(as_of_datetime)
+        except Exception as exc:
+            ca_policy_rate = {
+                "status": "UNAVAILABLE",
+                "value": None,
+                "previous_value": None,
+                "observation_date": None,
+                "source": "Bank of Canada official Target for the overnight rate (V39079)",
                 "error": str(exc),
             }
 
