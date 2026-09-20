@@ -202,6 +202,16 @@ def main() -> None:
             "timestamp": snapshot["timestamp"],
             "metadata": snapshot["metadata"],
             "execution_bias_gates": gate,
+            "stress_diagnostics": {
+                "t0_fast_stress_analysis": result.get("t0_fast_stress_analysis", {}),
+                "credit_spread_analysis": result.get("credit_spread_analysis", {}),
+                "systemic_stress": bool(
+                    result.get("t0_fast_stress_analysis", {}).get("fast_stress_override", False)
+                    or result.get("t0_fast_stress_analysis", {}).get("vix_level", 0.0) >= 25.0
+                    or result.get("credit_spread_analysis", {}).get("stress_level") == "Şiddetli Kredi Krizi (Distress)"
+                ),
+                "regime_state": result.get("regime_state", {}),
+            },
             "data_quality": result.get("data_quality", {}),
         }
         if args.output:
