@@ -52,6 +52,20 @@ class MarketDataIngestion:
                     continue
                 except Exception as ecb_err:
                     logger.warning("DE02Y ECB verisi çekilemedi: %s", ecb_err)
+            elif name == "AU02Y":
+                try:
+                    from ingestion.international_rates import InternationalRatesDataIngestion
+                    results[name] = InternationalRatesDataIngestion().fetch_au_yield()
+                    continue
+                except Exception as au_err:
+                    logger.warning("AU02Y RBA verisi çekilemedi: %s", au_err)
+            elif name == "NZ02Y":
+                try:
+                    from ingestion.international_rates import InternationalRatesDataIngestion
+                    results[name] = InternationalRatesDataIngestion().fetch_nz_yield()
+                    continue
+                except Exception as nz_err:
+                    logger.warning("NZ02Y RBNZ verisi çekilemedi: %s", nz_err)
 
             # 3. Öncelik: yfinance Web Verisi
             try:

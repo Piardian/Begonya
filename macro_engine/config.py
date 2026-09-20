@@ -63,7 +63,7 @@ MARKET_SYMBOLS = {
     "GB02Y": "GB02Y=X",
     "AU02Y": "AU02Y=X",
     "IRON_ORE": "TIO=F",
-    "DAIRY_GDT": "DAIRY",
+    "DAIRY_GDT": "DC=F",
     "NZ02Y": "NZD2Y=X",
 }
 
