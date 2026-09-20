@@ -290,6 +290,23 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             cross_gates_raw["GBPUSD"] = "NEUTRAL_RANGE"
             cross_analysis["cross_gates"] = cross_gates_raw
 
+        # USDCAD: legacy relative-value direction must agree with the
+        # official Canada policy rate versus the US policy rate.
+        cross_gates_raw = cross_analysis.get("cross_gates", {}) or {}
+        usdcad_legacy = str(cross_gates_raw.get("USDCAD", "NEUTRAL_RANGE"))
+        ca_panel = metrics.get("economic_regime_snapshot", {}).get("canada_policy", {})
+        us_minus_ca = ca_panel.get("us_minus_ca_policy_spread_bps")
+        usdcad_confirmed = False
+        if isinstance(us_minus_ca, (int, float)):
+            if usdcad_legacy == "LONG_ONLY":
+                usdcad_confirmed = float(us_minus_ca) > 25.0
+            elif usdcad_legacy == "SHORT_ONLY":
+                usdcad_confirmed = float(us_minus_ca) < -25.0
+        if usdcad_legacy in ("LONG_ONLY", "SHORT_ONLY") and not usdcad_confirmed:
+            cross_gates_raw = dict(cross_gates_raw)
+            cross_gates_raw["USDCAD"] = "NEUTRAL_RANGE"
+            cross_analysis["cross_gates"] = cross_gates_raw
+
         spx_allowed = bool(
             metrics.get("equity_short_regime", {})
             .get("equity_short_allowed", False)
