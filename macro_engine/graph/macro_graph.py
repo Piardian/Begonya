@@ -252,6 +252,24 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             "bearish_factors": eur_bearish,
         }
 
+        # GBPUSD: legacy relative-value direction must agree with official
+        # UK Bank Rate versus US policy rate. If the local policy input is absent
+        # or contradicts the legacy direction, suppress the directional gate.
+        cross_gates_raw = cross_analysis.get("cross_gates", {}) or {}
+        gbpusd_legacy = str(cross_gates_raw.get("GBPUSD", "NEUTRAL_RANGE"))
+        uk_panel = metrics.get("economic_regime_snapshot", {}).get("uk_policy", {})
+        us_minus_uk = uk_panel.get("us_minus_uk_policy_spread_bps")
+        gbpusd_confirmed = False
+        if isinstance(us_minus_uk, (int, float)):
+            if gbpusd_legacy == "SHORT_ONLY":
+                gbpusd_confirmed = float(us_minus_uk) > 25.0
+            elif gbpusd_legacy == "LONG_ONLY":
+                gbpusd_confirmed = float(us_minus_uk) < -25.0
+        if gbpusd_legacy in ("SHORT_ONLY", "LONG_ONLY") and not gbpusd_confirmed:
+            cross_gates_raw = dict(cross_gates_raw)
+            cross_gates_raw["GBPUSD"] = "NEUTRAL_RANGE"
+            cross_analysis["cross_gates"] = cross_gates_raw
+
         spx_allowed = bool(
             metrics.get("equity_short_regime", {})
             .get("equity_short_allowed", False)
