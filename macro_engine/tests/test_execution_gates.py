@@ -103,6 +103,7 @@ class ExecutionGateTests(unittest.TestCase):
             "gold_fiscal_dominance": {"gold_short_allowed": False},
             "cross_pairs_analysis": {"event_freeze": {"active": False}, "cross_gates": {}},
             "btc_decoupling_analysis": {"recommended_btc_gate": "LONG_ONLY_ALLOWED_IF_DEBASEMENT"},
+            "liquidity_dynamics": {"delta_liquidity_billion": 10.0},
             "equity_short_regime": {"equity_short_allowed": False},
         }
         result = MacroWorkflowEngine._build_deterministic_gates(metrics)
@@ -161,6 +162,12 @@ class ExecutionGateTests(unittest.TestCase):
             "terms_of_trade_energy_analysis": {"eurusd_energy_penalty": False},
             "transatlantic_analysis": {"spread_bps": -20.0},
             "dxy_trend_analysis": {"delta_20d_pct": -0.80},
+            "economic_regime_snapshot": {
+                "euro_area_macro": {
+                    "us_minus_ecb_policy_spread_bps": 80.0,
+                    "hicp_direction": "RISING",
+                }
+            },
             "equity_short_regime": {"equity_short_allowed": False},
         }
         result = MacroWorkflowEngine._build_deterministic_gates(metrics)
@@ -192,6 +199,7 @@ class ExecutionGateTests(unittest.TestCase):
         self.assertEqual(result["base_gates"].get("GBPUSD"), "NEUTRAL_RANGE")
 
         metrics["economic_regime_snapshot"]["uk_policy"]["us_minus_uk_policy_spread_bps"] = 50.0
+        metrics["cross_pairs_analysis"]["cross_gates"]["GBPUSD"] = "SHORT_ONLY"
         result = MacroWorkflowEngine._build_deterministic_gates(metrics)
         self.assertEqual(result["base_gates"]["GBPUSD"], "SHORT_ONLY")
 
