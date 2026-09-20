@@ -47,6 +47,7 @@ class DeterministicMacroMetricsTests(unittest.TestCase):
             "WTREGEN": 700000.0, "WTREGEN_4W_AGO": 700000.0,
             "T10YIE": 2.0, "DFII10": 1.5, "DFF": 4.33,
             "DGS2": 4.00, "DGS10": 4.00,
+            "DGS2": 4.00, "DGS10": 4.00,
             "BAMLH0A0HYM2": 3.0, "NFCI": -0.2, "ICSA": 220.0,
             "DE10Y": 2.0, "DE10Y_4W_AGO": 2.0,
         }
