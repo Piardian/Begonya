@@ -61,6 +61,9 @@ class FredDataIngestion:
         "GDP_QOQ_SAAR": "A191RL1Q225SBEA",
         "INDPRO": "INDPRO",
         "RSAFS": "RSAFS",
+        # Euro-area local macro inputs for EURUSD relative-value analysis.
+        "EA_HICP_YOY": "CP0000EZ19M086NEST",
+        "ECB_DEPOSIT_RATE": "ECBDFR",
         # Treasury curve.
         "DGS3MO": "DGS3MO",
         "DGS2": "DGS2",
@@ -81,6 +84,7 @@ class FredDataIngestion:
         "PCE_YOY": "pc1",
         "CORE_PCE_YOY": "pc1",
         "AHE_YOY": "pc1",
+        "EA_HICP_YOY": "pc1",
     }
 
     FRED_SERIES = {**BASE_FRED_SERIES, **ECONOMIC_FRED_SERIES}
@@ -253,6 +257,12 @@ class FredDataIngestion:
             "INDPRO_4W_AGO": 103.2,
             "RSAFS": 710000.0,
             "RSAFS_4W_AGO": 708000.0,
+            "EA_HICP_YOY": 2.5,
+            "EA_HICP_YOY_4W_AGO": 2.6,
+            "ECB_DEPOSIT_RATE": 3.50,
+            "ECB_DEPOSIT_RATE_4W_AGO": 3.50,
+            "EA_HICP_SOURCE_DATE": as_of_str,
+            "ECB_DEPOSIT_RATE_SOURCE_DATE": as_of_str,
             "DGS3MO": 5.10,
             "DGS3MO_4W_AGO": 5.20,
             "DGS2": 3.94,
@@ -347,6 +357,8 @@ class FredDataIngestion:
             )
 
         results["M2SL_SOURCE_DATE"] = observation_dates["M2SL"]
+        results["EA_HICP_SOURCE_DATE"] = economic_observation_dates.get("EA_HICP_YOY")
+        results["ECB_DEPOSIT_RATE_SOURCE_DATE"] = economic_observation_dates.get("ECB_DEPOSIT_RATE")
         results["data_quality"] = {
             "provider": "FRED",
             "fallback_used": False,
@@ -358,6 +370,10 @@ class FredDataIngestion:
             "economic_observation_dates": economic_observation_dates,
             "economic_prior_4w_dates": economic_prior_dates,
             "payems_previous_observation_date": results.get("PAYEMS_PREV_OBS_DATE"),
+            "euro_area_observation_dates": {
+                "EA_HICP_YOY": economic_observation_dates.get("EA_HICP_YOY"),
+                "ECB_DEPOSIT_RATE": economic_observation_dates.get("ECB_DEPOSIT_RATE"),
+            },
             "economic_transformations": {
                 **{key: f"FRED {units} transform from {series_id}" for key, series_id in self.ECONOMIC_FRED_SERIES.items() if (units := self.FRED_UNITS.get(key))},
                 "ISM_MANUFACTURING_PMI": "UNAVAILABLE (publisher discontinued public series NAPM on FRED; no synthetic data substituted)",
