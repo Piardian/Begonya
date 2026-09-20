@@ -81,6 +81,69 @@ class ExecutionGateTests(unittest.TestCase):
         self.assertEqual(gates["source"], "deterministic_metrics_only")
         self.assertTrue(gates["llm_execution_gates_ignored"])
 
+
+    def test_xau_gate_uses_real_yield_regime(self):
+        metrics = {
+            "real_yield_info": {"real_yield_pct": 2.10},
+            "yield_curve": {"regime": "Range-bound Slope", "delta_10y_5d_bps": 2.0},
+            "t0_fast_stress_analysis": {"fast_stress_override": False},
+            "gold_fiscal_dominance": {"gold_short_allowed": False},
+            "cross_pairs_analysis": {"event_freeze": {"active": False}, "cross_gates": {}},
+            "btc_decoupling_analysis": {"recommended_btc_gate": "LONG_ONLY_ALLOWED_IF_DEBASEMENT"},
+            "equity_short_regime": {"equity_short_allowed": False},
+        }
+        result = MacroWorkflowEngine._build_deterministic_gates(metrics)
+        self.assertEqual(result["base_gates"]["XAUUSD"], "NEUTRAL_RANGE")
+
+    def test_xau_gate_can_be_long_when_real_yield_is_supportive(self):
+        metrics = {
+            "real_yield_info": {"real_yield_pct": 0.80},
+            "yield_curve": {"regime": "Range-bound Slope", "delta_10y_5d_bps": 1.0},
+            "t0_fast_stress_analysis": {"fast_stress_override": False},
+            "gold_fiscal_dominance": {"gold_short_allowed": False},
+            "cross_pairs_analysis": {"event_freeze": {"active": False}, "cross_gates": {}},
+            "btc_decoupling_analysis": {"recommended_btc_gate": "LONG_ONLY_ALLOWED_IF_DEBASEMENT"},
+            "equity_short_regime": {"equity_short_allowed": False},
+        }
+        result = MacroWorkflowEngine._build_deterministic_gates(metrics)
+        self.assertEqual(result["base_gates"]["XAUUSD"], "LONG_ONLY")
+
+    def test_eurusd_requires_dollar_confirmation_for_short(self):
+        metrics = {
+            "real_yield_info": {"real_yield_pct": 1.5},
+            "yield_curve": {"regime": "Range-bound Slope", "delta_10y_5d_bps": 1.0},
+            "t0_fast_stress_analysis": {"fast_stress_override": False},
+            "gold_fiscal_dominance": {"gold_short_allowed": False},
+            "btc_decoupling_analysis": {"recommended_btc_gate": "LONG_ONLY_ALLOWED_IF_DEBASEMENT"},
+            "cross_pairs_analysis": {"event_freeze": {"active": False}, "cross_gates": {}},
+            "terms_of_trade_energy_analysis": {"eurusd_energy_penalty": False},
+            "transatlantic_analysis": {"spread_bps": 190.0},
+            "dxy_trend_analysis": {"delta_20d_pct": 0.20},
+            "equity_short_regime": {"equity_short_allowed": False},
+        }
+        result = MacroWorkflowEngine._build_deterministic_gates(metrics)
+        self.assertEqual(result["base_gates"]["EURUSD"], "NEUTRAL_RANGE")
+
+        metrics["dxy_trend_analysis"]["delta_20d_pct"] = 0.80
+        result = MacroWorkflowEngine._build_deterministic_gates(metrics)
+        self.assertEqual(result["base_gates"]["EURUSD"], "SHORT_ONLY")
+
+    def test_eurusd_can_be_long_only_with_two_bullish_conditions(self):
+        metrics = {
+            "real_yield_info": {"real_yield_pct": 1.0},
+            "yield_curve": {"regime": "Range-bound Slope", "delta_10y_5d_bps": 1.0},
+            "t0_fast_stress_analysis": {"fast_stress_override": False},
+            "gold_fiscal_dominance": {"gold_short_allowed": False},
+            "btc_decoupling_analysis": {"recommended_btc_gate": "LONG_ONLY_ALLOWED_IF_DEBASEMENT"},
+            "cross_pairs_analysis": {"event_freeze": {"active": False}, "cross_gates": {}},
+            "terms_of_trade_energy_analysis": {"eurusd_energy_penalty": False},
+            "transatlantic_analysis": {"spread_bps": -20.0},
+            "dxy_trend_analysis": {"delta_20d_pct": -0.80},
+            "equity_short_regime": {"equity_short_allowed": False},
+        }
+        result = MacroWorkflowEngine._build_deterministic_gates(metrics)
+        self.assertEqual(result["base_gates"]["EURUSD"], "LONG_ONLY")
+
     def test_workflow_event_freeze_overrides_base_gate(self):
         metrics = {
             "cross_pairs_analysis": {
