@@ -3,6 +3,7 @@ import * as path from 'path';
 import { JsonlEvidenceStore } from './evidenceStore';
 import type { NotificationCandidate } from './pipeline';
 import type { StoredCandle } from './candleStore';
+import type { OrderBlock, FVG } from '../src/types';
 import { getPipSize } from '../src/assetMetrics';
 
 export type PaperOutcomeType = 'TP' | 'SL' | 'BE' | 'EXPIRED' | 'UNKNOWN';
@@ -75,8 +76,8 @@ export class PaperOutcomeTracker {
     if (existing?.status === 'CLOSED') return;
 
     const zone = candidate.poiType === 'OB'
-      ? { low: candidate.poi.low, high: candidate.poi.high }
-      : { low: candidate.poi.gapLow, high: candidate.poi.gapHigh };
+      ? { low: (candidate.poi as OrderBlock).low, high: (candidate.poi as OrderBlock).high }
+      : { low: (candidate.poi as FVG).gapLow, high: (candidate.poi as FVG).gapHigh };
     const signalTimestamp = candidate.marketDataTimestamp ?? candidate.signalContext?.timestamp ?? Date.now();
 
     this.state.signals[signalId] = {
