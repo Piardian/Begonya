@@ -140,113 +140,157 @@ YIELD_CURVE_TR_MAP = {
 }
 
 
-def build_three_horizon_strategy(strat: Dict[str, Any], gates: Dict[str, str], risk_score: float, capital_pres: bool, tot: Dict[str, Any], risk_multiplier: float = 1.0) -> str:
-    """Yatırımcının Bugün, Bu Hafta ve Bu Ay ufuklarında doğrudan uygulayabileceği net kurumsal eylem rehberi."""
-    
-    # ─── 1. BUGÜN (M15 / GÜN İÇİ TAKTİK) ───
+def build_three_horizon_strategy(
+    strat: Dict[str, Any],
+    gates: Dict[str, str],
+    risk_score: float,
+    capital_pres: bool,
+    tot: Dict[str, Any],
+    risk_multiplier: float = 1.0,
+) -> str:
+    """Generate evidence-based horizon guidance without inventing price levels."""
+
+    metrics = strat.get("_metrics_context", {}) if isinstance(strat, dict) else {}
+    real_yield = metrics.get("real_yield_info", {}).get("real_yield_pct")
+    transatlantic = metrics.get("transatlantic_analysis", {})
+    spread_bps = transatlantic.get("spread_bps")
+    dxy = metrics.get("dxy_trend_analysis", {})
+    dxy_delta = dxy.get("delta_20d_pct")
+    t0 = metrics.get("t0_fast_stress_analysis", {})
+    stress = bool(t0.get("fast_stress_override"))
+    brent = metrics.get("brent_level")
+    energy_penalty = bool(tot.get("eurusd_energy_penalty"))
+
     today_items = []
-    
-    # Altın
+
     xau = (gates.get("XAUUSD") or "").upper()
     if "LONG" in xau:
-        today_items.append("• 🟡 <b>Altın (XAUUSD):</b> Küresel borç endişeleriyle yükseliş trendi teyitli. <u>Sadece ALIM (Long)</u> kurulumlarını ara; satış (Short) kesinlikle yasak.")
+        today_items.append(
+            "• 🟡 <b>Altın (XAUUSD):</b> Makro izin LONG_ONLY; reel faiz ve dolar tarafındaki baskının teyidini koru."
+        )
     elif "SHORT" in xau:
-        today_items.append("• 🟡 <b>Altın (XAUUSD):</b> Tahvil faiz sıçraması fırsat maliyetini artırdı; <u>Sadece SATIŞ (Short)</u> odaklı kal, düşen bıçağı tutma.")
+        today_items.append(
+            "• 🟡 <b>Altın (XAUUSD):</b> Savunmacı SHORT_ONLY kapısı açık; yalnızca mevcut SMC kurulumlarıyla ilerle."
+        )
     elif "RANGE" in xau:
-        today_items.append("• 🟡 <b>Altın (XAUUSD):</b> Yüksek tahvil oynaklığı nedeniyle <u>Bant İşlemi (Range)</u> devrede; ortada işlem açma, sadece uç tepki seviyelerinde teyit ara.")
+        reason = (
+            f"reel getiri %{float(real_yield):.2f}"
+            if isinstance(real_yield, (int, float))
+            else "reel getiri/veri doğrulaması"
+        )
+        today_items.append(
+            f"• 🟡 <b>Altın (XAUUSD):</b> NEUTRAL_RANGE; makro kanıt {reason} nedeniyle yön teyidi olmadan takipte."
+        )
     else:
-        today_items.append("• 🟡 <b>Altın (XAUUSD):</b> Nötr seyir; M15 kırılımını bekle.")
+        today_items.append(
+            "• 🟡 <b>Altın (XAUUSD):</b> Yeni yönlü pozisyon yok; teknik teyit bekle."
+        )
 
-    # Bitcoin
     btc = (gates.get("BTC") or "").upper()
-    risk_mult = strat.get("recommended_risk_multiplier", risk_multiplier)
     if "SHORT" in btc:
-        today_items.append("• 🔵 <b>Bitcoin (BTCUSD):</b> Tahvil şoku fonlarda teminat tamamlama (margin call) dalgası yarattı. 🔴 <u>Sadece SATIŞ (Short)</u> fırsatlarına odaklan; ALIM KESİNLİKLE YASAK!")
+        today_items.append(
+            "• 🔵 <b>Bitcoin (BTCUSD):</b> SHORT_ONLY makro kapısı açık; yüksek beta nedeniyle seçici SMC teyidi bekle."
+        )
     elif "LONG" in btc:
-        today_items.append(f"• 🔵 <b>Bitcoin (BTCUSD):</b> Değer kaybı kalkanı devrede; 🟢 <u>Alım (Long)</u> yönü açık, ancak {risk_mult}x kontrollü lot ile seviye retestini bekle.")
+        today_items.append(
+            f"• 🔵 <b>Bitcoin (BTCUSD):</b> LONG_ONLY makro kapısı açık; {risk_multiplier}x risk ile yalnızca teyitli kurulumları izle."
+        )
     elif "DEFENSIVE" in btc or "HOLD" in btc:
-        today_items.append("• 🔵 <b>Bitcoin (BTCUSD):</b> 🛑 Savunma modunda (Defensive Hold); fon tasfiyeleri riski nedeniyle yeni yönlü pozisyon açma, bekle.")
+        today_items.append(
+            "• 🔵 <b>Bitcoin (BTCUSD):</b> DEFENSIVE_HOLD; yeni yönlü pozisyon açma."
+        )
     else:
-        today_items.append("• 🔵 <b>Bitcoin (BTCUSD):</b> 🟡 Yatay bantta; 15 dakikalık net BOS kırılımı görmeden girme.")
+        today_items.append(
+            "• 🔵 <b>Bitcoin (BTCUSD):</b> NEUTRAL_RANGE; makro avantaj oluşmadan yön kovalamayın."
+        )
 
-    # Euro
     eur = (gates.get("EURUSD") or "").upper()
     if "SHORT" in eur:
-        today_items.append("• 💶 <b>Euro (EURUSD):</b> Transatlantik faiz üstünlüğü ve enerji faturası Dolar'ı destekliyor; 🔴 <u>Sadece SATIŞ (Short)</u> yönlü kurulumları takip et.")
-    elif "RANGE" in eur or tot.get("eurusd_energy_penalty"):
-        today_items.append("• 💶 <b>Euro (EURUSD):</b> Yüksek petrol ($100+) ve ABD faiz üstünlüğü Euro üzerinde baskı kuruyor. Trend arama; <u>sadece dipte al / tepede sat (Bant İşlemi)</u> uygula.")
+        today_items.append(
+            "• 💶 <b>EURUSD:</b> Faiz farkı ve dolar teyidi birlikte bearish; yalnızca SHORT kurulumlarını takip et."
+        )
     elif "LONG" in eur:
-        today_items.append("• 💶 <b>Euro (EURUSD):</b> Dolar zayıflığı destekliyor; 🟢 Geri çekilmelerde ALIM (Long) ara.")
+        today_items.append(
+            "• 💶 <b>EURUSD:</b> Dolar zayıflığı ve transatlantik fark desteğiyle LONG yönü açık; teknik teyit bekle."
+        )
     else:
-        today_items.append("• 💶 <b>Euro (EURUSD):</b> Çift yönlü denge; haber saatlerinde temkinli ol.")
+        context = (
+            f"US-DE spread {float(spread_bps):+.1f} bps"
+            if isinstance(spread_bps, (int, float))
+            else "transatlantik spread"
+        )
+        today_items.append(
+            f"• 💶 <b>EURUSD:</b> NEUTRAL_RANGE; {context} ile yön için ek teyit gerekiyor."
+        )
 
-    # Endeksler
     spx = (gates.get("SPX") or "").upper()
     if "SHORT" in spx:
-        today_items.append("• 🇺🇸 <b>Endeksler (SPX/NAS100):</b> Likidite daralması hisseleri baskılıyor; yükselişleri 🔴 SATIŞ fırsatı olarak izle.")
+        today_items.append(
+            "• 🇺🇸 <b>Endeksler (SPX/NAS100):</b> SHORT_ONLY yalnızca likidite daralması + düşük oynaklık koşulu ile geçerli."
+        )
+    elif "DEFENSIVE" in spx or "HOLD" in spx:
+        today_items.append(
+            "• 🇺🇸 <b>Endeksler (SPX/NAS100):</b> Savunma modu; yeni yönlü risk alma."
+        )
     else:
-        today_items.append("• 🇺🇸 <b>Endeksler (SPX/NAS100):</b> Yüksek faizler büyüme hisselerine tavan koyuyor; tavan seviyelerde yeni alım kovalama, temkinli ol.")
+        today_items.append(
+            "• 🇺🇸 <b>Endeksler (SPX/NAS100):</b> NEUTRAL_RANGE; faiz/likidite teyidi olmadan yön kovalamayın."
+        )
 
-    # Dolar / Yen (USDJPY)
-    usdjpy = (gates.get("USDJPY") or "").upper()
-    if "SHORT" in usdjpy:
-        today_items.append("• 🇯🇵 <b>Dolar / Yen (USDJPY):</b> Carry trade çözülmesi ve güvenli liman talebi JPY'yi destekliyor; 🔴 <u>Sadece SATIŞ (Short)</u> odaklı kal, direnç retestlerini izle.")
-    elif "LONG" in usdjpy:
-        today_items.append("• 🇯🇵 <b>Dolar / Yen (USDJPY):</b> ABD getiri direnci Dolar'ı destekliyor; 🟢 <u>Sadece ALIM (Long)</u> fırsatlarını takip et.")
-    else:
-        today_items.append("• 🇯🇵 <b>Dolar / Yen (USDJPY):</b> ABD getiri direnci ile JPY carry çözülmesi dengede; 🟡 <u>Bant İşlemi (Range)</u> uygula, ortada kalma, dipte al / tepede sat.")
+    pair_labels = [
+        ("USDJPY", "Dolar / Yen"),
+        ("GBPUSD", "Sterlin / Dolar"),
+        ("USDCAD", "Dolar / Kanada D."),
+        ("USDCHF", "Dolar / Frank"),
+        ("AUDUSD", "Avustralya D. / Dolar"),
+        ("NZDUSD", "Yeni Zelanda D. / Dolar"),
+    ]
+    for symbol, label in pair_labels:
+        gate = (gates.get(symbol) or "").upper()
+        if "LONG" in gate:
+            text = "LONG_ONLY makro kapısı açık; teknik kurulum bekle."
+        elif "SHORT" in gate:
+            text = "SHORT_ONLY makro kapısı açık; teknik kurulum bekle."
+        elif "DEFENSIVE" in gate or "HOLD" in gate:
+            text = "Savunma modunda; yeni yönlü pozisyon yok."
+        else:
+            text = "NEUTRAL_RANGE; yön teyidi bekle."
+        today_items.append(f"• {label} ({symbol}): {text}")
 
-    # Sterlin / Dolar (GBPUSD)
-    gbpusd = (gates.get("GBPUSD") or "").upper()
-    if "SHORT" in gbpusd:
-        today_items.append("• 🇬🇧 <b>Sterlin / Dolar (GBPUSD):</b> BoE faiz indirim fiyatlaması ve tahvil makası aleyhte; 🔴 <u>Sadece SATIŞ (Short)</u> yönlü kurulumları takip et.")
-    elif "LONG" in gbpusd:
-        today_items.append("• 🇬🇧 <b>Sterlin / Dolar (GBPUSD):</b> Dolar gevşemesi destekliyor; 🟢 Geri çekilmelerde ALIM (Long) ara.")
-    else:
-        today_items.append("• 🇬🇧 <b>Sterlin / Dolar (GBPUSD):</b> Dengeli bant hareketi; yön kovalama.")
+    cross_items = []
+    for symbol in ("AUDCAD", "CADJPY", "NZDCAD", "EURGBP", "GBPJPY", "SOL"):
+        gate = (gates.get(symbol) or "").upper()
+        if not gate:
+            continue
+        cross_items.append(
+            f"• <b>{symbol}:</b> {gate} makro kapısı; göreli değer teyidi olmadan işlem yok."
+        )
 
-    # Dolar / Kanada D. (USDCAD)
-    usdcad = (gates.get("USDCAD") or "").upper()
-    if "LONG" in usdcad:
-        today_items.append(f"• 🇨🇦 <b>Dolar / Kanada D. (USDCAD):</b> BoC faiz indirim baskısı petrol desteğini eziyor; 🟢 Geri çekilmelerde <u>ALIM (Long)</u> takip et ({risk_mult}x risk).")
-    elif "SHORT" in usdcad:
-        today_items.append("• 🇨🇦 <b>Dolar / Kanada D. (USDCAD):</b> Petrol rallisi CAD'i öne çıkarıyor; 🔴 <u>Sadece SATIŞ (Short)</u> fırsatlarını izle.")
-    else:
-        today_items.append("• 🇨🇦 <b>Dolar / Kanada D. (USDCAD):</b> Petrol ile faiz erozyonu dengede; bant sınırlarını bekle.")
+    stress_line = (
+        "T-0 stres aktif; bugün yeni yönsel riski azalt."
+        if stress
+        else "T-0 stres sakin; yönsel işlemler için bağımsız SMC teyidi bekle."
+    )
+    today_items.append(f"• <b>Risk:</b> {stress_line}")
 
-    # Dolar / Frank (USDCHF)
-    usdchf = (gates.get("USDCHF") or "").upper()
-    if "SHORT" in usdchf:
-        today_items.append("• 🇨🇭 <b>Dolar / Frank (USDCHF):</b> Jeopolitik güvenli liman talebi CHF'yi destekliyor; 🔴 <u>Sadece SATIŞ (Short)</u> odaklı kal.")
-    elif "LONG" in usdchf:
-        today_items.append("• 🇨🇭 <b>Dolar / Frank (USDCHF):</b> Pozitif Dolar carry üstünlüğü devrede; 🟢 <u>Sadece ALIM (Long)</u> kurulumları ara.")
-    else:
-        today_items.append("• 🇨🇭 <b>Dolar / Frank (USDCHF):</b> Dolar getirisi ile jeopolitik sığınak dengede; 🟡 <u>Bant İşlemi (Range)</u> geçerli.")
+    week = (
+        "Bu hafta odak: transatlantik faiz farkı, reel faiz, dolar momentumu ve likidite yönünün aynı sinyali verip vermediğini izlemek."
+    )
+    if isinstance(brent, (int, float)) and energy_penalty:
+        week += " Enerji/terms-of-trade baskısı EURUSD tarafında ayrıca izlenecek."
 
-    today_str = "\n".join(today_items)
-    today_custom = html.escape(sanitize_unverified_price_levels(strat.get("horizon_today", "").strip()))
-    if today_custom:
-        today_str = f"<i>{today_custom}</i>\n" + today_str
+    month = (
+        "Bu ay odak: büyüme-enflasyon-istihdam ile politika beklentilerinin ayrışıp ayrışmadığını izlemek; tek faktörle rejim değişimi yapmamak."
+    )
 
-    # ─── 2. BU HAFTA (H4 / SWING UFKU) ───
-    week_custom = html.escape(sanitize_unverified_price_levels(strat.get("horizon_this_week", "").strip()))
-    if not week_custom:
-        week_custom = "Haftalık takvimdeki merkez bankası kararları ve faiz eğrisindeki dikleşme (Bear Steepening) oynaklığı canlı tutacak. Kredi makasları sakin kaldığı sürece ani çöküş beklenmiyor; ancak haftalık direnç bölgelerinde kâr realizasyonu ön planda tutulmalı."
-
-    # ─── 3. BU AY (D1-W1 / MAKRO REJİM & TREND) ───
-    month_custom = html.escape(sanitize_unverified_price_levels(strat.get("horizon_this_month", "").strip()))
-    if not month_custom:
-        month_custom = "ABD Hazine borçlanma tavanı ve Fed'in bilanço küçültmesi (QT) likiditeyi dar tutuyor. Mali hakimiyet (borçların para basılarak ödenmesi endişesi) orta vadede Altın ve sert varlıkların ana yükseliş omurgasını korumasını sağlayacaktır."
-
-    return f"""🎯 <b>1. BUGÜN NE YAPMALIYIZ? (M15 / Gün İçi Seans Taktikleri):</b>
-{today_str}
-
-📅 <b>2. BU HAFTA NE BEKLEMELİYİZ? (H4 / Swing Ufku):</b>
-• {week_custom}
-
-🏛️ <b>3. BU AY REJİM NEREYE GİDİYOR? (D1-W1 / Makro Trend):</b>
-• {month_custom}"""
-
+    return (
+        "<b>1. BUGÜN:</b>\n"
+        + "\n".join(today_items)
+        + "\n\n<b>2. BU HAFTA:</b>\n• "
+        + week
+        + "\n\n<b>3. BU AY:</b>\n• "
+        + month
+    )
 
 def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Optional[List[Dict[str, Any]]] = None) -> str:
     """Makro pipeline çıktısından zengin verili, derinlikli ve 3 ufuklu Sabah Makro Bülteni üretir."""
