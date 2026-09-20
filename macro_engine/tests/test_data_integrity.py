@@ -71,6 +71,15 @@ class DataIntegrityTests(unittest.TestCase):
         self.assertEqual(result["delta_02y_5d_bps"], -15.0)
         self.assertEqual(result["rate_expectation_signal"], "Market-implied easing")
 
+    def test_fed_policy_spread_is_not_labeled_as_total_cuts(self):
+        result = MacroMetricsCalculator.calculate_fed_forward_path(
+            us02y=3.80,
+            dff=4.33,
+            us02y_5d=3.95,
+        )
+        self.assertIn("policy-rate/yield spread", result["interpretation_warning"])
+        self.assertIn("not a", result["interpretation_warning"])
+
     def test_missing_dff_is_explicitly_reported_as_fallback(self):
         from tests.test_deterministic_metrics import DeterministicMacroMetricsTests
         helper = DeterministicMacroMetricsTests("runTest")
