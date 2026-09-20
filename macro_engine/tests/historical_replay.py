@@ -44,7 +44,8 @@ def run_scenario_october_2023() -> Dict[str, Any]:
         "COPPER": {"value": 3.58, "prev": 3.60, "val_5d_ago": 3.65, "month_ago": 3.80, "change_pct": -0.55, "change_pct_5d": -1.9},
         "DXY": {"value": 106.5, "prev": 106.2, "val_5d_ago": 105.8, "month_ago": 104.5, "change_pct": 0.28, "change_pct_5d": 0.66},
         "BTC": {"value": 28500.0, "prev": 28200.0, "val_5d_ago": 27500.0, "month_ago": 26000.0, "change_pct": 1.0, "change_pct_5d": 3.6},
-        "EUR_BOND": {"value": 175.0, "prev": 176.0, "val_5d_ago": 178.0, "month_ago": 182.0, "change_pct": -0.56, "change_pct_5d": -1.68}
+        "EUR_BOND": {"value": 175.0, "prev": 176.0, "val_5d_ago": 178.0, "month_ago": 182.0, "change_pct": -0.56, "change_pct_5d": -1.68},
+        "SOL": {"value": 20.0, "prev": 19.5, "val_5d_ago": 19.0, "month_ago": 18.0, "change_pct": 2.56, "change_pct_5d": 5.26}
     }
     raw_fred = {
         "WALCL": 7950000.0, "WALCL_4W_AGO": 8020000.0,
@@ -52,7 +53,7 @@ def run_scenario_october_2023() -> Dict[str, Any]:
         "WTREGEN": 750000.0, "WTREGEN_4W_AGO": 680000.0,
         "T10YIE": 2.45, "DFII10": 2.50,
         "BAMLH0A0HYM2": 4.15, "NFCI": -0.35, "ICSA": 212.0,
-        "DE10Y": 2.85, "DE10Y_4W_AGO": 2.70
+        "DE10Y": 2.85, "DE10Y_4W_AGO": 2.70, "DFF": 5.33, "SOFR": 5.33
     }
     events = [
         {"title": "Non-Farm Employment Change", "actual": "336K", "forecast": "170K"},
@@ -77,7 +78,8 @@ def run_scenario_march_2023_svb() -> Dict[str, Any]:
         "COPPER": {"value": 3.88, "prev": 4.02, "val_5d_ago": 4.10, "month_ago": 4.05, "change_pct": -3.48, "change_pct_5d": -5.36},
         "DXY": {"value": 103.5, "prev": 105.0, "val_5d_ago": 105.6, "month_ago": 104.0, "change_pct": -1.4, "change_pct_5d": -1.98},
         "BTC": {"value": 24500.0, "prev": 22000.0, "val_5d_ago": 20000.0, "month_ago": 22000.0, "change_pct": 11.3, "change_pct_5d": 22.5},
-        "EUR_BOND": {"value": 182.0, "prev": 178.0, "val_5d_ago": 175.0, "month_ago": 176.0, "change_pct": 2.2, "change_pct_5d": 4.0}
+        "EUR_BOND": {"value": 182.0, "prev": 178.0, "val_5d_ago": 175.0, "month_ago": 176.0, "change_pct": 2.2, "change_pct_5d": 4.0},
+        "SOL": {"value": 20.0, "prev": 19.5, "val_5d_ago": 19.0, "month_ago": 18.0, "change_pct": 2.56, "change_pct_5d": 5.26}
     }
     raw_fred = {
         "WALCL": 8630000.0, "WALCL_4W_AGO": 8350000.0,
@@ -85,7 +87,7 @@ def run_scenario_march_2023_svb() -> Dict[str, Any]:
         "WTREGEN": 280000.0, "WTREGEN_4W_AGO": 350000.0,
         "T10YIE": 2.20, "DFII10": 1.22,
         "BAMLH0A0HYM2": 4.85, "NFCI": 0.15, "ICSA": 220.0,
-        "DE10Y": 2.18, "DE10Y_4W_AGO": 2.65
+        "DE10Y": 2.18, "DE10Y_4W_AGO": 2.65, "DFF": 4.83, "SOFR": 4.83
     }
     events = [
         {"title": "Non-Farm Employment Change", "actual": "311K", "forecast": "225K"},
@@ -109,7 +111,8 @@ def run_scenario_march_2020_covid() -> Dict[str, Any]:
         "COPPER": {"value": 2.15, "prev": 2.35, "val_5d_ago": 2.55, "month_ago": 2.65, "change_pct": -8.5, "change_pct_5d": -15.6},
         "DXY": {"value": 102.8, "prev": 99.5, "val_5d_ago": 96.0, "month_ago": 99.0, "change_pct": 3.3, "change_pct_5d": 7.08},
         "BTC": {"value": 5200.0, "prev": 7800.0, "val_5d_ago": 8800.0, "month_ago": 9500.0, "change_pct": -33.3, "change_pct_5d": -40.9},
-        "EUR_BOND": {"value": 165.0, "prev": 172.0, "val_5d_ago": 180.0, "month_ago": 178.0, "change_pct": -4.0, "change_pct_5d": -8.3}
+        "EUR_BOND": {"value": 165.0, "prev": 172.0, "val_5d_ago": 180.0, "month_ago": 178.0, "change_pct": -4.0, "change_pct_5d": -8.3},
+        "SOL": {"value": 20.0, "prev": 19.5, "val_5d_ago": 19.0, "month_ago": 18.0, "change_pct": 2.56, "change_pct_5d": 5.26}
     }
     raw_fred = {
         "WALCL": 4300000.0, "WALCL_4W_AGO": 4180000.0,
@@ -117,7 +120,7 @@ def run_scenario_march_2020_covid() -> Dict[str, Any]:
         "WTREGEN": 380000.0, "WTREGEN_4W_AGO": 420000.0,
         "T10YIE": 0.85, "DFII10": -0.15,
         "BAMLH0A0HYM2": 8.75, "NFCI": 0.85, "ICSA": 3300.0,
-        "DE10Y": -0.55, "DE10Y_4W_AGO": -0.40
+        "DE10Y": -0.55, "DE10Y_4W_AGO": -0.40, "DFF": 0.25, "SOFR": 0.25
     }
     events = [
         {"title": "Initial Jobless Claims", "actual": "3300K", "forecast": "250K"}
