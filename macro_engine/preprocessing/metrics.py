@@ -38,7 +38,7 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
     # WTREGEN is FRED's weekly, Wednesday-ending Treasury General Account
     # series. Treating it as daily incorrectly rejects legitimate 5-7 day gaps
     # between observations. Keep the weekly freshness contract explicit.
-    FRED_FREQUENCIES={"WALCL":"weekly","RRPONTSYD":"daily","WTREGEN":"weekly","T10YIE":"daily","DFII10":"daily","DFF":"daily","BAMLH0A0HYM2":"daily","NFCI":"weekly","ICSA":"weekly","M2SL":"monthly","DE10Y":"monthly"}
+    FRED_FREQUENCIES={"WALCL":"weekly","RRPONTSYD":"daily","WTREGEN":"weekly","T10YIE":"daily","DFII10":"weekly","DFF":"daily","BAMLH0A0HYM2":"daily","NFCI":"weekly","ICSA":"weekly","M2SL":"monthly","DE10Y":"monthly"}
     # NFCI is weekly-ending-Friday but the provider vintage can lag the observation date.
     # M2SL is monthly, but the H.6 release schedule can leave the latest observation ~2 months old
     # at month-start. Keep the generic monthly contract at 45d and allow only this series to 75d.
