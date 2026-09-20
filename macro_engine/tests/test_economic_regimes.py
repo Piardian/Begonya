@@ -129,7 +129,7 @@ class EconomicRegimeTests(unittest.TestCase):
         })
         result = build_economic_regime_snapshot(
             fred,
-            as_of=dt.date(2025, 4, 1),
+            as_of=dt.date(2024, 3, 31),
         )
         canada = result["canada_policy"]
         self.assertEqual(canada["status"], "COMPLETE")
