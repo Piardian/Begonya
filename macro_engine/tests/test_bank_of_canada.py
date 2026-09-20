@@ -58,6 +58,32 @@ class BankOfCanadaTests(unittest.TestCase):
         self.assertEqual(result["status"], "AVAILABLE")
         self.assertIn("Bank of Canada official", result["source"])
 
+    def test_fetch_2y_yield(self):
+        ingestion = BankOfCanadaDataIngestion()
+        yield_payload = {
+            "observations": [
+                {"d": "2025-04-10", "BD.CDN.2YR.DQ.YLD": {"v": "3.10"}},
+                {"d": "2025-04-15", "BD.CDN.2YR.DQ.YLD": {"v": "3.15"}},
+                {"d": "2025-04-16", "BD.CDN.2YR.DQ.YLD": {"v": "3.20"}},
+            ]
+        }
+        with patch("ingestion.bank_of_canada.urllib.request.urlopen") as mocked:
+            class Response:
+                def __enter__(self):
+                    return self
+                def __exit__(self, *args):
+                    return False
+                def read(self):
+                    return json.dumps(yield_payload).encode("utf-8")
+
+            mocked.return_value = Response()
+            res = ingestion.fetch_2y_yield(dt.datetime(2025, 4, 16, tzinfo=dt.timezone.utc))
+
+        self.assertEqual(res["value"], 3.20)
+        self.assertEqual(res["prev"], 3.15)
+        self.assertEqual(res["status"], "AVAILABLE")
+        self.assertFalse(res["fallback_used"])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

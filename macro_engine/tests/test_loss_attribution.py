@@ -63,8 +63,8 @@ def test_aggregation_and_grouping():
     assert report["evidence_coverage_pct"] == 66.67
     assert report["unexplained_pct"] == 33.33
     assert report["production_activation"] is False
-    assert report["groups"]["SYMBOL=EURUSD"]["losses"] == 1
-    assert report["groups"]["SYMBOL=XAUUSD"]["losses"] == 2
+    assert report["groups"]["symbol=EURUSD"]["losses"] == 1
+    assert report["groups"]["symbol=XAUUSD"]["losses"] == 2
 
 
 def test_generator_input_is_supported():

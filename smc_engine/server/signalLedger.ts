@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { NotificationCandidate } from './pipeline';
 import type { RuntimeExecutionPipelineResult } from './runtimeExecutionPipeline';
+import type { OrderBlock, FVG } from '../src/types';
 
 export const SIGNAL_LEDGER_VERSION = 1 as const;
 
@@ -157,7 +158,7 @@ export class FileSignalLedger {
     if (await this.hasEventType(signalId, 'EXIT_RECORDED')) {
       throw new Error(`Cannot record an entry after exit for signal ${signalId}.`);
     }
-    return this.appendOnce(signalId, 'ENTRY_RECORDED', payload.entryTimestamp, payload);
+    return this.appendOnce(signalId, 'ENTRY_RECORDED', payload.entryTimestamp, payload as unknown as Readonly<Record<string, unknown>>);
   }
 
   async recordExit(signalId: string, payload: SignalExitPayload): Promise<SignalLedgerEvent> {
@@ -165,7 +166,7 @@ export class FileSignalLedger {
     if (await this.hasEventType(signalId, 'EXIT_RECORDED')) {
       throw new Error(`EXIT_RECORDED already exists for signal ${signalId}.`);
     }
-    return this.appendOnce(signalId, 'EXIT_RECORDED', payload.exitTimestamp, payload);
+    return this.appendOnce(signalId, 'EXIT_RECORDED', payload.exitTimestamp, payload as unknown as Readonly<Record<string, unknown>>);
   }
 
   async recordCancelled(signalId: string, eventTimestamp: number, reason: string): Promise<SignalLedgerEvent> {
@@ -241,9 +242,11 @@ export class FileSignalLedger {
 
 function resolveZone(candidate: NotificationCandidate): { low: number; high: number } {
   if (candidate.poiType === 'OB') {
-    return { low: candidate.poi.low, high: candidate.poi.high };
+    const ob = candidate.poi as OrderBlock;
+    return { low: ob.low, high: ob.high };
   }
-  return { low: candidate.poi.gapLow, high: candidate.poi.gapHigh };
+  const fvg = candidate.poi as FVG;
+  return { low: fvg.gapLow, high: fvg.gapHigh };
 }
 
 function sanitize(value: string): string {

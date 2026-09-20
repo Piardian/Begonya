@@ -175,44 +175,78 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         )
         if missing_relative_value:
             cross = r.setdefault("cross_pairs_analysis", {})
-            pair_names = [
-                "AUDCAD", "CADJPY", "GBPJPY", "AUDJPY", "EURGBP", "EURAUD",
-                "NZDCAD", "EURJPY", "USDCAD", "USDJPY", "GBPUSD", "AUDUSD",
-                "NZDUSD", "USDCHF", "EURCHF", "GBPCHF", "AUDCHF", "CADCHF",
-                "NZDCHF", "CHFJPY",
-            ]
-            cross["cross_gates"] = {
-                **cross.get("cross_gates", {}),
-                **{pair: "NEUTRAL_RANGE" for pair in pair_names},
+            pair_required_sovereigns = {
+                "AUDCAD": ("AU02Y", "CA02Y"),
+                "CADJPY": ("CA02Y",),
+                "GBPJPY": ("GB02Y",),
+                "AUDJPY": ("AU02Y",),
+                "EURGBP": ("DE02Y", "GB02Y"),
+                "EURAUD": ("DE02Y", "AU02Y"),
+                "NZDCAD": ("NZ02Y", "CA02Y"),
+                "EURJPY": ("DE02Y",),
+                "USDCAD": ("CA02Y",),
+                "USDJPY": (),
+                "GBPUSD": ("GB02Y",),
+                "AUDUSD": ("AU02Y",),
+                "NZDUSD": ("NZ02Y",),
+                "USDCHF": (),
+                "EURCHF": ("DE02Y",),
+                "GBPCHF": ("GB02Y",),
+                "AUDCHF": ("AU02Y",),
+                "CADCHF": ("CA02Y",),
+                "NZDCHF": ("NZ02Y",),
+                "CHFJPY": (),
             }
-            cross["sovereign_yields"] = {
-                key: None
-                for key in ("US02Y", "CA02Y", "DE02Y", "GB02Y", "AU02Y", "NZ02Y")
-            }
-            cross["yield_spreads_bps"] = {}
-            cross["currency_scores"] = {
-                currency: 0
-                for currency in ("AUD", "CAD", "NZD", "JPY", "EUR", "GBP", "USD", "CHF")
-            }
-            cross["currency_breakdown"] = {
-                currency: {
-                    "score": 0,
-                    "summary": "UNAVAILABLE: relative-value input missing",
+            # If ALL relative-value fields are missing, fail completely to neutral range
+            all_missing = len(missing_relative_value) >= len(RELATIVE_VALUE_MARKET_FIELDS)
+            existing_gates = dict(cross.get("cross_gates", {}) or {})
+            
+            for pair, req_sovs in pair_required_sovereigns.items():
+                if all_missing or any(sov in missing_relative_value for sov in req_sovs):
+                    existing_gates[pair] = "NEUTRAL_RANGE"
+            
+            cross["cross_gates"] = existing_gates
+            
+            if all_missing:
+                cross["sovereign_yields"] = {
+                    key: None
+                    for key in ("US02Y", "CA02Y", "DE02Y", "GB02Y", "AU02Y", "NZ02Y")
                 }
-                for currency in ("AUD", "CAD", "NZD", "JPY", "EUR", "GBP", "USD", "CHF")
-            }
-            cross["data_quality"] = {
-                "status": "UNAVAILABLE",
-                "missing_fields": missing_relative_value,
-                "directional_gates_disabled": True,
-                "methodology_warning": (
-                    "Relative-value market inputs are missing or fallback-derived; "
-                    "no directional FX cross-pair gate is emitted."
-                ),
-            }
+                cross["yield_spreads_bps"] = {}
+                cross["currency_scores"] = {
+                    currency: 0
+                    for currency in ("AUD", "CAD", "NZD", "JPY", "EUR", "GBP", "USD", "CHF")
+                }
+                cross["currency_breakdown"] = {
+                    currency: {
+                        "score": 0,
+                        "summary": "UNAVAILABLE: relative-value input missing",
+                    }
+                    for currency in ("AUD", "CAD", "NZD", "JPY", "EUR", "GBP", "USD", "CHF")
+                }
+                cross["data_quality"] = {
+                    "status": "UNAVAILABLE",
+                    "missing_fields": missing_relative_value,
+                    "directional_gates_disabled": True,
+                    "methodology_warning": (
+                        "Relative-value market inputs are missing or fallback-derived; "
+                        "no directional FX cross-pair gate is emitted."
+                    ),
+                }
+            else:
+                cross["data_quality"] = {
+                    "status": "PARTIAL",
+                    "missing_fields": missing_relative_value,
+                    "directional_gates_disabled": False,
+                    "methodology_warning": (
+                        f"Partial relative-value inputs available. Missing: {', '.join(missing_relative_value)}. "
+                        "Affected currency pairs are set to NEUTRAL_RANGE."
+                    ),
+                }
+
             r.setdefault("regime_state", {})["cross_pair_gates"] = dict(cross["cross_gates"])
-            r["regime_state"]["cross_currency_scores"] = dict(cross["currency_scores"])
-            r["regime_state"]["cross_currency_breakdown"] = dict(cross["currency_breakdown"])
+            r["regime_state"]["cross_currency_scores"] = dict(cross.get("currency_scores", {}))
+            r["regime_state"]["cross_currency_breakdown"] = dict(cross.get("currency_breakdown", {}))
 
         curve_consistency = {}
         source_pairs = (

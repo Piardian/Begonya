@@ -1,0 +1,226 @@
+{
+  "timestamp": "2024-10-01T12:00:00+00:00",
+  "metadata": {
+    "market_source_policy": "MT5_FIRST_THEN_YAHOO_REAL_DATA_ONLY",
+    "fred_provider": "FRED",
+    "calendar_status": "UNAVAILABLE_HISTORICAL_PROVIDER",
+    "promotion_eligible": false
+  },
+  "execution_bias_gates": {
+    "execution_bias_gates": {
+      "XAUUSD": "DEFENSIVE_HOLD",
+      "BTC": "DEFENSIVE_HOLD",
+      "EURUSD": "DEFENSIVE_HOLD",
+      "SPX": "DEFENSIVE_HOLD",
+      "AUDCAD": "DEFENSIVE_HOLD",
+      "CADJPY": "DEFENSIVE_HOLD",
+      "GBPJPY": "DEFENSIVE_HOLD",
+      "AUDJPY": "DEFENSIVE_HOLD",
+      "EURGBP": "DEFENSIVE_HOLD",
+      "EURAUD": "DEFENSIVE_HOLD",
+      "NZDCAD": "DEFENSIVE_HOLD",
+      "EURJPY": "DEFENSIVE_HOLD",
+      "USDCAD": "DEFENSIVE_HOLD",
+      "USDJPY": "DEFENSIVE_HOLD",
+      "GBPUSD": "DEFENSIVE_HOLD",
+      "AUDUSD": "DEFENSIVE_HOLD",
+      "NZDUSD": "DEFENSIVE_HOLD",
+      "USDCHF": "DEFENSIVE_HOLD",
+      "EURCHF": "DEFENSIVE_HOLD",
+      "GBPCHF": "DEFENSIVE_HOLD",
+      "AUDCHF": "DEFENSIVE_HOLD",
+      "CADCHF": "DEFENSIVE_HOLD",
+      "NZDCHF": "DEFENSIVE_HOLD",
+      "CHFJPY": "DEFENSIVE_HOLD",
+      "SOL": "DEFENSIVE_HOLD"
+    },
+    "gate_reasons": {
+      "XAUUSD": "systemic stress/risk threshold has precedence",
+      "BTC": "systemic stress/risk threshold has precedence",
+      "EURUSD": "systemic stress/risk threshold has precedence",
+      "SPX": "systemic stress/risk threshold has precedence",
+      "AUDCAD": "systemic stress/risk threshold has precedence",
+      "CADJPY": "systemic stress/risk threshold has precedence",
+      "GBPJPY": "systemic stress/risk threshold has precedence",
+      "AUDJPY": "systemic stress/risk threshold has precedence",
+      "EURGBP": "systemic stress/risk threshold has precedence",
+      "EURAUD": "systemic stress/risk threshold has precedence",
+      "NZDCAD": "systemic stress/risk threshold has precedence",
+      "EURJPY": "systemic stress/risk threshold has precedence",
+      "USDCAD": "systemic stress/risk threshold has precedence",
+      "USDJPY": "systemic stress/risk threshold has precedence",
+      "GBPUSD": "systemic stress/risk threshold has precedence",
+      "AUDUSD": "systemic stress/risk threshold has precedence",
+      "NZDUSD": "systemic stress/risk threshold has precedence",
+      "USDCHF": "systemic stress/risk threshold has precedence",
+      "EURCHF": "systemic stress/risk threshold has precedence",
+      "GBPCHF": "systemic stress/risk threshold has precedence",
+      "AUDCHF": "systemic stress/risk threshold has precedence",
+      "CADCHF": "systemic stress/risk threshold has precedence",
+      "NZDCHF": "systemic stress/risk threshold has precedence",
+      "CHFJPY": "systemic stress/risk threshold has precedence",
+      "SOL": "systemic stress/risk threshold has precedence"
+    },
+    "source": "deterministic_metrics_only",
+    "precedence": [
+      "EVENT_FREEZE",
+      "SYSTEMIC_STRESS",
+      "BASE_BIAS"
+    ],
+    "llm_execution_gates_ignored": true
+  },
+  "stress_diagnostics": {
+    "t0_fast_stress_analysis": {
+      "fast_stress_override": true,
+      "triggers": [
+        "VIX Oynaklık Patlaması (Seviye: 19.3, 1G Sıçrama: %+15.1)"
+      ],
+      "hyg_lqd_ratio": 0.7062,
+      "hyg_lqd_delta_1d_pct": -0.63,
+      "hyg_lqd_delta_5d_pct": 0.03,
+      "vix_level": 19.26,
+      "vix_delta_1d_pct": 15.12,
+      "vix_delta_5d_pct": 25.15,
+      "brent_delta_1d_pct": 2.49,
+      "warning": "⚠️ [T-0 FAST STRESS OVERRIDE AKTİF] Canlı piyasada anlık stres şoku tespit edildi! FRED'in haftalık gecikmeli metrikleri (NFCI / OAS) baypas edilerek sistem acil savunma moduna geçirildi."
+    },
+    "credit_spread_analysis": {
+      "hy_oas_spread_pct": 3.07,
+      "stress_level": "Sakin / Düşük Risk (Benign)",
+      "equity_implication": "Kredi makası %3.07 (Tarihsel ortalamanın altında, sakin). Şirketler rahat borçlanıyor, temerrüt riski yok. Kredi piyasası sakinken borsalarda (SPX) kalıcı çöküş veya kriz fiyatlaması beklenemez; SPX en fazla Neutral/ılımlı düzeltme alabilir."
+    },
+    "systemic_stress": true,
+    "regime_state": {
+      "energy_penalty_active": false,
+      "capital_preservation_active": true,
+      "fast_stress_override": true,
+      "btc_decoupling_active": true,
+      "event_freeze_active": false,
+      "active_event_info": "",
+      "vix_pct_60d": 80.0,
+      "brent_pct_60d": 23.3,
+      "brent_level": 73.56,
+      "brent_roc_20d": -0.26,
+      "brent_roc_5d": -2.14,
+      "spread_ca_us_2y_bps": -44.6,
+      "spread_ca_us_2y_delta_5d": -3.0,
+      "spread_de_us_2y_bps": -119.6,
+      "spread_de_us_2y_delta_5d": -3.0,
+      "spread_gb_us_2y_bps": 30.4,
+      "spread_gb_us_2y_delta_5d": -3.0,
+      "spread_au_us_2y_bps": 10.4,
+      "spread_au_us_2y_delta_5d": -3.0,
+      "spread_au_ca_2y_bps": 55.0,
+      "spread_au_ca_2y_delta_5d": 0.0,
+      "spread_au_nz_2y_bps": -15.0,
+      "spread_au_nz_2y_delta_5d": 0.0,
+      "iron_ore_roc_20d": 0.0,
+      "dairy_gdt_roc_20d": 0.0,
+      "sol_btc_roc_5d": 19.44,
+      "sol_btc_4h_structure_broken": false,
+      "sol_btc_structure_bullish": true,
+      "cross_currency_scores": {
+        "AUD": 0,
+        "CAD": 0,
+        "NZD": 0,
+        "JPY": 1,
+        "EUR": -1,
+        "GBP": -1,
+        "USD": 1,
+        "CHF": 1
+      },
+      "cross_currency_breakdown": {
+        "CAD": {
+          "score": 0,
+          "yield_factor": "CA-US 2Y Spread Delta: -3.0 bps (-1)",
+          "commodity_factor": "Brent 20G RoC: -0.3% (+0)",
+          "risk_factor": "VIX 19.3 (+0)",
+          "summary": "Dengeli/Nötr CAD"
+        },
+        "AUD": {
+          "score": 0,
+          "yield_factor": "AU-US 2Y Spread Delta: -3.0 bps (-1)",
+          "commodity_factor": "Bakır/Altın: +5.3% & Demir: +0.0% (+0)",
+          "risk_factor": "Yüksek Beta / VIX 19.3 (+0)",
+          "summary": "Nötr AUD"
+        },
+        "NZD": {
+          "score": 0,
+          "yield_factor": "AU-NZ 2Y Spread Delta: +0.0 bps (+0)",
+          "commodity_factor": "GDT Süt RoC: +0.0% (+0)",
+          "risk_factor": "Asya Risk İştahı / VIX 19.3 (+0)",
+          "summary": "Dengeli NZD"
+        },
+        "JPY": {
+          "score": 1,
+          "yield_factor": "US 2Y Faiz Yeniden Fiyatlama: +3.0 bps (+0)",
+          "safe_haven_factor": "Güvenli Liman Talebi / VIX 19.3 (+1)",
+          "risk_factor": "Carry Trade İştahı (Kapalı (JPY Güçlü))",
+          "summary": "Carry çözülmesi ve güvenli liman girişi"
+        },
+        "EUR": {
+          "score": -1,
+          "yield_factor": "DE-US 2Y Spread Delta: -3.0 bps (-1)",
+          "commodity_factor": "Enerji/Petrol Maliyet Cezası: YOK (0)",
+          "risk_factor": "Transatlantik Büyüme Farkı (EUR Aleyhte)",
+          "summary": "Enerji şoku veya Transatlantik makas baskılıyor"
+        },
+        "GBP": {
+          "score": -1,
+          "yield_factor": "GB-US 2Y Spread Delta: -3.0 bps (-1)",
+          "commodity_factor": "DXY Korelasyonu: +0.82%",
+          "risk_factor": "Avrupa Risk İştahı / VIX 19.3 (+0)",
+          "summary": "BOE faiz indirimi veya faiz erozyonu aleyhte"
+        },
+        "USD": {
+          "score": 1,
+          "yield_factor": "US 2Y Değişim: +3.0 bps (+0)",
+          "commodity_factor": "DXY 5G Momentum: +0.82% (+1)",
+          "risk_factor": "Küresel Likidite ve US Exceptionalism",
+          "summary": "Güçlü Dolar (Getiri ve DXY ivmesi lehte)"
+        },
+        "CHF": {
+          "score": 1,
+          "yield_factor": "SNB Faiz Farkı (Düşük Politika Faizi Dezavantajı: Savunmada)",
+          "commodity_factor": "Altın Desteği: +0.24% 5G (+0)",
+          "risk_factor": "Güvenli Liman Talebi / VIX 19.3 (+1)",
+          "summary": "Sistemik stres ve güvenli liman alımları"
+        }
+      },
+      "cross_pair_gates": {
+        "AUDCAD": "NEUTRAL_RANGE",
+        "CADJPY": "SHORT_ONLY",
+        "GBPJPY": "SHORT_ONLY",
+        "AUDJPY": "SHORT_ONLY",
+        "EURGBP": "NEUTRAL_RANGE",
+        "EURAUD": "SHORT_ONLY",
+        "NZDCAD": "NEUTRAL_RANGE",
+        "EURJPY": "SHORT_ONLY",
+        "USDCAD": "LONG_ONLY",
+        "USDJPY": "NEUTRAL_RANGE",
+        "GBPUSD": "SHORT_ONLY",
+        "AUDUSD": "SHORT_ONLY",
+        "NZDUSD": "SHORT_ONLY",
+        "USDCHF": "NEUTRAL_RANGE",
+        "EURCHF": "SHORT_ONLY",
+        "GBPCHF": "SHORT_ONLY",
+        "AUDCHF": "SHORT_ONLY",
+        "CADCHF": "SHORT_ONLY",
+        "NZDCHF": "SHORT_ONLY",
+        "CHFJPY": "NEUTRAL_RANGE",
+        "SOL": "SHORT_ONLY"
+      },
+      "copper_gold_delta_4w_pct": 5.32,
+      "transatlantic_spread_bps": 153.5,
+      "equity_short_allowed": false,
+      "gold_short_allowed": false,
+      "vix_complacent": false,
+      "state_source": "explicit_previous_regime_state"
+    }
+  },
+  "data_quality": {
+    "fallback_used": false,
+    "synthetic_fallback_used": false,
+    "fallback_fields": []
+  }
+}

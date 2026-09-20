@@ -62,6 +62,26 @@ class BankOfEnglandTests(unittest.TestCase):
         self.assertEqual(result["pit_rule"],
                          "latest rate-change date strictly before replay calendar day")
 
+    def test_fetch_2y_yield(self):
+        ingestion = BankOfEnglandDataIngestion()
+        sample_csv = "DATE,IUDMNZC\n01 Sep 2026,5.20\n02 Sep 2026,5.25\n"
+        with unittest.mock.patch("ingestion.bank_of_england.urllib.request.urlopen") as mocked:
+            class Response:
+                def __enter__(self):
+                    return self
+                def __exit__(self, *args):
+                    return False
+                def read(self):
+                    return sample_csv.encode("utf-8")
+
+            mocked.return_value = Response()
+            res = ingestion.fetch_2y_yield(dt.datetime(2026, 9, 5, tzinfo=dt.timezone.utc))
+
+        self.assertEqual(res["value"], 5.25)
+        self.assertEqual(res["prev"], 5.20)
+        self.assertEqual(res["status"], "AVAILABLE")
+        self.assertFalse(res["fallback_used"])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

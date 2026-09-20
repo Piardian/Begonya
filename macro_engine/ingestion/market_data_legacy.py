@@ -30,7 +30,30 @@ class MarketDataIngestion:
                 results[name] = mt5_data
                 continue
 
-            # 2. Öncelik: yfinance Web Verisi
+            # 2. Öncelik: Resmi Merkez Bankası API'leri (Sovereign 2Y Yields)
+            if name == "CA02Y":
+                try:
+                    from ingestion.bank_of_canada import BankOfCanadaDataIngestion
+                    results[name] = BankOfCanadaDataIngestion().fetch_2y_yield()
+                    continue
+                except Exception as bce:
+                    logger.warning("CA02Y Bank of Canada verisi çekilemedi: %s", bce)
+            elif name == "GB02Y":
+                try:
+                    from ingestion.bank_of_england import BankOfEnglandDataIngestion
+                    results[name] = BankOfEnglandDataIngestion().fetch_2y_yield()
+                    continue
+                except Exception as boe_err:
+                    logger.warning("GB02Y Bank of England verisi çekilemedi: %s", boe_err)
+            elif name == "DE02Y":
+                try:
+                    from ingestion.ecb_data import ECBDataIngestion
+                    results[name] = ECBDataIngestion().fetch_2y_yield()
+                    continue
+                except Exception as ecb_err:
+                    logger.warning("DE02Y ECB verisi çekilemedi: %s", ecb_err)
+
+            # 3. Öncelik: yfinance Web Verisi
             try:
                 t = yf.Ticker(ticker)
                 # 3 aylık günlük veriyi al (60 günlük dinamik yüzdelik dilim ve trend için)
