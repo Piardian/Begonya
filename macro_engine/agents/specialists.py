@@ -228,6 +228,8 @@ class MacroSpecialists:
         - Bakır/Altın Momentum Deltası: %{cg.get('delta_4w_pct')}
         - Para Birimi Güç Puanları (3-Faktör): {regime_st.get('cross_currency_scores', {})}
         - Dolar Majörleri Kapıları: USDJPY: {cross_gates.get('USDJPY', 'NEUTRAL_RANGE')}, GBPUSD: {cross_gates.get('GBPUSD', 'NEUTRAL_RANGE')}, USDCAD: {cross_gates.get('USDCAD', 'NEUTRAL_RANGE')}, USDCHF: {cross_gates.get('USDCHF', 'NEUTRAL_RANGE')}
+        - UK Policy Evidence: {economic_panel.get('uk_policy', {})}
+        - Canada Policy Evidence: {economic_panel.get('canada_policy', {})}
         
         ANALİZ SÖZLEŞMESİ:
         1. VERİYİ ÖNCELE: Sonucu önceden varsayma. Her yönsel çıkarımı, onu destekleyen ölçülebilir faktörlerle açıkla.
