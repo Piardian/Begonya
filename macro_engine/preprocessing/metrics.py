@@ -117,6 +117,22 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
             market_data["US02Y"].get("val_5d_ago"),
         )
 
+        # The 2Y-DFF gap is a policy-rate/yield spread, not a literal count of
+        # expected FOMC cuts. Keep the distinction explicit in downstream text.
+        fed_path = r["fed_forward_path_analysis"]
+        gap = fed_path.get("implied_rate_gap_bps")
+        fed_path["interpretation_warning"] = (
+            "US02Y-DFF is a market-vs-current-policy spread; it is not a "
+            "meeting-count or guaranteed total rate-cut estimate."
+        )
+        fed_path["implication"] = (
+            f"US02Y-DFF farkı {gap:+.1f} bps; bu, piyasanın 2Y getirisi ile mevcut "
+            "politika faizi arasındaki mesafeyi gösterir. Tek başına toplam faiz "
+            "indirimi miktarı olarak yorumlanmaz."
+            if isinstance(gap, (int, float))
+            else "US02Y-DFF farkı hesaplanamadı; politika patikası güvenilir biçimde çıkarılamıyor."
+        )
+
         # Do not let missing/failed relative-value feeds silently fall back to
         # legacy constants. Without the sovereign-yield panel, cross-pair
         # direction is not established.
