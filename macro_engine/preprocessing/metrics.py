@@ -132,11 +132,26 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
                 "AUDCAD", "CADJPY", "GBPJPY", "AUDJPY", "EURGBP", "EURAUD",
                 "NZDCAD", "EURJPY", "USDCAD", "USDJPY", "GBPUSD", "AUDUSD",
                 "NZDUSD", "USDCHF", "EURCHF", "GBPCHF", "AUDCHF", "CADCHF",
-                "NZDCHF", "CHFJPY", "SOL",
+                "NZDCHF", "CHFJPY",
             ]
-            cross["cross_gates"] = {pair: "NEUTRAL_RANGE" for pair in pair_names}
+            cross["cross_gates"] = {
+                **cross.get("cross_gates", {}),
+                **{pair: "NEUTRAL_RANGE" for pair in pair_names},
+            }
+            cross["sovereign_yields"] = {
+                key: None
+                for key in ("US02Y", "CA02Y", "DE02Y", "GB02Y", "AU02Y", "NZ02Y")
+            }
+            cross["yield_spreads_bps"] = {}
             cross["currency_scores"] = {
                 currency: 0
+                for currency in ("AUD", "CAD", "NZD", "JPY", "EUR", "GBP", "USD", "CHF")
+            }
+            cross["currency_breakdown"] = {
+                currency: {
+                    "score": 0,
+                    "summary": "UNAVAILABLE: relative-value input missing",
+                }
                 for currency in ("AUD", "CAD", "NZD", "JPY", "EUR", "GBP", "USD", "CHF")
             }
             cross["data_quality"] = {
@@ -145,7 +160,7 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
                 "directional_gates_disabled": True,
                 "methodology_warning": (
                     "Relative-value market inputs are missing or fallback-derived; "
-                    "no directional cross-pair gate is emitted."
+                    "no directional FX cross-pair gate is emitted."
                 ),
             }
             r.setdefault("regime_state", {})["cross_pair_gates"] = dict(cross["cross_gates"])
