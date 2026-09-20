@@ -165,9 +165,18 @@ class MacroSpecialists:
         fed_rf = metrics.get('fed_reaction_function', {})
         cross_analysis = metrics.get('cross_pairs_analysis', {})
         cross_gates = cross_analysis.get('cross_gates', {}) or regime_st.get('cross_pair_gates', {}) or {}
+        market_price_context = metrics.get('market_price_context', {})
 
         prompt = f"""
-        Aşağıdaki iki uzman analist raporunu ve çapraz piyasa metriklerini değerlendirip portföy yönelimlerini sentezle:
+        Aşağıdaki iki uzman analist raporunu, doğrulanmış piyasa fiyat bağlamını ve çapraz piyasa metriklerini değerlendirip makro sentez üret:
+
+        [DOĞRULANMIŞ PİYASA FİYAT BAĞLAMI]:
+        {market_price_context}
+
+        FİYAT KURALı:
+        - Bu bağlamda bulunmayan hiçbir kesin fiyat, destek, direnç, hedef veya fiyat aralığı uydurma.
+        - Teknik destek/direnç bu makro katmanda hesaplanmıyorsa fiyat seviyesi verme.
+        - Makro yön ile teknik giriş seviyesini birbirine karıştırma.
         
         [AJAN 1 - LİKİDİTE, KREDİ VE TAHVİL]:
         - Likidite Rejimi: {liquidity.liquidity_regime}
@@ -232,9 +241,9 @@ class MacroSpecialists:
            - SPX: Bear Steepening / faiz şoku / VIX yüksekse 'NEUTRAL_RANGE'; rehavet + likidite daralmasında 'SHORT_ONLY'
             
         7. ÜÇ KATMANLI ZAMAN UFKU STRATEJİSİ (HORIZON GUIDANCE):
-           - horizon_today: Bugünkü işlem seansı (M15 / Gün İçi) için net, somut ve doğrudan uygulanabilir taktik. Varlık lot boyutlarını her zaman recommended_risk_multiplier ile tutarlı ver (çelişkili lot yazma).
-           - horizon_this_week: Bu haftalık (H4 / Swing) ufku için piyasa yönü, yaklaşan kritik verilerin (TÜFE/ÜFE/Merkez Bankası) getiri eğrisine ve paritelere haftalık etkisi.
-           - horizon_this_month: Bu aylık (D1/W1) makro rejim rotası. Fed net likidite seyri, borçlanma tavanı, mali hakimiyet ve portföyün genel yönü.
+           - horizon_today: Bugünkü işlem seansı (M15 / Gün İçi) için makro yön, risk durumu ve gerekli teyit. Kesin fiyat seviyesi üretme.
+           - horizon_this_week: Bu haftalık (H4 / Swing) ufku için piyasa yönü ve kritik verilerin getiri eğrisine/paritelere etkisi. Kesin fiyat seviyesi üretme.
+           - horizon_this_month: Bu aylık (D1/W1) makro rejim rotası. Fed net likidite seyri, mali politika ve portföyün genel yönü. Kesin fiyat seviyesi üretme.
            - TGA Sezonsallığı: Eğer TGA vergi dönemi aktifse ({liq_dyn.get('is_tga_tax_season')}), 4 haftalık net likidite düşüşünü geçici mevsimsel kamu tahsilatı olarak rasyonele ekle; kalıcı bir kriz gibi abartma.
 
         8. DOLAR MAJÖRLERİ VE GÖRELİ DEĞER KURALLARI (USD MAJORS - USDJPY, GBPUSD, USDCAD, USDCHF):
