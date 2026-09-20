@@ -176,38 +176,64 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             "minimum_for_long_only": 2,
         }
 
-        # EURUSD: require rate-spread evidence plus dollar confirmation.
+        # EURUSD: use both USD-side and EUR-side policy evidence.
         transatlantic = metrics.get("transatlantic_analysis", {})
         spread_bps = transatlantic.get("spread_bps")
         energy_penalty = bool(
             metrics.get("terms_of_trade_energy_analysis", {})
             .get("eurusd_energy_penalty", False)
         )
-        if (
-            isinstance(spread_bps, (int, float))
-            and float(spread_bps) > 180.0
-            and isinstance(dxy_delta_20d, (int, float))
-            and float(dxy_delta_20d) > 0.5
+        euro_panel = metrics.get("economic_regime_snapshot", {}).get("euro_area_macro", {})
+        us_minus_ecb = euro_panel.get("us_minus_ecb_policy_spread_bps")
+        hicp_direction = euro_panel.get("hicp_direction")
+
+        eur_bullish = []
+        eur_bearish = []
+        if isinstance(us_minus_ecb, (int, float)):
+            if float(us_minus_ecb) < 100.0:
+                eur_bullish.append(f"US-ECB policy spread:{float(us_minus_ecb):+.1f}bps")
+            elif float(us_minus_ecb) > 150.0:
+                eur_bearish.append(f"US-ECB policy spread:{float(us_minus_ecb):+.1f}bps")
+        if isinstance(spread_bps, (int, float)):
+            if float(spread_bps) < 150.0:
+                eur_bullish.append(f"US-DE 10Y spread:{float(spread_bps):+.1f}bps")
+            elif float(spread_bps) > 180.0:
+                eur_bearish.append(f"US-DE 10Y spread:{float(spread_bps):+.1f}bps")
+        if hicp_direction == "RISING":
+            eur_bullish.append("EA HICP:RISING")
+        elif hicp_direction == "FALLING":
+            eur_bearish.append("EA HICP:FALLING")
+        if energy_penalty:
+            eur_bearish.append("EA energy penalty")
+
+        dxy_confirm_bear = isinstance(dxy_delta_20d, (int, float)) and float(dxy_delta_20d) > 0.5
+        dxy_confirm_bull = isinstance(dxy_delta_20d, (int, float)) and float(dxy_delta_20d) < -0.5
+
+        if dxy_confirm_bear and (
+            (isinstance(us_minus_ecb, (int, float)) and float(us_minus_ecb) > 150.0)
+            or (isinstance(spread_bps, (int, float)) and float(spread_bps) > 180.0)
+            or energy_penalty
         ):
             eur_base = "SHORT_ONLY"
-        elif energy_penalty or (
-            isinstance(spread_bps, (int, float)) and float(spread_bps) > 180.0
-        ):
-            eur_base = "NEUTRAL_RANGE"
-        elif (
-            isinstance(spread_bps, (int, float))
-            and float(spread_bps) < 0.0
-            and isinstance(dxy_delta_20d, (int, float))
-            and float(dxy_delta_20d) < -0.5
+        elif dxy_confirm_bull and (
+            isinstance(us_minus_ecb, (int, float))
+            and float(us_minus_ecb) < 100.0
+            and isinstance(spread_bps, (int, float))
+            and float(spread_bps) < 150.0
         ):
             eur_base = "LONG_ONLY"
         else:
             eur_base = "NEUTRAL_RANGE"
+
         evidence["EURUSD"] = {
-            "gate_basis": "transatlantic spread + DXY confirmation + energy penalty",
+            "gate_basis": "US-ECB policy spread + US-DE 10Y spread + DXY confirmation + EA inflation/energy context",
+            "us_minus_ecb_policy_spread_bps": us_minus_ecb,
             "transatlantic_spread_bps": spread_bps,
             "dxy_delta_20d_pct": dxy_delta_20d,
+            "hicp_direction": hicp_direction,
             "energy_penalty": energy_penalty,
+            "bullish_factors": eur_bullish,
+            "bearish_factors": eur_bearish,
         }
 
         spx_allowed = bool(
