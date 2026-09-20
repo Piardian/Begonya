@@ -80,21 +80,15 @@ class DataIntegrityTests(unittest.TestCase):
         self.assertIn("policy-rate/yield spread", result["interpretation_warning"])
         self.assertIn("not a", result["interpretation_warning"])
 
-    def test_missing_dff_is_explicitly_reported_as_fallback(self):
+    def test_missing_dff_fails_closed(self):
         from tests.test_deterministic_metrics import DeterministicMacroMetricsTests
         helper = DeterministicMacroMetricsTests("runTest")
         market = helper.base_market()
         fred = helper.base_fred()
         del fred["DFF"]
 
-        result = MacroMetricsCalculator().process_all_macro_data(market, fred, [])
-
-        self.assertTrue(result["data_quality"]["fallback_used"])
-        self.assertEqual(result["data_quality"]["fallback_fields"], ["DFF"])
-        self.assertEqual(
-            result["fed_forward_path_analysis"]["fed_policy_rate_source"],
-            "LEGACY_STATIC_5.33_FALLBACK",
-        )
+        with self.assertRaises(DataUnavailableError):
+            MacroMetricsCalculator().process_all_macro_data(market, fred, [])
 
     def test_fred_replay_uses_as_of_as_vintage_end(self):
         from ingestion.fred_data import FredDataIngestion
