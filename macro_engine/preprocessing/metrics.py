@@ -260,15 +260,44 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
             ),
         }
 
+        real_yield_value = r.get("real_yield_info", {}).get("real_yield_pct")
+        hy_oas_value = r.get("credit_spread_analysis", {}).get("hy_oas_spread_pct")
+        policy_gap_bps = r["fed_forward_path_analysis"].get("implied_rate_gap_bps")
+        repricing = r["fed_forward_path_analysis"].get(
+            "repricing_direction", "Unavailable"
+        )
+        rate_path_expectation = (
+            "Market-implied easing"
+            if policy_gap_bps is not None and policy_gap_bps <= -25
+            else "Market-implied tightening"
+            if policy_gap_bps is not None and policy_gap_bps >= 25
+            else repricing
+        )
+        equity_constraint = (
+            f"Reel getiri %{float(real_yield_value):.2f} ise iskonto baskısı anlamlı."
+            if isinstance(real_yield_value, (int, float)) and real_yield_value >= 1.90
+            else f"Reel getiri %{float(real_yield_value):.2f}; reel faiz kaynaklı baskı daha sınırlı."
+            if isinstance(real_yield_value, (int, float))
+            else "Reel getiri verisi kullanılamıyor."
+        )
+        credit_context = (
+            f"HY OAS %{float(hy_oas_value):.2f}."
+            if isinstance(hy_oas_value, (int, float))
+            else "HY OAS verisi kullanılamıyor."
+        )
+
         r["fed_reaction_function"] = {
-            **r.get("fed_reaction_function", {}),
-            "rate_path_expectation": r["fed_forward_path_analysis"].get(
-                "rate_expectation_signal", "Unavailable"
-            ),
+            "rate_path_expectation": rate_path_expectation,
+            "policy_gap_bps": policy_gap_bps,
             "driver": (
                 f"UNRATE={unemp_rate}, ICSA={claims_k}K, "
                 f"PAYEMS MoM change={payroll_change_k}K; "
+                f"DFF={fred_data.get('DFF')}, US02Y={market_data.get('US02Y', {}).get('value')}; "
                 f"Brent={brent_level}."
+            ),
+            "equity_multiple_cap": (
+                f"{equity_constraint} {credit_context} "
+                "Bu panel yalnızca iskonto/kredi koşullarını tanımlar; tek başına hisse yön sinyali üretmez."
             ),
         }
 
