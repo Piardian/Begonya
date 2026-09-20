@@ -6,6 +6,16 @@ from preprocessing.metrics import MacroMetricsCalculator
 
 
 class FredFreshnessContractTests(unittest.TestCase):
+    def test_dfii10_accepts_normal_weekly_observation_gap(self):
+        calc = MacroMetricsCalculator()
+        fred = {
+            "data_quality": {
+                "observation_dates": {"DFII10": "2024-09-27"}
+            }
+        }
+        result = calc._validate_fred_freshness(fred, __import__("datetime").date(2024, 10, 1))
+        self.assertEqual(result["DFII10"], 4)
+
     def test_wtregen_accepts_normal_weekly_observation_gap(self):
         calculator = MacroMetricsCalculator(as_of_date=dt.date(2024, 10, 1))
         fred = {"data_quality": {"observation_dates": {"WTREGEN": "2024-09-25"}}}
