@@ -425,6 +425,8 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
     cross_data_quality = cross_analysis.get("data_quality", {})
 
     market_price_context = metrics.get("market_price_context", {})
+    source_consistency = metrics.get("market_source_consistency", {})
+    treasury_consistency = source_consistency.get("treasury_curve", {})
 
     def price_snapshot(symbol: str, label: str, decimals: int = 2) -> str:
         data = market_price_context.get(symbol, {})
@@ -543,6 +545,7 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
 {price_snapshot("DXY", "DXY")}
 {price_snapshot("BRENT", "Brent")}
 {price_snapshot("SPX", "SPX")}
+  └ Treasury feed consistency: US02Y {html.escape(str(treasury_consistency.get("US02Y", {}).get("status", "UNAVAILABLE")))} | US10Y {html.escape(str(treasury_consistency.get("US10Y", {}).get("status", "UNAVAILABLE")))}
 
 🛡️ <b>GÜNÜN İŞLEM KAPILARI (EXECUTION GATES):</b>
 └ Gate Kaynağı: <b>{html.escape(str(gate_source))}</b>
