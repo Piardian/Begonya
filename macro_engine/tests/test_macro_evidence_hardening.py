@@ -49,6 +49,24 @@ class MacroEvidenceHardeningTests(unittest.TestCase):
         self.assertFalse(result["cycle_diagnosis"]["is_labor_strong"])
         self.assertNotEqual(result["cycle_diagnosis"]["unemployment_rate"], 4.1)
 
+    def test_treasury_market_and_fred_sources_are_consistent(self):
+        result = self.calc.process_all_macro_data(
+            self.market,
+            self.fred,
+            [],
+        )
+        consistency = result["market_source_consistency"]["treasury_curve"]
+        self.assertEqual(consistency["US02Y"]["status"], "ALIGNED")
+        self.assertEqual(consistency["US10Y"]["status"], "ALIGNED")
+
+    def test_treasury_source_divergence_is_reported(self):
+        market = dict(self.market)
+        market["US02Y"] = {**market["US02Y"], "value": 4.40}
+        result = self.calc.process_all_macro_data(market, self.fred, [])
+        item = result["market_source_consistency"]["treasury_curve"]["US02Y"]
+        self.assertEqual(item["status"], "DIVERGENT")
+        self.assertIn("differ materially", result["market_source_consistency"]["warning"])
+
     def test_telegram_uses_deterministic_gate_not_llm_advisory(self):
         pipeline = {
             "final_output": {
