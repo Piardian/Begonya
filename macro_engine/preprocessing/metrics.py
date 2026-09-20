@@ -189,6 +189,8 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
             None,
         )
         payroll_change_k = fred_data.get("PAYEMS_MOM_CHANGE_K")
+        if nfp_actual is not None and abs(nfp_actual) >= 10000:
+            nfp_actual = nfp_actual / 1000.0
         claims_k = fred_data.get("ICSA")
         labor_strong = (
             isinstance(unemp_rate, (int, float))
