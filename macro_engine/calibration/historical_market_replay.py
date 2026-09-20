@@ -15,6 +15,7 @@ from ingestion.fred_data import FredDataIngestion
 from preprocessing.metrics import MacroMetricsCalculator
 from data_quality import REQUIRED_MARKET_FIELDS
 from ingestion.bank_of_england import BankOfEnglandDataIngestion
+from ingestion.bank_of_canada import BankOfCanadaDataIngestion
 
 
 class HistoricalMarketReplayIngestion(MT5MarketDataIngestion):
@@ -163,6 +164,22 @@ def build_real_snapshot(as_of: dt.datetime, symbols: Iterable[str]) -> Dict[str,
     fred["UK_BANK_RATE_PREVIOUS"] = uk_bank_rate.get("previous_value")
     fred["UK_BANK_RATE_SOURCE_DATE"] = uk_bank_rate.get("observation_date")
     fred.setdefault("data_quality", {})["uk_bank_rate"] = uk_bank_rate
+
+    try:
+        ca_policy_rate = BankOfCanadaDataIngestion().fetch_policy_rate(as_of)
+    except Exception as exc:
+        ca_policy_rate = {
+            "status": "UNAVAILABLE",
+            "value": None,
+            "previous_value": None,
+            "observation_date": None,
+            "source": "Bank of Canada official Target for the overnight rate (V39079)",
+            "error": str(exc),
+        }
+    fred["CA_POLICY_RATE"] = ca_policy_rate.get("value")
+    fred["CA_POLICY_RATE_PREVIOUS"] = ca_policy_rate.get("previous_value")
+    fred["CA_POLICY_RATE_SOURCE_DATE"] = ca_policy_rate.get("observation_date")
+    fred.setdefault("data_quality", {})["ca_policy_rate"] = ca_policy_rate
     return {
         "schema_version": 1,
         "timestamp": as_of.isoformat(),
