@@ -5,7 +5,12 @@ from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional
 from config import BIAS_GATE_FILE
 from core.deterministic_controls import event_freeze_status, normalize_calendar_event, signed_surprise_zscore, validate_freshness, validate_numeric_range
-from data_quality import DataUnavailableError, validate_fred_payload, validate_market_payload
+from data_quality import (
+    DataUnavailableError,
+    RELATIVE_VALUE_MARKET_FIELDS,
+    validate_fred_payload,
+    validate_market_payload,
+)
 from preprocessing.metrics_legacy import MacroMetricsCalculator as _LegacyMacroMetricsCalculator
 
 @contextmanager
@@ -76,11 +81,198 @@ class MacroMetricsCalculator(_LegacyMacroMetricsCalculator):
         if as_of is None:return {}
         obs=fred_data.get("data_quality",{}).get("observation_dates",{});return {f:validate_freshness(f,dt.date.fromisoformat(str(v)),as_of,self.FRED_FREQUENCIES.get(f,"unknown"),self.FRED_MAX_AGE_DAYS.get(f)) for f,v in obs.items()}
     def process_all_macro_data(self,market_data:Dict[str,Any],fred_data:Dict[str,Any],calendar_events:List[Dict[str,Any]],as_of_date:Optional[dt.date]=None,as_of_datetime:Optional[dt.datetime]=None,previous_regime_state:Optional[Mapping[str,Any]]=None,now_utc:Optional[dt.datetime]=None)->Dict[str,Any]:
-        validate_market_payload(market_data);validate_fred_payload(fred_data);self._validate_key_ranges(market_data,fred_data);as_of=as_of_date or self.as_of_date;fresh=self._validate_fred_freshness(fred_data,as_of);ed=as_of_datetime or (dt.datetime.combine(as_of,dt.time.max,tzinfo=dt.timezone.utc) if as_of else None);events=[normalize_calendar_event(e) for e in calendar_events];freeze=event_freeze_status(events,now_utc=now_utc or ed) if (now_utc or ed) else None
-        with _fixed_legacy_date(as_of,ed,previous_regime_state):r=super().process_all_macro_data(market_data,fred_data,events)
-        if freeze is not None:r.setdefault("cross_pairs_analysis",{})["event_freeze"]=freeze;r.setdefault("regime_state",{})["event_freeze_active"]=bool(freeze["active"])
-        r["fed_forward_path_analysis"]=self.calculate_fed_forward_path(float(r.get("fed_forward_path_analysis",{}).get("us02y_yield",market_data["US02Y"]["value"])),fred_data.get("DFF"),market_data["US02Y"].get("val_5d_ago"));r.setdefault("regime_state",{})["state_source"]="explicit_previous_regime_state" if previous_regime_state is not None else "default_inactive_state";r["dxy_oil_correlation_method"]="pearson_on_period_returns";r["data_quality"]={"fallback_used":"DFF" not in fred_data,"synthetic_fallback_used":"DFF" not in fred_data,"fallback_fields":["DFF"] if "DFF" not in fred_data else []};r["validation"]={"fred_freshness_days":fresh}
-        if float(market_data.get("VIX",{}).get("value",0) or 0)>=40 and isinstance(r.get("credit_spread_analysis"),dict):
-            stress=str(r["credit_spread_analysis"].get("stress_level","")).lower()
-            if "distress" in stress or "şiddetli kredi krizi" in stress:r.setdefault("gold_fiscal_dominance",{})["is_cash_dash"]=True;r["gold_fiscal_dominance"]["gold_short_allowed"]=True
+        validate_market_payload(market_data)
+        validate_fred_payload(fred_data)
+        self._validate_key_ranges(market_data, fred_data)
+
+        fred_provider = fred_data.get("data_quality", {}).get("provider")
+        if fred_provider == "FRED_BASELINE":
+            raise DataUnavailableError(
+                "Non-authoritative FRED_BASELINE data cannot drive a production macro analysis."
+            )
+
+        as_of = as_of_date or self.as_of_date
+        fresh = self._validate_fred_freshness(fred_data, as_of)
+        ed = as_of_datetime or (
+            dt.datetime.combine(as_of, dt.time.max, tzinfo=dt.timezone.utc)
+            if as_of else None
+        )
+        events = [normalize_calendar_event(e) for e in calendar_events]
+        freeze = event_freeze_status(events, now_utc=now_utc or ed) if (now_utc or ed) else None
+
+        with _fixed_legacy_date(as_of, ed, previous_regime_state):
+            r = super().process_all_macro_data(market_data, fred_data, events)
+
+        if freeze is not None:
+            r.setdefault("cross_pairs_analysis", {})["event_freeze"] = freeze
+            r.setdefault("regime_state", {})["event_freeze_active"] = bool(freeze["active"])
+
+        r["fed_forward_path_analysis"] = self.calculate_fed_forward_path(
+            float(
+                r.get("fed_forward_path_analysis", {}).get(
+                    "us02y_yield", market_data["US02Y"]["value"]
+                )
+            ),
+            fred_data.get("DFF"),
+            market_data["US02Y"].get("val_5d_ago"),
+        )
+
+        # Do not let missing/failed relative-value feeds silently fall back to
+        # legacy constants. Without the sovereign-yield panel, cross-pair
+        # direction is not established.
+        missing_relative_value = sorted(
+            name for name in RELATIVE_VALUE_MARKET_FIELDS
+            if not isinstance(market_data.get(name), dict)
+            or market_data.get(name, {}).get("value") is None
+            or market_data.get(name, {}).get("fallback_used")
+        )
+        if missing_relative_value:
+            cross = r.setdefault("cross_pairs_analysis", {})
+            pair_names = [
+                "AUDCAD", "CADJPY", "GBPJPY", "AUDJPY", "EURGBP", "EURAUD",
+                "NZDCAD", "EURJPY", "USDCAD", "USDJPY", "GBPUSD", "AUDUSD",
+                "NZDUSD", "USDCHF", "EURCHF", "GBPCHF", "AUDCHF", "CADCHF",
+                "NZDCHF", "CHFJPY", "SOL",
+            ]
+            cross["cross_gates"] = {pair: "NEUTRAL_RANGE" for pair in pair_names}
+            cross["currency_scores"] = {
+                currency: 0
+                for currency in ("AUD", "CAD", "NZD", "JPY", "EUR", "GBP", "USD", "CHF")
+            }
+            cross["data_quality"] = {
+                "status": "UNAVAILABLE",
+                "missing_fields": missing_relative_value,
+                "directional_gates_disabled": True,
+                "methodology_warning": (
+                    "Relative-value market inputs are missing or fallback-derived; "
+                    "no directional cross-pair gate is emitted."
+                ),
+            }
+            r.setdefault("regime_state", {})["cross_pair_gates"] = dict(cross["cross_gates"])
+
+        market_price_context = {}
+        for symbol in (
+            "GOLD", "BTC", "DXY", "BRENT", "SPX", "US10Y", "US02Y", "VIX"
+        ):
+            data = market_data.get(symbol)
+            if not isinstance(data, dict) or data.get("value") is None:
+                continue
+            market_price_context[symbol] = {
+                "value": data.get("value"),
+                "prev": data.get("prev"),
+                "val_5d_ago": data.get("val_5d_ago"),
+                "month_ago": data.get("month_ago"),
+                "change_pct": data.get("change_pct"),
+                "change_pct_5d": data.get("change_pct_5d"),
+                "change_pct_4w": data.get("change_pct_4w"),
+                "source": data.get("source"),
+                "fallback_used": bool(data.get("fallback_used")),
+            }
+        r["market_price_context"] = market_price_context
+        r.setdefault("regime_state", {})["state_source"] = (
+            "explicit_previous_regime_state"
+            if previous_regime_state is not None
+            else "default_inactive_state"
+        )
+        r["dxy_oil_correlation_method"] = "pearson_on_period_returns"
+
+        # Replace static labor fallbacks with the authoritative FRED unemployment
+        # rate and (when available) the actual calendar NFP release.
+        unemp_rate = fred_data.get("UNRATE")
+        nfp_actual = next(
+            (
+                float(item.get("actual"))
+                for item in r.get("surprises", [])
+                if item.get("indicator_type") == "nfp"
+                and isinstance(item.get("actual"), (int, float))
+            ),
+            None,
+        )
+        payroll_change_k = fred_data.get("PAYEMS_MOM_CHANGE_K")
+        claims_k = fred_data.get("ICSA")
+        labor_strong = (
+            isinstance(unemp_rate, (int, float))
+            and isinstance(claims_k, (int, float))
+            and float(unemp_rate) <= 4.3
+            and float(claims_k) <= 240.0
+        )
+        ratio_delta = r.get("copper_gold_analysis", {}).get("delta_4w_pct")
+        global_cycle = (
+            "Manufacturing / cyclical momentum strengthening"
+            if isinstance(ratio_delta, (int, float)) and ratio_delta > 2.0
+            else "Manufacturing / cyclical momentum weakening"
+            if isinstance(ratio_delta, (int, float)) and ratio_delta < -2.0
+            else "Mixed / range-bound cyclical momentum"
+        )
+        brent_level = market_data.get("BRENT", {}).get("value")
+        regime_diagnosis = "UNAVAILABLE"
+        if labor_strong and isinstance(brent_level, (int, float)):
+            regime_diagnosis = (
+                "Late-Cycle Overheating with Global Divergence"
+                if float(brent_level) >= 80.0 and global_cycle != "Manufacturing / cyclical momentum strengthening"
+                else "Reflationary Growth"
+            )
+        elif not labor_strong and isinstance(brent_level, (int, float)) and float(brent_level) >= 80.0:
+            regime_diagnosis = "Stagflation"
+        elif not labor_strong:
+            regime_diagnosis = "Deflationary Slowdown"
+
+        r["cycle_diagnosis"] = {
+            **r.get("cycle_diagnosis", {}),
+            "unemployment_rate": None if unemp_rate is None else float(unemp_rate),
+            "nfp_value": nfp_actual,
+            "nfp_source": "calendar_surprise" if nfp_actual is not None else "UNAVAILABLE",
+            "payroll_change_mom_k": (
+                None if payroll_change_k is None else float(payroll_change_k)
+            ),
+            "icsa_claims": None if claims_k is None else float(claims_k),
+            "is_labor_strong": labor_strong,
+            "us_domestic_cycle": (
+                "Late-Cycle Domestic Resilience"
+                if labor_strong
+                else "Labor-market cooling / weakening"
+            ),
+            "global_macro_cycle": global_cycle,
+            "regime_diagnosis": regime_diagnosis,
+            "rationale": (
+                f"UNRATE={unemp_rate}, ICSA={claims_k}K; "
+                f"PAYEMS MoM change={payroll_change_k}K; "
+                f"cyclical momentum={global_cycle}."
+            ),
+        }
+
+        r["fed_reaction_function"] = {
+            **r.get("fed_reaction_function", {}),
+            "rate_path_expectation": r["fed_forward_path_analysis"].get(
+                "rate_expectation_signal", "Unavailable"
+            ),
+            "driver": (
+                f"UNRATE={unemp_rate}, ICSA={claims_k}K, "
+                f"PAYEMS MoM change={payroll_change_k}K; "
+                f"Brent={brent_level}."
+            ),
+        }
+
+        market_fallback_fields = sorted(
+            name for name, data in market_data.items()
+            if isinstance(data, dict) and data.get("fallback_used")
+        )
+        fallback_fields = ["DFF"] if "DFF" not in fred_data else []
+        r["data_quality"] = {
+            "fallback_used": bool(fallback_fields or market_fallback_fields),
+            "synthetic_fallback_used": bool(fallback_fields or market_fallback_fields),
+            "fallback_fields": fallback_fields + market_fallback_fields,
+            "fred_provider": fred_provider or "UNSPECIFIED",
+            "authoritative": not bool(fallback_fields or market_fallback_fields),
+        }
+        r["validation"] = {"fred_freshness_days": fresh}
+
+        if float(market_data.get("VIX", {}).get("value", 0) or 0) >= 40 and isinstance(
+            r.get("credit_spread_analysis"), dict
+        ):
+            stress = str(r["credit_spread_analysis"].get("stress_level", "")).lower()
+            if "distress" in stress or "şiddetli kredi krizi" in stress:
+                r.setdefault("gold_fiscal_dominance", {})["is_cash_dash"] = True
+                r["gold_fiscal_dominance"]["gold_short_allowed"] = True
+
         return r
