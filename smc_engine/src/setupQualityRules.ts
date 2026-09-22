@@ -1,4 +1,5 @@
 import type { ContextAnalysis, DetectorResult, SetupGradeValue } from './setupAssessment';
+import { isBoxTooNarrow } from './assetMetrics';
 
 export type QualityRuleCategory =
   | 'HardReject'
@@ -82,6 +83,32 @@ export const SETUP_QUALITY_RULES: readonly QualityRule[] = [
       detector.premiumDiscount.fourHour.status === 'undefined',
   },
   {
+    id: 'CHOCH_WITHOUT_SWEEP',
+    category: 'HardReject',
+    severity: 'Critical',
+    message: 'CHoCH reversal setup lacks confirmed liquidity sweep evidence.',
+    recommendation: 'Reject counter-trend reversal setups without explicit BSL/SSL liquidity sweep.',
+    condition: ({ detector }) => detector.structure.eventType === 'CHoCH' && !detector.sweep.present,
+  },
+  {
+    id: 'POI_BOX_TOO_NARROW',
+    category: 'HardReject',
+    severity: 'High',
+    message: 'POI zone is too narrow to survive spread and noise (<7 pips or <%0.35).',
+    recommendation: 'Reject micro-zones that risk immediate stopout from spread noise.',
+    condition: ({ detector }) => isBoxTooNarrow(detector.symbol, detector.poi.zoneLow, detector.poi.zoneHigh),
+  },
+  {
+    id: 'PD_TERRITORY_CONFLICT',
+    category: 'HardReject',
+    severity: 'High',
+    message: 'Trade direction conflicts with 1H or 15M Premium-Discount territory.',
+    recommendation: 'Do not buy in 1H/15M Premium or sell in 1H/15M Discount territory.',
+    condition: ({ detector }) =>
+      (detector.direction === 'long' && (detector.premiumDiscount.oneHour.status === 'premium' || detector.premiumDiscount.fifteenMinute.status === 'premium')) ||
+      (detector.direction === 'short' && (detector.premiumDiscount.oneHour.status === 'discount' || detector.premiumDiscount.fifteenMinute.status === 'discount')),
+  },
+  {
     id: 'SELL_IN_4H_DISCOUNT',
     category: 'GradeCap',
     severity: 'High',
@@ -115,7 +142,13 @@ export const SETUP_QUALITY_RULES: readonly QualityRule[] = [
     maxGrade: 'B+',
     message: 'POI quality is neutral or weak.',
     recommendation: 'Cap the setup until POI quality is confirmed by freshness and reaction logic.',
-    condition: ({ detector }) => detector.poi.testCount !== 1,
+    condition: ({ detector }) => {
+      // Fresh POIs (testCount === 0) in trend continuation BOS are high quality and not capped
+      if (detector.poi.testCount === 0 && detector.structure.eventType === 'BOS') {
+        return false;
+      }
+      return detector.poi.testCount >= 2;
+    },
   },
   {
     id: 'OVERTESTED_POI',

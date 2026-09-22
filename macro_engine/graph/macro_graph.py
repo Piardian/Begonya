@@ -154,9 +154,15 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             xau_bearish.append("bear_steepening")
         if isinstance(delta_10y_5d, (int, float)) and float(delta_10y_5d) >= 10.0:
             xau_bearish.append(f"10Y_5d={float(delta_10y_5d):+.1f}bps")
+        xau_has_stress = bear_steepening or (isinstance(delta_10y_5d, (int, float)) and float(delta_10y_5d) >= 10.0)
+        xau_liquidity_support = (
+            isinstance(liquidity_delta, (int, float)) and float(liquidity_delta) >= 20.0
+            and isinstance(nfci, (int, float)) and float(nfci) <= -0.30
+        )
+
         if gold_short:
             xau_base = "SHORT_ONLY"
-        elif len(xau_bullish) >= 2 and not xau_bearish:
+        elif len(xau_bullish) >= 2 and (not xau_bearish or (not xau_has_stress and xau_liquidity_support)):
             xau_base = "LONG_ONLY"
         else:
             xau_base = "NEUTRAL_RANGE"
@@ -194,6 +200,16 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
         if isinstance(credit_stress, str) and "Distress" in credit_stress:
             btc_bearish.append("credit_distress")
 
+        has_severe_btc_risk = (
+            bear_steepening
+            or (isinstance(delta_10y_5d, (int, float)) and float(delta_10y_5d) >= 10.0)
+            or (isinstance(credit_stress, str) and "Distress" in credit_stress)
+        )
+        btc_liquidity_support = (
+            isinstance(liquidity_delta, (int, float)) and float(liquidity_delta) >= 20.0
+            and isinstance(nfci, (int, float)) and float(nfci) <= -0.30
+        )
+
         legacy_btc = metrics.get("btc_decoupling_analysis", {}).get(
             "recommended_btc_gate", "DEFENSIVE_HOLD"
         )
@@ -201,7 +217,7 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             btc_base = "DEFENSIVE_HOLD"
         elif "SHORT_ONLY" in str(legacy_btc).upper() and bear_steepening:
             btc_base = "SHORT_ONLY"
-        elif len(btc_bullish) >= 2 and not btc_bearish:
+        elif len(btc_bullish) >= 2 and (not btc_bearish or (not has_severe_btc_risk and btc_liquidity_support)):
             btc_base = "LONG_ONLY"
         else:
             btc_base = "NEUTRAL_RANGE"
@@ -228,12 +244,12 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
         if isinstance(us_minus_ecb, (int, float)):
             if float(us_minus_ecb) < 100.0:
                 eur_bullish.append(f"US-ECB policy spread:{float(us_minus_ecb):+.1f}bps")
-            elif float(us_minus_ecb) > 150.0:
+            elif float(us_minus_ecb) > 100.0:
                 eur_bearish.append(f"US-ECB policy spread:{float(us_minus_ecb):+.1f}bps")
         if isinstance(spread_bps, (int, float)):
-            if float(spread_bps) < 150.0:
+            if float(spread_bps) < 100.0:
                 eur_bullish.append(f"US-DE 10Y spread:{float(spread_bps):+.1f}bps")
-            elif float(spread_bps) > 180.0:
+            elif float(spread_bps) > 140.0:
                 eur_bearish.append(f"US-DE 10Y spread:{float(spread_bps):+.1f}bps")
         if hicp_direction == "RISING":
             eur_bullish.append("EA HICP:RISING")
@@ -246,8 +262,8 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
         dxy_confirm_bull = isinstance(dxy_delta_20d, (int, float)) and float(dxy_delta_20d) < -0.5
 
         if dxy_confirm_bear and (
-            (isinstance(us_minus_ecb, (int, float)) and float(us_minus_ecb) > 150.0)
-            or (isinstance(spread_bps, (int, float)) and float(spread_bps) > 180.0)
+            (isinstance(us_minus_ecb, (int, float)) and float(us_minus_ecb) > 100.0)
+            or (isinstance(spread_bps, (int, float)) and float(spread_bps) > 140.0)
             or energy_penalty
         ):
             eur_base = "SHORT_ONLY"
@@ -275,24 +291,29 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
         # Work on a private copy so gate construction never mutates input metrics.
         cross_gates_raw = dict(cross_analysis.get("cross_gates", {}) or {})
 
-        # GBPUSD: legacy relative-value direction must agree with official
-        # UK Bank Rate versus US policy rate.
+        # GBPUSD: relative-value direction confirmed by policy spread or 2Y yield spread momentum.
         gbpusd_legacy = str(cross_gates_raw.get("GBPUSD", "NEUTRAL_RANGE"))
         uk_panel = metrics.get("economic_regime_snapshot", {}).get("uk_policy", {})
         us_minus_uk = uk_panel.get("us_minus_uk_policy_spread_bps")
+        gb_spread_delta = metrics.get("cross_pairs_analysis", {}).get("yield_spreads_bps", {}).get("GB02Y_minus_US02Y_delta_5d")
+        if gb_spread_delta is None:
+            gb_spread_delta = metrics.get("regime_state", {}).get("spread_gb_us_2y_delta_5d")
         gbpusd_confirmed = False
         if isinstance(us_minus_uk, (int, float)):
             if gbpusd_legacy == "SHORT_ONLY":
-                gbpusd_confirmed = float(us_minus_uk) > 25.0
+                gbpusd_confirmed = float(us_minus_uk) > 25.0 or (
+                    float(us_minus_uk) > 0.0 and isinstance(gb_spread_delta, (int, float)) and float(gb_spread_delta) < -5.0
+                )
             elif gbpusd_legacy == "LONG_ONLY":
-                gbpusd_confirmed = float(us_minus_uk) < -25.0
+                gbpusd_confirmed = float(us_minus_uk) < -25.0 or (
+                    float(us_minus_uk) < 0.0 and isinstance(gb_spread_delta, (int, float)) and float(gb_spread_delta) > 5.0
+                )
         if gbpusd_legacy in ("SHORT_ONLY", "LONG_ONLY") and not gbpusd_confirmed:
             cross_gates_raw = dict(cross_gates_raw)
             cross_gates_raw["GBPUSD"] = "NEUTRAL_RANGE"
             cross_analysis["cross_gates"] = cross_gates_raw
 
-        # USDCAD: legacy relative-value direction must agree with the
-        # official Canada policy rate versus the US policy rate.
+        # USDCAD: relative-value direction confirmed by policy spread or 2Y yield spread momentum.
         usdcad_legacy = str(cross_gates_raw.get("USDCAD", "NEUTRAL_RANGE"))
         ca_panel = metrics.get("economic_regime_snapshot", {}).get("canada_policy", {})
         us_minus_ca = ca_panel.get("us_minus_ca_policy_spread_bps")
@@ -307,13 +328,46 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             cross_gates_raw["USDCAD"] = "NEUTRAL_RANGE"
             cross_analysis["cross_gates"] = cross_gates_raw
 
+        # SPX: allow LONG_ONLY when credit stress is benign, liquidity/NFCI are accommodative, and cycle is expansionary
         spx_allowed = bool(
             metrics.get("equity_short_regime", {})
             .get("equity_short_allowed", False)
         )
-        spx_base = "SHORT_ONLY" if spx_allowed else "NEUTRAL_RANGE"
+        hy_oas = credit.get("hy_oas_spread_pct")
+        cycle = metrics.get("cycle_diagnosis", {})
+        cycle_regime = str(cycle.get("primary_regime", ""))
+
+        spx_bullish = []
+        spx_bearish = []
+        if isinstance(hy_oas, (int, float)) and float(hy_oas) < 3.50:
+            spx_bullish.append(f"HY_OAS_benign:{float(hy_oas):.2f}%")
+        elif isinstance(hy_oas, (int, float)) and float(hy_oas) > 4.50:
+            spx_bearish.append(f"HY_OAS_stress:{float(hy_oas):.2f}%")
+
+        if isinstance(nfci, (int, float)) and float(nfci) < 0:
+            spx_bullish.append(f"NFCI_accommodative:{float(nfci):+.2f}")
+        elif isinstance(nfci, (int, float)) and float(nfci) > 0.20:
+            spx_bearish.append(f"NFCI_tightening:{float(nfci):+.2f}")
+
+        if isinstance(liquidity_delta, (int, float)) and float(liquidity_delta) > 0:
+            spx_bullish.append(f"net_liquidity_expansion:{float(liquidity_delta):+.1f}B")
+
+        if "Reflationary" in cycle_regime or "Goldilocks" in cycle_regime or "Recovery" in cycle_regime:
+            spx_bullish.append(f"regime:{cycle_regime}")
+        elif "Stagflation" in cycle_regime or "Deflationary" in cycle_regime:
+            spx_bearish.append(f"regime:{cycle_regime}")
+
+        if spx_allowed:
+            spx_base = "SHORT_ONLY"
+        elif not fast_stress and len(spx_bullish) >= 2 and not spx_bearish:
+            spx_base = "LONG_ONLY"
+        else:
+            spx_base = "NEUTRAL_RANGE"
+
         evidence["SPX"] = {
-            "gate_basis": "equity_short_regime; otherwise neutral",
+            "gate_basis": "equity_regime: credit spreads + NFCI + liquidity + cycle",
+            "bullish_factors": spx_bullish,
+            "bearish_factors": spx_bearish,
             "equity_short_allowed": spx_allowed,
         }
 

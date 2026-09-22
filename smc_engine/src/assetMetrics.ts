@@ -182,3 +182,87 @@ export function calculateDistance(
     isInZone: false,
   });
 }
+
+import { SMC_ADMISSION_RULES } from './smcAdmissionRulebook';
+
+export interface MinimumBoxSizeSpec {
+  readonly minUnits: number;
+  readonly minPercent?: number;
+}
+
+export function getMinimumBoxSize(symbol: string): MinimumBoxSizeSpec {
+  const assetClass = detectAssetClass(symbol);
+  const upper = symbol.toUpperCase();
+  const rules = SMC_ADMISSION_RULES.box;
+
+  if (assetClass === 'FOREX') {
+    const isVolatileCross = rules.FOREX.volatileCrossSymbols.some(token => upper.includes(token));
+    return Object.freeze({
+      minUnits: isVolatileCross ? rules.FOREX.volatileCrossMinUnits : rules.FOREX.defaultMinUnits,
+    });
+  }
+
+  if (assetClass === 'FOREX_JPY') {
+    const isCross = rules.FOREX_JPY.crossPrefixes.some(prefix => upper.startsWith(prefix));
+    return Object.freeze({
+      minUnits: isCross ? rules.FOREX_JPY.crossMinUnits : rules.FOREX_JPY.defaultMinUnits,
+    });
+  }
+
+  if (assetClass === 'COMMODITY') {
+    if (upper.startsWith('XAU')) {
+      return Object.freeze({ minUnits: rules.COMMODITY.xauMinUnits });
+    }
+    return Object.freeze({ minUnits: rules.COMMODITY.defaultMinUnits });
+  }
+
+  if (assetClass === 'CRYPTO') {
+    if (upper.startsWith('BTC')) {
+      return Object.freeze({ minUnits: rules.CRYPTO.btcMinUnits, minPercent: rules.CRYPTO.btcMinPercent });
+    }
+    return Object.freeze({ minUnits: 0, minPercent: rules.CRYPTO.altcoinMinPercent });
+  }
+
+  if (assetClass === 'INDEX') {
+    return Object.freeze({ minUnits: rules.INDEX.minUnits, minPercent: rules.INDEX.minPercent });
+  }
+
+  return Object.freeze({ minUnits: rules.fallbackMinUnits });
+}
+
+export function isBoxTooNarrow(
+  symbol: string,
+  zoneLow: number,
+  zoneHigh: number,
+  atrPips?: number | null
+): boolean {
+  const zoneWidthRaw = Math.max(0, zoneHigh - zoneLow);
+  const midPrice = (zoneHigh + zoneLow) / 2;
+  if (midPrice <= 0 || zoneWidthRaw <= 0) return true;
+
+  const pip = getPipSize(symbol);
+  const zoneWidthUnits = zoneWidthRaw / pip;
+  const zoneWidthPercent = (zoneWidthRaw / midPrice) * 100;
+
+  const minSpec = getMinimumBoxSize(symbol);
+
+  // 1. Minimum percent check (Crypto / Index)
+  if (minSpec.minPercent !== undefined && zoneWidthPercent < minSpec.minPercent) {
+    return true;
+  }
+
+  // 2. Minimum units check (Forex / Commodity pips)
+  if (minSpec.minUnits > 0 && zoneWidthUnits < minSpec.minUnits) {
+    return true;
+  }
+
+  // 3. Dynamic ATR check if ATR is provided (must be at least 25% of 15M ATR)
+  if (atrPips !== undefined && atrPips !== null && atrPips > 0) {
+    if (zoneWidthUnits < SMC_ADMISSION_RULES.box.dynamicAtrFraction * atrPips) {
+      return true;
+    }
+  }
+
+  return false;
+}
+

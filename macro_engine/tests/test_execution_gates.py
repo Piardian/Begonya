@@ -216,3 +216,34 @@ class ExecutionGateTests(unittest.TestCase):
         gates = MacroWorkflowEngine._build_deterministic_gates(metrics)
         self.assertEqual(gates["execution_bias_gates"]["XAUUSD"], "NO_TRADE")
         self.assertEqual(gates["execution_bias_gates"]["EURUSD"], "NO_TRADE")
+
+    def test_spx_can_be_long_only_in_reflationary_benign_credit_regime(self):
+        metrics = {
+            "equity_short_regime": {"equity_short_allowed": False},
+            "credit_spread_analysis": {"hy_oas_spread_pct": 2.68, "stress_level": "Sakin / Düşük Risk"},
+            "financial_conditions_analysis": {"nfci_value": -0.56},
+            "liquidity_dynamics": {"delta_liquidity_billion": 77.2},
+            "cycle_diagnosis": {"primary_regime": "Reflationary Growth with High Real Rates"},
+            "t0_fast_stress_analysis": {"fast_stress_override": False},
+            "cross_pairs_analysis": {"event_freeze": {"active": False}, "cross_gates": {}},
+            "btc_decoupling_analysis": {"recommended_btc_gate": "NEUTRAL_RANGE"},
+            "gold_fiscal_dominance": {"gold_short_allowed": False},
+        }
+        gates = MacroWorkflowEngine._build_deterministic_gates(metrics)
+        self.assertEqual(gates["execution_bias_gates"]["SPX"], "LONG_ONLY")
+
+    def test_btc_can_be_long_only_with_liquidity_expansion_and_loose_nfci(self):
+        metrics = {
+            "real_yield_info": {"real_yield_pct": 2.68},
+            "liquidity_dynamics": {"delta_liquidity_billion": 77.2},
+            "financial_conditions_analysis": {"nfci_value": -0.56},
+            "yield_curve": {"regime": "Range-bound Slope", "delta_10y_5d_bps": 2.0},
+            "t0_fast_stress_analysis": {"fast_stress_override": False},
+            "gold_fiscal_dominance": {"gold_short_allowed": False},
+            "cross_pairs_analysis": {"event_freeze": {"active": False}, "cross_gates": {}},
+            "btc_decoupling_analysis": {"recommended_btc_gate": "LONG_ONLY_ALLOWED_IF_DEBASEMENT"},
+            "equity_short_regime": {"equity_short_allowed": False},
+        }
+        gates = MacroWorkflowEngine._build_deterministic_gates(metrics)
+        self.assertEqual(gates["execution_bias_gates"]["BTC"], "LONG_ONLY")
+

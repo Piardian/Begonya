@@ -862,39 +862,46 @@ class MacroMetricsCalculator:
         }
 
         # D) Sentetik Çapraz & Majör Kur Kapıları (Relative Value Matrix)
-        def _calc_cross_bias(base_s: int, quote_s: int) -> str:
-            # Directional ONLY requires a two-point separation between base and
-            # quote currency scores. A 1-point advantage is treated as
-            # insufficient evidence and remains neutral/range.
+        # Dengeli emtia-emtia veya aynı coğrafi bölge kurları için 2 puan ayrışma gerekirken,
+        # Dolar Majörleri, Yen ve Frank gibi belirgin makro/carry ayrışması olan paritelerde
+        # 1 puanlık net makro avantaj da yönlü kapıyı açar.
+        high_threshold_pairs = {"AUDCAD", "NZDCAD", "EURGBP", "EURAUD"}
+
+        def _calc_cross_bias(base_s: int, quote_s: int, pair_sym: str = "") -> str:
             diff = base_s - quote_s
-            return "LONG_ONLY" if diff >= 2 else "SHORT_ONLY" if diff <= -2 else "NEUTRAL_RANGE"
+            threshold = 2 if pair_sym in high_threshold_pairs else 1
+            if diff >= threshold:
+                return "LONG_ONLY"
+            if diff <= -threshold:
+                return "SHORT_ONLY"
+            return "NEUTRAL_RANGE"
 
         cross_gates = {
             # Çapraz Kurlar
-            "AUDCAD": _calc_cross_bias(aud_score, cad_score),
-            "CADJPY": _calc_cross_bias(cad_score, jpy_score),
-            "GBPJPY": _calc_cross_bias(gbp_score, jpy_score),
-            "AUDJPY": _calc_cross_bias(aud_score, jpy_score),
-            "EURGBP": _calc_cross_bias(eur_score, gbp_score),
-            "EURAUD": _calc_cross_bias(eur_score, aud_score),
-            "NZDCAD": _calc_cross_bias(nzd_score, cad_score),
-            "EURJPY": _calc_cross_bias(eur_score, jpy_score),
+            "AUDCAD": _calc_cross_bias(aud_score, cad_score, "AUDCAD"),
+            "CADJPY": _calc_cross_bias(cad_score, jpy_score, "CADJPY"),
+            "GBPJPY": _calc_cross_bias(gbp_score, jpy_score, "GBPJPY"),
+            "AUDJPY": _calc_cross_bias(aud_score, jpy_score, "AUDJPY"),
+            "EURGBP": _calc_cross_bias(eur_score, gbp_score, "EURGBP"),
+            "EURAUD": _calc_cross_bias(eur_score, aud_score, "EURAUD"),
+            "NZDCAD": _calc_cross_bias(nzd_score, cad_score, "NZDCAD"),
+            "EURJPY": _calc_cross_bias(eur_score, jpy_score, "EURJPY"),
 
             # Dolar Majörleri (SMC Universe Entegrasyonu)
-            "USDCAD": _calc_cross_bias(usd_score, cad_score),
-            "USDJPY": _calc_cross_bias(usd_score, jpy_score),
-            "GBPUSD": _calc_cross_bias(gbp_score, usd_score),
-            "AUDUSD": _calc_cross_bias(aud_score, usd_score),
-            "NZDUSD": _calc_cross_bias(nzd_score, usd_score),
-            "USDCHF": _calc_cross_bias(usd_score, chf_score),
+            "USDCAD": _calc_cross_bias(usd_score, cad_score, "USDCAD"),
+            "USDJPY": _calc_cross_bias(usd_score, jpy_score, "USDJPY"),
+            "GBPUSD": _calc_cross_bias(gbp_score, usd_score, "GBPUSD"),
+            "AUDUSD": _calc_cross_bias(aud_score, usd_score, "AUDUSD"),
+            "NZDUSD": _calc_cross_bias(nzd_score, usd_score, "NZDUSD"),
+            "USDCHF": _calc_cross_bias(usd_score, chf_score, "USDCHF"),
 
             # CHF Çaprazları (SMC Universe Entegrasyonu)
-            "EURCHF": _calc_cross_bias(eur_score, chf_score),
-            "GBPCHF": _calc_cross_bias(gbp_score, chf_score),
-            "AUDCHF": _calc_cross_bias(aud_score, chf_score),
-            "CADCHF": _calc_cross_bias(cad_score, chf_score),
-            "NZDCHF": _calc_cross_bias(nzd_score, chf_score),
-            "CHFJPY": _calc_cross_bias(chf_score, jpy_score),
+            "EURCHF": _calc_cross_bias(eur_score, chf_score, "EURCHF"),
+            "GBPCHF": _calc_cross_bias(gbp_score, chf_score, "GBPCHF"),
+            "AUDCHF": _calc_cross_bias(aud_score, chf_score, "AUDCHF"),
+            "CADCHF": _calc_cross_bias(cad_score, chf_score, "CADCHF"),
+            "NZDCHF": _calc_cross_bias(nzd_score, chf_score, "NZDCHF"),
+            "CHFJPY": _calc_cross_bias(chf_score, jpy_score, "CHFJPY"),
         }
 
         # E) SOL / Kripto Göreli Güç & 4H CHoCH (Market Structure Shift) Kalkanı

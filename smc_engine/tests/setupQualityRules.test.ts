@@ -131,8 +131,8 @@ describe('Setup Quality Rulebook', () => {
       detector: detector({
         premiumDiscount: {
           fourHour: { status: 'discount', fibValue: 0.2, rangeHigh: 1.11, rangeLow: 1.1 },
-          oneHour: { status: 'discount', fibValue: 0.2, rangeHigh: 1.11, rangeLow: 1.1 },
-          fifteenMinute: { status: 'discount', fibValue: 0.2, rangeHigh: 1.11, rangeLow: 1.1 },
+          oneHour: { status: 'premium', fibValue: 0.7, rangeHigh: 1.11, rangeLow: 1.1 },
+          fifteenMinute: { status: 'premium', fibValue: 0.7, rangeHigh: 1.11, rangeLow: 1.1 },
         },
       }),
       v1Grade,
@@ -158,6 +158,79 @@ describe('Setup Quality Rulebook', () => {
     expect(assessment.decision.hardReject).toBe(true);
     expect(assessment.grade.value).toBe('Reject');
     expect(assessment.decision.appliedRules?.hardRejects.map(rule => rule.id)).toContain('MALFORMED_POI_ZONE');
+  });
+
+  test('hard rejects CHoCH setups without liquidity sweep', () => {
+    const assessment = evaluateSetupIntelligenceV2({
+      detector: detector({
+        structure: {
+          eventType: 'CHoCH',
+          event: structureEvent,
+          trend15m: 'bearish',
+        },
+        sweep: {
+          present: false,
+          type: 'Unknown',
+          timestamp: null,
+          source: 'unknown',
+        },
+      }),
+      v1Grade,
+    });
+
+    expect(assessment.decision.hardReject).toBe(true);
+    expect(assessment.decision.appliedRules?.hardRejects.map(rule => rule.id)).toContain('CHOCH_WITHOUT_SWEEP');
+  });
+
+  test('hard rejects POI zones that are too narrow (< 7 pips in Forex)', () => {
+    const assessment = evaluateSetupIntelligenceV2({
+      detector: detector({
+        symbol: 'EURUSD',
+        poi: {
+          zoneHigh: 1.1044,
+          zoneLow: 1.1040, // 4 pips, less than 7 pips minimum
+        },
+      }),
+      v1Grade,
+    });
+
+    expect(assessment.decision.hardReject).toBe(true);
+    expect(assessment.decision.appliedRules?.hardRejects.map(rule => rule.id)).toContain('POI_BOX_TOO_NARROW');
+  });
+
+  test('hard rejects P/D territory conflict (BUY in 15M Premium)', () => {
+    const assessment = evaluateSetupIntelligenceV2({
+      detector: detector({
+        direction: 'long',
+        premiumDiscount: {
+          fourHour: { status: 'discount', fibValue: 0.2, rangeHigh: 1.11, rangeLow: 1.1 },
+          oneHour: { status: 'discount', fibValue: 0.2, rangeHigh: 1.11, rangeLow: 1.1 },
+          fifteenMinute: { status: 'premium', fibValue: 0.8, rangeHigh: 1.11, rangeLow: 1.1 },
+        },
+      }),
+      v1Grade,
+    });
+
+    expect(assessment.decision.hardReject).toBe(true);
+    expect(assessment.decision.appliedRules?.hardRejects.map(rule => rule.id)).toContain('PD_TERRITORY_CONFLICT');
+  });
+
+  test('exempts fresh BOS POIs from POI_NEUTRAL_OR_WEAK grade cap', () => {
+    const assessment = evaluateSetupIntelligenceV2({
+      detector: detector({
+        structure: {
+          eventType: 'BOS',
+          event: structureEvent,
+          trend15m: 'bearish',
+        },
+        poi: {
+          testCount: 0,
+        },
+      }),
+      v1Grade,
+    });
+
+    expect(assessment.decision.appliedRules?.gradeCaps.map(rule => rule.id)).not.toContain('POI_NEUTRAL_OR_WEAK');
   });
 
   test('rulebook can be evaluated independently of grade assignment', () => {

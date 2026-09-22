@@ -521,6 +521,9 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
         )
     )
 
+    nfp_val = cycle.get("nfp_value")
+    nfp_display = f"{_fmt(nfp_val, '.1f')}K" if isinstance(nfp_val, (int, float)) else "Takvimde Yok"
+
     # HTML Bülteni Derle
     msg = f"""🌺 <b>BEGONYA | GÜNLÜK SABAH MAKRO BÜLTENİ</b>
 📅 <i>{now_str} (TSİ)</i>
@@ -534,7 +537,7 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
 📊 <b>KURUMSAL MAKRO GÖSTERGELER & MATRİS:</b>
 • <b>1. İktisadi Büyüme & Sanayi:</b>
   └ Bakır/Altın Rasyosu: {_fmt(cg.get('current_ratio'), '.3f')} (4 Haftalık İvme: %{_fmt(cg.get('delta_4w_pct'), '.2f')} -> {html.escape(str(cg.get('momentum_signal', 'VERİ YOK')))})
-  └ İstihdam Piyasası: İşsizlik %{_fmt(cycle.get('unemployment_rate'), '.2f')} | NFP: {_fmt(cycle.get('nfp_value'), '.1f')}K | PAYEMS MoM: {_fmt(cycle.get('payroll_change_mom_k'), '.1f')}K | ICSA: {_fmt(claims.get('initial_claims_k'), '.1f')}K
+  └ İstihdam Piyasası: İşsizlik %{_fmt(cycle.get('unemployment_rate'), '.2f')} | NFP: {nfp_display} | PAYEMS MoM: {_fmt(cycle.get('payroll_change_mom_k'), '.1f')}K | ICSA: {_fmt(claims.get('initial_claims_k'), '.1f')}K
 • <b>2. Kredi & Şirket İflas Riski:</b>
   └ HY OAS Kredi Makası: %{_fmt(credit.get('hy_oas_spread_pct'), '.2f')} ({html.escape(str(credit.get('stress_level', 'VERİ YOK')))})
   └ HYG/LQD Canlı Oranı: {_fmt(t0_stress.get('hyg_lqd_ratio'), '.4f')} (ayrışma metriği)
