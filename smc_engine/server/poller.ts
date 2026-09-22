@@ -123,6 +123,9 @@ export async function pollAndProcess(
             const familyCheck = setupFamilyGuard.shouldAllow(candidate);
             if (!familyCheck.allowed) {
               console.log(`[Signal: ${signalId}] Suppressed by SetupFamilyGuard: ${familyCheck.reason}`);
+              for (const k of pendingKeys) {
+                notifiedStore.clearPending(k);
+              }
               continue;
             }
 

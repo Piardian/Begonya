@@ -73,7 +73,7 @@
       "quote_currency": "USD"
     },
     "SOLUSD": {
-      "macro_key": "BTC",
+      "macro_key": "SOL",
       "base_currency": "SOL",
       "quote_currency": "USD"
     },
