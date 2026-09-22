@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-09-22 22:11:41",
-  "primary_regime": "Reflationary Growth & Expansionary Liquidity",
+  "timestamp": "2026-09-22 22:28:45",
+  "primary_regime": "Reflationary Growth & Bear Flattening",
   "volatility_risk_score": 0.28,
   "capital_preservation_mode": false,
   "btc_decoupling_active": false,
@@ -95,7 +95,7 @@
       ],
       "bearish_factors": [
         "real_yield=restrictive:2.68%",
-        "DXY_20d=+1.62%"
+        "DXY_20d=+1.60%"
       ],
       "minimum_for_long_only": 2
     },
@@ -106,7 +106,7 @@
       ],
       "bearish_factors": [
         "real_yield:2.68%",
-        "DXY_20d:+1.62%"
+        "DXY_20d:+1.60%"
       ],
       "legacy_recommendation": "LONG_ONLY_ALLOWED_IF_DEBASEMENT",
       "minimum_for_long_only": 2
@@ -115,7 +115,7 @@
       "gate_basis": "US-ECB policy spread + US-DE 10Y spread + DXY confirmation + EA inflation/energy context",
       "us_minus_ecb_policy_spread_bps": 138.0,
       "transatlantic_spread_bps": 178.8,
-      "dxy_delta_20d_pct": 1.62,
+      "dxy_delta_20d_pct": 1.6,
       "hicp_direction": "STABLE",
       "energy_penalty": false,
       "bullish_factors": [],
@@ -172,9 +172,9 @@
   "asset_biases": {
     "XAUUSD": "Neutral",
     "BTC": "Bullish",
-    "DXY": "Strong Bullish",
+    "DXY": "Bullish",
     "EURUSD": "Bearish",
-    "US10Y": "Bullish",
+    "US10Y": "Strong Bullish",
     "SPX": "Bullish"
   },
   "regime_state": {
@@ -186,9 +186,9 @@
     "active_event_info": "",
     "vix_pct_60d": 1.7,
     "brent_pct_60d": 83.3,
-    "brent_level": 99.4,
-    "brent_roc_20d": 7.84,
-    "brent_roc_5d": -8.6,
+    "brent_level": 99.14,
+    "brent_roc_20d": 7.56,
+    "brent_roc_5d": -8.84,
     "spread_ca_us_2y_bps": -167.2,
     "spread_ca_us_2y_delta_5d": -3.7,
     "spread_de_us_2y_bps": -127.4,
@@ -202,7 +202,7 @@
     "spread_au_nz_2y_bps": 137.0,
     "spread_au_nz_2y_delta_5d": -8.0,
     "iron_ore_roc_20d": 2.42,
-    "dairy_gdt_roc_20d": -5.72,
+    "dairy_gdt_roc_20d": -5.54,
     "sol_btc_roc_5d": -8.33,
     "sol_btc_4h_structure_broken": false,
     "sol_btc_structure_bullish": false,
@@ -220,21 +220,21 @@
       "CAD": {
         "score": 0,
         "yield_factor": "CA-US 2Y Spread Delta: -3.7 bps (-1)",
-        "commodity_factor": "Brent 20G RoC: +7.8% (+1)",
+        "commodity_factor": "Brent 20G RoC: +7.6% (+1)",
         "risk_factor": "VIX 14.2 (+1)",
         "summary": "Dengeli/Nötr CAD"
       },
       "AUD": {
         "score": 1,
         "yield_factor": "AU-US 2Y Spread Delta: +35.3 bps (+1)",
-        "commodity_factor": "Bakır/Altın: +12.9% & Demir: +2.4% (+1)",
+        "commodity_factor": "Bakır/Altın: +12.0% & Demir: +2.4% (+1)",
         "risk_factor": "Yüksek Beta / VIX 14.2 (+1)",
         "summary": "Çin/Emtia ve Asya risk iştahı destekliyor"
       },
       "NZD": {
         "score": 0,
         "yield_factor": "AU-NZ 2Y Spread Delta: -8.0 bps (+1)",
-        "commodity_factor": "GDT Süt RoC: -5.7% (-1)",
+        "commodity_factor": "GDT Süt RoC: -5.5% (-1)",
         "risk_factor": "Asya Risk İştahı / VIX 14.2 (+1)",
         "summary": "Dengeli NZD"
       },
@@ -255,21 +255,21 @@
       "GBP": {
         "score": -1,
         "yield_factor": "GB-US 2Y Spread Delta: -9.5 bps (-1)",
-        "commodity_factor": "DXY Korelasyonu: +0.96%",
+        "commodity_factor": "DXY Korelasyonu: +0.94%",
         "risk_factor": "Avrupa Risk İştahı / VIX 14.2 (+1)",
         "summary": "BOE faiz indirimi veya faiz erozyonu aleyhte"
       },
       "USD": {
         "score": 1,
         "yield_factor": "US 2Y Değişim: +3.7 bps (+0)",
-        "commodity_factor": "DXY 5G Momentum: +0.96% (+1)",
+        "commodity_factor": "DXY 5G Momentum: +0.94% (+1)",
         "risk_factor": "Küresel Likidite ve US Exceptionalism",
         "summary": "Güçlü Dolar (Getiri ve DXY ivmesi lehte)"
       },
       "CHF": {
         "score": -1,
         "yield_factor": "SNB Faiz Farkı (Düşük Politika Faizi Dezavantajı: Aktif)",
-        "commodity_factor": "Altın Desteği: +0.48% 5G (+0)",
+        "commodity_factor": "Altın Desteği: +1.42% 5G (+1)",
         "risk_factor": "Güvenli Liman Talebi / VIX 14.2 (-1)",
         "summary": "Düşük oynaklıkta SNB faiz dezavantajı (Zayıf CHF)"
       }
@@ -297,17 +297,17 @@
       "CHFJPY": "SHORT_ONLY",
       "SOL": "NEUTRAL_RANGE"
     },
-    "copper_gold_delta_4w_pct": 12.87,
+    "copper_gold_delta_4w_pct": 12.02,
     "transatlantic_spread_bps": 178.8,
     "equity_short_allowed": false,
     "gold_short_allowed": false,
     "vix_complacent": true,
     "state_source": "explicit_previous_regime_state"
   },
-  "macro_rationale": "Gelismiş makro göstergeler, ABD ekonomisinin dirençli istihdam (ICSA 196K, Isizlik %4.1) ve ivmelenen kuresel sanayi momentumu (Bakir/Altin haftalik %12.87) ile desteklenen bir 'Reflation' rejiminde oldugunu doğrulamaktadır. Net likidite 5.87T Dolar seviyesinde genişlemeye devam etmekte, NFCI (-0.56) ve HY OAS (%2.68) gibi finansal ve kredi koşulları oldukça gevşek kalmayı sürdürmektedir. Reel getirilerin %2.68 seviyesine yukselmesi ve 10 yıllık tahvil faizinin %4.968'e tırmanması (Bear Flattening), Dolar endeksini (DXY 100.604) ve Transatlantik faiz makasını (+178.8 bps ABD lehine) destekleyerek EURUSD üzerinde yapısal baskı oluşturmaktadır. Altın, yuksek reel getiriler ile guçlu DXY baskısına karsı yuksek kuresel likidite ve küresel toparlanma arasında sıkışarak nötr bir görünüm sergilerken; Bitcoin, duşuk tahvil oynaklığı (VIX 14.21), gevsek kredi koşulları ve egemen borç genişlemesi temasıyla boğa eğilimini korumaktadır. Piyasa ima edilen politika patikası ve Fed Funds Vadeli İşlemler veri kaynaklarının 'UNAVAILABLE' olması nedeniyle vadeli faiz patikasına dayalı kesin çıkarımlar yapılmamış, doğrudan mevcut reel faiz ve spread verileri baz alınmıştır.",
-  "horizon_today": "T-0 anlık stres göstergeleri (VIX 14.21, HY OAS %2.68) sakindir. ABD faizlerindeki yukarı yönlü baskı DXY'ı desteklerken, paritelerde ve emtialarda tepki hareketlerinin sınırlı kalması ve Dolar ivmesinin teyit edilmesi beklenmektedir.",
-  "horizon_this_week": "Genişleyen net likidite ($5.87T) ve sıkı istihdam piyasası tahvil getirilerini yukarıda tutmaya devam edecektir. ABD-Almanya faiz makasının ABD lehine kalması EURUSD üzerindeki satış baskısını sürdürürken, risk iştahı (SPX, BTC) kredi koşullarının desteğiyle olumlu seyrini koruyabilir.",
-  "horizon_this_month": "Reflasyonist büyüme ve genişlemeci likidite rejimi altında ABD istisnailiği ve getiri avantajı ana tema olmayı sürdürecektir. Yüksek reel getiriler Altın üzerindeki yukarı yönlü marjinal potansiyeli sınırlarken, borç debasement teması ve genişleyen likidite kripto varlıklar için orta vadeli rüzgar yaratmaya devam edecektir.",
+  "macro_rationale": "Piyasa rejimini ABD dayanıklılığı, küresel sanayi momentumundaki güçlenme (%12.02 Bakır/Altın ivmesi) ve 'Reflationary Growth' tanımlamaktadır. ABD 10 yıllık reel getirisinin %2.68 seviyesine yükselmesi ve getiri eğrisinde gözlemlenen Bear Flattening (US10Y %4.968, 2Y-10Y +20 bps) tahvil faizlerinde yukarı yönlü baskı oluşturmaktadır. DXY, +178.8 bps seviyesindeki ABD-Almanya faiz makası ve güçlü ABD istihdam verileri (ICSA 196K) desteğiyle 100.587 seviyesinde pozitif ivmesini korumaktadır (EURUSD bearish). Yüksek reel faiz ve güçlenen DXY, XAUUSD için yapısal bir baskı oluştursa da küresel likidite genişlemesi ($77.4B Δ) ve risk iştahı fiyatı dengede tutmaktadır (çatışan sinyaller nedeniyle nötr). Finansal koşulların gevşek kalması (NFCI -0.56, HY OAS %2.68) ve düşük oynaklık (VIX 14.21), egemen borç genişlemesi/debasement temasını destekleyerek BTC ve SPX tarafındaki risk iştahını pozitif tarafta tutmaktadır. PMI/Sanayi verilerinin eksikliği (UNAVAILABLE) ve Fed vadeli işlemlerindeki sıkılaşma rezonansı nedeniyle risk çarpanı 0.85 olarak ölçülü tutulmuştur.",
+  "horizon_today": "Günlük ufukta düşük VIX ve genişleyen finansal koşullarla risk iştahı olumludur. US10Y üzerindeki yukarı yönlü faiz baskısı ve DXY gücü takip edilecek; XAUUSD'de reel faiz baskısına karşı likidite dengesi izlenmelidir.",
+  "horizon_this_week": "Haftalık bazda genişleyen küresel net likidite ($77.4B) piyasayı desteklemeye devam ederken, TGA vergi tahsilat döneminin geçici likidite çekişleri izlenecektir. ABD getiri eğrisindeki yataylaşma ve sıkılaşan Fed vadeli fiyatlaması tahvil piyasasında oynaklığı canlı tutabilir.",
+  "horizon_this_month": "Aylık perspektifte Reflation rejiminin sürdürülebilirliği, ABD işgücü piyasası soğuma hızı ve transatlantik faiz makasının durumu belirleyici olacaktır. Dolar getiri avantajını korudukça majör dövizler baskı altında kalmaya devam edebilir.",
   "economic_regime_snapshot": {
     "status": "COMPLETE",
     "methodology_version": "economic-panel-v2",
@@ -409,13 +409,15 @@
       "market_vs_policy": "MARKET_PRICES_HIGHER_POLICY_PATH",
       "money_market_note": "SOFR is the secured overnight benchmark and is treated as a money-market anchor, not as a forward OIS curve.",
       "fed_funds_futures": {
-        "status": "UNAVAILABLE",
-        "source": "Yahoo Finance ZQ=F optional front 30-Day Fed Funds future",
-        "market_implied_rate_pct": null,
-        "vs_dff_bps": null,
-        "reprice_1d_bps": null,
-        "reprice_5d_bps": null,
-        "methodology_warning": "Fed Funds futures feed unavailable; no synthetic rate is substituted."
+        "status": "AVAILABLE",
+        "source": "Yahoo Finance ZQ=F; CME/CBOT 30-Day Fed Funds Futures",
+        "contract_price": 95.975,
+        "market_implied_rate_pct": 4.025,
+        "vs_dff_bps": 14.5,
+        "reprice_1d_bps": 27.8,
+        "reprice_5d_bps": 28.8,
+        "interpretation": "higher_future_rate",
+        "methodology_note": "Implied rate is deterministic: 100 - futures price. Front-month only; not equivalent to a full CME FedWatch meeting probability curve."
       }
     },
     "interpretation_guardrails": {
@@ -434,12 +436,15 @@
       "source": "FRED DFF + New York Fed SOFR"
     },
     "front_fed_funds_future": {
-      "status": "UNAVAILABLE",
-      "market_implied_rate_pct": null,
-      "vs_dff_bps": null,
-      "reprice_1d_bps": null,
-      "reprice_5d_bps": null,
-      "methodology_warning": "No Fed Funds futures observation supplied; no synthetic rate is substituted."
+      "status": "AVAILABLE",
+      "source": "yfinance (ZQ=F)",
+      "contract": null,
+      "contract_price": 95.975,
+      "market_implied_rate_pct": 4.025,
+      "vs_dff_bps": 14.5,
+      "reprice_1d_bps": 27.8,
+      "reprice_5d_bps": 28.8,
+      "methodology_note": "30-Day Fed Funds futures price is converted deterministically as 100 minus price. A front contract is an implied average policy rate for its delivery month, not a full meeting-probability curve."
     },
     "fed_funds_futures_curve": {
       "status": "UNAVAILABLE",

@@ -65,11 +65,9 @@ MARKET_SYMBOLS = {
     "IRON_ORE": "TIO=F",
     "DAIRY_GDT": "DC=F",
     "NZ02Y": "NZD2Y=X",
+    "FED_FUNDS_FUTURES": "ZQ=F",
 }
 
-# Policy expectations are provider-optional and caller-supplied to the policy panel.
-# We deliberately do not auto-fetch ZQ=F in the required market ingestion loop because
-# an unavailable optional policy feed must not abort the core macro pipeline.
 OPTIONAL_POLICY_SYMBOLS = {
     "FED_FUNDS_FUTURES": "ZQ=F",
 }
