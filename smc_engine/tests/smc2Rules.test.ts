@@ -1,4 +1,4 @@
-import { MAX_POI_AGE_MS, isDistanceExcessive } from '../server/pipeline';
+import { MAX_POI_AGE_MS, isDistanceExcessive, calculateWeekendDowntimeMs, getEffectiveMarketAgeMs } from '../server/pipeline';
 import { calculateGrade, GradeInput } from '../src/gradeCalculator';
 import { SetupFamilyGuard } from '../server/setupFamilyGuard';
 import type { NotificationCandidate } from '../server/pipeline';
@@ -35,10 +35,50 @@ function dummyInput(): GradeInput {
 }
 
 describe('SMC Engine 2.0 Hardening Rules (Benchmark Driven)', () => {
-  describe('Rule 1: 48-Hour POI TTL', () => {
+  describe('Rule 1: 48-Hour POI TTL & Weekend-Aware Calculation', () => {
     it('should define MAX_POI_AGE_MS as 48 hours exactly', () => {
       expect(MAX_POI_AGE_MS).toBe(48 * 60 * 60 * 1000);
       expect(MAX_POI_AGE_MS).toBe(172800000);
+    });
+
+    it('should subtract 48h of weekend closure for Forex between Friday 14:00 and Monday 08:00', () => {
+      // Friday 14:00 UTC (2026-09-18 14:00:00 UTC)
+      const friday14 = Date.UTC(2026, 8, 18, 14, 0, 0, 0);
+      // Monday 08:00 UTC (2026-09-21 08:00:00 UTC)
+      const monday08 = Date.UTC(2026, 8, 21, 8, 0, 0, 0);
+
+      // Raw elapsed = 66 hours
+      const rawElapsed = monday08 - friday14;
+      expect(rawElapsed).toBe(66 * 3600 * 1000);
+
+      // Weekend downtime = 48 hours (Fri 21:00 to Sun 21:00 UTC)
+      const downtime = calculateWeekendDowntimeMs(friday14, monday08);
+      expect(downtime).toBe(48 * 3600 * 1000);
+
+      // Effective market age = 18 hours (<= 48h MAX_POI_AGE_MS) -> POI remains fresh!
+      const effectiveAge = getEffectiveMarketAgeMs(monday08, friday14, 'EURUSD');
+      expect(effectiveAge).toBe(18 * 3600 * 1000);
+      expect(effectiveAge <= MAX_POI_AGE_MS).toBe(true);
+    });
+
+    it('should NOT subtract weekend closure for 24/7 Crypto assets', () => {
+      const friday14 = Date.UTC(2026, 8, 18, 14, 0, 0, 0);
+      const monday08 = Date.UTC(2026, 8, 21, 8, 0, 0, 0);
+
+      const cryptoAge = getEffectiveMarketAgeMs(monday08, friday14, 'BTCUSD');
+      expect(cryptoAge).toBe(66 * 3600 * 1000);
+      expect(cryptoAge > MAX_POI_AGE_MS).toBe(true);
+    });
+
+    it('should expire Forex POIs that genuinely exceed 48 active market hours', () => {
+      // Wednesday 10:00 UTC to Tuesday 14:00 UTC of next week
+      const wednesday10 = Date.UTC(2026, 8, 16, 10, 0, 0, 0);
+      const tuesday14 = Date.UTC(2026, 8, 22, 14, 0, 0, 0);
+
+      const effectiveAge = getEffectiveMarketAgeMs(tuesday14, wednesday10, 'EURUSD');
+      // 148h elapsed - 48h weekend = 100h active market time
+      expect(effectiveAge).toBe(100 * 3600 * 1000);
+      expect(effectiveAge > MAX_POI_AGE_MS).toBe(true);
     });
   });
 
@@ -96,6 +136,34 @@ describe('SMC Engine 2.0 Hardening Rules (Benchmark Driven)', () => {
       expect(result.grade).toBe('B+');
       expect(result.entryAllowed).toBe(false);
       expect(result.blockReasons).toContain('15M and 1H intraday premium/discount context conflicts with the trade');
+    });
+
+    it('should permit entry at Grade A when allowTrendContinuationPD is true in a runaway trend', () => {
+      const input = dummyInput();
+      input.tradeDirection = 'short';
+      input.bias4H = 'bearish';
+      input.bias1H = 'bearish';
+      input.pd4H = { status: 'discount', fibValue: 0.2, rangeHigh: 100, rangeLow: 50 }; // Price ran down into 4H discount
+      input.pd1H = { status: 'discount', fibValue: 0.2, rangeHigh: 100, rangeLow: 50 };
+      input.pd15M = { status: 'premium', fibValue: 0.8, rangeHigh: 80, rangeLow: 60 };  // Local 15M entry is in local premium!
+      input.allowTrendContinuationPD = true;
+
+      const result = calculateGrade(input);
+      expect(result.entryAllowed).toBe(true);
+      expect(result.grade).toBe('A');
+      expect(result.blockReasons).not.toContain('4H premium/discount context conflicts with the trade');
+    });
+
+    it('should block entry when allowTrendContinuationPD is false/omitted (preserving default guardrails)', () => {
+      const input = dummyInput();
+      input.tradeDirection = 'short';
+      input.bias4H = 'bearish';
+      input.bias1H = 'bearish';
+      input.pd4H = { status: 'discount', fibValue: 0.2, rangeHigh: 100, rangeLow: 50 };
+
+      const result = calculateGrade(input);
+      expect(result.entryAllowed).toBe(false);
+      expect(result.blockReasons).toContain('4H premium/discount context conflicts with the trade');
     });
   });
 

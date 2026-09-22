@@ -19,6 +19,7 @@ export interface GradeInput {
   pd15M?: PremiumDiscountState;
   liquidityMagnet?: LiquidityMagnet | null;
   opposingObstacle?: OpposingObstacle | null;
+  allowTrendContinuationPD?: boolean;
 }
 
 export interface GradeResult {
@@ -283,10 +284,12 @@ export function calculateGrade(input: GradeInput): GradeResult {
   if (is1HOpposite && input.modelState.model === 'model2_continuation') {
     blockReasons.push('1H bias is not aligned with 4H bias for continuation model');
   }
-  if (is4HPDDirectlyOpposite) {
+  const allowContinuationPD = Boolean(input.allowTrendContinuationPD);
+
+  if (is4HPDDirectlyOpposite && !allowContinuationPD) {
     blockReasons.push('4H premium/discount context conflicts with the trade');
   }
-  if (is1HPDDirectlyOpposite && (input.pd4H.status === 'eq' || is4HPDDirectlyOpposite)) {
+  if (is1HPDDirectlyOpposite && (input.pd4H.status === 'eq' || (is4HPDDirectlyOpposite && !allowContinuationPD))) {
     blockReasons.push('1H and HTF premium/discount context conflicts with the trade');
   }
   if (is1HPDDirectlyOpposite && is15MPDOpposite) {
@@ -310,8 +313,8 @@ export function calculateGrade(input: GradeInput): GradeResult {
 
   // Category minimums check for entryAllowed
   const meetsCategoryMinimums =
-    !is4HPDDirectlyOpposite &&
-    !(is1HPDDirectlyOpposite && (input.pd4H.status === 'eq' || is4HPDDirectlyOpposite)) &&
+    !(is4HPDDirectlyOpposite && !allowContinuationPD) &&
+    !(is1HPDDirectlyOpposite && (input.pd4H.status === 'eq' || (is4HPDDirectlyOpposite && !allowContinuationPD))) &&
     !(is1HPDDirectlyOpposite && is15MPDOpposite) &&
     input.bias4H === expected4HBias &&
     input.modelState.model !== 'none' &&

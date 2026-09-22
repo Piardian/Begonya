@@ -151,7 +151,7 @@ function evaluateHtfConsistency(candidate: NotificationCandidate, rejectionReaso
   const direct4HPdConflict =
     (direction === 'long' && candidate.pd4H === 'premium') ||
     (direction === 'short' && candidate.pd4H === 'discount');
-  if (direct4HPdConflict) {
+  if (direct4HPdConflict && !candidate.allowTrendContinuationPD) {
     rejectionReason.push('4H premium/discount context conflicts with the trade');
     return 'FAIL';
   }

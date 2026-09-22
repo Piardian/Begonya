@@ -147,6 +147,30 @@ describe('Signal Validation Gate', () => {
     expect(result.htfConsistency).toBe('PASS');
   });
 
+  test('permits setups with 4H PD conflict when allowTrendContinuationPD is true', () => {
+    const continuationCandidate = candidate({
+      tradeDirection: 'short',
+      bias4H: 'bearish',
+      bias1H: 'bearish',
+      pd4H: 'discount',
+      allowTrendContinuationPD: true,
+    });
+    const result = evaluateSignalValidationGate(continuationCandidate, execution);
+    expect(result.htfConsistency).toBe('PASS');
+  });
+
+  test('rejects setups with 4H PD conflict when allowTrendContinuationPD is not set', () => {
+    const conflictingCandidate = candidate({
+      tradeDirection: 'short',
+      bias4H: 'bearish',
+      bias1H: 'bearish',
+      pd4H: 'discount',
+    });
+    const result = evaluateSignalValidationGate(conflictingCandidate, execution);
+    expect(result.htfConsistency).toBe('FAIL');
+    expect(result.rejectionReason).toContain('4H premium/discount context conflicts with the trade');
+  });
+
   test('rejects POI and structure direction mismatches', () => {
     const poiMismatch = candidate();
     poiMismatch.poi.direction = 'bearish';

@@ -1,6 +1,6 @@
 import { CandleStore } from './candleStore';
 import { NotifiedStore } from './notifiedStore';
-import { OrderBlock, FVG, Candle, PremiumDiscountState } from '../src/types';
+import { OrderBlock, FVG, Candle, PremiumDiscountState, DisplacementQuality } from '../src/types';
 import { detectSwings } from '../src/swingDetector';
 import { detectStructure } from '../src/structureDetector';
 import { calculatePremiumDiscount } from '../src/premiumDiscountCalculator';
@@ -10,7 +10,7 @@ import { findDisplacementLeg } from '../src/displacementLeg';
 import { scoreDisplacementQuality } from '../src/displacementQualityScorer';
 import { calculateRange } from '../src/rangeCalculator';
 import { detectSweeps } from '../src/sweepDetector';
-import { determineModel } from '../src/modelDeterminer';
+import { determineModel, ModelState } from '../src/modelDeterminer';
 import { countOBTests, countFVGTests } from '../src/poiTestCounter';
 import { calculateGrade, GradeInput, GradeResult } from '../src/gradeCalculator';
 import { evaluateSignalQuality, SignalQualityResult } from '../src/signalQualityEngine';
@@ -23,9 +23,10 @@ import { recordPipelineFilterTelemetry, recordPoiLifecycleTelemetry } from './te
 import { Symbol } from './universe';
 import { getPipSize, calculateDistance, detectAssetClass } from '../src/assetMetrics';
 import { consolidateCandidates } from '../src/poiConsolidator';
-import { MacroGateEvaluation } from './macroGateAdapter';
+import { MacroGateAdapter, MacroGateEvaluation } from './macroGateAdapter';
 import { detectLiquidityMagnet, LiquidityMagnet } from '../src/liquidityMagnetDetector';
 import { detectOpposingObstacle, OpposingObstacle } from '../src/opposingObstacleDetector';
+import { isCryptoSymbol } from './killzone';
 
 export interface NotificationCandidate {
   symbol: Symbol;
@@ -58,6 +59,7 @@ export interface NotificationCandidate {
   liquidityMagnet?: LiquidityMagnet | null;
   opposingObstacle?: OpposingObstacle | null;
   macroEvaluation?: MacroGateEvaluation;
+  allowTrendContinuationPD?: boolean;
 }
 
 export function runPipeline(
@@ -275,8 +277,9 @@ export function runPipeline(
     const formedTimestamp = candles15mCast[ob.formedAtIndex].timestamp;
     const currentMarketTime = candles15mCast[lastIndex15m].timestamp;
 
-    // 48-Hour POI TTL Filter (Anti-Stale / Anti-Ghost POI)
-    if (currentMarketTime - formedTimestamp > MAX_POI_AGE_MS) {
+    // 48-Hour POI TTL Filter (Anti-Stale / Anti-Ghost POI with weekend-awareness)
+    const poiAgeMs = getEffectiveMarketAgeMs(currentMarketTime, formedTimestamp, symbol);
+    if (poiAgeMs > MAX_POI_AGE_MS) {
       reject('poi_expired_ttl_48h');
       observePoiLifecycle('OB', ob, formedTimestamp, ['poi_expired_ttl_48h']);
       continue;
@@ -338,6 +341,16 @@ export function runPipeline(
       activeFVGs15m: fvgs,
     });
 
+    const allowTrendContinuationPD = shouldAllowTrendContinuationPD(
+      symbol,
+      tradeDirection,
+      bias4H,
+      bias1H,
+      pd15M,
+      modelState,
+      dq
+    );
+
     // Build GradeInput
     const gradeInput: GradeInput = {
       tradeDirection,
@@ -354,6 +367,7 @@ export function runPipeline(
       pd15M,
       liquidityMagnet,
       opposingObstacle,
+      allowTrendContinuationPD,
     };
 
     const gradeResult = calculateGrade(gradeInput);
@@ -425,6 +439,7 @@ export function runPipeline(
         admissionProfile: admissionProfile(),
         liquidityMagnet,
         opposingObstacle,
+        allowTrendContinuationPD,
       });
     } else {
       recordGradeBlockOverlap(gradeResult.blockReasons);
@@ -441,8 +456,9 @@ export function runPipeline(
     const formedTimestamp = candles15mCast[fvg.middleCandleIndex].timestamp;
     const currentMarketTime = candles15mCast[lastIndex15m].timestamp;
 
-    // 48-Hour POI TTL Filter (Anti-Stale / Anti-Ghost POI)
-    if (currentMarketTime - formedTimestamp > MAX_POI_AGE_MS) {
+    // 48-Hour POI TTL Filter (Anti-Stale / Anti-Ghost POI with weekend-awareness)
+    const poiAgeMs = getEffectiveMarketAgeMs(currentMarketTime, formedTimestamp, symbol);
+    if (poiAgeMs > MAX_POI_AGE_MS) {
       reject('poi_expired_ttl_48h');
       observePoiLifecycle('FVG', fvg, formedTimestamp, ['poi_expired_ttl_48h']);
       continue;
@@ -504,6 +520,16 @@ export function runPipeline(
       activeFVGs15m: fvgs,
     });
 
+    const allowTrendContinuationPD = shouldAllowTrendContinuationPD(
+      symbol,
+      tradeDirection,
+      bias4H,
+      bias1H,
+      pd15M,
+      modelState,
+      dq
+    );
+
     // Build GradeInput
     const gradeInput: GradeInput = {
       tradeDirection,
@@ -520,6 +546,7 @@ export function runPipeline(
       pd15M,
       liquidityMagnet,
       opposingObstacle,
+      allowTrendContinuationPD,
     };
 
     const gradeResult = calculateGrade(gradeInput);
@@ -591,6 +618,7 @@ export function runPipeline(
         admissionProfile: admissionProfile(),
         liquidityMagnet,
         opposingObstacle,
+        allowTrendContinuationPD,
       });
     } else {
       recordGradeBlockOverlap(gradeResult.blockReasons);
@@ -610,6 +638,102 @@ function latestCompletedCandle(candles: readonly Candle[]): Candle {
 }
 
 export const MAX_POI_AGE_MS = 48 * 60 * 60 * 1000; // 48 Hours POI TTL (Anti-Stale / Anti-Ghost POI)
+
+/**
+ * Calculates total closed weekend duration (Friday 21:00 UTC to Sunday 21:00 UTC)
+ * overlapping the interval [startMs, endMs].
+ */
+export function calculateWeekendDowntimeMs(startMs: number, endMs: number): number {
+  if (endMs <= startMs) return 0;
+  
+  let totalDowntime = 0;
+  
+  // Find the Friday 21:00 UTC preceding or within the startMs week
+  const startDate = new Date(startMs);
+  const candidate = new Date(Date.UTC(
+    startDate.getUTCFullYear(),
+    startDate.getUTCMonth(),
+    startDate.getUTCDate(),
+    21, 0, 0, 0
+  ));
+  const day = candidate.getUTCDay(); // 0=Sun, 1=Mon, ..., 5=Fri, 6=Sat
+  const diffToFriday = (day >= 5) ? (day - 5) : (day + 2);
+  candidate.setUTCDate(candidate.getUTCDate() - diffToFriday);
+
+  let closureStart = candidate.getTime();
+  const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+  const CLOSURE_DURATION_MS = 48 * 60 * 60 * 1000; // Friday 21:00 UTC to Sunday 21:00 UTC (48 hours)
+
+  while (closureStart < endMs) {
+    const closureEnd = closureStart + CLOSURE_DURATION_MS;
+    const overlapStart = Math.max(startMs, closureStart);
+    const overlapEnd = Math.min(endMs, closureEnd);
+    if (overlapEnd > overlapStart) {
+      totalDowntime += (overlapEnd - overlapStart);
+    }
+    closureStart += ONE_WEEK_MS;
+  }
+
+  return totalDowntime;
+}
+
+/**
+ * Returns the effective active market age in ms between formedTimestamp and currentMarketTime.
+ * For 24/7 assets (Crypto), calendar age equals market age.
+ * For Forex, Metals, Commodities, and Indices, closed weekend hours are subtracted.
+ */
+export function getEffectiveMarketAgeMs(currentMarketTime: number, formedTimestamp: number, symbol?: string): number {
+  const rawAge = Math.max(0, currentMarketTime - formedTimestamp);
+  if (isCryptoSymbol(symbol)) {
+    return rawAge;
+  }
+  const downtime = calculateWeekendDowntimeMs(formedTimestamp, currentMarketTime);
+  return Math.max(0, rawAge - downtime);
+}
+
+/**
+ * Determines whether a setup qualifies for Macro Trend Continuation 4H P/D Relief.
+ * When a pair is in a strong runaway trend (aligned 4H+1H, continuation model, non-opposite local 15M entry),
+ * being in 4H discount (for shorts) or 4H premium (for longs) should NOT veto the trade if confirmed by
+ * macro directional bias or strong institutional displacement.
+ */
+export function shouldAllowTrendContinuationPD(
+  symbol: string,
+  tradeDirection: 'long' | 'short',
+  bias4H: 'bullish' | 'bearish' | 'range' | 'undefined',
+  bias1H: 'bullish' | 'bearish' | 'range' | 'undefined',
+  pd15M: PremiumDiscountState | undefined,
+  modelState: ModelState,
+  dq: DisplacementQuality | null
+): boolean {
+  // 1. Must be a continuation model (never for reversal or unconfirmed models)
+  if (modelState.model !== 'model2_continuation') return false;
+
+  // 2. Both 4H and 1H must align with trade direction
+  const expectedBias = tradeDirection === 'long' ? 'bullish' : 'bearish';
+  if (bias4H !== expectedBias || bias1H !== expectedBias) return false;
+
+  // 3. Intraday 15M entry must NOT be directly opposite (e.g. short must not enter in 15M discount)
+  const is15MPDOpposite = Boolean(
+    pd15M &&
+    ((tradeDirection === 'long' && pd15M.status === 'premium') ||
+     (tradeDirection === 'short' && pd15M.status === 'discount'))
+  );
+  if (is15MPDOpposite) return false;
+
+  // 4. Check Macro Gate alignment
+  try {
+    const macroEval = MacroGateAdapter.getInstance().evaluateCandidate(symbol, tradeDirection, 80);
+    if (macroEval && macroEval.allowed) {
+      return true;
+    }
+  } catch {
+    // If macro gate evaluation fails or in isolated test environments
+  }
+
+  // 5. Strong institutional displacement fallback
+  return dq !== null && dq.gradePoints >= 2 && dq.quality === 'güçlü';
+}
 
 export function isDistanceExcessive(
   symbol: string,
