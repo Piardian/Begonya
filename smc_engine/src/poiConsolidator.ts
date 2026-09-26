@@ -42,22 +42,29 @@ export function consolidateCandidates(
       ...groupCandidates.map(c => c.poi.relatedEvent.breakTimestamp)
     );
 
-    // Filter to candidates originating from the latest active structure, or at most recent 2 breaks
+    // Filter to candidates originating from the latest active structure
     const activeLegCandidates = groupCandidates.filter(c => {
-      // Prioritize the latest structural break, but allow if within active impulse
       return c.poi.relatedEvent.breakTimestamp === latestBreakTimestamp;
     });
 
+    // Suppress backup FVG spam: if the active structural break already has a valid OB, discard FVGs from that break
+    const hasObInActiveLeg = activeLegCandidates.some(c => c.poiType === 'OB');
+    const prioritizedLegCandidates = hasObInActiveLeg
+      ? activeLegCandidates.filter(c => c.poiType === 'OB')
+      : activeLegCandidates;
+
     // If latest break has valid candidates, use them; otherwise fallback to the sorted list
-    const candidatePool = activeLegCandidates.length > 0 ? activeLegCandidates : groupCandidates;
+    const candidatePool = prioritizedLegCandidates.length > 0 ? prioritizedLegCandidates : groupCandidates;
 
     // Sort by:
     // 1. Structure Break Timestamp descending (most recent impulse first)
-    // 2. Grade total score descending (A+ > A > B+)
-    // 3. POI Test count ascending (fresher / 0 tests first)
+    // 2. POI Type priority (OB before FVG within the same impulse)
+    // 3. Grade total score descending (A+ > A > B+)
+    // 4. POI Test count ascending (fresher / 0 tests first)
     const sorted = [...candidatePool].sort((a, b) => {
       const breakDiff = b.poi.relatedEvent.breakTimestamp - a.poi.relatedEvent.breakTimestamp;
       if (breakDiff !== 0) return breakDiff;
+      if (a.poiType !== b.poiType) return a.poiType === 'OB' ? -1 : 1;
       const scoreDiff = b.gradeResult.totalScore - a.gradeResult.totalScore;
       if (scoreDiff !== 0) return scoreDiff;
       return a.poiTestCount - b.poiTestCount;

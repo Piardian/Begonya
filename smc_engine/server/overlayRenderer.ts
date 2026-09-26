@@ -139,15 +139,24 @@ export async function renderOverlay(input: OverlayRenderInput): Promise<Buffer> 
 
   const drawOrder: Record<OverlayAnnotation['type'], number> = {
     premiumDiscount: 0,
-    fvg: 1,
-    orderBlock: 2,
-    bosArrow: 3,
-    priceLine: 4,
+    priceLine: 1,
+    fvg: 2,
+    orderBlock: 3,
+    bosArrow: 4,
     label: 5,
   };
   const occupiedLabels: LabelBox[] = [];
 
-  for (const annotation of [...input.annotations].sort((a, b) => drawOrder[a.type] - drawOrder[b.type])) {
+  // Reserve HUD header space first if a label annotation is present so background labels stay below it
+  const sortedAnnotations = [...input.annotations].sort((a, b) => drawOrder[a.type] - drawOrder[b.type]);
+  const headerAnnotations = sortedAnnotations.filter((a): a is TextLabelOverlay => a.type === 'label');
+  const bodyAnnotations = sortedAnnotations.filter(a => a.type !== 'label');
+
+  for (const header of headerAnnotations) {
+    drawLabel(ctx, input.metadata, header, occupiedLabels);
+  }
+
+  for (const annotation of bodyAnnotations) {
     switch (annotation.type) {
       case 'orderBlock':
         drawOrderBlock(ctx, input.metadata, annotation, occupiedLabels);
@@ -163,9 +172,6 @@ export async function renderOverlay(input: OverlayRenderInput): Promise<Buffer> 
         break;
       case 'premiumDiscount':
         drawPremiumDiscount(ctx, input.metadata, annotation, occupiedLabels);
-        break;
-      case 'label':
-        drawLabel(ctx, input.metadata, annotation, occupiedLabels);
         break;
     }
   }
@@ -198,26 +204,46 @@ function drawPriceLine(
   const y = mapPriceToY(annotation.price, metadata);
   if (y < metadata.plotTop || y > metadata.plotTop + metadata.plotHeight) return;
 
+  const label = annotation.label;
+  const isEntryTop = label === 'GİRİŞ ÜST' || label === 'GİRİŞ BÖLGESİ';
+  const isEntryBottom = label === 'GİRİŞ ALT';
+  const isCurrentPrice = label === 'ANLIK FİYAT';
+
   ctx.save();
   ctx.strokeStyle = annotation.color;
-  const isPrimary = isPrimaryPriceLabel(annotation.label);
-  ctx.lineWidth = isPrimary ? Math.max(2.2, metadata.imageWidth / 460) : Math.max(1, metadata.imageWidth / 980);
-  ctx.setLineDash(annotation.dashed ? [6, 4] : []);
+  ctx.globalAlpha = isCurrentPrice ? 0.85 : 0.65;
+  ctx.lineWidth = isCurrentPrice ? 1.2 : 1.0;
+  ctx.setLineDash(annotation.dashed || isEntryTop || isEntryBottom ? [5, 4] : []);
   ctx.beginPath();
   ctx.moveTo(metadata.plotLeft, y);
   ctx.lineTo(metadata.plotLeft + metadata.plotWidth, y);
   ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.setLineDash([]);
 
-  if (annotation.label) {
+  if (label) {
+    const preferDirection: 'up' | 'down' | 'auto' = isEntryBottom
+      ? 'down'
+      : isEntryTop
+        ? 'up'
+        : 'auto';
+    const anchorAlign: 'left' | 'center' | 'right' = isCurrentPrice
+      ? 'left'
+      : (isEntryTop || isEntryBottom)
+        ? 'right'
+        : 'center';
+
     drawReadableLabel(
       ctx,
-      annotation.label,
-      resolvePriceLabelX(annotation.label, metadata),
+      label,
+      resolvePriceLabelX(label, metadata),
       y,
       annotation.color,
       metadata,
       occupiedLabels,
-      isPrimary ? 'primary' : 'secondary'
+      'secondary',
+      preferDirection,
+      anchorAlign
     );
   }
 
@@ -233,25 +259,33 @@ function drawPremiumDiscount(
   const yMin = mapPriceToY(annotation.min, metadata);
   const yMax = mapPriceToY(annotation.max, metadata);
   const yEq = mapPriceToY(annotation.equilibrium, metadata);
-  const top = Math.min(yMin, yMax);
-  const bottom = Math.max(yMin, yMax);
-  const eq = Math.max(top, Math.min(bottom, yEq));
+  const top = clamp(Math.min(yMin, yMax), metadata.plotTop, metadata.plotTop + metadata.plotHeight);
+  const bottom = clamp(Math.max(yMin, yMax), metadata.plotTop, metadata.plotTop + metadata.plotHeight);
+  const eq = clamp(yEq, top, bottom);
 
   ctx.save();
-  ctx.fillStyle = 'rgba(239, 83, 80, 0.045)';
+  ctx.fillStyle = 'rgba(239, 83, 80, 0.038)';
   ctx.fillRect(metadata.plotLeft, top, metadata.plotWidth, Math.max(0, eq - top));
-  ctx.fillStyle = 'rgba(38, 166, 154, 0.045)';
+  ctx.fillStyle = 'rgba(38, 166, 154, 0.038)';
   ctx.fillRect(metadata.plotLeft, eq, metadata.plotWidth, Math.max(0, bottom - eq));
-  ctx.strokeStyle = 'rgba(209, 212, 220, 0.38)';
+  ctx.strokeStyle = 'rgba(209, 212, 220, 0.32)';
+  ctx.lineWidth = 1;
   ctx.setLineDash([4, 4]);
   ctx.beginPath();
   ctx.moveTo(metadata.plotLeft, eq);
   ctx.lineTo(metadata.plotLeft + metadata.plotWidth, eq);
   ctx.stroke();
+  ctx.setLineDash([]);
 
-  drawMutedContextLabel(ctx, 'PAHALI', metadata.plotLeft + 10, top + 8, PRESENTATION_DESIGN_TOKENS.colors.premium, metadata, occupiedLabels);
-  drawMutedContextLabel(ctx, 'DENGE', metadata.plotLeft + 10, eq - 4, PRESENTATION_DESIGN_TOKENS.colors.labelMuted, metadata, occupiedLabels);
-  drawMutedContextLabel(ctx, 'UCUZ', metadata.plotLeft + 10, eq + 10, PRESENTATION_DESIGN_TOKENS.colors.discount, metadata, occupiedLabels);
+  const leftMargin = metadata.plotLeft + 12;
+  const topLabelY = Math.max(metadata.plotTop + 46, top + 8);
+  const bottomLabelY = Math.max(eq + 14, Math.min(metadata.plotTop + metadata.plotHeight - 24, bottom - 22));
+
+  drawMutedContextLabel(ctx, 'PAHALI', leftMargin, topLabelY, PRESENTATION_DESIGN_TOKENS.colors.premium, metadata, occupiedLabels);
+  if (bottom - top >= 90) {
+    drawMutedContextLabel(ctx, 'DENGE', leftMargin, eq - 9, PRESENTATION_DESIGN_TOKENS.colors.labelMuted, metadata, occupiedLabels);
+  }
+  drawMutedContextLabel(ctx, 'UCUZ', leftMargin, bottomLabelY, PRESENTATION_DESIGN_TOKENS.colors.discount, metadata, occupiedLabels);
   ctx.restore();
 }
 
@@ -263,27 +297,69 @@ function drawFvg(
 ): void {
   const minIndex = Math.min(annotation.startIndex, annotation.endIndex);
   const maxIndex = Math.max(annotation.startIndex, annotation.endIndex);
-  const left = mapBarLeftToX(minIndex, metadata);
-  const right = mapBarRightToX(maxIndex, metadata);
+  const left = clamp(mapBarLeftToX(minIndex, metadata), metadata.plotLeft, metadata.plotLeft + metadata.plotWidth - 12);
+  const right = clamp(mapBarRightToX(maxIndex, metadata), left + 12, metadata.plotLeft + metadata.plotWidth);
   const y1 = mapPriceToY(annotation.high, metadata);
   const y2 = mapPriceToY(annotation.low, metadata);
   const top = Math.min(y1, y2);
   const bottom = Math.max(y1, y2);
+  const boxHeight = Math.max(6, bottom - top);
+  const boxWidth = Math.max(12, right - left);
   const stroke = annotation.direction === 'bullish'
     ? PRESENTATION_DESIGN_TOKENS.colors.liquidity
     : PRESENTATION_DESIGN_TOKENS.colors.imbalance;
   const fill = annotation.direction === 'bullish'
-    ? 'rgba(102, 187, 106, 0.13)'
-    : 'rgba(206, 147, 216, 0.13)';
+    ? 'rgba(102, 187, 106, 0.14)'
+    : 'rgba(206, 147, 216, 0.14)';
 
   ctx.save();
   ctx.fillStyle = fill;
+  ctx.fillRect(left, top, boxWidth, boxHeight);
+
+  // Top & bottom crisp zone borders + left origin accent
   ctx.strokeStyle = stroke;
-  ctx.lineWidth = Math.max(1.8, metadata.imageWidth / 620);
-  roundRect(ctx, left, top, Math.max(6, right - left), Math.max(6, bottom - top), PRESENTATION_DESIGN_TOKENS.borderRadius.medium, true, true);
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(left, top);
+  ctx.lineTo(left + boxWidth, top);
+  ctx.moveTo(left, top + boxHeight);
+  ctx.lineTo(left + boxWidth, top + boxHeight);
+  ctx.stroke();
+
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  ctx.moveTo(left, top);
+  ctx.lineTo(left, top + boxHeight);
+  ctx.stroke();
+
+  if (boxHeight >= 14) {
+    const midY = top + boxHeight / 2;
+    ctx.save();
+    ctx.strokeStyle = stroke;
+    ctx.globalAlpha = 0.45;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(left, midY);
+    ctx.lineTo(left + boxWidth, midY);
+    ctx.stroke();
+    ctx.restore();
+  }
 
   if (annotation.label) {
-    drawReadableLabel(ctx, annotation.label, left, bottom, stroke, metadata, occupiedLabels, 'secondary');
+    const safeLeftX = clamp(left + 2, metadata.plotLeft + 76, metadata.plotLeft + metadata.plotWidth - 44);
+    drawReadableLabel(
+      ctx,
+      annotation.label,
+      safeLeftX,
+      top,
+      stroke,
+      metadata,
+      occupiedLabels,
+      'secondary',
+      'up',
+      'left'
+    );
   }
 
   ctx.restore();
@@ -297,26 +373,68 @@ function drawOrderBlock(
 ): void {
   const minIndex = Math.min(annotation.startIndex, annotation.endIndex);
   const maxIndex = Math.max(annotation.startIndex, annotation.endIndex);
-  const left = mapBarLeftToX(minIndex, metadata);
-  const right = mapBarRightToX(maxIndex, metadata);
+  const left = clamp(mapBarLeftToX(minIndex, metadata), metadata.plotLeft, metadata.plotLeft + metadata.plotWidth - 12);
+  const right = clamp(mapBarRightToX(maxIndex, metadata), left + 12, metadata.plotLeft + metadata.plotWidth);
   const y1 = mapPriceToY(annotation.high, metadata);
   const y2 = mapPriceToY(annotation.low, metadata);
   const top = Math.min(y1, y2);
   const bottom = Math.max(y1, y2);
+  const boxHeight = Math.max(8, bottom - top);
+  const boxWidth = Math.max(12, right - left);
   const isBullish = annotation.direction === 'bullish';
   const stroke = isBullish ? PRESENTATION_DESIGN_TOKENS.colors.supplyDemand : PRESENTATION_DESIGN_TOKENS.colors.marketShift;
   const fill = isBullish
-    ? `rgba(38, 166, 154, ${PRESENTATION_DESIGN_TOKENS.opacity.boxFill})`
-    : `rgba(239, 83, 80, ${PRESENTATION_DESIGN_TOKENS.opacity.boxFill})`;
+    ? 'rgba(38, 166, 154, 0.15)'
+    : 'rgba(239, 83, 80, 0.15)';
 
   ctx.save();
   ctx.fillStyle = fill;
+  ctx.fillRect(left, top, boxWidth, boxHeight);
+
+  // Top & bottom crisp zone borders + left origin accent
   ctx.strokeStyle = stroke;
-  ctx.lineWidth = Math.max(2, metadata.imageWidth / 520);
-  roundRect(ctx, left, top, Math.max(8, right - left), Math.max(8, bottom - top), PRESENTATION_DESIGN_TOKENS.borderRadius.medium, true, true);
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.moveTo(left, top);
+  ctx.lineTo(left + boxWidth, top);
+  ctx.moveTo(left, top + boxHeight);
+  ctx.lineTo(left + boxWidth, top + boxHeight);
+  ctx.stroke();
+
+  ctx.lineWidth = 2.6;
+  ctx.beginPath();
+  ctx.moveTo(left, top);
+  ctx.lineTo(left, top + boxHeight);
+  ctx.stroke();
+
+  if (boxHeight >= 14) {
+    const midY = top + boxHeight / 2;
+    ctx.save();
+    ctx.strokeStyle = stroke;
+    ctx.globalAlpha = 0.45;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(left, midY);
+    ctx.lineTo(left + boxWidth, midY);
+    ctx.stroke();
+    ctx.restore();
+  }
 
   if (annotation.label) {
-    drawReadableLabel(ctx, annotation.label, left, top, stroke, metadata, occupiedLabels, 'secondary');
+    const safeLeftX = clamp(left + 2, metadata.plotLeft + 76, metadata.plotLeft + metadata.plotWidth - 44);
+    drawReadableLabel(
+      ctx,
+      annotation.label,
+      safeLeftX,
+      top,
+      stroke,
+      metadata,
+      occupiedLabels,
+      'secondary',
+      'up',
+      'left'
+    );
   }
 
   ctx.restore();
@@ -328,33 +446,37 @@ function drawBosArrow(
   annotation: BosArrowOverlay,
   occupiedLabels: LabelBox[]
 ): void {
-  const x = mapBarIndexToX(annotation.index, metadata);
+  const x = clamp(mapBarIndexToX(annotation.index, metadata), metadata.plotLeft + 24, metadata.plotLeft + metadata.plotWidth - 12);
   const y = mapPriceToY(annotation.price, metadata);
   const isBullish = annotation.direction === 'bullish';
   const color = PRESENTATION_DESIGN_TOKENS.colors.marketShift;
-  const size = Math.max(8, metadata.imageWidth / 96);
-  const stem = Math.max(18, metadata.imageHeight / 22);
-  const stemStartY = isBullish ? y + stem : y - stem;
+  const size = Math.max(6, Math.round(metadata.imageWidth / 135));
+  const spanWidth = Math.max(44, Math.min(110, metadata.barSpacing * 7));
+  const lineStartX = Math.max(metadata.plotLeft + 75, x - spanWidth);
 
   ctx.save();
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
-  ctx.lineWidth = Math.max(2, metadata.imageWidth / 700);
+  ctx.lineWidth = 1.6;
+  ctx.setLineDash([4, 3]);
 
+  // Horizontal SMC structure break line
   ctx.beginPath();
-  ctx.moveTo(x, stemStartY);
+  ctx.moveTo(lineStartX, y);
   ctx.lineTo(x, y);
   ctx.stroke();
+  ctx.setLineDash([]);
 
+  // Small directional pointer at break candle
   ctx.beginPath();
   if (isBullish) {
-    ctx.moveTo(x, y);
-    ctx.lineTo(x - size * 0.62, y + size * 0.92);
-    ctx.lineTo(x + size * 0.62, y + size * 0.92);
+    ctx.moveTo(x, y - 2);
+    ctx.lineTo(x - size * 0.65, y + size * 0.85);
+    ctx.lineTo(x + size * 0.65, y + size * 0.85);
   } else {
-    ctx.moveTo(x, y);
-    ctx.lineTo(x - size * 0.62, y - size * 0.92);
-    ctx.lineTo(x + size * 0.62, y - size * 0.92);
+    ctx.moveTo(x, y + 2);
+    ctx.lineTo(x - size * 0.65, y - size * 0.85);
+    ctx.lineTo(x + size * 0.65, y - size * 0.85);
   }
   ctx.closePath();
   ctx.fill();
@@ -363,12 +485,14 @@ function drawBosArrow(
     drawReadableLabel(
       ctx,
       annotation.label,
-      x + size,
-      isBullish ? y - size : y + size,
+      lineStartX,
+      y,
       color,
       metadata,
       occupiedLabels,
-      'context'
+      'context',
+      isBullish ? 'up' : 'down',
+      'left'
     );
   }
 
@@ -381,15 +505,21 @@ function drawLabel(
   annotation: TextLabelOverlay,
   occupiedLabels: LabelBox[]
 ): void {
+  // Pin setup summary label as a clean top-left HUD header badge so it never covers candles
+  const hudX = metadata.plotLeft + 12;
+  const hudY = metadata.plotTop + 10;
   drawReadableLabel(
     ctx,
     annotation.text,
-    mapBarIndexToX(annotation.index, metadata),
-    mapPriceToY(annotation.price, metadata),
-    PRESENTATION_DESIGN_TOKENS.colors.labelMuted,
+    hudX,
+    hudY,
+    '#38bdf8',
     metadata,
     occupiedLabels,
-    getLabelTier(annotation.text)
+    'primary',
+    'down',
+    'left',
+    true
   );
 }
 
@@ -412,20 +542,21 @@ function drawMutedContextLabel(
   const width = ctx.measureText(text).width + paddingX * 2;
   const height = fontSize + paddingY * 2;
   const labelX = clamp(x, 0, Math.max(0, metadata.imageWidth - width));
-  const labelY = clamp(y, 0, Math.max(0, metadata.imageHeight - height));
-  const box = { x: labelX, y: labelY, width, height };
+  const preferredY = clamp(y, 0, Math.max(0, metadata.imageHeight - height));
+  const pos = resolveNonOverlappingPosition(labelX, preferredY, width, height, metadata, occupiedLabels, 'down');
+  const box = { x: pos.x, y: pos.y, width, height };
 
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.14)';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.18)';
   ctx.shadowBlur = 4;
   ctx.shadowOffsetY = 1;
-  ctx.fillStyle = 'rgba(19, 23, 34, 0.58)';
-  roundRect(ctx, labelX, labelY, width, height, radius, true, false);
+  ctx.fillStyle = 'rgba(19, 23, 34, 0.72)';
+  roundRect(ctx, pos.x, pos.y, width, height, radius, true, false);
   ctx.strokeStyle = color;
   ctx.lineWidth = 0.8;
-  roundRect(ctx, labelX, labelY, width, height, radius, false, true);
+  roundRect(ctx, pos.x, pos.y, width, height, radius, false, true);
   ctx.fillStyle = color;
   ctx.textBaseline = 'top';
-  ctx.fillText(text, labelX + paddingX, labelY + paddingY);
+  ctx.fillText(text, pos.x + paddingX, pos.y + paddingY);
   occupiedLabels.push(box);
   ctx.restore();
 }
@@ -438,105 +569,125 @@ function drawReadableLabel(
   color: string,
   metadata: ChartMetadata,
   occupiedLabels: LabelBox[],
-  tier: LabelTier = 'context'
+  tier: LabelTier = 'context',
+  preferDirection: 'up' | 'down' | 'auto' = 'auto',
+  anchorAlign: 'left' | 'center' | 'right' = 'center',
+  directY = false
 ): void {
   const fontSize = tier === 'primary'
-    ? Math.max(PRESENTATION_DESIGN_TOKENS.typography.fontSizeMedium, Math.round(metadata.imageWidth / 64))
-    : Math.max(PRESENTATION_DESIGN_TOKENS.typography.fontSizeSmall, Math.round(metadata.imageWidth / (tier === 'secondary' ? 104 : 112)));
-  const paddingX = tier === 'primary'
-    ? PRESENTATION_DESIGN_TOKENS.spacing.badgePaddingX
-    : PRESENTATION_DESIGN_TOKENS.spacing.labelPaddingX;
-  const paddingY = tier === 'primary'
-    ? PRESENTATION_DESIGN_TOKENS.spacing.badgePaddingY
-    : PRESENTATION_DESIGN_TOKENS.spacing.labelPaddingY;
-  const radius = tier === 'primary'
-    ? PRESENTATION_DESIGN_TOKENS.borderRadius.medium
-    : PRESENTATION_DESIGN_TOKENS.borderRadius.small;
+    ? Math.max(12, Math.round(metadata.imageWidth / 78))
+    : Math.max(10, Math.round(metadata.imageWidth / (tier === 'secondary' ? 98 : 108)));
+  const paddingX = tier === 'primary' ? 9 : 6;
+  const paddingY = tier === 'primary' ? 4 : 3;
+  const radius = tier === 'primary' ? 5 : 4;
 
   ctx.font = `${PRESENTATION_DESIGN_TOKENS.typography.fontWeightBold} ${fontSize}px ${PRESENTATION_DESIGN_TOKENS.typography.fontFamily}`;
   const width = ctx.measureText(text).width + paddingX * 2;
   const height = fontSize + paddingY * 2;
-  const preferredX = clamp(x - width / 2, 0, Math.max(0, metadata.imageWidth - width));
+  const rawX = anchorAlign === 'left'
+    ? x
+    : anchorAlign === 'right'
+      ? x - width
+      : x - width / 2;
+  const maxRight = metadata.plotLeft + metadata.plotWidth - 6;
+  const preferredX = clamp(rawX, metadata.plotLeft + 6, Math.max(metadata.plotLeft + 6, maxRight - width));
+
+  let initialY: number;
+  if (directY) {
+    initialY = y;
+  } else if (preferDirection === 'down') {
+    initialY = y + 4;
+  } else {
+    initialY = y - height - 4;
+  }
+
   const preferredY = clamp(
-    tier === 'primary'
-      ? Math.max(metadata.plotTop + 4, y - height - 4)
-      : y - height - paddingY - 1,
-    0,
-    Math.max(0, metadata.imageHeight - height)
+    initialY,
+    metadata.plotTop + 6,
+    Math.max(metadata.plotTop + 6, metadata.plotTop + metadata.plotHeight - height - 6)
   );
-  const labelY = resolveNonOverlappingY(preferredX, preferredY, width, height, metadata, occupiedLabels);
-  const labelBox = { x: preferredX, y: labelY, width, height };
+  const pos = resolveNonOverlappingPosition(preferredX, preferredY, width, height, metadata, occupiedLabels, preferDirection);
+  const labelBox = { x: pos.x, y: pos.y, width, height };
 
   ctx.save();
-  ctx.shadowColor = tier === 'primary'
-    ? `rgba(0, 0, 0, ${PRESENTATION_DESIGN_TOKENS.opacity.badgeShadow})`
-    : 'rgba(0, 0, 0, 0.18)';
-  ctx.shadowBlur = tier === 'primary' ? 10 : 6;
-  ctx.shadowOffsetY = 2;
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+  ctx.shadowBlur = tier === 'primary' ? 8 : 5;
+  ctx.shadowOffsetY = 1;
   ctx.fillStyle = tier === 'primary'
-    ? `rgba(30, 41, 59, ${PRESENTATION_DESIGN_TOKENS.opacity.badgeBackground})`
-    : PRESENTATION_DESIGN_TOKENS.colors.labelBackground;
-  roundRect(ctx, preferredX, labelY, width, height, radius, true, false);
+    ? 'rgba(15, 23, 42, 0.88)'
+    : 'rgba(19, 23, 34, 0.84)';
+  roundRect(ctx, pos.x, pos.y, width, height, radius, true, false);
   ctx.strokeStyle = color;
-  ctx.lineWidth = tier === 'primary' ? 1.4 : 1;
-  roundRect(ctx, preferredX, labelY, width, height, radius, false, true);
+  ctx.lineWidth = tier === 'primary' ? 1.3 : 1;
+  roundRect(ctx, pos.x, pos.y, width, height, radius, false, true);
   ctx.fillStyle = tier === 'primary'
     ? PRESENTATION_DESIGN_TOKENS.colors.badgeText
     : PRESENTATION_DESIGN_TOKENS.colors.labelText;
   ctx.textBaseline = 'top';
-  ctx.fillText(text, preferredX + paddingX, labelY + paddingY);
+  ctx.fillText(text, pos.x + paddingX, pos.y + paddingY);
   occupiedLabels.push(labelBox);
   ctx.restore();
 }
 
-function isPrimaryPriceLabel(label?: string): boolean {
-  if (!label) return false;
-  return label === 'ANLIK FİYAT' || label === 'GİRİŞ BÖLGESİ' || label === 'GİRİŞ ÜST' || label === 'GİRİŞ ALT';
-}
-
 function resolvePriceLabelX(label: string, metadata: ChartMetadata): number {
-  const rightEdge = metadata.plotLeft + metadata.plotWidth - 14;
-  const leftEdge = metadata.plotLeft + 12;
-  if (metadata.timeframe === '1m') return leftEdge;
-  if (label === 'ANLIK FİYAT') return rightEdge - 92;
-  if (label === 'GİRİŞ ÜST' || label === 'GİRİŞ ALT' || label === 'GİRİŞ BÖLGESİ') return rightEdge - 108;
-  return rightEdge - 74;
+  const rightEdge = metadata.plotLeft + metadata.plotWidth - 8;
+  if (label === 'ANLIK FİYAT') {
+    return metadata.plotLeft + 92;
+  }
+  return rightEdge;
 }
 
-function getLabelTier(text: string): LabelTier {
-  if (text.includes('1M') || text.includes('15M') || text.includes('1H')) return 'primary';
-  if (text.includes('ANLIK FİYAT') || text.includes('GİRİŞ')) return 'secondary';
-  return 'context';
-}
-
-function resolveNonOverlappingY(
-  x: number,
+function resolveNonOverlappingPosition(
+  preferredX: number,
   preferredY: number,
   width: number,
   height: number,
   metadata: ChartMetadata,
-  occupiedLabels: readonly LabelBox[]
-): number {
-  const step = height + 4;
-  const candidates = [preferredY];
-  for (let i = 1; i <= 8; i++) {
-    candidates.push(preferredY + step * i, preferredY - step * i);
+  occupiedLabels: readonly LabelBox[],
+  preferDirection: 'up' | 'down' | 'auto' = 'auto'
+): { x: number; y: number } {
+  const minY = metadata.plotTop + 6;
+  const maxY = Math.max(minY, metadata.plotTop + metadata.plotHeight - height - 6);
+  const minX = metadata.plotLeft + 6;
+  const maxX = Math.max(minX, metadata.plotLeft + metadata.plotWidth - width - 6);
+
+  const stepY = height + 5;
+  const yCandidates: number[] = [preferredY];
+  for (let i = 1; i <= 10; i++) {
+    if (preferDirection === 'down') {
+      yCandidates.push(preferredY + stepY * i, preferredY - stepY * i);
+    } else if (preferDirection === 'up') {
+      yCandidates.push(preferredY - stepY * i, preferredY + stepY * i);
+    } else {
+      yCandidates.push(preferredY - stepY * i, preferredY + stepY * i);
+    }
   }
 
-  for (const candidate of candidates) {
-    const y = clamp(candidate, 0, metadata.imageHeight - height);
-    const box = { x, y, width, height };
-    if (!occupiedLabels.some(occupied => overlaps(box, occupied))) return y;
+  const xOffsets = [0, -Math.round(width + 8), Math.round(width + 8), -Math.round((width + 8) * 2)];
+
+  for (const candidateY of yCandidates) {
+    const y = clamp(candidateY, minY, maxY);
+    for (const dx of xOffsets) {
+      const x = clamp(preferredX + dx, minX, maxX);
+      const box = { x, y, width, height };
+      if (!occupiedLabels.some(occupied => overlaps(box, occupied))) {
+        return { x, y };
+      }
+    }
   }
 
-  return clamp(preferredY, 0, metadata.imageHeight - height);
+  return {
+    x: clamp(preferredX, minX, maxX),
+    y: clamp(preferredY, minY, maxY),
+  };
 }
 
 function overlaps(a: LabelBox, b: LabelBox): boolean {
-  return a.x < b.x + b.width
-    && a.x + a.width > b.x
-    && a.y < b.y + b.height
-    && a.y + a.height > b.y;
+  const pad = 4;
+  return (a.x - pad) < (b.x + b.width + pad)
+    && (a.x + a.width + pad) > (b.x - pad)
+    && (a.y - pad) < (b.y + b.height + pad)
+    && (a.y + a.height + pad) > (b.y - pad);
 }
 
 function clamp(value: number, min: number, max: number): number {

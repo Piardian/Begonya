@@ -42,26 +42,30 @@ export class SetupFamilyGuard {
     const grade = candidate.gradeResult.grade;
     const score = candidate.gradeResult.totalScore;
 
-    // Check recent records for this symbol and direction within cooldown window
-    const recentMatching = this.history.filter(
-      r => r.symbol === candidate.symbol &&
-           r.direction === candidate.tradeDirection &&
-           (nowMs - r.notifiedAt <= this.cooldownMs)
+    // 1. Same or older impulse origin event is permanently blocked (unless genuine tier upgrade within cooldown)
+    const allSymbolDirectionHistory = this.history.filter(
+      r => r.symbol === candidate.symbol && r.direction === candidate.tradeDirection
     );
 
-    for (const recent of recentMatching) {
-      // 1. Same or older impulse origin event
-      if (breakTimestamp <= recent.breakTimestamp) {
-        const isGenuineTierUpgrade = recent.grade !== 'A+' && grade === 'A+' && score > recent.score;
+    for (const recorded of allSymbolDirectionHistory) {
+      if (breakTimestamp <= recorded.breakTimestamp) {
+        const withinCooldown = nowMs - recorded.notifiedAt <= this.cooldownMs;
+        const isGenuineTierUpgrade = withinCooldown && recorded.grade !== 'A+' && grade === 'A+' && score > recorded.score;
         if (!isGenuineTierUpgrade) {
           return {
             allowed: false,
-            reason: `Duplicate setup family: Impulse (${recent.breakTimestamp}) was already notified recently (${recent.grade}, score ${recent.score}).`,
+            reason: `Duplicate setup family: Impulse (${recorded.breakTimestamp}) was already notified (${recorded.grade}, score ${recorded.score}).`,
           };
         }
       }
+    }
 
-      // 2. Overlapping price zone within cooldown window
+    // 2. Overlapping price zone within cooldown window
+    const recentMatching = allSymbolDirectionHistory.filter(
+      r => nowMs - r.notifiedAt <= this.cooldownMs
+    );
+
+    for (const recent of recentMatching) {
       const overlap = calculateOverlapRatio(zone, { low: recent.zoneLow, high: recent.zoneHigh });
       if (overlap >= this.overlapThreshold) {
         const isGenuineTierUpgrade = recent.grade !== 'A+' && grade === 'A+' && score > recent.score;
@@ -102,7 +106,7 @@ export class SetupFamilyGuard {
   }
 
   private pruneOld(nowMs: number): void {
-    const cutoff = nowMs - (this.cooldownMs * 2);
+    const cutoff = nowMs - (48 * 60 * 60 * 1000);
     while (this.history.length > 0 && this.history[0].notifiedAt < cutoff) {
       this.history.shift();
     }

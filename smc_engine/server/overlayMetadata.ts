@@ -146,9 +146,16 @@ function buildAnnotations(
     const visibleSwings = swingsUpToLast.filter(s => s.formedAtIndex >= firstBar || s.confirmedAtIndex >= firstBar);
     const activeSwings = visibleSwings.length >= 2 ? visibleSwings : swingsUpToLast;
 
+    const visibleSlice = candles.slice(firstBar, lastBar + 1);
+    const visibleLow = visibleSlice.reduce((acc, c) => Math.min(acc, c.low), priceRange.min);
+    const visibleHigh = visibleSlice.reduce((acc, c) => Math.max(acc, c.high), priceRange.max);
+
     const pd = calculatePremiumDiscount(candles as unknown as Candle[], activeSwings, lastBar);
-    const min = (pd.rangeLow !== null && Number.isFinite(pd.rangeLow)) ? pd.rangeLow : priceRange.min;
-    const max = (pd.rangeHigh !== null && Number.isFinite(pd.rangeHigh)) ? pd.rangeHigh : priceRange.max;
+    const rawMin = (pd.rangeLow !== null && Number.isFinite(pd.rangeLow)) ? pd.rangeLow : visibleLow;
+    const rawMax = (pd.rangeHigh !== null && Number.isFinite(pd.rangeHigh)) ? pd.rangeHigh : visibleHigh;
+    const useVisibleDealingRange = (rawMax - rawMin) < (visibleHigh - visibleLow) * 0.45;
+    const min = useVisibleDealingRange ? visibleLow : rawMin;
+    const max = useVisibleDealingRange ? visibleHigh : rawMax;
     const equilibrium = (min + max) / 2;
     annotations.push({
       type: 'premiumDiscount',
@@ -158,13 +165,15 @@ function buildAnnotations(
     });
   }
 
+  const lastVisibleBar = visibleBounds ? visibleBounds.last : candles.length - 1;
+
   if (candidate.poiType === 'OB') {
     const ob = candidate.poi as OrderBlock;
     annotations.push(
       {
         type: 'orderBlock',
         startIndex: ob.formedAtIndex,
-        endIndex: resolveOrderBlockEndIndex(candles, ob, candidate.poiTestCount),
+        endIndex: resolveOrderBlockEndIndex(candles, ob, candidate.poiTestCount, lastVisibleBar),
         high: ob.high,
         low: ob.low,
         direction: ob.direction,
@@ -192,7 +201,7 @@ function buildAnnotations(
     {
       type: 'fvg',
       startIndex: Math.max(0, fvg.middleCandleIndex - 1),
-      endIndex: Math.min(candles.length - 1, fvg.middleCandleIndex + 1),
+      endIndex: Math.max(Math.min(candles.length - 1, fvg.middleCandleIndex + 1), lastVisibleBar),
       high: fvg.gapHigh,
       low: fvg.gapLow,
       direction: fvg.direction,
@@ -239,15 +248,14 @@ function humanizePd(pd: NotificationCandidate['pd1H']): string {
   return 'DENGE';
 }
 
-function resolveOrderBlockEndIndex(candles: StoredCandle[], ob: OrderBlock, poiTestCount: number): number {
-  if (poiTestCount > 0) {
-    for (let i = ob.formedAtIndex + 1; i < candles.length; i++) {
-      const candle = candles[i];
-      if (candle.low <= ob.high && candle.high >= ob.low) return i;
-    }
-  }
-
-  return Math.min(candles.length - 1, ob.formedAtIndex + 15);
+function resolveOrderBlockEndIndex(
+  candles: StoredCandle[],
+  ob: OrderBlock,
+  _poiTestCount: number,
+  lastVisibleBar?: number
+): number {
+  const targetEnd = lastVisibleBar ?? (candles.length - 1);
+  return Math.max(Math.min(candles.length - 1, ob.formedAtIndex + 1), Math.min(candles.length - 1, targetEnd));
 }
 
 function addPricePadding(minPrice: number, maxPrice: number, timeframe: Timeframe): { min: number; max: number } {

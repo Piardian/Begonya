@@ -18,6 +18,36 @@ export class NotifiedStore {
     return this.hasDurablyBeenNotified(uniqueKey);
   }
 
+  /**
+   * Prevents "peeling the onion" (falling back to older structural breaks) and backup FVG spam
+   * from the same structural break once an impulse has been notified.
+   */
+  hasImpulseOrNewerBeenNotified(symbol: string, breakTimestamp: number): boolean {
+    if (!Number.isFinite(breakTimestamp)) return false;
+    const prefix = `${symbol}_15m_`;
+    const matchesImpulseOrNewer = (key: string): boolean => {
+      if (!key.startsWith(prefix)) return false;
+      const parts = key.split('_');
+      if (parts.length < 5) return false;
+      const notifiedBreakTs = Number(parts[4]);
+      return Number.isFinite(notifiedBreakTs) && notifiedBreakTs >= breakTimestamp;
+    };
+
+    for (const key of this.pending) {
+      if (matchesImpulseOrNewer(key)) return true;
+    }
+
+    const filePath = this.getFilePath();
+    if (!fs.existsSync(filePath)) return false;
+    try {
+      const content = fs.readFileSync(filePath, 'utf8');
+      const keys: string[] = JSON.parse(content);
+      return keys.some(matchesImpulseOrNewer);
+    } catch {
+      return false;
+    }
+  }
+
   hasDurablyBeenNotified(uniqueKey: string): boolean {
     const filePath = this.getFilePath();
     if (!fs.existsSync(filePath)) {

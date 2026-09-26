@@ -170,10 +170,22 @@ export async function captureLightweightChartWithMetadata(
       await page.setViewport({ width, height, deviceScaleFactor });
       await page.setContent(html, { waitUntil: 'load' });
       await page.waitForFunction(() => (globalThis as any).TV_CHART_METADATA !== null, { timeout: 5000 });
-      const metadata = await page.evaluate(() => (globalThis as any).TV_CHART_METADATA) as ChartMetadata;
       const chart = await page.$('#chart');
       if (!chart) throw new Error('Chart element not found');
+      // Force Chromium compositor paint pass so LightweightCharts sizes the right price scale before final metadata read
+      await chart.screenshot({ type: 'png' });
+      await page.evaluate(() => {
+        if (typeof (globalThis as any).__refreshChartMetadata === 'function') {
+          (globalThis as any).__refreshChartMetadata();
+        }
+      });
       const screenshotPng = await chart.screenshot({ type: 'png' }) as Buffer;
+      const metadata = await page.evaluate(() => {
+        if (typeof (globalThis as any).__refreshChartMetadata === 'function') {
+          return (globalThis as any).__refreshChartMetadata();
+        }
+        return (globalThis as any).TV_CHART_METADATA;
+      }) as ChartMetadata;
       return { screenshotPng, metadata, smartScreenshotPlan };
     } finally {
       await page.close().catch(() => {});

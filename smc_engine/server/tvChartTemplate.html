@@ -120,9 +120,17 @@
         chart.timeScale().fitContent();
       }
 
+      window.__refreshChartMetadata = function() {
+        if (data.visibleLogicalRange) {
+          chart.timeScale().setVisibleLogicalRange(data.visibleLogicalRange);
+        }
+        window.TV_CHART_METADATA = readChartMetadata(chart, candlestickSeries, formattedCandles, chartWidth, chartHeight);
+        return window.TV_CHART_METADATA;
+      };
+
       // Wait a moment for time scale to compute coordinates
       setTimeout(() => {
-        window.TV_CHART_METADATA = readChartMetadata(chart, candlestickSeries, formattedCandles, chartWidth, chartHeight);
+        window.__refreshChartMetadata();
 
         if (window.ENABLE_TV_PRIMITIVES) {
           runPrimitiveSpike(chart, candlestickSeries, data, formattedCandles);
