@@ -205,6 +205,60 @@ def build_three_horizon_strategy(
             "• 🔵 <b>Bitcoin (BTCUSD):</b> NEUTRAL_RANGE; makro avantaj oluşmadan yön kovalamayın."
         )
 
+    crypto_rot = (
+        metrics.get("crypto_rotation")
+        if isinstance(metrics.get("crypto_rotation"), dict) and metrics.get("crypto_rotation")
+        else metrics.get("crypto_rotation_analysis", {})
+        if isinstance(metrics.get("crypto_rotation_analysis"), dict)
+        else {}
+    )
+    rot_dir = str(crypto_rot.get("target_macro_direction", "")).upper()
+    smc_targets = crypto_rot.get("on_demand_smc_targets", [])
+    vetoed_map = crypto_rot.get("vetoed_symbols", {})
+    if "SHORT" in btc or rot_dir == "SHORT":
+        if smc_targets:
+            t_list = ", ".join(
+                f"{html.escape(str(t.get('smc_symbol') or t.get('coin')))} ({t.get('rotation_score', 0)}/100)"
+                for t in smc_targets
+                if isinstance(t, dict)
+            )
+            veto_note = (
+                f" | Short-Squeeze Vetosu: {', '.join(list(vetoed_map.keys())[:3])}"
+                if isinstance(vetoed_map, dict) and vetoed_map
+                else ""
+            )
+            today_items.append(
+                f"• 🔄 <b>Altcoin Rotasyonu (SHORT_ONLY):</b> BTC'ye karşı göreli zayıf (ALT/BTC negatif) ve sermaye çıkışı onaylı "
+                f"<b>{t_list}</b> hedeflerinde On-Demand SMC short kurulumu ara{veto_note}."
+            )
+        else:
+            today_items.append(
+                "• 🔄 <b>Altcoin Rotasyonu (SHORT_ONLY):</b> Makro yön SHORT_ONLY; ancak ≥65 puan eşiğini geçen altcoin yok, beklemede kal."
+            )
+    elif "LONG" in btc or rot_dir == "LONG":
+        if smc_targets:
+            t_list = ", ".join(
+                f"{html.escape(str(t.get('smc_symbol') or t.get('coin')))} ({t.get('rotation_score', 0)}/100)"
+                for t in smc_targets
+                if isinstance(t, dict)
+            )
+            today_items.append(
+                f"• 🔄 <b>Altcoin Rotasyonu (LONG_ONLY):</b> BTC/ETH'ye karşı göreli güçlü (ALT/BTC pozitif + RVOL/OI onaylı) "
+                f"<b>{t_list}</b> hedeflerinde On-Demand SMC long kurulumu ara."
+            )
+        else:
+            today_items.append(
+                "• 🔄 <b>Altcoin Rotasyonu (LONG_ONLY):</b> Makro yön LONG_ONLY; ancak ≥65 puan rotasyon eşiğini geçen altcoin henüz yok."
+            )
+    elif "DEFENSIVE" in btc or "HOLD" in btc or rot_dir == "DEFENSIVE_HOLD":
+        today_items.append(
+            "• 🔄 <b>Altcoin Rotasyonu:</b> DEFENSIVE_HOLD; altcoinlerde yönlü On-Demand SMC taraması kapalı."
+        )
+    else:
+        today_items.append(
+            "• 🔄 <b>Altcoin Rotasyonu:</b> Makro BTC kapısı NEUTRAL_RANGE; altcoinlerde yeni yönlü rotasyon işlemi açma."
+        )
+
     eur = (gates.get("EURUSD") or "").upper()
     if "SHORT" in eur:
         today_items.append(
@@ -479,13 +533,18 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
     # 8-Faktör Kripto Sermaye Akışı & Sektör Rotasyonu (39 Coin / 7 Katman + On-Demand SMC)
     crypto_rot = (
         metrics.get("crypto_rotation")
-        if isinstance(metrics.get("crypto_rotation"), dict)
+        if isinstance(metrics.get("crypto_rotation"), dict) and metrics.get("crypto_rotation")
+        else metrics.get("crypto_rotation_analysis")
+        if isinstance(metrics.get("crypto_rotation_analysis"), dict) and metrics.get("crypto_rotation_analysis")
+        else deterministic.get("crypto_rotation_analysis")
+        if isinstance(deterministic.get("crypto_rotation_analysis"), dict) and deterministic.get("crypto_rotation_analysis")
         else regime_st.get("crypto_rotation", {})
         if isinstance(regime_st.get("crypto_rotation"), dict)
         else {}
     )
     crypto_rot_block = ""
     if crypto_rot and crypto_rot.get("status") in ("AVAILABLE", "OK"):
+        rot_dir = str(crypto_rot.get("target_macro_direction", "")).upper()
         btcd_info = crypto_rot.get("btc_dominance_panel", {})
         bell_info = crypto_rot.get("bellwether_ratios", {})
         inflow_layers = crypto_rot.get("active_inflow_layers", [])
@@ -493,33 +552,73 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
         sec_map = crypto_rot.get("sector_breadth", {})
         lead_sec_name = "BELİRSİZ"
         lead_sec_info = {}
-        if sec_map:
-            lead_sec_name, lead_sec_info = max(
-                sec_map.items(),
-                key=lambda kv: (kv[1].get("long_breadth_ratio", 0.0), kv[1].get("avg_rs_vs_btc_24h_pct", -99.0)),
+
+        if rot_dir == "SHORT":
+            rot_dir_badge = "🔴 SHORT_ONLY (Göreli Zayıflık & Sermaye Çıkışı Rotasyonu)"
+            if sec_map:
+                lead_sec_name, lead_sec_info = max(
+                    sec_map.items(),
+                    key=lambda kv: (
+                        kv[1].get("short_breadth_ratio", 0.0),
+                        -float(kv[1].get("avg_rs_vs_btc_24h_pct", 99.0)),
+                    ),
+                )
+            breadth_str = (
+                f"%{lead_sec_info.get('short_breadth_ratio', 0.0) * 100:.0f} "
+                f"({len(lead_sec_info.get('underperforming_coins', []))}/{lead_sec_info.get('member_count', 0)} Coin BTC'den Zayıf | "
+                f"Ort. ALT/BTC 24s: %{_fmt(lead_sec_info.get('avg_rs_vs_btc_24h_pct'), '+.2f')} | "
+                f"Ort. RVOL: {lead_sec_info.get('avg_rvol', 1.0):.2f}x)"
+                if lead_sec_info
+                else "N/A"
             )
-        breadth_str = (
-            f"%{lead_sec_info.get('long_breadth_ratio', 0.0) * 100:.0f} "
-            f"({len(lead_sec_info.get('outperforming_coins', []))}/{lead_sec_info.get('member_count', 0)} Coin | "
-            f"Ort. RVOL: {lead_sec_info.get('avg_rvol', 1.0):.2f}x)"
-            if lead_sec_info
-            else "N/A"
-        )
+            sector_label = "En Zayıf Sektör (Short Genişliği)"
+        else:
+            if rot_dir == "LONG":
+                rot_dir_badge = "🟢 LONG_ONLY (Göreli Güç & Organik Sermaye Girişi Rotasyonu)"
+            elif rot_dir == "DEFENSIVE_HOLD":
+                rot_dir_badge = "🛡️ DEFENSIVE_HOLD (Sermaye Koruma — Altcoin Taraması Kapalı)"
+            else:
+                rot_dir_badge = "🟡 NEUTRAL_RANGE (Yönsüz — On-Demand SMC Beklemede)"
+            if sec_map:
+                lead_sec_name, lead_sec_info = max(
+                    sec_map.items(),
+                    key=lambda kv: (
+                        kv[1].get("long_breadth_ratio", 0.0),
+                        float(kv[1].get("avg_rs_vs_btc_24h_pct", -99.0)),
+                    ),
+                )
+            breadth_str = (
+                f"%{lead_sec_info.get('long_breadth_ratio', 0.0) * 100:.0f} "
+                f"({len(lead_sec_info.get('outperforming_coins', []))}/{lead_sec_info.get('member_count', 0)} Coin BTC'den Güçlü | "
+                f"Ort. ALT/BTC 24s: %{_fmt(lead_sec_info.get('avg_rs_vs_btc_24h_pct'), '+.2f')} | "
+                f"Ort. RVOL: {lead_sec_info.get('avg_rvol', 1.0):.2f}x)"
+                if lead_sec_info
+                else "N/A"
+            )
+            sector_label = "Lider Sektör (Long Genişliği)"
+
         smc_targets = crypto_rot.get("on_demand_smc_targets", [])
         top_cands = crypto_rot.get("top_rotation_candidates", [])
         if smc_targets:
-            targets_str = ", ".join(
-                f"<b>{html.escape(str(t.get('coin', t) if isinstance(t, dict) else t))}</b> "
-                f"({t.get('rotation_score', 0)}/100 - {html.escape(str(t.get('rotation_gate', '')))})"
-                if isinstance(t, dict)
-                else f"<b>{html.escape(str(t))}</b>"
-                for t in smc_targets
-            )
+            target_parts = []
+            for t in smc_targets:
+                if isinstance(t, dict):
+                    sym_label = html.escape(str(t.get("smc_symbol") or t.get("coin", "")))
+                    sc_val = t.get("rotation_score", 0)
+                    g_val = html.escape(str(t.get("rotation_gate", "")))
+                    rs_val = _fmt(t.get("rs_vs_btc_24h_pct"), "+.2f")
+                    rv_val = _fmt(t.get("effective_rvol"), ".2f")
+                    target_parts.append(
+                        f"<b>{sym_label}</b> ({sc_val}/100 - {g_val} | ALT/BTC 24s: %{rs_val} | RVOL: {rv_val}x)"
+                    )
+                else:
+                    target_parts.append(f"<b>{html.escape(str(t))}</b>")
+            targets_str = ", ".join(target_parts)
             smc_target_line = f"🎯 <b>On-Demand SMC Hedefleri (≥65 Puan):</b> {targets_str}"
         elif top_cands:
             watch_items = []
             for tc in top_cands[:3]:
-                sym_c = html.escape(str(tc.get("coin", "")))
+                sym_c = html.escape(str(tc.get("smc_symbol") or tc.get("coin", "")))
                 sc_c = tc.get("active_rotation_score", 0)
                 gate_c = html.escape(str(tc.get("rotation_gate", "NEUTRAL_RANGE")))
                 watch_items.append(f"{sym_c} ({sc_c}/100 - {gate_c})")
@@ -527,17 +626,39 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
         else:
             smc_target_line = "⏸️ <b>On-Demand SMC:</b> Aktif rotasyon adayı yok"
 
+        approved_list = (
+            crypto_rot.get("approved_short_symbols", [])
+            if rot_dir == "SHORT"
+            else crypto_rot.get("approved_long_symbols", [])
+        )
+        approved_line = ""
+        if approved_list:
+            dir_tag = "SHORT_ONLY" if rot_dir == "SHORT" else "LONG_ONLY"
+            approved_preview = ", ".join(html.escape(str(s)) for s in approved_list[:8])
+            extra_cnt = f" (+{len(approved_list) - 8} diğer)" if len(approved_list) > 8 else ""
+            approved_line = f"\n• <b>Rotasyon Onaylı Havuz ({dir_tag} - {len(approved_list)} Coin):</b> {approved_preview}{extra_cnt}"
+
+        vetoed_map = crypto_rot.get("vetoed_symbols", {})
+        veto_line = ""
+        if isinstance(vetoed_map, dict) and vetoed_map:
+            veto_keys = ", ".join(html.escape(str(k)) for k in list(vetoed_map.keys())[:5])
+            shield_name = "Short-Squeeze Kalkanı (RS Contra Veto)" if rot_dir == "SHORT" else "Sahte Pump / Kaldıraç Vetosu"
+            veto_line = f"\n• 🛡️ <b>{shield_name}:</b> {veto_keys} ( İşleme Kapalı )"
+        elif rot_dir == "SHORT":
+            veto_line = "\n• 🛡️ <b>Short-Squeeze Kalkanı:</b> Piyasaya aykırı güçlenen (RS Contra) coin yok; satış baskısı genele yayılıyor."
+
         meme_warn_line = ""
         if crypto_rot.get("meme_froth_warning"):
             meme_warn_line = "\n  └ ⚠️ <b>Geç Döngü Köpük Uyarısı:</b> Meme sektörü aşırı ısındı (L1/L2 liderler eşlik etmiyor)!"
 
         crypto_rot_block = f"""
-🔄 <b>KRİPTO SERMAYE AKIŞI & 8-FAKTÖR SEKTÖR ROTASYONU:</b>
+🔄 <b>KRİPTO SERMAYE AKIŞI & 8-FAKTÖR ALTCOIN ROTASYONU:</b>
+• <b>Makro Altcoin Rotasyon Yönü:</b> {rot_dir_badge}
 • <b>BTC Dominance (BTC.D):</b> %{_fmt(btcd_info.get('btc_dominance_pct'), '.2f')} (BTCDOM 24s: %{_fmt(btcd_info.get('btcdom_change_24h_pct'), '+.2f')} -> {html.escape(str(btcd_info.get('dominance_regime', 'NEUTRAL_DOMINANCE')))})
 • <b>Liderlik Çiftleri:</b> ETH/BTC 24s: %{_fmt(bell_info.get('eth_btc_24h_pct'), '+.2f')} | SOL/ETH 24s: %{_fmt(bell_info.get('sol_eth_24h_pct'), '+.2f')} | SUI/SOL 24s: %{_fmt(bell_info.get('sui_sol_24h_pct'), '+.2f')}
-• <b>Aktif Risk Katmanı:</b> Katman {max_layer} (Aktif Giriş Katmanları: {html.escape(str(inflow_layers))})
-• <b>Lider Sektör & Genişlik:</b> {html.escape(str(lead_sec_name))} — {breadth_str}{meme_warn_line}
-• {smc_target_line}
+• <b>Katman Akışı:</b> Katman {max_layer} (Pozitif Giriş Katmanları: {html.escape(str(inflow_layers))})
+• <b>{sector_label}:</b> {html.escape(str(lead_sec_name))} — {breadth_str}{meme_warn_line}
+• {smc_target_line}{approved_line}{veto_line}
 """
 
     # Red-Folder Event Freeze Durumu

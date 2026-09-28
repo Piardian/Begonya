@@ -253,3 +253,44 @@ def test_meme_late_cycle_froth_warning_blocks_layer_6_when_majors_stall():
     pepe_eval = res["coin_assessments"]["PEPE"]
     assert pepe_eval["rotation_gate"] == "NEUTRAL_RANGE"
     assert any("MEME_LATE_CYCLE_FROTH_VETO" in r for r in pepe_eval["veto_reasons_long"])
+
+
+def test_morning_briefing_renders_short_only_altcoin_rotation():
+    """
+    Ensure format_morning_briefing renders SHORT_ONLY altcoin rotation direction,
+    weakest sector breadth, On-Demand SMC short targets, and Eylem Planı item.
+    """
+    from gateways.telegram_notifier import format_morning_briefing
+
+    snap = _build_base_snapshot(btc_change_24h=-2.0, eth_change_24h=-3.5)
+    snap["btcdom_change_24h_pct"] = 1.15
+    for sym in ["ARB", "BCH", "SOL"]:
+        _set_coin(snap, sym, chg24=-7.5, chg4=-2.8, rvol=1.65, oi4=-2.5, oi24=-5.0, funding_pct=0.008)
+    _set_coin(snap, "LTC", chg24=3.2, chg4=1.5, rvol=1.80, oi4=3.0, oi24=6.0, funding_pct=-0.015)
+
+    rot = evaluate_crypto_rotation(snap, macro_btc_gate="SHORT_ONLY")
+    pipeline_result = {
+        "regime_state": {"cycle_regime": "STAGFLATION_RISK", "crypto_rotation": rot},
+        "deterministic_execution_gates": {
+            "execution_bias_gates": {
+                "XAUUSD": "NEUTRAL_RANGE",
+                "BTC": "SHORT_ONLY",
+                "EURUSD": "NEUTRAL_RANGE",
+                "SPX_NAS100": "NEUTRAL_RANGE",
+            },
+            "crypto_rotation_analysis": rot,
+        },
+        "processed_metrics": {
+            "crypto_rotation_analysis": rot,
+            "crypto_rotation": rot,
+        },
+        "final_output": {"macro_rationale": "Test rationale"},
+    }
+    msg = format_morning_briefing(pipeline_result, upcoming_events=[])
+    assert "KRİPTO SERMAYE AKIŞI & 8-FAKTÖR ALTCOIN ROTASYONU" in msg
+    assert "SHORT_ONLY (Göreli Zayıflık & Sermaye Çıkışı Rotasyonu)" in msg
+    assert "En Zayıf Sektör (Short Genişliği)" in msg
+    assert "On-Demand SMC Hedefleri (≥65 Puan)" in msg
+    assert "Altcoin Rotasyonu (SHORT_ONLY):" in msg
+    assert "Short-Squeeze Kalkanı" in msg
+

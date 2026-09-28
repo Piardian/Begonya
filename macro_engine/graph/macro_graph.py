@@ -469,20 +469,25 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
         regime_state = dict(metrics.get("regime_state", {}) or {})
         crypto_rot = deterministic.get("crypto_rotation_analysis", {})
         if crypto_rot:
+            metrics["crypto_rotation"] = crypto_rot
             metrics["crypto_rotation_analysis"] = crypto_rot
             regime_state["crypto_rotation"] = {
                 "status": crypto_rot.get("status"),
                 "macro_btc_gate": crypto_rot.get("macro_btc_gate"),
+                "target_macro_direction": crypto_rot.get("target_macro_direction"),
                 "meme_froth_warning": crypto_rot.get("meme_froth_warning", False),
                 "btc_dominance_panel": crypto_rot.get("btc_dominance_panel", {}),
                 "bellwether_ratios": crypto_rot.get("bellwether_ratios", {}),
                 "active_inflow_layers": crypto_rot.get("active_inflow_layers", []),
+                "sector_breadth": crypto_rot.get("sector_breadth", {}),
                 "approved_long_symbols": crypto_rot.get("approved_long_symbols", []),
                 "approved_short_symbols": crypto_rot.get("approved_short_symbols", []),
                 "on_demand_smc_targets": crypto_rot.get("on_demand_smc_targets", []),
                 "top_rotation_candidates": crypto_rot.get("top_rotation_candidates", []),
                 "vetoed_symbols": crypto_rot.get("vetoed_symbols", {}),
             }
+            if isinstance(metrics.get("regime_state"), dict):
+                metrics["regime_state"]["crypto_rotation"] = regime_state["crypto_rotation"]
 
         payload = {
             "timestamp": final_dict.get("timestamp") or metrics.get("data_quality", {}).get("as_of_datetime"),
@@ -535,7 +540,10 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             "final_output": None,
         }
         result = self.app.invoke(initial_state)
-        result["deterministic_execution_gates"] = self._build_deterministic_gates(
+        det_gates = self._build_deterministic_gates(
             result.get("processed_metrics", {})
         )
+        result["deterministic_execution_gates"] = det_gates
+        if isinstance(result.get("processed_metrics"), dict) and det_gates.get("crypto_rotation_analysis"):
+            result["processed_metrics"]["crypto_rotation"] = det_gates["crypto_rotation_analysis"]
         return result
