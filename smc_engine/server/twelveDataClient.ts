@@ -9,6 +9,8 @@ import {
   ProviderSuccess,
   TWELVE_DATA_TIME_SERIES_ENDPOINT,
 } from './providerTypes';
+import { isOnDemandAltcoinSymbol } from './universe';
+import { fetchBinanceSpotCandles } from './binanceClient';
 
 let globalQueue: DeterministicProviderQueue | null = null;
 
@@ -17,6 +19,9 @@ export async function fetchCandles(
   timeframe: Timeframe,
   outputSize: number
 ): Promise<StoredCandle[]> {
+  if (isOnDemandAltcoinSymbol(symbol)) {
+    return fetchBinanceSpotCandles(symbol, timeframe, outputSize);
+  }
   const result = await providerQueue().enqueue({
     endpoint: TWELVE_DATA_TIME_SERIES_ENDPOINT,
     symbol,

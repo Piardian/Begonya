@@ -1,6 +1,12 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { NewsGuard } from './newsGuard';
+import {
+  CoinRotationAssessment,
+  CRYPTO_ROTATION_UNIVERSE_META,
+  CryptoRotationEngine,
+  CryptoRotationEvaluationReport,
+} from './cryptoRotationEngine';
 
 export interface MacroGatePayload {
   timestamp?: string;
@@ -12,6 +18,7 @@ export interface MacroGatePayload {
   recommended_risk_multiplier?: number;
   execution_bias_gates?: Record<string, string>;
   asset_biases?: Record<string, string>;
+  crypto_rotation?: CryptoRotationEvaluationReport;
   regime_state?: {
     energy_penalty_active?: boolean;
     capital_preservation_active?: boolean;
@@ -44,6 +51,7 @@ export interface MacroGatePayload {
     equity_short_allowed?: boolean;
     gold_short_allowed?: boolean;
     vix_complacent?: boolean;
+    crypto_rotation?: CryptoRotationEvaluationReport;
     [key: string]: any;
   };
   macro_rationale?: string;
@@ -73,6 +81,9 @@ export interface MacroGateEvaluation {
   begonyaScore: number;           // Nihai Skor = G_macro * smcTechnicalScore (0 veya 1-100)
   scoreTier: BegonyaScoreTier;
   tierRationale: string;
+
+  // 🔄 8-Faktör Kripto Rotasyon Karnesi (Altcoin İşlemleri İçin)
+  cryptoRotationAssessment?: CoinRotationAssessment;
 }
 
 export interface SymbolMappingEntry {
@@ -156,13 +167,19 @@ export class MacroGateAdapter {
   } {
     const cleanSym = symbol.toUpperCase();
     const mapped = symbolMap.mappings[cleanSym];
-    const base = mapped?.base_currency?.toUpperCase() || (cleanSym.length === 6 ? cleanSym.slice(0, 3) : '');
-    const quote = mapped?.quote_currency?.toUpperCase() || (cleanSym.length === 6 ? cleanSym.slice(3, 6) : '');
+    const base = mapped?.base_currency?.toUpperCase() || (cleanSym.endsWith('USD') ? cleanSym.slice(0, -3) : (cleanSym.length === 6 ? cleanSym.slice(0, 3) : ''));
+    const quote = mapped?.quote_currency?.toUpperCase() || (cleanSym.endsWith('USD') ? 'USD' : (cleanSym.length === 6 ? cleanSym.slice(3, 6) : ''));
     const isLong = tradeDirection === 'long';
 
     let usdLeg: 'LONG' | 'SHORT' | undefined;
     let jpyLeg: 'LONG' | 'SHORT' | undefined;
-    const isCrypto = ['BTC', 'SOL', 'ETH', 'LTC'].includes(base) || cleanSym.startsWith('BTC') || cleanSym.startsWith('SOL') || cleanSym.startsWith('ETH');
+    const isCrypto =
+      Boolean(CRYPTO_ROTATION_UNIVERSE_META[base]) ||
+      mapped?.macro_type === 'CRYPTO_ROTATION' ||
+      ['BTC', 'SOL', 'ETH', 'LTC'].includes(base) ||
+      cleanSym.startsWith('BTC') ||
+      cleanSym.startsWith('SOL') ||
+      cleanSym.startsWith('ETH');
 
     if (base === 'USD') usdLeg = isLong ? 'LONG' : 'SHORT';
     if (quote === 'USD') usdLeg = isLong ? 'SHORT' : 'LONG';
@@ -702,8 +719,8 @@ export class MacroGateAdapter {
       }
     }
 
-    // C) KRİPTO (BTCUSD / ETHUSD) LONG KURALI: Fon Tasfiye Dalgası (Margin Call) Kalkanı
-    if ((cleanSym.includes('BTC') || cleanSym.includes('ETH')) && tradeDirection === 'long' && btcDecoupling) {
+    // C) KRİPTO (BTCUSD / ETHUSD / ALTCOINLER) LONG KURALI: Fon Tasfiye Dalgası (Margin Call) Kalkanı
+    if (candidateLegs.isCrypto && tradeDirection === 'long' && btcDecoupling) {
       return this.buildVetoResult(
         cleanSym,
         macroKey,
@@ -718,8 +735,91 @@ export class MacroGateAdapter {
       );
     }
 
-    // D) SOL (SOLUSD / SOL) KURALI: BTC Gate ve SOL/BTC Göreli Güç Filtresi + 4H CHoCH
-    if (cleanSym.includes('SOL') && tradeDirection === 'long') {
+    // D) 8-FAKTÖR KRİPTO SERMAYE AKIŞI & SEKTÖR ROTASYON KALKANI (ALTCOINLER & SOL/ETH/LTC)
+    const baseCoin = mapped?.base_currency?.toUpperCase() || (cleanSym.endsWith('USD') ? cleanSym.slice(0, -3) : cleanSym);
+    const isAltcoin = candidateLegs.isCrypto && baseCoin !== 'BTC';
+    const coinRotation = isAltcoin
+      ? CryptoRotationEngine.getInstance().getCoinAssessment(baseCoin, payload)
+      : null;
+
+    if (isAltcoin && coinRotation) {
+      if (tradeDirection === 'long') {
+        if (coinRotation.veto_reasons_long && coinRotation.veto_reasons_long.length > 0) {
+          return this.buildVetoResult(
+            cleanSym,
+            macroKey,
+            tradeDirection,
+            coinRotation.rotation_gate,
+            regime,
+            capitalPreservation,
+            btcDecoupling,
+            rationale,
+            smcScore,
+            `🛑 VETO [CRYPTO_ROTATION_SHIELD]: ${coinRotation.veto_reasons_long.join(' | ')}`
+          );
+        }
+        if (coinRotation.rotation_gate !== 'LONG_ONLY' || coinRotation.active_rotation_score < 65) {
+          return this.buildVetoResult(
+            cleanSym,
+            macroKey,
+            tradeDirection,
+            coinRotation.rotation_gate,
+            regime,
+            capitalPreservation,
+            btcDecoupling,
+            rationale,
+            smcScore,
+            `🛑 VETO [CRYPTO_ROTATION_SCORE]: ${coinRotation.rationale} (Skor: ${coinRotation.active_rotation_score}/100, Eşik: 65)`
+          );
+        }
+      } else if (tradeDirection === 'short') {
+        if (coinRotation.veto_reasons_short && coinRotation.veto_reasons_short.length > 0) {
+          return this.buildVetoResult(
+            cleanSym,
+            macroKey,
+            tradeDirection,
+            coinRotation.rotation_gate,
+            regime,
+            capitalPreservation,
+            btcDecoupling,
+            rationale,
+            smcScore,
+            `🛑 VETO [CRYPTO_SHORT_SQUEEZE_SHIELD]: ${coinRotation.veto_reasons_short.join(' | ')}`
+          );
+        }
+        if (coinRotation.rotation_gate !== 'SHORT_ONLY' || coinRotation.active_rotation_score < 65) {
+          return this.buildVetoResult(
+            cleanSym,
+            macroKey,
+            tradeDirection,
+            coinRotation.rotation_gate,
+            regime,
+            capitalPreservation,
+            btcDecoupling,
+            rationale,
+            smcScore,
+            `🛑 VETO [CRYPTO_ROTATION_SCORE]: ${coinRotation.rationale} (Skor: ${coinRotation.active_rotation_score}/100, Eşik: 65)`
+          );
+        }
+      }
+    } else if (mapped?.macro_type === 'CRYPTO_ROTATION') {
+      // On-Demand altcoin için rotasyon karnesi yoksa işlem kesinlikle açılmaz
+      return this.buildVetoResult(
+        cleanSym,
+        macroKey,
+        tradeDirection,
+        macroBias,
+        regime,
+        capitalPreservation,
+        btcDecoupling,
+        rationale,
+        smcScore,
+        `🛑 VETO [CRYPTO_ROTATION_REQUIRED]: ${cleanSym} için aktif 8-Faktör Rotasyon onayı bulunamadı; yalnızca rotasyon onaylı (Skor ≥ 65) altcoinlerde işlem açılır!`
+      );
+    }
+
+    // E) SOL (SOLUSD / SOL) GERİYE DÖNÜK UYUMLULUK KURALI: BTC Gate ve SOL/BTC Göreli Güç Filtresi + 4H CHoCH
+    if (cleanSym.includes('SOL') && tradeDirection === 'long' && !coinRotation) {
       const btcGate = (gates['BTC'] || gates['BTCUSD'] || '').toUpperCase();
       const sol4hBroken = regimeState.sol_btc_4h_structure_broken ?? false;
       const solBtcBullish = (regimeState.sol_btc_structure_bullish ?? ((regimeState.sol_btc_roc_5d ?? 0) > 0)) && !sol4hBroken;
@@ -773,8 +873,12 @@ export class MacroGateAdapter {
     // 3. KATMAN: MAKRO YÖN ÇÖZÜMLEME & DOĞRU ORANTILILIK DENETİMİ (STRICT ALIGNMENT)
     // ──────────────────────────────────────────────────────────────────────────
     const macroResolution = this.resolveMacroDirection(cleanSym, macroKey, payload, symbolMap);
-    const macroDir = macroResolution.direction;
-    const effectiveMacroBias = mapped?.macro_type === 'SYNTHETIC_CROSS' ? macroDir : macroBias;
+    const macroDir = coinRotation
+      ? (coinRotation.rotation_gate === 'LONG_ONLY' ? 'LONG' : coinRotation.rotation_gate === 'SHORT_ONLY' ? 'SHORT' : 'NEUTRAL')
+      : macroResolution.direction;
+    const effectiveMacroBias = coinRotation
+      ? coinRotation.rotation_gate
+      : (mapped?.macro_type === 'SYNTHETIC_CROSS' ? macroDir : macroBias);
 
     // A) Doğrudan Yön Uyuşmazlığı / Ters Orantı Kontrolü
     if (tradeDirection === 'long' && (macroDir === 'SHORT' || effectiveMacroBias === 'SHORT_ONLY' || effectiveMacroBias === 'SHORT')) {
@@ -879,9 +983,11 @@ export class MacroGateAdapter {
 
     // Nihai Risk = Taban SMC Riski * Makro Risk Çarpanı (Örn: 1.00 * 0.25 = 0.25x)
     const finalRiskMultiplier = Math.round(baseRisk * macroMultiplier * 100) / 100;
-    const gateStatusMessage = mapped?.macro_type === 'SYNTHETIC_CROSS'
-      ? `🌟 ${scoreTier} SENTETİK ÇAPRAZ MAKRO ONAYI (${macroResolution.reason}) -> ${finalRiskMultiplier.toFixed(2)}x Lot ile Uygula`
-      : `🌟 ${scoreTier} DOĞRU ORANTILI MAKRO İŞLEM (Skor: ${begonyaScore}/100) -> ${finalRiskMultiplier.toFixed(2)}x Lot (Makro Çarpan: ${macroMultiplier}x) ile Uygula`;
+    const gateStatusMessage = coinRotation
+      ? `🌟 ${scoreTier} 8-FAKTÖR ROTASYON & MAKRO ONAYI (Rotasyon: ${coinRotation.active_rotation_score}/100 | ALT/BTC 24s: %${coinRotation.rs_vs_btc_24h_pct.toFixed(2)} | RVOL: ${coinRotation.effective_rvol}x | Türev: ${coinRotation.derivatives_regime}) -> ${finalRiskMultiplier.toFixed(2)}x Lot ile Uygula`
+      : mapped?.macro_type === 'SYNTHETIC_CROSS'
+        ? `🌟 ${scoreTier} SENTETİK ÇAPRAZ MAKRO ONAYI (${macroResolution.reason}) -> ${finalRiskMultiplier.toFixed(2)}x Lot ile Uygula`
+        : `🌟 ${scoreTier} DOĞRU ORANTILI MAKRO İŞLEM (Skor: ${begonyaScore}/100) -> ${finalRiskMultiplier.toFixed(2)}x Lot (Makro Çarpan: ${macroMultiplier}x) ile Uygula`;
 
     return {
       allowed: true,
@@ -901,6 +1007,7 @@ export class MacroGateAdapter {
       begonyaScore,
       scoreTier,
       tierRationale: `${tierRationale} [Makro Çarpan: ${macroMultiplier}x]`,
+      ...(coinRotation ? { cryptoRotationAssessment: coinRotation } : {}),
     };
   }
 }

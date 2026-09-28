@@ -12,6 +12,8 @@ import { createSignalDeliveryProcessor } from './signalDeliveryProcessor';
 import { probeTelegramConnection } from './telegramSender';
 import { acquireRuntimeInstanceLock, RuntimeInstanceLock } from './runtimeInstanceLock';
 import { evaluateHardMarketWindow } from './killzone';
+import { MacroGateAdapter } from './macroGateAdapter';
+import { CryptoRotationEngine } from './cryptoRotationEngine';
 
 const port = environmentInteger('PORT', 3000);
 const symbols: Symbol[] = [...ALL_SYMBOLS];
@@ -172,6 +174,45 @@ async function executeAlignedPollingCycle(
     void runTrackedPoll(symbol, '15m', candleStore, notifiedStore, deliveryQueue);
     // Pacing delay to avoid burst queue spikes
     await new Promise(resolve => setTimeout(resolve, 150));
+  }
+
+  // ON-DEMAND ALTCOIN SMC BRIDGE ("Sıra SMC'ye Geldiğinde İstek At"):
+  // Yalnızca Makro motoru onay verdikten ve 8-Faktör Rotasyon Motoru en güçlü 1-2 hedef coini
+  // (Skor >= 65, Veto = Yok) seçtikten sonra o hedef coinler için 4h/1h/15m grafik verisi çekilir ve SMC çalıştırılır.
+  await executeOnDemandRotationSmcPolling(candleStore, notifiedStore, deliveryQueue);
+}
+
+async function executeOnDemandRotationSmcPolling(
+  candleStore: CandleStore,
+  notifiedStore: NotifiedStore,
+  deliveryQueue: SignalDeliveryQueue
+): Promise<void> {
+  try {
+    const payload = MacroGateAdapter.getInstance().loadGatePayload();
+    const targets = await CryptoRotationEngine.getInstance().resolveOnDemandSmcTargets(payload);
+    if (targets.length === 0) {
+      console.log('[OnDemandRotation] Aktif rotasyon eşiği (≥65) geçen altcoin hedefi yok; gereksiz SMC grafik isteği atılmadı.');
+      return;
+    }
+
+    console.log(
+      `[OnDemandRotation] 🎯 Makro + 8-Faktör Rotasyon Onaylı On-Demand SMC Hedefleri (${targets.length}): ` +
+      targets.map(t => `${t.smc_symbol} (${t.rotation_score}/100 ${t.rotation_gate} [${t.sector}])`).join(', ')
+    );
+
+    for (const target of targets) {
+      const targetSym = target.smc_symbol;
+      if ((ALL_SYMBOLS as readonly string[]).includes(targetSym)) {
+        // Zaten ana döngüde taranan sembol (örn. SOLUSD, ETHUSD, LTCUSD)
+        continue;
+      }
+      // On-demand hedef coin için önce 4h ve 1h HTF yapısını hazırla, ardından 15m SMC tetikleyicisini çalıştır
+      await runTrackedPoll(targetSym, '4h', candleStore, notifiedStore, deliveryQueue);
+      await runTrackedPoll(targetSym, '1h', candleStore, notifiedStore, deliveryQueue);
+      await runTrackedPoll(targetSym, '15m', candleStore, notifiedStore, deliveryQueue);
+    }
+  } catch (err) {
+    console.warn('[OnDemandRotation] On-demand SMC taraması sırasında uyarı:', err);
   }
 }
 

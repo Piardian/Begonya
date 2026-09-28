@@ -61,7 +61,7 @@ const TIMEFRAME_PRIORITY: Readonly<Record<Timeframe, number>> = Object.freeze({
   '1m': 3,
 });
 
-const SYMBOL_PRIORITY: Readonly<Record<Symbol, number>> = Object.freeze({
+const SYMBOL_PRIORITY: Readonly<Partial<Record<Symbol, number>>> = Object.freeze({
   EURUSD: 0,
   GBPUSD: 1,
   AUDUSD: 2,
@@ -282,7 +282,7 @@ export class DeterministicProviderQueue {
   private sortWaitingJobs(): void {
     this.waiting.sort((left, right) =>
       TIMEFRAME_PRIORITY[left.request.timeframe] - TIMEFRAME_PRIORITY[right.request.timeframe] ||
-      SYMBOL_PRIORITY[left.request.symbol] - SYMBOL_PRIORITY[right.request.symbol] ||
+      (SYMBOL_PRIORITY[left.request.symbol] ?? 30) - (SYMBOL_PRIORITY[right.request.symbol] ?? 30) ||
       left.id - right.id
     );
   }

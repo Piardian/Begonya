@@ -11,9 +11,24 @@ export interface DistanceInfo {
   readonly isInZone: boolean;
 }
 
+const CRYPTO_PREFIXES = [
+  'BTC', 'ETH', 'LTC', 'SOL',
+  'SUI', 'AVAX', 'NEAR', 'APT', 'SEI', 'ARB', 'OP',
+  'XRP', 'ADA', 'DASH', 'BCH', 'LINK', 'DOT',
+  'FET', 'RENDER', 'TAO', 'VIRTUAL', 'WLD', 'ARKM', 'IO',
+  'UNI', 'AAVE', 'PENDLE', 'INJ', 'CHZ', 'RVN', 'GALA', 'SAND',
+  'DOGE', 'PEPE', 'SHIB', 'WIF', 'BONK', 'FLOKI', 'PENGU',
+] as const;
+
+const MICRO_PRICE_CRYPTO_PREFIXES = ['PEPE', 'SHIB', 'BONK', 'FLOKI'] as const;
+const SUB_DOLLAR_CRYPTO_PREFIXES = [
+  'DOGE', 'CHZ', 'RVN', 'GALA', 'SAND', 'PENGU', 'ADA', 'XRP',
+  'SEI', 'ARB', 'OP', 'FET', 'WLD', 'ARKM', 'IO', 'VIRTUAL', 'WIF',
+] as const;
+
 export function detectAssetClass(symbol: string): AssetClass {
   const upper = symbol.toUpperCase();
-  if (upper.startsWith('BTC') || upper.startsWith('ETH') || upper.startsWith('LTC') || upper.startsWith('SOL')) {
+  if (CRYPTO_PREFIXES.some(prefix => upper === `${prefix}USD` || upper === `${prefix}USDT` || upper === `${prefix}EUR` || upper === prefix)) {
     return 'CRYPTO';
   }
   if (upper.startsWith('XAU') || upper.startsWith('XAG') || upper.startsWith('OIL') || upper.startsWith('WTI') || upper.startsWith('BRENT')) {
@@ -30,18 +45,25 @@ export function detectAssetClass(symbol: string): AssetClass {
 
 export function getPipSize(symbol: string): number {
   const assetClass = detectAssetClass(symbol);
+  const upper = symbol.toUpperCase();
   switch (assetClass) {
     case 'FOREX':
       return 0.0001;
     case 'FOREX_JPY':
       return 0.01;
     case 'CRYPTO':
-      if (symbol.toUpperCase().startsWith('LTC') || symbol.toUpperCase().startsWith('SOL')) {
-        return 0.01;
+      if (MICRO_PRICE_CRYPTO_PREFIXES.some(p => upper.startsWith(p))) {
+        return 0.00000001;
       }
-      return 1.0;
+      if (SUB_DOLLAR_CRYPTO_PREFIXES.some(p => upper.startsWith(p))) {
+        return 0.0001;
+      }
+      if (upper.startsWith('BTC')) {
+        return 1.0;
+      }
+      return 0.01;
     case 'COMMODITY':
-      if (symbol.toUpperCase().startsWith('XAU')) {
+      if (upper.startsWith('XAU')) {
         return 0.1;
       }
       return 0.01;
@@ -54,12 +76,20 @@ export function getPipSize(symbol: string): number {
 
 export function getDecimalPrecision(symbol: string): number {
   const assetClass = detectAssetClass(symbol);
+  const upper = symbol.toUpperCase();
   switch (assetClass) {
     case 'FOREX':
       return 5;
     case 'FOREX_JPY':
       return 3;
     case 'CRYPTO':
+      if (MICRO_PRICE_CRYPTO_PREFIXES.some(p => upper.startsWith(p))) {
+        return 8;
+      }
+      if (SUB_DOLLAR_CRYPTO_PREFIXES.some(p => upper.startsWith(p))) {
+        return 4;
+      }
+      return 2;
     case 'COMMODITY':
     case 'INDEX':
       return 2;

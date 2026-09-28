@@ -10,8 +10,10 @@ from graph.macro_graph_legacy import MacroGraphState, save_macro_gate_atomic
 from config import BIAS_GATE_FILE
 from preprocessing.economic_regimes import build_economic_regime_snapshot
 from preprocessing.policy_expectations import build_policy_expectations
+from preprocessing.crypto_rotation import evaluate_crypto_rotation
 from ingestion.bank_of_england import BankOfEnglandDataIngestion
 from ingestion.bank_of_canada import BankOfCanadaDataIngestion
+from ingestion.crypto_rotation_data import CryptoRotationDataIngestion
 
 
 class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
@@ -79,6 +81,20 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             raw_fred,
             market_data=raw_market,
         )
+
+        # 8-Faktörlü Kripto Rotasyon Radarı (Canlı çalışmada veya test verisi sağlandığında)
+        if isinstance(raw_market.get("CRYPTO_ROTATION_SNAPSHOT"), Mapping):
+            processed["crypto_rotation_raw_snapshot"] = dict(raw_market["CRYPTO_ROTATION_SNAPSHOT"])
+        elif as_of is None and type(self.market_ingest).__name__ == "MarketDataIngestion":
+            try:
+                processed["crypto_rotation_raw_snapshot"] = (
+                    CryptoRotationDataIngestion().fetch_rotation_snapshot()
+                )
+            except Exception as rot_exc:
+                processed["crypto_rotation_raw_snapshot"] = {
+                    "status": "UNAVAILABLE",
+                    "errors": [str(rot_exc)],
+                }
 
         fred_dq = raw_fred.get("data_quality", {})
         processed["data_quality"]["fred_provider"] = fred_dq.get("provider", "FRED")
@@ -405,21 +421,69 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             resolved[symbol] = decision["gate"]
             reasons[symbol] = decision["reason"]
 
+        crypto_rotation_analysis: Dict[str, Any] = {}
+        raw_rot_snap = metrics.get("crypto_rotation_raw_snapshot")
+        if isinstance(raw_rot_snap, Mapping) and raw_rot_snap.get("coins"):
+            btc_decoupling = bool(
+                metrics.get("btc_decoupling_analysis", {}).get("btc_decoupling_active", False)
+            )
+            crypto_rotation_analysis = evaluate_crypto_rotation(
+                raw_rot_snap,
+                macro_btc_gate=resolved.get("BTC", btc_base),
+                btc_decoupling_active=btc_decoupling,
+                capital_preservation_mode=fast_stress or freeze,
+            )
+            evidence["CRYPTO_ROTATION"] = {
+                "status": crypto_rotation_analysis.get("status"),
+                "approved_long_symbols": crypto_rotation_analysis.get("approved_long_symbols", []),
+                "approved_short_symbols": crypto_rotation_analysis.get("approved_short_symbols", []),
+                "on_demand_smc_targets": crypto_rotation_analysis.get("on_demand_smc_targets", []),
+                "btc_dominance_panel": crypto_rotation_analysis.get("btc_dominance_panel", {}),
+                "bellwether_ratios": crypto_rotation_analysis.get("bellwether_ratios", {}),
+                "meme_froth_warning": crypto_rotation_analysis.get("meme_froth_warning", False),
+            }
+            # SOL kapısını 8 faktörlü rotasyon motoruyla senkronize et (ör. Short Squeeze kalkanı devredeyse SOL Short'u durdur)
+            sol_rot = crypto_rotation_analysis.get("coin_assessments", {}).get("SOL")
+            if isinstance(sol_rot, Mapping) and not freeze and not fast_stress:
+                rot_gate = str(sol_rot.get("rotation_gate", "NEUTRAL_RANGE"))
+                resolved["SOL"] = rot_gate
+                base_gates["SOL"] = rot_gate
+                reasons["SOL"] = str(sol_rot.get("rationale", "8-factor crypto rotation"))
+
         return {
             "execution_bias_gates": resolved,
             "gate_reasons": reasons,
             "base_gates": base_gates,
             "evidence": evidence,
+            "crypto_rotation_analysis": crypto_rotation_analysis,
             "source": "deterministic_metrics_only",
             "precedence": ["EVENT_FREEZE", "SYSTEMIC_STRESS", "BASE_BIAS"],
             "llm_execution_gates_ignored": True,
         }
+
     def _node_gate_export(self, state: MacroGraphState) -> Dict[str, Any]:
         """Export execution gates derived only from deterministic metrics; LLM gates are advisory and ignored."""
         final_dict = state.get("final_output") or {}
         metrics = state.get("processed_metrics", {})
         deterministic = self._build_deterministic_gates(metrics)
-        regime_state = metrics.get("regime_state", {})
+        regime_state = dict(metrics.get("regime_state", {}) or {})
+        crypto_rot = deterministic.get("crypto_rotation_analysis", {})
+        if crypto_rot:
+            metrics["crypto_rotation_analysis"] = crypto_rot
+            regime_state["crypto_rotation"] = {
+                "status": crypto_rot.get("status"),
+                "macro_btc_gate": crypto_rot.get("macro_btc_gate"),
+                "meme_froth_warning": crypto_rot.get("meme_froth_warning", False),
+                "btc_dominance_panel": crypto_rot.get("btc_dominance_panel", {}),
+                "bellwether_ratios": crypto_rot.get("bellwether_ratios", {}),
+                "active_inflow_layers": crypto_rot.get("active_inflow_layers", []),
+                "approved_long_symbols": crypto_rot.get("approved_long_symbols", []),
+                "approved_short_symbols": crypto_rot.get("approved_short_symbols", []),
+                "on_demand_smc_targets": crypto_rot.get("on_demand_smc_targets", []),
+                "top_rotation_candidates": crypto_rot.get("top_rotation_candidates", []),
+                "vetoed_symbols": crypto_rot.get("vetoed_symbols", {}),
+            }
+
         payload = {
             "timestamp": final_dict.get("timestamp") or metrics.get("data_quality", {}).get("as_of_datetime"),
             "primary_regime": final_dict.get("primary_regime"),
@@ -438,6 +502,7 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             "llm_execution_gates_ignored": True,
             "asset_biases": final_dict.get("asset_biases", {}),
             "regime_state": regime_state,
+            "crypto_rotation": crypto_rot,
             "macro_rationale": final_dict.get("macro_rationale", ""),
             "horizon_today": final_dict.get("horizon_today", ""),
             "horizon_this_week": final_dict.get("horizon_this_week", ""),

@@ -156,6 +156,16 @@ function buildSections(
     field('Makro Durum', macro.gateStatusMessage),
   ];
 
+  if (macro.cryptoRotationAssessment) {
+    const rot = macro.cryptoRotationAssessment;
+    macroSectionLines.push(
+      field('🔄 8-Faktör Rotasyon Skoru', `${rot.active_rotation_score}/100 (Katman ${rot.layer}: ${rot.sector})`),
+      field('Göreli Güç (RS)', `ALT/BTC 24s: %${rot.rs_vs_btc_24h_pct >= 0 ? '+' : ''}${rot.rs_vs_btc_24h_pct.toFixed(2)} | ALT/ETH 24s: %${rot.rs_vs_eth_24h_pct >= 0 ? '+' : ''}${rot.rs_vs_eth_24h_pct.toFixed(2)}`),
+      field('Hacim Anomalisi (RVOL)', `1s: ${rot.rvol_1h.toFixed(2)}x | 4s: ${rot.rvol_4h.toFixed(2)}x (${rot.volume_regime})`),
+      field('Türev & Funding', `${rot.derivatives_regime} (OI 4s: %${rot.oi_change_4h_pct >= 0 ? '+' : ''}${rot.oi_change_4h_pct.toFixed(1)} | Funding: %${rot.funding_rate_pct >= 0 ? '+' : ''}${rot.funding_rate_pct.toFixed(4)})`)
+    );
+  }
+
   if (shortRationale) {
     macroSectionLines.push(field('Stratejik Görünüm', shortRationale));
   }

@@ -476,6 +476,70 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
     else:
         sol_subtext = f"SOL/BTC 5G İvme: %{sol_btc_roc:+.2f} | Kripto Yüksek Beta"
 
+    # 8-Faktör Kripto Sermaye Akışı & Sektör Rotasyonu (39 Coin / 7 Katman + On-Demand SMC)
+    crypto_rot = (
+        metrics.get("crypto_rotation")
+        if isinstance(metrics.get("crypto_rotation"), dict)
+        else regime_st.get("crypto_rotation", {})
+        if isinstance(regime_st.get("crypto_rotation"), dict)
+        else {}
+    )
+    crypto_rot_block = ""
+    if crypto_rot and crypto_rot.get("status") in ("AVAILABLE", "OK"):
+        btcd_info = crypto_rot.get("btc_dominance_panel", {})
+        bell_info = crypto_rot.get("bellwether_ratios", {})
+        inflow_layers = crypto_rot.get("active_inflow_layers", [])
+        max_layer = max(inflow_layers) if inflow_layers else 0
+        sec_map = crypto_rot.get("sector_breadth", {})
+        lead_sec_name = "BELİRSİZ"
+        lead_sec_info = {}
+        if sec_map:
+            lead_sec_name, lead_sec_info = max(
+                sec_map.items(),
+                key=lambda kv: (kv[1].get("long_breadth_ratio", 0.0), kv[1].get("avg_rs_vs_btc_24h_pct", -99.0)),
+            )
+        breadth_str = (
+            f"%{lead_sec_info.get('long_breadth_ratio', 0.0) * 100:.0f} "
+            f"({len(lead_sec_info.get('outperforming_coins', []))}/{lead_sec_info.get('member_count', 0)} Coin | "
+            f"Ort. RVOL: {lead_sec_info.get('avg_rvol', 1.0):.2f}x)"
+            if lead_sec_info
+            else "N/A"
+        )
+        smc_targets = crypto_rot.get("on_demand_smc_targets", [])
+        top_cands = crypto_rot.get("top_rotation_candidates", [])
+        if smc_targets:
+            targets_str = ", ".join(
+                f"<b>{html.escape(str(t.get('coin', t) if isinstance(t, dict) else t))}</b> "
+                f"({t.get('rotation_score', 0)}/100 - {html.escape(str(t.get('rotation_gate', '')))})"
+                if isinstance(t, dict)
+                else f"<b>{html.escape(str(t))}</b>"
+                for t in smc_targets
+            )
+            smc_target_line = f"🎯 <b>On-Demand SMC Hedefleri (≥65 Puan):</b> {targets_str}"
+        elif top_cands:
+            watch_items = []
+            for tc in top_cands[:3]:
+                sym_c = html.escape(str(tc.get("coin", "")))
+                sc_c = tc.get("active_rotation_score", 0)
+                gate_c = html.escape(str(tc.get("rotation_gate", "NEUTRAL_RANGE")))
+                watch_items.append(f"{sym_c} ({sc_c}/100 - {gate_c})")
+            smc_target_line = f"⏸️ <b>On-Demand SMC:</b> Eşik (≥65) geçilmedi | İzleme: {', '.join(watch_items)}"
+        else:
+            smc_target_line = "⏸️ <b>On-Demand SMC:</b> Aktif rotasyon adayı yok"
+
+        meme_warn_line = ""
+        if crypto_rot.get("meme_froth_warning"):
+            meme_warn_line = "\n  └ ⚠️ <b>Geç Döngü Köpük Uyarısı:</b> Meme sektörü aşırı ısındı (L1/L2 liderler eşlik etmiyor)!"
+
+        crypto_rot_block = f"""
+🔄 <b>KRİPTO SERMAYE AKIŞI & 8-FAKTÖR SEKTÖR ROTASYONU:</b>
+• <b>BTC Dominance (BTC.D):</b> %{_fmt(btcd_info.get('btc_dominance_pct'), '.2f')} (BTCDOM 24s: %{_fmt(btcd_info.get('btcdom_change_24h_pct'), '+.2f')} -> {html.escape(str(btcd_info.get('dominance_regime', 'NEUTRAL_DOMINANCE')))})
+• <b>Liderlik Çiftleri:</b> ETH/BTC 24s: %{_fmt(bell_info.get('eth_btc_24h_pct'), '+.2f')} | SOL/ETH 24s: %{_fmt(bell_info.get('sol_eth_24h_pct'), '+.2f')} | SUI/SOL 24s: %{_fmt(bell_info.get('sui_sol_24h_pct'), '+.2f')}
+• <b>Aktif Risk Katmanı:</b> Katman {max_layer} (Aktif Giriş Katmanları: {html.escape(str(inflow_layers))})
+• <b>Lider Sektör & Genişlik:</b> {html.escape(str(lead_sec_name))} — {breadth_str}{meme_warn_line}
+• {smc_target_line}
+"""
+
     # Red-Folder Event Freeze Durumu
     event_freeze_active = regime_st.get("event_freeze_active", False)
     active_event_info = regime_st.get("active_event_info", "")
@@ -598,7 +662,7 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
 • <b>EURGBP :</b> {eurgbp_gate} <i>(Euro Enerji Faturası & Transatlantik Makas)</i>
 • <b>GBPJPY :</b> {gbpjpy_gate} <i>(BoE Faiz Avantajı & Carry Trade)</i>
 • <b>SOL/USD :</b> {sol_gate} <i>({sol_subtext})</i>
-
+{crypto_rot_block}
 ⚠️ <b>BUGÜNKÜ KRİTİK HABER TAKVİMİ:</b>
 {news_block}
 

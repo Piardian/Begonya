@@ -1,8 +1,9 @@
 import { Candle, StructureEvent, DisplacementLeg, FVG } from './types';
 import { findDisplacementLeg } from './displacementLeg';
 import type { Symbol } from '../server/universe';
+import { getPipSize } from './assetMetrics';
 
-const MIN_FVG_PIPS: Record<Symbol, Record<'15m' | '1h' | '4h', number>> = {
+const MIN_FVG_PIPS: Partial<Record<Symbol, Record<'15m' | '1h' | '4h', number>>> = {
   'EURUSD': { '15m': 5, '1h': 10, '4h': 15 },
   'GBPUSD': { '15m': 7, '1h': 12, '4h': 18 },
   'AUDUSD': { '15m': 5, '1h': 10, '4h': 15 },
@@ -35,6 +36,12 @@ const MIN_FVG_PIPS: Record<Symbol, Record<'15m' | '1h' | '4h', number>> = {
   'SOLUSD': { '15m': 1, '1h': 2, '4h': 5 },
 };
 
+const ALTCOIN_MIN_FVG_PCT: Record<'15m' | '1h' | '4h', number> = {
+  '15m': 0.0012, // 0.12%
+  '1h': 0.0022,  // 0.22%
+  '4h': 0.0035,  // 0.35%
+};
+
 function getPipMultiplier(symbol: string): number {
   if (symbol.includes('JPY')) return 0.01;
   if (symbol === 'NAS100' || symbol === 'US100') return 1.0;
@@ -42,7 +49,7 @@ function getPipMultiplier(symbol: string): number {
   if (symbol.startsWith('XAG')) return 0.01;
   if (symbol.startsWith('BTC') || symbol.startsWith('ETH')) return 1.0;
   if (symbol.startsWith('LTC') || symbol.startsWith('SOL')) return 0.1;
-  return 0.0001;
+  return getPipSize(symbol);
 }
 
 const MIN_FVG_RATIO = 0.25;
@@ -59,7 +66,7 @@ export function detectFVGsInLeg(
   relatedEvent: StructureEvent
 ): FVG[] {
   const fvgs: FVG[] = [];
-  const minPips = (MIN_FVG_PIPS[pair] ?? MIN_FVG_PIPS['EURUSD'])[timeframe];
+  const explicitMinPips = MIN_FVG_PIPS[pair]?.[timeframe];
   const pipMultiplier = getPipMultiplier(pair);
 
   // Iterate the middle candle index 'i' through the leg
@@ -98,7 +105,10 @@ export function detectFVGsInLeg(
       const ratio = gapSize / displacementCandleRange;
 
       // Filter: Both absolute and proportional thresholds must be passed
-      const passesAbsolute = gapSizePips >= minPips;
+      const midPrice = (gapHigh + gapLow) / 2;
+      const passesAbsolute = explicitMinPips !== undefined
+        ? gapSizePips >= explicitMinPips
+        : midPrice > 0 && (gapSize / midPrice) >= ALTCOIN_MIN_FVG_PCT[timeframe];
       const passesProportional = gapSize >= displacementCandleRange * MIN_FVG_RATIO;
 
       if (passesAbsolute && passesProportional) {

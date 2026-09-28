@@ -75,10 +75,15 @@ export type KillzoneFilterMode = {
   filter: 'ACTIVE' | 'BYPASSED';
 };
 
+import { detectAssetClass } from '../src/assetMetrics';
+
 export function isCryptoSymbol(symbol?: string): boolean {
   if (!symbol) return false;
   const s = symbol.toUpperCase();
-  return s.includes('BTC') || s.includes('ETH') || s.includes('SOL') || s.includes('LTC');
+  if (s.includes('BTC') || s.includes('ETH') || s.includes('SOL') || s.includes('LTC')) {
+    return true;
+  }
+  return detectAssetClass(s) === 'CRYPTO';
 }
 
 export function evaluateKillzoneFilter(
