@@ -21,15 +21,15 @@ Bu günlük, Begonya'nın Makroekonomik Karar Motorunun (`macro_engine`) üretti
 
 ---
 
-## 📊 Makro Kapı Canlı Performans Karnesi (16 Sinyal)
+## 📊 Makro Kapı Canlı Performans Karnesi (18 Sinyal)
 
 | Metrik | Değer | Oran | Açıklama |
 | :--- | :---: | :---: | :--- |
-| 🎯 **Makro Yön İsabeti (Accuracy)** | **12 / 16** | **%75.0** | Makronun doğru yönü ya da korumayı işaret ettiği durumlar |
-| ⚡ **Makro ile Tam Uyumlu İşlemler (Aligned)** | **9 Adet** | **%55.6 TP/Aktif** | NZDUSD SAT, EURCHF SAT, USDCHF AL, ETH AL, USDJPY SAT, BTC AL, SOL AL |
-| ⚠️ **Makroya Karşıt İşlemler (Contrary / Scalp)** | **5 Adet** | **%40.0 Stop** | SOL #9 AL, ETH #4 AL, GBPCHF #12 SAT (Stop) vs GBPCHF #11 |
+| 🎯 **Makro Yön İsabeti (Accuracy)** | **13 / 18** | **%72.2** | Makronun doğru yönü ya da zıt işlem korumasını işaret ettiği durumlar |
+| ⚡ **Makro ile Tam Uyumlu İşlemler (Aligned)** | **11 Adet** | **%54.5 TP/Aktif** | NZDUSD SAT, EURCHF SAT, USDCHF AL, ETH AL, GBPUSD SAT, EURUSD SAT (6 TP), USDJPY #13 Stop, USDCHF #14 Stop |
+| ⚠️ **Makroya Karşıt İşlemler (Contrary / Scalp)** | **5 Adet** | **%60.0 Stop** | USDJPY #5 SAT (Stop), SOL #9 AL (Stop), GBPCHF #12 SAT (Stop) |
 | 🛡️ **Makro & M1 Tarafından Kurtarılan** | **3 Adet** | **+$1.130 Korundu** | M1 onayı gelmediği için kurtarılan sermaye (LTC 750$ + BTC 190$ + SOL 190$) |
-| 🔄 **Ayrışma (Decoupling) Sayısı** | **4 Adet** | **%25.0** | Makro doğruyken yerel teknik direnç/destek sürtünmesi veya haber şoku |
+| 🔄 **Ayrışma (Decoupling) Sayısı** | **5 Adet** | **%27.8** | Makro doğruyken yerel teknik direnç/destek sürtünmesi veya 16 Eylül getiri sıçraması |
 
 ---
 
@@ -112,9 +112,10 @@ Her yeni sinyalde makro otopsi şu 4 soruluk deterministik şablonla taranır:
 - **Bağlantılı SMC Kaydı:** `BG-20260907-001`
 - **T-0 Piyasa Durumu:** DXY: 104.25 | US02Y: %3.94 | VIX: 15.50
 - **Çapraz Kur Puanı:** USD (+1) vs JPY (-1 Carry) -> Net: +2 (LONG_ONLY)
-- **Makro Kapısı:** `LONG_ONLY` (Ters Sinyal)
-- **Sonuç:** ⏳ Retest Bekleniyor (İşleme Henüz Girilmedi)
-- **Makro Çıkarımı:** Makro LONG_ONLY iken SMC SHORT verdi; fiyat kutuya girmeden aşağı aktı. Makro direnci fiyatı henüz kutuya çekmedi.
+- **Makro Kapısı:** `LONG_ONLY` (Zıt Yön / CONTRARY)
+- **Sonuç:** ❌ STOP (-750.00 $ / -0.75 R)
+- **Ayrışma / Hata Nedeni:** `CONTRARY_TO_MACRO_CARRY_TREND`. Makro motor LONG_ONLY uyarısı vermişti; SMC 156.132 OB'sinden short açtı. Retest sonrası carry alıcıları fiyatı yukarı sürerek stopu patlattı. Makro yönü haklı çıktı.
+- **Kalibrasyon Kuralı:** USD (+1) vs JPY (-1) net carry açığı varken makroya zıt (CONTRARY) SHORT pozisyonları doğrudan veto edilmelidir.
 
 ---
 
@@ -194,9 +195,10 @@ Her yeni sinyalde makro otopsi şu 4 soruluk deterministik şablonla taranır:
 - **Bağlantılı SMC Kaydı:** `BG-20260910-003`
 - **T-0 Piyasa Durumu:** DXY: 103.80 | US02Y: %3.64 | VIX: 16.90
 - **Çapraz Kur Puanı:** USD (-1 US02Y Çöküşü) vs JPY (+1 Carry Çözülmesi) -> Net: -2 (SHORT_ONLY)
-- **Makro Kapısı:** `SHORT_ONLY` (Tam Uyumlu)
-- **Sonuç:** 🔄 AKTİF İŞLEMDE (Kârda Taşınıyor)
-- **Makro Çıkarımı:** ABD 2 yıllık getirisinin 3.64'e inmesi ve DXY zayıflığıyla USDJPY carry makası çöktü. Makro ile tam uyumlu bu işlem 153.09 hedefine doğru kârda akmaktadır.
+- **Makro Kapısı:** Sinyal anında `SHORT_ONLY` (Tam Uyumlu); 16 Eylül seansında Dolar ralli
+- **Sonuç:** ❌ STOP (-750.00 $ / -0.75 R)
+- **Ayrışma / Hata Nedeni:** `US_YIELD_SPIKE_AND_REVERSAL`. US 2Y tahvil getirisinin 3.64'e inmesiyle işlem kâra geçip 153.35'e kadar taşındı; ancak 16 Eylül'de ABD 2Y getirisinin hızla yükselmesi (+18.5 bps) ve enflasyon endişeleri pariteyi terse çevirerek 153.92 stopunu vurdu.
+- **Kalibrasyon Kuralı:** Carry paritelerinde karşıt yönlü pozisyon taşınırken, ABD 2 yıllık faizlerinde ani getiri sıçraması görüldüğünde kârdaki işlem BE seviyesine çekilmeli veya kapatılmalıdır.
 
 ---
 
@@ -229,6 +231,28 @@ Her yeni sinyalde makro otopsi şu 4 soruluk deterministik şablonla taranır:
 - **Makro Kapısı:** `LONG_ONLY` (0.19x Defansif Boyutlandırma)
 - **Sonuç:** 🛡️ AVERTED LOSS (0.00 $ / 190 $ Kurtarıldı)
 - **Makro Çıkarımı:** Makro motor SOL için LONG_ONLY kapısı açmış ve piyasadaki late-cycle oynaklığı nedeniyle lot büyüklüğünü taban 0.75x yerine 0.19x seviyesine çekerek sermaye koruma moduna geçmiştir. SMC katmanındaki 1M manuel teyit şartı gerçekleşmediği için emir tetiklenmemiş ve 190$'lık olası zarar tamamen bertaraf edilmiştir.
+
+---
+
+### 17. MACRO-20260918-001 | GBPUSD SAT (0.80x Lot)
+- **Bağlantılı SMC Kaydı:** `BG-20260918-001`
+- **T-0 Piyasa Durumu:** DXY: 104.40 | US02Y: %3.95 | US10Y: %3.92 | VIX: 16.20 | Gold: 2490.0 $
+- **Çapraz Kur Puanı:** GBP (-1 UK İmalat Yavaşlaması & BOE Faiz İndirimi) vs USD (+1 Late-Cycle US Exceptionalism) -> Net: -2 (SHORT_ONLY)
+- **Makro Kapısı:** `SHORT_ONLY` (Tam Uyumlu - Çift Teyit)
+- **Sonuç:** 🎯 TP HIT (+2.50 R / +2,000.00 $)
+- **Makro Çıkarımı:** Late-Cycle Overheating rejiminde ABD faiz avantajı ve güçlü Dolar, İngiltere'deki stagflasyon/yavaşlama baskısıyla birleşerek GBPUSD'de kusursuz bir net -2 göreceli değer makası oluşturmuştur. Makro motorun 0.80x tam riskle verdiği SHORT_ONLY kapısı SMC tekniğiyle %100 senkronize çalışmış ve 3 saat içinde 2.5 RR kâr üretmiştir.
+- **Kalibrasyon Kuralı:** USD (+1) vs GBP (-1) net diferansiyel -2 olduğunda SHORT_ONLY kapısı, paritedeki düşüş trendini en yüksek asimetrik getiriyle destekleyen kurumsal A+ rejimdir.
+
+---
+
+### 18. MACRO-20260921-001 | EURUSD SAT (0.64x Lot)
+- **Bağlantılı SMC Kaydı:** `BG-20260921-001`
+- **T-0 Piyasa Durumu:** DXY: 104.10 | US02Y: %3.89 | US10Y: %3.86 | VIX: 14.80 | Gold: 2505.0 $
+- **Çapraz Kur Puanı:** EUR (-1 Avrupa İmalat Yavaşlaması & ECB İndirim Döngüsü) vs USD (+1 Sağlıklı İstihdam ICSA 196K & Gevşek NFCI -0.56) -> Net: -2 (SHORT_ONLY)
+- **Makro Kapısı:** `SHORT_ONLY` (Tam Uyumlu)
+- **Sonuç:** 🎯 TP HIT (+2.45 R / +1,568.00 $)
+- **Makro Çıkarımı:** Reflationary Growth with Expanding Liquidity rejiminde ABD'de istihdamın sağlam kalması (UNRATE %4.1, ICSA 196K) ve likidite koşullarının rahatlığı Dolar'ı güçlü tutarken, Euro Bölgesi'ndeki ekonomik zayıflık EURUSD üzerinde net -2 diferansiyelle kusursuz bir düşüş trendi sağlamıştır. 0.64x risk çarpanıyla açılan pozisyon 4'lü dip EQL likiditesine inerek 2.45 RR kâr sağlamıştır.
+- **Kalibrasyon Kuralı:** EUR (-1) vs USD (+1) net diferansiyel -2 olduğunda SHORT_ONLY kapısı, mikro 15M Bearish OB kurulumlarını en yüksek olasılıkla hedefe taşıyan kurumsal makro bileşendir.
 
 
 

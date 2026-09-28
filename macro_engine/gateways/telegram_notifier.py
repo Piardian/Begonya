@@ -187,7 +187,7 @@ def build_three_horizon_strategy(
             "• 🟡 <b>Altın (XAUUSD):</b> Yeni yönlü pozisyon yok; teknik teyit bekle."
         )
 
-    btc = (gates.get("BTC") or "").upper()
+    btc = (gates.get("BTC") or gates.get("BTCUSD") or "").upper()
     if "SHORT" in btc:
         today_items.append(
             "• 🔵 <b>Bitcoin (BTCUSD):</b> SHORT_ONLY makro kapısı açık; yüksek beta nedeniyle seçici SMC teyidi bekle."
@@ -224,10 +224,14 @@ def build_three_horizon_strategy(
             f"• 💶 <b>EURUSD:</b> NEUTRAL_RANGE; {context} ile yön için ek teyit gerekiyor."
         )
 
-    spx = (gates.get("SPX") or "").upper()
+    spx = (gates.get("SPX") or gates.get("SPX_NAS100") or "").upper()
     if "SHORT" in spx:
         today_items.append(
             "• 🇺🇸 <b>Endeksler (SPX/NAS100):</b> SHORT_ONLY yalnızca likidite daralması + düşük oynaklık koşulu ile geçerli."
+        )
+    elif "LONG" in spx:
+        today_items.append(
+            f"• 🇺🇸 <b>Endeksler (SPX/NAS100):</b> LONG_ONLY makro kapısı açık; {risk_multiplier}x risk ile yalnızca teyitli kurulumları izle."
         )
     elif "DEFENSIVE" in spx or "HOLD" in spx:
         today_items.append(
@@ -402,9 +406,9 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
         return "⚪ <b>NÖTR / ÇİFT YÖNLÜ</b>"
 
     xau_gate = gate_badge(gates.get("XAUUSD", "NO_TRADE"))
-    btc_gate = gate_badge(gates.get("BTC", "NO_TRADE"))
+    btc_gate = gate_badge(gates.get("BTC") or gates.get("BTCUSD") or "NO_TRADE")
     eur_gate = gate_badge(gates.get("EURUSD", "NO_TRADE"))
-    spx_gate = gate_badge(gates.get("SPX", "NO_TRADE"))
+    spx_gate = gate_badge(gates.get("SPX") or gates.get("SPX_NAS100") or "NO_TRADE")
 
     # Çapraz Kur & Kripto Göreli Değer Radarı
     regime_st = metrics.get("regime_state", {})

@@ -60,6 +60,8 @@ export interface NotificationCandidate {
   opposingObstacle?: OpposingObstacle | null;
   macroEvaluation?: MacroGateEvaluation;
   allowTrendContinuationPD?: boolean;
+  triggerCandle?: Candle;
+  atr15mPips?: number | null;
 }
 
 export function runPipeline(
@@ -303,7 +305,7 @@ export function runPipeline(
     if (
       notifiedStore.hasBeenNotified(uniqueKey) ||
       notifiedStore.hasBeenNotified(dedupeKey) ||
-      notifiedStore.hasImpulseOrNewerBeenNotified(symbol, ob.relatedEvent.breakTimestamp)
+      notifiedStore.hasImpulseOrNewerBeenNotified(symbol, ob.relatedEvent.breakTimestamp, tradeDirection)
     ) {
       reject('duplicate_poi');
       observePoiLifecycle('OB', ob, formedTimestamp, ['duplicate_poi']);
@@ -461,6 +463,8 @@ export function runPipeline(
         liquidityMagnet,
         opposingObstacle,
         allowTrendContinuationPD,
+        triggerCandle: candles15mCast[lastIndex15m],
+        atr15mPips: averageTrueRangePips(candles15mCast, lastIndex15m, symbol, 14),
       });
     } else {
       recordGradeBlockOverlap(gradeResult.blockReasons);
@@ -503,7 +507,7 @@ export function runPipeline(
     if (
       notifiedStore.hasBeenNotified(uniqueKey) ||
       notifiedStore.hasBeenNotified(dedupeKey) ||
-      notifiedStore.hasImpulseOrNewerBeenNotified(symbol, fvg.relatedEvent.breakTimestamp)
+      notifiedStore.hasImpulseOrNewerBeenNotified(symbol, fvg.relatedEvent.breakTimestamp, tradeDirection)
     ) {
       reject('duplicate_poi');
       observePoiLifecycle('FVG', fvg, formedTimestamp, ['duplicate_poi']);
@@ -661,6 +665,8 @@ export function runPipeline(
         liquidityMagnet,
         opposingObstacle,
         allowTrendContinuationPD,
+        triggerCandle: candles15mCast[lastIndex15m],
+        atr15mPips: averageTrueRangePips(candles15mCast, lastIndex15m, symbol, 14),
       });
     } else {
       recordGradeBlockOverlap(gradeResult.blockReasons);

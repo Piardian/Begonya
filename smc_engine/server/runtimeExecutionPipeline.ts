@@ -69,6 +69,7 @@ export function runRuntimeExecutionPipeline(
     admissionProfile: candidate.admissionProfile,
     blockReasons: candidate.gradeResult.blockReasons,
     breakdown: candidate.gradeResult.breakdown,
+    allowTrendContinuationPD: candidate.allowTrendContinuationPD,
   });
   const decisionReport = applyDecisionCalibration(
     generateDecisionReport(learningReport, decisionPolicy),

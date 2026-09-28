@@ -59,4 +59,20 @@ describe('Notified POI Store', () => {
     // Key 1000 should remain
     expect(store.hasBeenNotified('key_1000')).toBe(true);
   });
+
+  test('markAsInvalidated marks specific POI key as notified without poisoning impulse tracking', () => {
+    const store = new NotifiedStore(testDir);
+    const brokenObKey = 'GBPUSD_15m_OB_1717290000000_1717300000000';
+
+    store.markAsInvalidated(brokenObKey);
+    expect(store.hasBeenNotified(brokenObKey)).toBe(true);
+    // Should NOT mark the parent impulse as notified so a valid sibling/newer zone is not poisoned
+    expect(store.hasImpulseOrNewerBeenNotified('GBPUSD', 1717300000000, 'long')).toBe(false);
+
+    // Explicit IMPULSE notification should block the impulse in that direction
+    store.markAsNotified('IMPULSE:GBPUSD:long:1717300000000');
+    expect(store.hasImpulseOrNewerBeenNotified('GBPUSD', 1717300000000, 'long')).toBe(true);
+    expect(store.hasImpulseOrNewerBeenNotified('GBPUSD', 1717300000000, 'short')).toBe(false);
+  });
 });
+

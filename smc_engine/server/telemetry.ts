@@ -317,6 +317,8 @@ interface PoiLifecycleState {
   distanceAtCandidateCreation: number | null;
   distanceAtrAtCandidateCreation: number | null;
   poiInvalidatedAt: number | null;
+  lastRecordedOutcome?: string | null;
+  lastRecordedReasonsKey?: string | null;
 }
 
 export interface PoiLifecycleObservation {
@@ -509,18 +511,25 @@ export function recordPoiLifecycleTelemetry(
   if (!telemetryEnabled()) return;
   loadPoiLifecycleState();
 
+  const existing = poiLifecycleState.get(record.poiId);
   const state = normalizePoiLifecycleState(
-    poiLifecycleState.get(record.poiId),
+    existing,
     record.poiCreatedAt
   );
+
+  let transitioned = !existing;
 
   if (record.isApproaching && state.firstApproachAt === null) {
     state.firstApproachAt = record.observedAt;
     state.distanceAtFirstApproach = record.distancePips;
     state.distanceAtrAtFirstApproach = record.distanceAtr;
+    transitioned = true;
   }
   if (record.isTouching) {
-    state.firstTouchAt ??= record.observedAt;
+    if (state.firstTouchAt === null) {
+      state.firstTouchAt = record.observedAt;
+      transitioned = true;
+    }
     state.lastTouchAt = record.observedAt;
   }
   if (record.grade !== null && record.candidateEligible && state.firstGradeEligibleAt === null) {
@@ -528,21 +537,38 @@ export function recordPoiLifecycleTelemetry(
     state.gradeAtFirstEligibility = record.grade;
     state.distanceAtFirstEligibility = record.distancePips;
     state.distanceAtrAtFirstEligibility = record.distanceAtr;
+    transitioned = true;
   }
   if (record.candidateEligible && state.firstCandidateEligibleAt === null) {
     state.firstCandidateEligibleAt = record.observedAt;
     state.candidateCreatedAt = record.observedAt;
     state.distanceAtCandidateCreation = record.distancePips;
     state.distanceAtrAtCandidateCreation = record.distanceAtr;
+    transitioned = true;
   }
   if (record.isInvalidated && state.poiInvalidatedAt === null) {
     state.poiInvalidatedAt = record.observedAt;
+    transitioned = true;
   }
-  poiLifecycleState.set(record.poiId, state);
-  persistPoiLifecycleState();
 
   const { isApproaching: _isApproaching, isTouching: _isTouching, isInvalidated: _isInvalidated, ...serializable } = record;
   const lifecycle = resolvePoiLifecycleOutcome(state, record);
+  const reasonsKey = `${lifecycle.outcome}:${record.grade ?? ''}:${record.whyNotCandidateYet.join(',')}`;
+  if (state.lastRecordedOutcome !== lifecycle.outcome || state.lastRecordedReasonsKey !== reasonsKey) {
+    transitioned = true;
+  }
+
+  state.lastRecordedOutcome = lifecycle.outcome;
+  state.lastRecordedReasonsKey = reasonsKey;
+  poiLifecycleState.set(record.poiId, state);
+
+  if (!transitioned) {
+    return;
+  }
+
+  prunePoiLifecycleState(record.observedAt);
+  persistPoiLifecycleState();
+
   writeJsonl('poi-lifecycle.jsonl', {
     ...serializable,
     firstApproachAt: state.firstApproachAt,
@@ -661,7 +687,19 @@ function normalizePoiLifecycleState(
     distanceAtCandidateCreation: existing?.distanceAtCandidateCreation ?? null,
     distanceAtrAtCandidateCreation: existing?.distanceAtrAtCandidateCreation ?? null,
     poiInvalidatedAt: existing?.poiInvalidatedAt ?? null,
+    lastRecordedOutcome: existing?.lastRecordedOutcome ?? null,
+    lastRecordedReasonsKey: existing?.lastRecordedReasonsKey ?? null,
   };
+}
+
+function prunePoiLifecycleState(nowMs: number): void {
+  if (poiLifecycleState.size <= 2000) return;
+  const maxAgeMs = 7 * 24 * 60 * 60 * 1000;
+  for (const [poiId, state] of poiLifecycleState.entries()) {
+    if (nowMs - state.poiCreatedAt > maxAgeMs) {
+      poiLifecycleState.delete(poiId);
+    }
+  }
 }
 
 function elapsedFrom(start: number, end: number | null): number | null {
@@ -943,10 +981,53 @@ export function maybeGenerateDailyQualificationReport(): void {
   }, intervalMs).unref();
 }
 
+const DEFAULT_MAX_TELEMETRY_FILE_BYTES = 25 * 1024 * 1024; // 25 MB cap per JSONL file
+
+function maxTelemetryFileBytes(): number {
+  const bytesEnv = numberFromEnv('MAX_TELEMETRY_FILE_BYTES');
+  if (bytesEnv !== null && bytesEnv >= 4096) return Math.floor(bytesEnv);
+  const mbEnv = numberFromEnv('MAX_TELEMETRY_FILE_MB');
+  if (mbEnv !== null && mbEnv > 0) return Math.floor(mbEnv * 1024 * 1024);
+  return DEFAULT_MAX_TELEMETRY_FILE_BYTES;
+}
+
+export function rotateJsonlIfNeeded(filePath: string, maxBytes = maxTelemetryFileBytes()): void {
+  try {
+    if (!fs.existsSync(filePath)) return;
+    const stat = fs.statSync(filePath);
+    if (stat.size <= maxBytes) return;
+
+    const keepBytes = Math.max(2048, Math.floor(maxBytes * 0.5));
+    const fd = fs.openSync(filePath, 'r');
+    try {
+      const buffer = Buffer.alloc(keepBytes);
+      const startPos = Math.max(0, stat.size - keepBytes);
+      const bytesRead = fs.readSync(fd, buffer, 0, keepBytes, startPos);
+      const chunk = buffer.subarray(0, bytesRead).toString('utf8');
+      const firstNewline = chunk.indexOf('\n');
+      const cleanTail = firstNewline >= 0 ? chunk.slice(firstNewline + 1) : chunk;
+      const tmpPath = `${filePath}.rotate.tmp`;
+      fs.writeFileSync(tmpPath, cleanTail, 'utf8');
+      try {
+        fs.renameSync(tmpPath, filePath);
+      } catch {
+        fs.copyFileSync(tmpPath, filePath);
+        try { fs.unlinkSync(tmpPath); } catch {}
+      }
+    } finally {
+      fs.closeSync(fd);
+    }
+  } catch {
+    // Telemetry rotation must never disrupt signal processing.
+  }
+}
+
 function writeJsonl(fileName: string, record: JsonRecord): void {
   if (!telemetryEnabled()) return;
   ensureTelemetryDir();
-  fs.appendFileSync(path.join(telemetryDir(), fileName), `${JSON.stringify({ ...record, timestamp: new Date().toISOString() })}\n`, 'utf8');
+  const filePath = path.join(telemetryDir(), fileName);
+  rotateJsonlIfNeeded(filePath);
+  fs.appendFileSync(filePath, `${JSON.stringify({ ...record, timestamp: new Date().toISOString() })}\n`, 'utf8');
 }
 
 function loadPoiLifecycleState(): void {
@@ -986,10 +1067,17 @@ function ensureTelemetryDir(): void {
 function readJsonl(fileName: string): JsonRecord[] {
   const filePath = path.join(telemetryDir(), fileName);
   if (!fs.existsSync(filePath)) return [];
+  rotateJsonlIfNeeded(filePath);
   return fs.readFileSync(filePath, 'utf8')
     .split(/\r?\n/)
     .filter(Boolean)
-    .map(line => JSON.parse(line));
+    .flatMap(line => {
+      try {
+        return [JSON.parse(line) as JsonRecord];
+      } catch {
+        return [];
+      }
+    });
 }
 
 function latestPoiLifecycleRecords(records: JsonRecord[]): JsonRecord[] {

@@ -112,9 +112,7 @@ export async function pollAndProcess(
           console.log(`Pipeline candidates found for ${symbol}:`, JSON.stringify(candidates, null, 2));
           for (const candidate of candidates) {
             const signalId = candidate.signalId ?? candidate.uniqueKey;
-            const pendingKeys = candidate.dedupeKey
-              ? [candidate.uniqueKey, candidate.dedupeKey]
-              : [candidate.uniqueKey];
+            const pendingKeys = candidateReservationKeys(candidate);
             if (!notifiedStore.reservePending(pendingKeys)) {
               console.log(`[Signal: ${signalId}] Candidate reservation skipped because it is already pending or notified.`);
               continue;
@@ -215,7 +213,11 @@ export async function pollAndProcess(
               console.log(
                 `[Signal: ${signalId}] Notification Rejected: ${validationGate.rejectionReason.join('; ') || 'validation gate failed'}`
               );
-              clearCandidatePending(notifiedStore, candidate);
+              if (isPermanentValidationRejection(validationGate.rejectionReason)) {
+                markCandidateAsInvalidated(notifiedStore, candidate);
+              } else {
+                clearCandidatePending(notifiedStore, candidate);
+              }
               recordApprovedSignalEvidenceAsync(candidate, executionPipeline, candles15m, undefined, {
                 ...operationalStateToEvidence(operationalState),
                 validationGate,
@@ -809,14 +811,44 @@ function screenshotDeliveryTimeframes(): Timeframe[] {
   return ['1m', '15m', '1h'];
 }
 
+function candidateImpulseKey(candidate: NotificationCandidate): string | null {
+  const breakTs = candidate.poi?.relatedEvent?.breakTimestamp;
+  if (!Number.isFinite(breakTs)) return null;
+  return `IMPULSE:${candidate.symbol}:${candidate.tradeDirection}:${breakTs}`;
+}
+
+function candidateReservationKeys(candidate: NotificationCandidate): string[] {
+  const keys = [candidate.uniqueKey];
+  if (candidate.dedupeKey) keys.push(candidate.dedupeKey);
+  const impulseKey = candidateImpulseKey(candidate);
+  if (impulseKey) keys.push(impulseKey);
+  return keys;
+}
+
+function isPermanentValidationRejection(reasons: readonly string[]): boolean {
+  return reasons.some(
+    reason =>
+      reason === 'completed candle close crossed the invalidation side of the entry zone' ||
+      reason === 'entry zone over-tested'
+  );
+}
+
 function clearCandidatePending(store: NotifiedStore, candidate: NotificationCandidate): void {
-  store.clearPending(candidate.uniqueKey);
-  if (candidate.dedupeKey) store.clearPending(candidate.dedupeKey);
+  for (const key of candidateReservationKeys(candidate)) {
+    store.clearPending(key);
+  }
+}
+
+function markCandidateAsInvalidated(store: NotifiedStore, candidate: NotificationCandidate): void {
+  clearCandidatePending(store, candidate);
+  store.markAsInvalidated(candidate.uniqueKey);
+  if (candidate.dedupeKey) store.markAsInvalidated(candidate.dedupeKey);
 }
 
 function markCandidateAsNotified(store: NotifiedStore, candidate: NotificationCandidate): void {
-  store.markAsNotified(candidate.uniqueKey);
-  if (candidate.dedupeKey) store.markAsNotified(candidate.dedupeKey);
+  for (const key of candidateReservationKeys(candidate)) {
+    store.markAsNotified(key);
+  }
 }
 
 async function loadExecutionCandles1m(symbol: Symbol, candleStore: CandleStore): Promise<import('./candleStore').StoredCandle[]> {

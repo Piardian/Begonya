@@ -134,4 +134,48 @@ describe('SetupFamilyGuard (Anti-Spam & Family Grouping)', () => {
     const check = guard.shouldAllow(candAPlus, now + 10 * 60 * 1000);
     expect(check.allowed).toBe(true);
   });
+
+  it('blocks sibling POI of a different type (FVG after OB) from the same structural break even if grade upgrades', () => {
+    const guard = new SetupFamilyGuard({ cooldownMs: 45 * 60 * 1000 });
+    const now = Date.now();
+    const candOb = createMockCandidate({
+      symbol: 'ETHUSD',
+      poiType: 'OB',
+      gradeResult: {
+        totalScore: 6,
+        grade: 'A',
+        entryAllowed: true,
+        blockReasons: [],
+        breakdown: { htfBiasPD: 1, displacement: 1, structure: 2, sweep: 2, poiQuality: 0 },
+      },
+    });
+
+    guard.recordNotification(candOb, now);
+
+    const candFvg = createMockCandidate({
+      symbol: 'ETHUSD',
+      poiType: 'FVG',
+      poi: {
+        direction: 'bullish',
+        gapHigh: 2500,
+        gapLow: 2480,
+        firstCandleIndex: 13,
+        middleCandleIndex: 14,
+        thirdCandleIndex: 15,
+        relatedEvent: candOb.poi.relatedEvent,
+      } as any,
+      gradeResult: {
+        totalScore: 9,
+        grade: 'A+',
+        entryAllowed: true,
+        blockReasons: [],
+        breakdown: { htfBiasPD: 2, displacement: 2, structure: 2, sweep: 2, poiQuality: 1 },
+      },
+    });
+
+    const check = guard.shouldAllow(candFvg, now + 5 * 60 * 1000);
+    expect(check.allowed).toBe(false);
+    expect(check.reason).toContain('Duplicate setup family');
+  });
 });
+

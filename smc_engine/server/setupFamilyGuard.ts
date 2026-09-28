@@ -3,6 +3,7 @@ import type { NotificationCandidate } from './pipeline';
 export interface SetupFamilyGuardRecord {
   readonly symbol: string;
   readonly direction: 'long' | 'short';
+  readonly poiType?: 'OB' | 'FVG';
   readonly breakTimestamp: number;
   readonly zoneLow: number;
   readonly zoneHigh: number;
@@ -42,7 +43,7 @@ export class SetupFamilyGuard {
     const grade = candidate.gradeResult.grade;
     const score = candidate.gradeResult.totalScore;
 
-    // 1. Same or older impulse origin event is permanently blocked (unless genuine tier upgrade within cooldown)
+    // 1. Same or older impulse origin event is permanently blocked (unless genuine tier upgrade of the same POI type within cooldown)
     const allSymbolDirectionHistory = this.history.filter(
       r => r.symbol === candidate.symbol && r.direction === candidate.tradeDirection
     );
@@ -50,7 +51,14 @@ export class SetupFamilyGuard {
     for (const recorded of allSymbolDirectionHistory) {
       if (breakTimestamp <= recorded.breakTimestamp) {
         const withinCooldown = nowMs - recorded.notifiedAt <= this.cooldownMs;
-        const isGenuineTierUpgrade = withinCooldown && recorded.grade !== 'A+' && grade === 'A+' && score > recorded.score;
+        const isSamePoiType = !recorded.poiType || recorded.poiType === candidate.poiType;
+        const isGenuineTierUpgrade =
+          withinCooldown &&
+          isSamePoiType &&
+          breakTimestamp === recorded.breakTimestamp &&
+          recorded.grade !== 'A+' &&
+          grade === 'A+' &&
+          score > recorded.score;
         if (!isGenuineTierUpgrade) {
           return {
             allowed: false,
@@ -68,7 +76,8 @@ export class SetupFamilyGuard {
     for (const recent of recentMatching) {
       const overlap = calculateOverlapRatio(zone, { low: recent.zoneLow, high: recent.zoneHigh });
       if (overlap >= this.overlapThreshold) {
-        const isGenuineTierUpgrade = recent.grade !== 'A+' && grade === 'A+' && score > recent.score;
+        const isSamePoiType = !recent.poiType || recent.poiType === candidate.poiType;
+        const isGenuineTierUpgrade = isSamePoiType && recent.grade !== 'A+' && grade === 'A+' && score > recent.score;
         if (!isGenuineTierUpgrade) {
           return {
             allowed: false,
@@ -89,6 +98,7 @@ export class SetupFamilyGuard {
     this.history.push({
       symbol: candidate.symbol,
       direction: candidate.tradeDirection,
+      poiType: candidate.poiType,
       breakTimestamp: candidate.poi.relatedEvent.breakTimestamp,
       zoneLow: zone.low,
       zoneHigh: zone.high,

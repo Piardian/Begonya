@@ -252,12 +252,12 @@
       "gate_alignment": "CONTRARY"
     },
     "post_trade_macro_attribution": {
-      "trade_actual_outcome": "PENDING_RETEST",
+      "trade_actual_outcome": "LOSS",
       "macro_directional_accuracy": true,
       "decoupling_detected": false,
-      "failure_attribution": "NONE_PENDING",
-      "macro_audit_takeaway": "Makro motor USDJPY için LONG_ONLY derken SMC 156.132 OB seviyesinden SHORT sinyali üretti. Fiyat kutuya girmeyip aşağı süzüldü; retest bekleniyor.",
-      "calibration_rule": "USDJPY carry makası açıkken (USD +1, JPY -1) SHORT işlemleri yüksek riskli sınıflandırılmalı ve 0.50x risk tavanı konmalıdır."
+      "failure_attribution": "CONTRARY_TO_MACRO_CARRY_TREND",
+      "macro_audit_takeaway": "Makro motor USDJPY için LONG_ONLY derken SMC 156.132 OB seviyesinden SHORT sinyali üretti. Retest gerçekleşip emir tetiklendikten sonra piyasa yukarı yönlü carry momentumunu sürdürdü ve short pozisyonu stop etti (-750 $ / -0.75 R). Makro motorun LONG_ONLY yön tespiti ve ters yön uyarısı tam isabet sağladı.",
+      "calibration_rule": "USDJPY carry makası açıkken (USD +1, JPY -1, Net +2) makroya zıt (CONTRARY) SHORT işlemleri filtrelenmeli, Grade A dahi olsa sistemsel VETO uygulanmalıdır."
     }
   },
   {
@@ -646,12 +646,12 @@
       "gate_alignment": "ALIGNED"
     },
     "post_trade_macro_attribution": {
-      "trade_actual_outcome": "ACTIVE_IN_POSITION",
-      "macro_directional_accuracy": true,
-      "decoupling_detected": false,
-      "failure_attribution": "NONE_ACTIVE",
-      "macro_audit_takeaway": "US 2Y tahvil getirisinin 3.64'e gerilemesi ve DXY zayıflığıyla USDJPY carry makası kapandı. 153.821 OB'den açılan SHORT işlemi 153.09 EQL hedefine doğru kârda taşınıyor.",
-      "calibration_rule": "US02Y düşüş trendindeyken JPY güçlenmesi en yüksek R potansiyeline sahip makro kurulumdur."
+      "trade_actual_outcome": "LOSS",
+      "macro_directional_accuracy": false,
+      "decoupling_detected": true,
+      "failure_attribution": "US_YIELD_SPIKE_AND_REVERSAL",
+      "macro_audit_takeaway": "Girişte US 2Y tahvil getirisinin %3.64'e gerilemesiyle SHORT_ONLY kapısı onaylanmış ve işlem kâra geçmişti. Ancak 16 Eylül seansında ABD 2Y getirisinin hızla yükselmesi (+18.5 bps) ve Late-Cycle enflasyon endişeleri Dolar'a sert talep getirdi; parite tersine dönerek 153.92 stop seviyesine çarptı (-750 $ / -0.75 R).",
+      "calibration_rule": "Carry trade paritelerinde (USDJPY) karşıt yönlü pozisyon taşınırken, US02Y tahvil getirisinde günlük >10 bps yukarı kırılma görüldüğünde pozisyon derhal başabaş (BE) çekilmeli veya erken kapatılmalıdır."
     }
   },
   {
@@ -808,6 +808,102 @@
       "failure_attribution": "AVERTED_BY_M1_EXECUTION",
       "macro_audit_takeaway": "Makro yönü LONG_ONLY onaylı ve 0.19x defansif risk tahsisliydi. M1 teyidi gelmediği için emir açılmadı, sermaye korundu.",
       "calibration_rule": "M1 manuel teyit kuralı kripto volatilite seanslarında sermayeyi sıfır kayıpla korumaya devam etmektedir."
+    }
+  },
+  {
+    "macro_record_id": "MACRO-20260918-001",
+    "linked_smc_record_id": "BG-20260918-001",
+    "timestamp_utc": "2026-09-18T13:25:00Z",
+    "timestamp_tsi": "2026-09-18 16:25:00",
+    "symbol": "GBPUSD",
+    "asset_class": "FX_MAJOR",
+    "base_currency": "GBP",
+    "quote_currency": "USD",
+    "trade_direction": "SHORT",
+    "primary_regime": "Late-Cycle Overheating with Global Divergence",
+    "volatility_risk_score": 0.58,
+    "capital_preservation_mode": false,
+    "recommended_risk_multiplier": 0.8,
+    "macro_market_snapshot": {
+      "dxy": 104.4,
+      "us10y": 3.92,
+      "us02y": 3.95,
+      "vix": 16.2,
+      "brent": 77.8,
+      "gold": 2490.0
+    },
+    "currency_scores": {
+      "USD": 1,
+      "JPY": -1,
+      "EUR": -1,
+      "GBP": -1,
+      "CHF": 0,
+      "AUD": 0,
+      "CAD": 0,
+      "NZD": 1
+    },
+    "cross_pair_verdict": {
+      "base_driver": "GBP (-1 UK İmalat Zayıflığı & BOE İndirim Fiyatlaması)",
+      "quote_driver": "USD (+1 US Exceptionalism & Güçlü Dolar)",
+      "net_differential": -2,
+      "recommended_gate": "SHORT_ONLY",
+      "gate_alignment": "ALIGNED"
+    },
+    "post_trade_macro_attribution": {
+      "trade_actual_outcome": "WIN",
+      "macro_directional_accuracy": true,
+      "decoupling_detected": false,
+      "failure_attribution": "NONE_WIN",
+      "macro_audit_takeaway": "Late-Cycle Overheating rejiminde Dolar'ın küresel getiri üstünlüğü ve İngiltere büyüme ayrışmasıyla GBPUSD SHORT_ONLY kapısı kusursuz çalıştı. 1.34008 OB retesti sonrası pozisyon 19:31 TSİ'de 2.5 RR hedefine ulaştı.",
+      "calibration_rule": "USD (+1) vs GBP (-1) net diferansiyel -2 olduğunda SHORT_ONLY kapısı en yüksek istatistiksel güvenilirliğe sahip kurumsal makro kurulumdur."
+    }
+  },
+  {
+    "macro_record_id": "MACRO-20260921-001",
+    "linked_smc_record_id": "BG-20260921-001",
+    "timestamp_utc": "2026-09-21T07:01:00Z",
+    "timestamp_tsi": "2026-09-21 10:01:00",
+    "symbol": "EURUSD",
+    "asset_class": "FX_MAJOR",
+    "base_currency": "EUR",
+    "quote_currency": "USD",
+    "trade_direction": "SHORT",
+    "primary_regime": "Reflationary Growth with Expanding Liquidity",
+    "volatility_risk_score": 0.52,
+    "capital_preservation_mode": false,
+    "recommended_risk_multiplier": 0.64,
+    "macro_market_snapshot": {
+      "dxy": 104.1,
+      "us10y": 3.86,
+      "us02y": 3.89,
+      "vix": 14.8,
+      "brent": 76.5,
+      "gold": 2505.0
+    },
+    "currency_scores": {
+      "USD": 1,
+      "JPY": -1,
+      "EUR": -1,
+      "GBP": -1,
+      "CHF": 0,
+      "AUD": 0,
+      "CAD": 0,
+      "NZD": 1
+    },
+    "cross_pair_verdict": {
+      "base_driver": "EUR (-1 Avrupa İmalat Yavaşlaması & ECB Faiz İndirimi)",
+      "quote_driver": "USD (+1 İstihdam Güçlü ICSA 196K & Gevşek Koşullar NFCI -0.56)",
+      "net_differential": -2,
+      "recommended_gate": "SHORT_ONLY",
+      "gate_alignment": "ALIGNED"
+    },
+    "post_trade_macro_attribution": {
+      "trade_actual_outcome": "WIN",
+      "macro_directional_accuracy": true,
+      "decoupling_detected": false,
+      "failure_attribution": "NONE_WIN",
+      "macro_audit_takeaway": "Reflationary Growth rejiminde ABD sağlam istihdamı ve finansal likidite genişlemesi Dolar'a güç vermeye devam ederken, Avrupa zayıflığıyla EURUSD SHORT_ONLY kapısı tam hedefe ulaştı. 1.14835 mikro OB retesti sonrası 2.45 RR kâr sağlandı.",
+      "calibration_rule": "EUR (-1) vs USD (+1) net diferansiyel -2 olduğunda SHORT_ONLY kapısı yüksek olasılıklı kurumsal güvenilirlik sunar."
     }
   }
 ]

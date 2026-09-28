@@ -92,6 +92,11 @@ function evaluateEntryValidation(candidate: NotificationCandidate, rejectionReas
     return 'FAIL';
   }
 
+  if (isAdverseMomentumMarubozu(candidate)) {
+    rejectionReason.push('adverse momentum marubozu candle into entry zone without rejection');
+    return 'FAIL';
+  }
+
   if (quality?.status === 'invalid') {
     rejectionReason.push('setup invalidated by signal quality analysis');
     return 'FAIL';
@@ -213,3 +218,43 @@ function configuredMaxMarketDataAgeMs(): number {
   }
   return configuredMinutes * 60 * 1000;
 }
+
+function isAdverseMomentumMarubozu(candidate: NotificationCandidate): boolean {
+  const candle = candidate.triggerCandle;
+  if (!candle) return false;
+
+  const candleRange = candle.high - candle.low;
+  if (candleRange <= 0) return false;
+
+  const zone = resolveZone(candidate);
+  const zoneHeight = Math.max(zone.high - zone.low, pipSize(candidate.symbol));
+
+  const touchesZone = candle.low <= zone.high && candle.high >= zone.low;
+  if (!touchesZone) return false;
+
+  const isBearishCandle = candle.close < candle.open;
+  const isBullishCandle = candle.close > candle.open;
+  if (candidate.tradeDirection === 'long' && !isBearishCandle) return false;
+  if (candidate.tradeDirection === 'short' && !isBullishCandle) return false;
+
+  const body = Math.abs(candle.close - candle.open);
+  const bodyRatio = body / candleRange;
+  if (bodyRatio < 0.80) return false;
+
+  const atrDist = (candidate.atr15mPips ?? 0) * pipSize(candidate.symbol);
+  const isAbnormallyLarge = (atrDist > 0 && body >= 1.6 * atrDist) || body >= 1.75 * zoneHeight;
+  if (!isAbnormallyLarge) return false;
+
+  if (candidate.tradeDirection === 'long') {
+    const deepInAdverseEdge = candle.close <= zone.low + 0.25 * zoneHeight;
+    const lowerWick = Math.max(0, Math.min(candle.open, candle.close) - candle.low);
+    const minimalRejection = lowerWick / candleRange <= 0.12;
+    return deepInAdverseEdge && minimalRejection;
+  } else {
+    const deepInAdverseEdge = candle.close >= zone.high - 0.25 * zoneHeight;
+    const upperWick = Math.max(0, candle.high - Math.max(candle.open, candle.close));
+    const minimalRejection = upperWick / candleRange <= 0.12;
+    return deepInAdverseEdge && minimalRejection;
+  }
+}
+

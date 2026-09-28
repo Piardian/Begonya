@@ -182,4 +182,41 @@ describe('Signal Validation Gate', () => {
     expect(evaluateSignalValidationGate(structureMismatch, execution).rejectionReason)
       .toContain('structure direction conflicts with trade direction');
   });
+
+  test('rejects a falling knife (adverse momentum marubozu) smashing deep into a BUY entry zone without rejection wick', () => {
+    // Zone is 1.1000 - 1.1010 (10 pips). A huge bearish marubozu opens at 1.1025 and closes at 1.1001 with low at 1.1000.
+    const fallingKnifeCandidate = candidate({
+      currentPrice: 1.1001,
+      validationClosePrice: 1.1001,
+      atr15mPips: 10,
+      triggerCandle: {
+        timestamp: 1717300900000,
+        open: 1.1025,
+        high: 1.1026,
+        low: 1.1000,
+        close: 1.1001,
+      },
+    });
+    const result = evaluateSignalValidationGate(fallingKnifeCandidate, execution);
+    expect(result.entryValidation).toBe('FAIL');
+    expect(result.rejectionReason).toContain('adverse momentum marubozu candle into entry zone without rejection');
+  });
+
+  test('passes a normal entry zone touch when candle has rejection wick or normal size', () => {
+    const validTouchCandidate = candidate({
+      currentPrice: 1.1006,
+      validationClosePrice: 1.1006,
+      atr15mPips: 10,
+      triggerCandle: {
+        timestamp: 1717300900000,
+        open: 1.1012,
+        high: 1.1013,
+        low: 1.1001,
+        close: 1.1006,
+      },
+    });
+    const result = evaluateSignalValidationGate(validTouchCandidate, execution);
+    expect(result.entryValidation).toBe('PASS');
+  });
 });
+

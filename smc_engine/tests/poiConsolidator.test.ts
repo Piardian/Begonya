@@ -136,4 +136,29 @@ describe('POI Consolidator & Zone Priority', () => {
     expect(result.map(c => c.uniqueKey)).toContain('cand3_extreme');
     expect(result.map(c => c.uniqueKey)).not.toContain('cand2_overlap_A');
   });
+
+  it('suppresses backup FVG when a valid OB exists from the same structural break', () => {
+    const obCandidate = createMockCandidate({
+      uniqueKey: 'ob_same_break',
+      poiType: 'OB',
+    });
+    const fvgCandidate = createMockCandidate({
+      uniqueKey: 'fvg_same_break',
+      poiType: 'FVG',
+      poi: {
+        direction: 'bullish',
+        gapHigh: 1.057,
+        gapLow: 1.0555,
+        firstCandleIndex: 13,
+        middleCandleIndex: 14,
+        thirdCandleIndex: 15,
+        relatedEvent: obCandidate.poi.relatedEvent,
+      } as any,
+    });
+
+    const result = consolidateCandidates([obCandidate, fvgCandidate]);
+    expect(result.length).toBe(1);
+    expect(result[0].uniqueKey).toBe('ob_same_break');
+  });
 });
+

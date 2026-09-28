@@ -58,7 +58,7 @@ def generate_technical_report():
             protected_records.append(r)
         elif outcome in ["PENDING_RETEST"] or "PENDING" in outcome:
             pending_records.append(r)
-        elif outcome in ["ACTIVE_IN_POSITION"] or category == "IN_PROGRESS":
+        elif outcome in ["ACTIVE_IN_POSITION", "ACTIVE"] or category in ["IN_PROGRESS", "ACTIVE"]:
             active_records.append(r)
         else:
             pending_records.append(r)

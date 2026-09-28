@@ -14,7 +14,7 @@ export class NotifiedStore {
   }
 
   hasBeenNotified(uniqueKey: string): boolean {
-    if (this.pending.has(uniqueKey)) return true;
+    if (this.pending.has(uniqueKey) || this.pending.has(`INVALIDATED:${uniqueKey}`)) return true;
     return this.hasDurablyBeenNotified(uniqueKey);
   }
 
@@ -22,10 +22,17 @@ export class NotifiedStore {
    * Prevents "peeling the onion" (falling back to older structural breaks) and backup FVG spam
    * from the same structural break once an impulse has been notified.
    */
-  hasImpulseOrNewerBeenNotified(symbol: string, breakTimestamp: number): boolean {
+  hasImpulseOrNewerBeenNotified(symbol: string, breakTimestamp: number, tradeDirection?: 'long' | 'short'): boolean {
     if (!Number.isFinite(breakTimestamp)) return false;
     const prefix = `${symbol}_15m_`;
+    const impulsePrefix = tradeDirection ? `IMPULSE:${symbol}:${tradeDirection}:` : `IMPULSE:${symbol}:`;
     const matchesImpulseOrNewer = (key: string): boolean => {
+      if (key.startsWith('INVALIDATED:')) return false;
+      if (key.startsWith(impulsePrefix)) {
+        const parts = key.split(':');
+        const ts = Number(parts[parts.length - 1]);
+        return Number.isFinite(ts) && ts >= breakTimestamp;
+      }
       if (!key.startsWith(prefix)) return false;
       const parts = key.split('_');
       if (parts.length < 5) return false;
@@ -57,7 +64,7 @@ export class NotifiedStore {
     try {
       const content = fs.readFileSync(filePath, 'utf8');
       const keys: string[] = JSON.parse(content);
-      return keys.includes(uniqueKey);
+      return keys.includes(uniqueKey) || keys.includes(`INVALIDATED:${uniqueKey}`);
     } catch (e) {
       return false;
     }
@@ -71,6 +78,19 @@ export class NotifiedStore {
     if (uniqueKeys.some(key => this.hasBeenNotified(key))) return false;
     for (const key of uniqueKeys) this.pending.add(key);
     return true;
+  }
+
+  /**
+   * Marks a zone as permanently invalidated (e.g. completed candle closed beyond invalidation side)
+   * without marking its parent structural break as notified (so deeper unmitigated POIs from the same break remain valid).
+   */
+  markAsInvalidated(uniqueKey: string): void {
+    this.pending.delete(uniqueKey);
+    if (uniqueKey.startsWith('POI:') || uniqueKey.startsWith('INVALIDATED:')) {
+      this.markAsNotified(uniqueKey);
+      return;
+    }
+    this.markAsNotified(`INVALIDATED:${uniqueKey}`);
   }
 
   markAsNotified(uniqueKey: string): void {

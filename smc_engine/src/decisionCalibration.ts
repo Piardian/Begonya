@@ -20,6 +20,7 @@ export interface DecisionCalibrationInput {
   readonly score: number;
   readonly admissionProfile?: 'PRODUCTION' | 'PVP_ACCELERATION';
   readonly blockReasons: readonly string[];
+  readonly allowTrendContinuationPD?: boolean;
   readonly breakdown: {
     readonly htfBiasPD: number;
     readonly displacement: number;
@@ -55,8 +56,8 @@ export function calibrateDecision(input: DecisionCalibrationInput): DecisionCali
       '4H Premium/Discount must support the trade direction.',
       input.tradeDirection,
       input.pd4H,
-      true,
-      false,
+      !input.allowTrendContinuationPD,
+      Boolean(input.allowTrendContinuationPD),
       true
     ),
     premiumDiscountCheck(

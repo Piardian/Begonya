@@ -37,7 +37,11 @@ export function createSignalDeliveryProcessor(
     const executionPipeline = runRuntimeExecutionPipeline(refreshedCandidate);
     const validationGate = evaluateSignalValidationGate(refreshedCandidate, executionPipeline);
     if (validationGate.validationDecision === 'FAIL') {
-      clearCandidatePending(notifiedStore, refreshedCandidate);
+      if (isPermanentValidationRejection(validationGate.rejectionReason)) {
+        markCandidateAsInvalidated(notifiedStore, refreshedCandidate);
+      } else {
+        clearCandidatePending(notifiedStore, refreshedCandidate);
+      }
       return { outcome: 'EXPIRED_IN_QUEUE', failureReason: validationGate.rejectionReason.join('; ') || 'queue revalidation failed' };
     }
 
@@ -94,6 +98,7 @@ async function refreshCandidate(item: QueuedSignalDelivery, candleStore: CandleS
     marketDataTimestamp: last?.timestamp ?? candidate.marketDataTimestamp,
     validationClosePrice: last?.close ?? candidate.validationClosePrice,
     validationCloseTimestamp: last?.timestamp ?? candidate.validationCloseTimestamp,
+    triggerCandle: last ?? candidate.triggerCandle,
   };
 }
 
@@ -304,20 +309,46 @@ function visibleRangeFromMetadata(metadata: ChartMetadata): { from: number; to: 
   };
 }
 
+function candidateImpulseKey(candidate: QueuedSignalDelivery['candidate']): string | null {
+  const breakTs = candidate.poi?.relatedEvent?.breakTimestamp;
+  if (!Number.isFinite(breakTs)) return null;
+  return `IMPULSE:${candidate.symbol}:${candidate.tradeDirection}:${breakTs}`;
+}
+
+function isPermanentValidationRejection(reasons: readonly string[]): boolean {
+  return reasons.some(
+    reason =>
+      reason === 'completed candle close crossed the invalidation side of the entry zone' ||
+      reason === 'entry zone over-tested'
+  );
+}
+
 function clearCandidatePending(store: NotifiedStore, candidate: QueuedSignalDelivery['candidate']): void {
   store.clearPending(candidate.uniqueKey);
   if (candidate.dedupeKey) store.clearPending(candidate.dedupeKey);
+  const impulseKey = candidateImpulseKey(candidate);
+  if (impulseKey) store.clearPending(impulseKey);
+}
+
+function markCandidateAsInvalidated(store: NotifiedStore, candidate: QueuedSignalDelivery['candidate']): void {
+  clearCandidatePending(store, candidate);
+  store.markAsInvalidated(candidate.uniqueKey);
+  if (candidate.dedupeKey) store.markAsInvalidated(candidate.dedupeKey);
 }
 
 function markCandidateAsNotified(store: NotifiedStore, candidate: QueuedSignalDelivery['candidate']): void {
   store.markAsNotified(candidate.uniqueKey);
   if (candidate.dedupeKey) store.markAsNotified(candidate.dedupeKey);
+  const impulseKey = candidateImpulseKey(candidate);
+  if (impulseKey) store.markAsNotified(impulseKey);
 }
 
 function candidateWasDurablyNotified(
   store: NotifiedStore,
   candidate: QueuedSignalDelivery['candidate']
 ): boolean {
+  const impulseKey = candidateImpulseKey(candidate);
   return store.hasDurablyBeenNotified(candidate.uniqueKey) ||
-    Boolean(candidate.dedupeKey && store.hasDurablyBeenNotified(candidate.dedupeKey));
+    Boolean(candidate.dedupeKey && store.hasDurablyBeenNotified(candidate.dedupeKey)) ||
+    Boolean(impulseKey && store.hasDurablyBeenNotified(impulseKey));
 }
