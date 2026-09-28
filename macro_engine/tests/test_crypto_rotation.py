@@ -113,11 +113,12 @@ def _build_base_snapshot(
     return snap
 
 
-def test_organic_sector_rotation_approves_top_2_on_demand_smc_targets():
+def test_organic_sector_rotation_approves_sector_diversified_top_3_on_demand_smc_targets():
     """
-    When BTC.D is falling (ALT_CAPITAL_DISPERSION), ETH/BTC > 0, and >= 60% of AI_SECTOR
-    has strong RS vs BTC/ETH + organic Spot RVOL + rising OI with normal funding,
-    top 2 AI coins qualify for on_demand_smc_targets with LONG_ONLY.
+    When BTC.D is falling (ALT_CAPITAL_DISPERSION), ETH/BTC > 0, and both HIGH_BETA_L1_L2
+    and AI_SECTOR have strong RS vs BTC/ETH + organic Spot RVOL + rising OI with normal funding,
+    Sector Diversification picks the #1 leader from AI_SECTOR (TAO), the #1 leader from HIGH_BETA_L1_L2 (SOL),
+    and fills the 3rd slot with the next highest leader (RENDER) for 3 On-Demand SMC targets.
     """
     snap = _build_base_snapshot(btc_change_24h=2.0, eth_change_24h=3.6)
 
@@ -143,10 +144,38 @@ def test_organic_sector_rotation_approves_top_2_on_demand_smc_targets():
     assert res["coin_assessments"]["TAO"]["rotation_gate"] == "LONG_ONLY"
     assert res["coin_assessments"]["TAO"]["active_rotation_score"] >= 65
     assert res["coin_assessments"]["TAO"]["derivatives_regime"] == "ORGANIC_CAPITAL_INFLOW"
-    assert len(res["on_demand_smc_targets"]) == 2
+    assert len(res["on_demand_smc_targets"]) == 3
     target_coins = [t["coin"] for t in res["on_demand_smc_targets"]]
-    assert "TAO" in target_coins
+    assert target_coins[0] == "TAO"
+    assert "SOL" in target_coins
     assert "RENDER" in target_coins
+
+
+def test_late_short_chase_penalty_and_micro_rs_hold():
+    """
+    Verifies that:
+    1. A coin that already capitulated (-11% 24h with -6.0% 4h OI flush) gets CAPITULATION_OI_FLUSHED
+       and late_chase_penalty (-15 pts), ranking below a fresh SHORT_BUILDUP_DISTRIBUTION coin (-4.5% 24h, rising OI).
+    2. A coin with 1H micro RS bounce (>= +0.65% vs BTC) gets MICRO_RS_REVERSAL_HOLD vetoed from shorting.
+    """
+    snap = _build_base_snapshot(btc_change_24h=-1.5, eth_change_24h=-2.5, btcdom_change_4h=0.3, btcdom_change_24h=0.9)
+    for sym in ["SOL", "SUI", "AVAX", "NEAR", "APT", "ARB", "OP"]:
+        _set_coin(snap, sym, chg24=-4.5, chg4=-1.8, rvol=1.6, oi4=1.5, oi24=3.0, funding_pct=0.005)
+
+    # BCH already capitulated (-11.5% 24h, OI flushed -6.2% in 4h)
+    _set_coin(snap, "BCH", chg24=-11.5, chg4=-3.2, rvol=1.7, oi4=-6.2, oi24=-10.0, funding_pct=-0.001)
+    for sym in ["XRP", "ADA", "DOT", "LINK", "DASH"]:
+        _set_coin(snap, sym, chg24=-3.5, chg4=-1.2, rvol=1.3, oi4=-0.5, oi24=-1.0, funding_pct=0.004)
+
+    res = evaluate_crypto_rotation(snap, macro_btc_gate="SHORT_ONLY")
+    arb_eval = res["coin_assessments"]["ARB"]
+    bch_eval = res["coin_assessments"]["BCH"]
+
+    assert arb_eval["derivatives_regime"] == "SHORT_BUILDUP_DISTRIBUTION"
+    assert bch_eval["derivatives_regime"] == "CAPITULATION_OI_FLUSHED"
+    assert bch_eval["score_breakdown"]["late_chase_penalty"] == -15
+    assert arb_eval["short_rotation_score"] > bch_eval["short_rotation_score"]
+
 
 
 def test_dash_ltc_contra_rs_and_short_squeeze_veto():

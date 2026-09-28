@@ -151,7 +151,7 @@ describe('8-Factor Crypto Rotation & On-Demand SMC Engine Bridge', () => {
     expect(getDecimalPrecision('TAOUSD')).toBe(2);
   });
 
-  it('2. ORGANIC SECTOR ROTATION: Approves top 2 AI sector leaders (TAOUSD, RENDERUSD) for On-Demand SMC execution', () => {
+  it('2. ORGANIC SECTOR ROTATION & SECTOR DIVERSIFICATION: Approves top 3 sector-diversified leaders (TAOUSD, SOLUSD, RENDERUSD) for On-Demand SMC execution', () => {
     const snap = buildBaseSnapshot(2.0, 3.6);
     for (const l2 of ['SOL', 'AVAX', 'SUI', 'NEAR', 'APT']) {
       setCoin(snap, l2, { chg24: 4.2, chg4: 1.8, rvol: 1.45, oi4: 2.5, oi24: 5.0 });
@@ -166,8 +166,8 @@ describe('8-Factor Crypto Rotation & On-Demand SMC Engine Bridge', () => {
     expect(report.btc_dominance_panel.dominance_regime).toBe('ALT_CAPITAL_DISPERSION');
     expect(report.coin_assessments.TAO.rotation_gate).toBe('LONG_ONLY');
     expect(report.coin_assessments.TAO.active_rotation_score).toBeGreaterThanOrEqual(65);
-    expect(report.on_demand_smc_targets.length).toBe(2);
-    expect(report.on_demand_smc_targets.map(t => t.smc_symbol)).toEqual(['TAOUSD', 'RENDERUSD']);
+    expect(report.on_demand_smc_targets.length).toBe(3);
+    expect(report.on_demand_smc_targets.map(t => t.smc_symbol)).toEqual(['TAOUSD', 'SOLUSD', 'RENDERUSD']);
   });
 
   it('3. DASH & LTC SHORT-SQUEEZE SHIELD: Blocks shorting altcoins that outperform BTC with volume & negative funding even when Macro is SHORT_ONLY', () => {

@@ -15,10 +15,11 @@ ve On-Demand Seçici SMC Hedef Belirleme Motoru.
 
 from __future__ import annotations
 
+import time
 from typing import Any, Dict, List, Mapping, Optional
 
 ROTATION_SCORE_THRESHOLD = 65
-MAX_ON_DEMAND_SMC_TARGETS = 2
+MAX_ON_DEMAND_SMC_TARGETS = 3
 
 
 def _pct_change(curr: Optional[float], prev: Optional[float]) -> float:
@@ -400,10 +401,24 @@ def evaluate_crypto_rotation(
             and oi_24h <= 25.0
             and funding <= 0.025
         )
+        is_capitulation_oi_flushed = (
+            (price_24h <= -9.0 or rs_btc_24h <= -8.5)
+            and (oi_4h <= -4.5 or oi_24h <= -9.0)
+            and not is_short_squeeze_danger
+        )
+        is_short_buildup_distribution = (
+            (rs_btc_24h <= -0.8 or rs_btc_4h <= -0.3)
+            and (price_4h < 0.0 or price_24h < 0.0)
+            and oi_4h >= -1.5
+            and rvol >= 1.20
+            and not is_short_squeeze_danger
+            and not is_capitulation_oi_flushed
+        )
         is_organic_distribution = (
             (rs_btc_24h < 0.0 or rs_btc_4h < 0.0)
             and (price_4h < 0.0 or price_24h < 0.0)
             and not is_short_squeeze_danger
+            and not is_capitulation_oi_flushed
         )
 
         if is_leverage_squeeze_trap:
@@ -412,6 +427,10 @@ def evaluate_crypto_rotation(
             derivatives_regime = "SHORT_SQUEEZE_DANGER"
         elif is_organic_inflow:
             derivatives_regime = "ORGANIC_CAPITAL_INFLOW"
+        elif is_capitulation_oi_flushed:
+            derivatives_regime = "CAPITULATION_OI_FLUSHED"
+        elif is_short_buildup_distribution:
+            derivatives_regime = "SHORT_BUILDUP_DISTRIBUTION"
         elif is_organic_distribution:
             derivatives_regime = "ORGANIC_DISTRIBUTION_FLUSH"
         else:
@@ -449,9 +468,15 @@ def evaluate_crypto_rotation(
 
         rs_short_pts = 0
         if rs_btc_24h < 0 and rs_btc_4h < 0:
-            rs_short_pts += 15 if rs_btc_24h <= -1.5 else 11
+            # Taze/Aktif göreceli zayıflık (-1.5% ile -8.0% arası tatlı bölge)
+            if -8.5 <= rs_btc_24h <= -1.5:
+                rs_short_pts += 15
+            elif rs_btc_24h < -8.5:
+                rs_short_pts += 12
+            else:
+                rs_short_pts += 10
         elif rs_btc_4h < -0.3 or rs_btc_1h < -0.3:
-            rs_short_pts += 8
+            rs_short_pts += 7
         if rs_eth_24h < 0 or cm["rs_vs_eth_4h_pct"] < 0:
             rs_short_pts += 5
         if ratio_struct["bearish"]:
@@ -474,7 +499,16 @@ def evaluate_crypto_rotation(
         else:
             vol_long_pts = 3
 
-        vol_short_pts = 16 if rvol >= 1.5 and rs_btc_4h < 0 else (12 if rvol >= 1.0 and rs_btc_24h < 0 else 6)
+        if is_capitulation_oi_flushed:
+            vol_short_pts = 6
+        elif rvol >= 1.8 and rs_btc_4h <= -0.3:
+            vol_short_pts = 20
+        elif rvol >= 1.35 and (rs_btc_4h < 0 or rs_btc_24h <= -1.2):
+            vol_short_pts = 16
+        elif rvol >= 1.15 and rs_btc_24h < 0:
+            vol_short_pts = 11
+        else:
+            vol_short_pts = 4
 
         # 3. Market-Cap Layer Waterfall (Max 10 Puan)
         upper_layers_healthy = (eth_btc_24h >= -0.5) or (1 in active_inflow_layers) or (2 in active_inflow_layers)
@@ -489,7 +523,7 @@ def evaluate_crypto_rotation(
         else:
             layer_long_pts = 2
 
-        layer_short_pts = 10 if cm["layer"] >= 2 and eth_btc_24h <= 0 else 6
+        layer_short_pts = 10 if (cm["layer"] >= 2 and eth_btc_24h <= 0 and rs_btc_4h < 0) else 5
 
         # 4. BTC Dominance (Max 10 Puan)
         if dominance_regime == "ALT_CAPITAL_DISPERSION":
@@ -521,8 +555,10 @@ def evaluate_crypto_rotation(
         bell_short_pts = 0
         if eth_btc_24h < 0:
             bell_short_pts += 5
-        if sol_eth_24h < 0 or rs_eth_24h < 0:
+        if sol_eth_24h < 0 and rs_eth_24h < 0:
             bell_short_pts += 5
+        elif rs_eth_24h < 0:
+            bell_short_pts += 3
         bell_short_pts = min(10, bell_short_pts)
 
         # 6. Open Interest + Funding (Max 15 Puan)
@@ -534,13 +570,19 @@ def evaluate_crypto_rotation(
             deriv_short_pts = 0
         elif derivatives_regime == "LEVERAGE_SQUEEZE_TRAP":
             deriv_long_pts = 0
-            deriv_short_pts = 10
-        elif derivatives_regime == "ORGANIC_DISTRIBUTION_FLUSH":
+            deriv_short_pts = 12
+        elif derivatives_regime == "SHORT_BUILDUP_DISTRIBUTION":
             deriv_long_pts = 2
             deriv_short_pts = 15
+        elif derivatives_regime == "ORGANIC_DISTRIBUTION_FLUSH":
+            deriv_long_pts = 2
+            deriv_short_pts = 12
+        elif derivatives_regime == "CAPITULATION_OI_FLUSHED":
+            deriv_long_pts = 4
+            deriv_short_pts = 5
         else:
             deriv_long_pts = 9 if funding <= 0.015 else 5
-            deriv_short_pts = 10 if funding >= 0.0 else 5
+            deriv_short_pts = 8 if funding >= 0.0 else 4
 
         # 7. Sector Breadth (Max 10 Puan)
         if coin == "ETH":
@@ -567,7 +609,20 @@ def evaluate_crypto_rotation(
             else:
                 sec_short_pts = 0
 
-        long_score = (
+        # --- Geç Kalınmış / Aşırı Şişmiş Hareket Cezası (FOMO & Oversold Chase Penalty) ---
+        late_long_fomo_penalty = (
+            15
+            if (price_24h >= 18.0 or (rs_btc_24h >= 14.0 and funding >= 0.025))
+            else 0
+        )
+        late_short_chase_penalty = (
+            15
+            if (price_24h <= -12.0 or is_capitulation_oi_flushed)
+            else (8 if rs_btc_24h <= -9.2 else 0)
+        )
+
+        long_score = max(
+            0,
             rs_long_pts
             + vol_long_pts
             + layer_long_pts
@@ -575,8 +630,10 @@ def evaluate_crypto_rotation(
             + bell_long_pts
             + deriv_long_pts
             + sec_long_pts
+            - late_long_fomo_penalty,
         )
-        short_score = (
+        short_score = max(
+            0,
             rs_short_pts
             + vol_short_pts
             + layer_short_pts
@@ -584,6 +641,7 @@ def evaluate_crypto_rotation(
             + bell_short_pts
             + deriv_short_pts
             + sec_short_pts
+            - late_short_chase_penalty,
         )
 
         # MUTLAK VETO KALKANLARI
@@ -593,6 +651,10 @@ def evaluate_crypto_rotation(
         if rs_btc_24h < -0.5 and rs_btc_4h < -0.25:
             veto_reasons_long.append(
                 f"RS_UNDERPERFORMING_BTC (ALT/BTC 24s: %{rs_btc_24h:+.2f}, 4s: %{rs_btc_4h:+.2f})"
+            )
+        if rs_btc_1h <= -0.65:
+            veto_reasons_long.append(
+                f"MICRO_RS_BREAKDOWN_HOLD (Son 1s ALT/BTC %{rs_btc_1h:+.2f} sert aşağı kırıldı; 15m long girişi bekletiliyor)"
             )
         if ratio_struct["swing_low_broken"]:
             veto_reasons_long.append("ALT_BTC_4H_SWING_LOW_BROKEN (CHoCH)")
@@ -613,10 +675,14 @@ def evaluate_crypto_rotation(
                 f"NO_SECTOR_BREADTH ({cm['sector']} sepetinde tekil hareket; sektör genişliği %{float(sec_info.get('long_breadth_ratio', 0.0))*100:.0f})"
             )
 
-        # Short Veto Kuralları (DASH ve LTC Kalkanı)
+        # Short Veto Kuralları (DASH ve LTC Kalkanı + 1H Mikro Dönüş Kalkanı)
         if rs_btc_24h > 0.5 or (rs_btc_4h > 0.4 and rvol >= 1.25):
             veto_reasons_short.append(
                 f"RS_CONTRA_SHORT_VETO ({coin} piyasaya karşı güçleniyor: ALT/BTC 24s %{rs_btc_24h:+.2f}, 4s %{rs_btc_4h:+.2f}, RVOL {rvol}x)"
+            )
+        if rs_btc_1h >= 0.65:
+            veto_reasons_short.append(
+                f"MICRO_RS_REVERSAL_HOLD (Son 1s ALT/BTC %{rs_btc_1h:+.2f} yukarı döndü; 15m short girişi bekletiliyor)"
             )
         if is_short_squeeze_danger:
             veto_reasons_short.append(
@@ -643,7 +709,7 @@ def evaluate_crypto_rotation(
             elif long_score >= ROTATION_SCORE_THRESHOLD:
                 rotation_gate = "LONG_ONLY"
                 gate_reason = (
-                    f"ROTASYON ONAYLI LONG (Skor: {long_score}/100 | ALT/BTC 24s: %{rs_btc_24h:+.2f} | "
+                    f"ROTASYON ONAYLI LONG (Skor: {long_score}/100 | ALT/BTC 24s: %{rs_btc_24h:+.2f}, 1s: %{rs_btc_1h:+.2f} | "
                     f"RVOL: {rvol}x [{volume_regime}] | Türev: {derivatives_regime} | Sektör: {cm['sector']})"
                 )
                 approved_long_symbols.append(smc_symbol)
@@ -656,16 +722,20 @@ def evaluate_crypto_rotation(
                 rotation_gate = "NEUTRAL_RANGE"
                 gate_reason = f"🛑 SHORT ROTASYON KALKANI (VETO): {' | '.join(veto_reasons_short)}"
                 vetoed_symbols[smc_symbol] = gate_reason
-            elif short_score >= ROTATION_SCORE_THRESHOLD:
+            elif (
+                short_score >= ROTATION_SCORE_THRESHOLD
+                and (rs_btc_24h <= -0.8 or rs_btc_4h <= -0.4)
+                and rvol >= 1.15
+            ):
                 rotation_gate = "SHORT_ONLY"
                 gate_reason = (
-                    f"ROTASYON ONAYLI SHORT (Skor: {short_score}/100 | ALT/BTC 24s: %{rs_btc_24h:+.2f} | "
+                    f"ROTASYON ONAYLI SHORT (Skor: {short_score}/100 | ALT/BTC 24s: %{rs_btc_24h:+.2f}, 1s: %{rs_btc_1h:+.2f} | "
                     f"RVOL: {rvol}x | Türev: {derivatives_regime} | Sektör: {cm['sector']})"
                 )
                 approved_short_symbols.append(smc_symbol)
             else:
                 rotation_gate = "NEUTRAL_RANGE"
-                gate_reason = f"Short Rotasyon / Göreli Zayıflık Skoru Yetersiz ({short_score}/{ROTATION_SCORE_THRESHOLD})"
+                gate_reason = f"Short Rotasyon / Göreli Zayıflık Skoru Yetersiz ({short_score}/{ROTATION_SCORE_THRESHOLD}, RVOL: {rvol}x)"
         else:
             active_score = max(long_score, short_score)
             rotation_gate = "NEUTRAL_RANGE"
@@ -710,6 +780,7 @@ def evaluate_crypto_rotation(
                 "eth_btc_bellwether": bell_long_pts if target_macro_dir != "SHORT" else bell_short_pts,
                 "oi_and_funding": deriv_long_pts if target_macro_dir != "SHORT" else deriv_short_pts,
                 "sector_breadth": sec_long_pts if target_macro_dir != "SHORT" else sec_short_pts,
+                "late_chase_penalty": -late_long_fomo_penalty if target_macro_dir != "SHORT" else -late_short_chase_penalty,
             },
             "veto_reasons_long": veto_reasons_long,
             "veto_reasons_short": veto_reasons_short,
@@ -723,12 +794,39 @@ def evaluate_crypto_rotation(
         key=lambda x: (
             1 if x["smc_handoff_allowed"] else 0,
             x["active_rotation_score"],
-            abs(x["rs_vs_btc_24h_pct"]),
+            x["effective_rvol"],
+            abs(x["rs_vs_btc_4h_pct"]),
         ),
         reverse=True,
     )
 
-    # ON-DEMAND SMC HEDEFLERİ (Sıra SMC'ye Geldiğinde İstek Atılacak En Güçlü 1-2 Coin)
+    # ON-DEMAND SMC HEDEFLERİ (Sektör Çeşitlendirmeli: Katman 2-6 Altcoin Sektörlerinden Max 3 Lider)
+    approved_candidates = [
+        item for item in ranked_candidates if item["smc_handoff_allowed"] and item["layer"] >= 2
+    ]
+    if not approved_candidates:
+        approved_candidates = [item for item in ranked_candidates if item["smc_handoff_allowed"]]
+    diversified_items: List[Dict[str, Any]] = []
+    seen_sectors: set[str] = set()
+
+    # 1. Tur: Farklı sektörlerin 1 numaralı liderlerini seç (Sektör Tekelleşmesini Önle)
+    for item in approved_candidates:
+        if len(diversified_items) >= max_on_demand_targets:
+            break
+        if item["sector"] not in seen_sectors:
+            diversified_items.append(item)
+            seen_sectors.add(item["sector"])
+
+    # 2. Tur (Fallback): Eğer onay alan sektör sayısı max_on_demand_targets'tan azsa kalan yuvaları en yüksek skorlularla doldur
+    if len(diversified_items) < max_on_demand_targets:
+        picked_coins = {x["coin"] for x in diversified_items}
+        for item in approved_candidates:
+            if len(diversified_items) >= max_on_demand_targets:
+                break
+            if item["coin"] not in picked_coins:
+                diversified_items.append(item)
+                picked_coins.add(item["coin"])
+
     on_demand_smc_targets = [
         {
             "coin": item["coin"],
@@ -738,6 +836,8 @@ def evaluate_crypto_rotation(
             "direction": "long" if item["rotation_gate"] == "LONG_ONLY" else "short",
             "rotation_gate": item["rotation_gate"],
             "rotation_score": item["active_rotation_score"],
+            "rs_vs_btc_1h_pct": item["rs_vs_btc_1h_pct"],
+            "rs_vs_btc_4h_pct": item["rs_vs_btc_4h_pct"],
             "rs_vs_btc_24h_pct": item["rs_vs_btc_24h_pct"],
             "rs_vs_eth_24h_pct": item["rs_vs_eth_24h_pct"],
             "effective_rvol": item["effective_rvol"],
@@ -750,12 +850,12 @@ def evaluate_crypto_rotation(
             "sector": item["sector"],
             "rationale": item["rationale"],
         }
-        for item in ranked_candidates
-        if item["smc_handoff_allowed"]
-    ][:max_on_demand_targets]
+        for item in diversified_items
+    ]
 
     return {
         "status": raw_snapshot.get("status", "AVAILABLE"),
+        "evaluated_at_epoch_ms": int(time.time() * 1000),
         "universe_size": len(parsed_coins),
         "macro_btc_gate": macro_btc_gate,
         "target_macro_direction": target_macro_dir,

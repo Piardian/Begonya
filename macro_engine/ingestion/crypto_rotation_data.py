@@ -128,7 +128,7 @@ class CryptoRotationDataIngestion:
     FUTURES_BASE = "https://fapi.binance.com"
     COINGECKO_GLOBAL_URL = "https://api.coingecko.com/api/v3/global"
 
-    def __init__(self, timeout_seconds: float = 6.0, max_deep_finalists: int = 16):
+    def __init__(self, timeout_seconds: float = 6.0, max_deep_finalists: int = 39):
         self.timeout = timeout_seconds
         self.max_deep_finalists = max_deep_finalists
 
@@ -143,11 +143,13 @@ class CryptoRotationDataIngestion:
         max_finalists: int,
     ) -> Set[str]:
         """
-        39 coin içinden 1H/4H mum ve OI geçmişi çekilecek finalistleri seçer:
-        - Çekirdek öncüler (BTC, ETH, SOL, SUI) her zaman dahildir.
-        - Her sektörden BTC'ye karşı en güçlü 2 coin (Long ve Short Squeeze tespiti için)
-          ve en zayıf 1 coin (Short rotasyon adayı için) seçilir.
+        39 coin içinden 1H/4H mum ve OI geçmişi çekilecek coinleri seçer.
+        Varsayılan olarak 39 coinin tamamı paralel (ThreadPoolExecutor) çekilir;
+        böylece Stealth Accumulation (Gizli Toplama) ve sektör RVOL hesabında kör nokta kalmaz.
         """
+        if max_finalists >= len(bulk_metrics):
+            return set(bulk_metrics.keys())
+
         selected: Set[str] = {"BTC", "ETH", "SOL", "SUI", "LTC", "DASH"}
         btc_chg = float(bulk_metrics.get("BTC", {}).get("spot_price_change_24h_pct", 0.0))
 
@@ -161,15 +163,12 @@ class CryptoRotationDataIngestion:
 
         for _, members in by_sector.items():
             sorted_by_rs = sorted(members, key=lambda x: x["_prelim_rs_24h"], reverse=True)
-            # En güçlü 2 coin
             for m in sorted_by_rs[:2]:
                 selected.add(m["coin"])
-            # En zayıf 1 coin
             if sorted_by_rs:
                 selected.add(sorted_by_rs[-1]["coin"])
 
         if len(selected) > max_finalists + 4:
-            # Çekirdekleri koruyup geri kalanları mutlak RS büyüklüğüne göre kırp
             core = {"BTC", "ETH", "SOL", "SUI", "LTC", "DASH"}
             others = sorted(
                 [c for c in selected if c not in core],
@@ -244,10 +243,10 @@ class CryptoRotationDataIngestion:
             "deep_fetched": True,
         }
 
-    def fetch_rotation_snapshot(self, deep_fetch_all: bool = False) -> Dict[str, Any]:
+    def fetch_rotation_snapshot(self, deep_fetch_all: bool = True) -> Dict[str, Any]:
         """
-        Önce 3 toplu (bulk) çağrıyla 39 coinin tamamını tarar, ardından finalistler için
-        1H/4H mum ve OI geçmişini çeker.
+        Önce 3 toplu (bulk) çağrıyla 39 coinin tamamını tarar, ardından paralel
+        ThreadPoolExecutor ile 39 coinin tamamı için 1H/4H mum ve OI geçmişini çeker.
         """
         snapshot: Dict[str, Any] = {
             "status": "AVAILABLE",
@@ -352,7 +351,7 @@ class CryptoRotationDataIngestion:
                     "deep_fetched": False,
                 }
 
-            # AŞAMA 2: Finalist Coinler için 1H/4H Klines + OI History Çekimi
+            # AŞAMA 2: 39 Coinin Tamamı İçin Paralel 1H/4H Klines + OI History Çekimi
             target_coins = (
                 set(CRYPTO_ROTATION_UNIVERSE.keys())
                 if deep_fetch_all
@@ -377,12 +376,12 @@ class CryptoRotationDataIngestion:
                         snapshot["coins"][coin].update(detail)
                     except Exception as coin_exc:
                         err_msg = f"{coin}: {coin_exc}"
-                        logger.warning(f"Kripto finalist detay verisi eksik ({err_msg})")
+                        logger.warning(f"Kripto detay verisi eksik ({err_msg})")
                         snapshot["errors"].append(err_msg)
 
             if "BTC" not in snapshot["coins"] or "ETH" not in snapshot["coins"]:
                 snapshot["status"] = "UNAVAILABLE"
-            elif snapshot["errors"]:
+            elif len(snapshot["errors"]) > 10:
                 snapshot["status"] = "PARTIAL"
 
         except Exception as exc:

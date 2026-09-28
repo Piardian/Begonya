@@ -2,7 +2,8 @@ import { Symbol } from './candleStore';
 import { MacroGatePayload } from './macroGateAdapter';
 
 export const ROTATION_SCORE_THRESHOLD = 65;
-export const MAX_ON_DEMAND_SMC_TARGETS = 2;
+export const MAX_ON_DEMAND_SMC_TARGETS = 3;
+export const INTRADAY_ROTATION_TTL_MS = 15 * 60 * 1000;
 
 export interface CryptoUniverseEntry {
   readonly coin: string;
@@ -163,6 +164,7 @@ export interface CoinRotationAssessment {
     eth_btc_bellwether: number;
     oi_and_funding: number;
     sector_breadth: number;
+    late_chase_penalty?: number;
   };
   veto_reasons_long: string[];
   veto_reasons_short: string[];
@@ -179,6 +181,8 @@ export interface OnDemandSmcTarget {
   direction: 'long' | 'short';
   rotation_gate: 'LONG_ONLY' | 'SHORT_ONLY';
   rotation_score: number;
+  rs_vs_btc_1h_pct?: number;
+  rs_vs_btc_4h_pct?: number;
   rs_vs_btc_24h_pct: number;
   rs_vs_eth_24h_pct: number;
   effective_rvol: number;
@@ -194,6 +198,7 @@ export interface OnDemandSmcTarget {
 
 export interface CryptoRotationEvaluationReport {
   status: string;
+  evaluated_at_epoch_ms?: number;
   universe_size: number;
   macro_btc_gate: string;
   target_macro_direction: string;
@@ -579,15 +584,31 @@ export function evaluateCryptoRotationSnapshot(
       oi24h <= 25.0 &&
       funding <= 0.025;
 
+    const isCapitulationOiFlushed =
+      (price24h <= -9.0 || rsBtc24h <= -8.5) &&
+      (oi4h <= -4.5 || oi24h <= -9.0) &&
+      !isShortSqueezeDanger;
+
+    const isShortBuildupDistribution =
+      (rsBtc24h <= -0.8 || rsBtc4h <= -0.3) &&
+      (price4h < 0.0 || price24h < 0.0) &&
+      oi4h >= -1.5 &&
+      rvol >= 1.20 &&
+      !isShortSqueezeDanger &&
+      !isCapitulationOiFlushed;
+
     const isOrganicDistribution =
       (rsBtc24h < 0.0 || rsBtc4h < 0.0) &&
       (price4h < 0.0 || price24h < 0.0) &&
-      !isShortSqueezeDanger;
+      !isShortSqueezeDanger &&
+      !isCapitulationOiFlushed;
 
     let derivativesRegime = 'NEUTRAL_DERIVATIVES';
     if (isLeverageSqueezeTrap) derivativesRegime = 'LEVERAGE_SQUEEZE_TRAP';
     else if (isShortSqueezeDanger) derivativesRegime = 'SHORT_SQUEEZE_DANGER';
     else if (isOrganicInflow) derivativesRegime = 'ORGANIC_CAPITAL_INFLOW';
+    else if (isCapitulationOiFlushed) derivativesRegime = 'CAPITULATION_OI_FLUSHED';
+    else if (isShortBuildupDistribution) derivativesRegime = 'SHORT_BUILDUP_DISTRIBUTION';
     else if (isOrganicDistribution) derivativesRegime = 'ORGANIC_DISTRIBUTION_FLUSH';
 
     const isStealthAccumulation = rvol >= 2.20 && Math.abs(price4h) >= 0.10 && Math.abs(price4h) <= 3.20 && rsBtc4h >= 0.0;
@@ -608,8 +629,13 @@ export function evaluateCryptoRotationSnapshot(
     rsLongPts = Math.min(25, rsLongPts);
 
     let rsShortPts = 0;
-    if (rsBtc24h < 0 && rsBtc4h < 0) rsShortPts += rsBtc24h <= -1.5 ? 15 : 11;
-    else if (rsBtc4h < -0.3 || rsBtc1h < -0.3) rsShortPts += 8;
+    if (rsBtc24h < 0 && rsBtc4h < 0) {
+      if (rsBtc24h >= -8.5 && rsBtc24h <= -1.5) rsShortPts += 15;
+      else if (rsBtc24h < -8.5) rsShortPts += 12;
+      else rsShortPts += 10;
+    } else if (rsBtc4h < -0.3 || rsBtc1h < -0.3) {
+      rsShortPts += 7;
+    }
     if (rsEth24h < 0 || cm.rs_vs_eth_4h_pct < 0) rsShortPts += 5;
     if (ratioStruct.bearish) rsShortPts += 5;
     rsShortPts = Math.min(25, rsShortPts);
@@ -623,7 +649,11 @@ export function evaluateCryptoRotationSnapshot(
     else if (rvol >= 1.3) volLongPts = 13;
     else if (rvol >= 1.0) volLongPts = 8;
 
-    const volShortPts = rvol >= 1.5 && rsBtc4h < 0 ? 16 : (rvol >= 1.0 && rsBtc24h < 0 ? 12 : 6);
+    let volShortPts = 4;
+    if (isCapitulationOiFlushed) volShortPts = 6;
+    else if (rvol >= 1.8 && rsBtc4h <= -0.3) volShortPts = 20;
+    else if (rvol >= 1.35 && (rsBtc4h < 0 || rsBtc24h <= -1.2)) volShortPts = 16;
+    else if (rvol >= 1.15 && rsBtc24h < 0) volShortPts = 11;
 
     // 3. Market-Cap Layer Waterfall (10 pts)
     const upperLayersHealthy = ethBtc24h >= -0.5 || activeInflowLayers.includes(1) || activeInflowLayers.includes(2);
@@ -633,7 +663,7 @@ export function evaluateCryptoRotationSnapshot(
     else if ((cm.layer === 1 || cm.layer === 2) && rsBtc4h > 0) layerLongPts = 8;
     else if (upperLayersHealthy) layerLongPts = 6;
 
-    const layerShortPts = cm.layer >= 2 && ethBtc24h <= 0 ? 10 : 6;
+    const layerShortPts = cm.layer >= 2 && ethBtc24h <= 0 && rsBtc4h < 0 ? 10 : 5;
 
     // 4. BTC Dominance (10 pts)
     let domLongPts = 6;
@@ -652,16 +682,19 @@ export function evaluateCryptoRotationSnapshot(
 
     let bellShortPts = 0;
     if (ethBtc24h < 0) bellShortPts += 5;
-    if (solEth24h < 0 || rsEth24h < 0) bellShortPts += 5;
+    if (solEth24h < 0 && rsEth24h < 0) bellShortPts += 5;
+    else if (rsEth24h < 0) bellShortPts += 3;
     bellShortPts = Math.min(10, bellShortPts);
 
     // 6. OI + Funding (15 pts)
     let derivLongPts = funding <= 0.015 ? 9 : 5;
-    let derivShortPts = funding >= 0.0 ? 10 : 5;
+    let derivShortPts = funding >= 0.0 ? 8 : 4;
     if (derivativesRegime === 'ORGANIC_CAPITAL_INFLOW') { derivLongPts = 15; derivShortPts = 2; }
     else if (derivativesRegime === 'SHORT_SQUEEZE_DANGER') { derivLongPts = 14; derivShortPts = 0; }
-    else if (derivativesRegime === 'LEVERAGE_SQUEEZE_TRAP') { derivLongPts = 0; derivShortPts = 10; }
-    else if (derivativesRegime === 'ORGANIC_DISTRIBUTION_FLUSH') { derivLongPts = 2; derivShortPts = 15; }
+    else if (derivativesRegime === 'LEVERAGE_SQUEEZE_TRAP') { derivLongPts = 0; derivShortPts = 12; }
+    else if (derivativesRegime === 'SHORT_BUILDUP_DISTRIBUTION') { derivLongPts = 2; derivShortPts = 15; }
+    else if (derivativesRegime === 'ORGANIC_DISTRIBUTION_FLUSH') { derivLongPts = 2; derivShortPts = 12; }
+    else if (derivativesRegime === 'CAPITULATION_OI_FLUSHED') { derivLongPts = 4; derivShortPts = 5; }
 
     // 7. Sector Breadth (10 pts)
     let secLongPts = 0;
@@ -680,14 +713,28 @@ export function evaluateCryptoRotationSnapshot(
       else if (shortBr >= 0.50) secShortPts = 6;
     }
 
-    const longScore = rsLongPts + volLongPts + layerLongPts + domLongPts + bellLongPts + derivLongPts + secLongPts;
-    const shortScore = rsShortPts + volShortPts + layerShortPts + domShortPts + bellShortPts + derivShortPts + secShortPts;
+    const lateLongFomoPenalty =
+      price24h >= 18.0 || (rsBtc24h >= 14.0 && funding >= 0.025) ? 15 : 0;
+    const lateShortChasePenalty =
+      price24h <= -12.0 || isCapitulationOiFlushed ? 15 : (rsBtc24h <= -9.2 ? 8 : 0);
+
+    const longScore = Math.max(
+      0,
+      rsLongPts + volLongPts + layerLongPts + domLongPts + bellLongPts + derivLongPts + secLongPts - lateLongFomoPenalty
+    );
+    const shortScore = Math.max(
+      0,
+      rsShortPts + volShortPts + layerShortPts + domShortPts + bellShortPts + derivShortPts + secShortPts - lateShortChasePenalty
+    );
 
     const vetoReasonsLong: string[] = [];
     const vetoReasonsShort: string[] = [];
 
     if (rsBtc24h < -0.5 && rsBtc4h < -0.25) {
       vetoReasonsLong.push(`RS_UNDERPERFORMING_BTC (ALT/BTC 24s: %${rsBtc24h.toFixed(2)}, 4s: %${rsBtc4h.toFixed(2)})`);
+    }
+    if (rsBtc1h <= -0.65) {
+      vetoReasonsLong.push(`MICRO_RS_BREAKDOWN_HOLD (Son 1s ALT/BTC %${rsBtc1h.toFixed(2)} sert aşağı kırıldı; 15m long girişi bekletiliyor)`);
     }
     if (ratioStruct.swing_low_broken) {
       vetoReasonsLong.push('ALT_BTC_4H_SWING_LOW_BROKEN (CHoCH)');
@@ -707,6 +754,9 @@ export function evaluateCryptoRotationSnapshot(
 
     if (rsBtc24h > 0.5 || (rsBtc4h > 0.4 && rvol >= 1.25)) {
       vetoReasonsShort.push(`RS_CONTRA_SHORT_VETO (${coin} piyasaya karşı güçleniyor: ALT/BTC 24s %${rsBtc24h.toFixed(2)}, 4s %${rsBtc4h.toFixed(2)}, RVOL ${rvol}x)`);
+    }
+    if (rsBtc1h >= 0.65) {
+      vetoReasonsShort.push(`MICRO_RS_REVERSAL_HOLD (Son 1s ALT/BTC %${rsBtc1h.toFixed(2)} yukarı döndü; 15m short girişi bekletiliyor)`);
     }
     if (isShortSqueezeDanger) {
       vetoReasonsShort.push(`SHORT_SQUEEZE_DANGER (ALT/BTC pozitif + Spot RVOL ${rvol}x + Negatif Funding %${funding.toFixed(4)} -> Short Sıkıştırması!)`);
@@ -735,7 +785,7 @@ export function evaluateCryptoRotationSnapshot(
         vetoedSymbols[smcSymbol] = gateReason;
       } else if (longScore >= ROTATION_SCORE_THRESHOLD) {
         rotationGate = 'LONG_ONLY';
-        gateReason = `ROTASYON ONAYLI LONG (Skor: ${longScore}/100 | ALT/BTC 24s: %${rsBtc24h.toFixed(2)} | RVOL: ${rvol}x [${volumeRegime}] | Türev: ${derivativesRegime} | Sektör: ${cm.sector})`;
+        gateReason = `ROTASYON ONAYLI LONG (Skor: ${longScore}/100 | ALT/BTC 24s: %${rsBtc24h.toFixed(2)}, 1s: %${rsBtc1h.toFixed(2)} | RVOL: ${rvol}x [${volumeRegime}] | Türev: ${derivativesRegime} | Sektör: ${cm.sector})`;
         approvedLongSymbols.push(smcSymbol);
       } else {
         rotationGate = 'NEUTRAL_RANGE';
@@ -747,13 +797,17 @@ export function evaluateCryptoRotationSnapshot(
         rotationGate = 'NEUTRAL_RANGE';
         gateReason = `🛑 SHORT ROTASYON KALKANI (VETO): ${vetoReasonsShort.join(' | ')}`;
         vetoedSymbols[smcSymbol] = gateReason;
-      } else if (shortScore >= ROTATION_SCORE_THRESHOLD) {
+      } else if (
+        shortScore >= ROTATION_SCORE_THRESHOLD &&
+        (rsBtc24h <= -0.8 || rsBtc4h <= -0.4) &&
+        rvol >= 1.15
+      ) {
         rotationGate = 'SHORT_ONLY';
-        gateReason = `ROTASYON ONAYLI SHORT (Skor: ${shortScore}/100 | ALT/BTC 24s: %${rsBtc24h.toFixed(2)} | RVOL: ${rvol}x | Türev: ${derivativesRegime} | Sektör: ${cm.sector})`;
+        gateReason = `ROTASYON ONAYLI SHORT (Skor: ${shortScore}/100 | ALT/BTC 24s: %${rsBtc24h.toFixed(2)}, 1s: %${rsBtc1h.toFixed(2)} | RVOL: ${rvol}x | Türev: ${derivativesRegime} | Sektör: ${cm.sector})`;
         approvedShortSymbols.push(smcSymbol);
       } else {
         rotationGate = 'NEUTRAL_RANGE';
-        gateReason = `Short Rotasyon / Göreli Zayıflık Skoru Yetersiz (${shortScore}/${ROTATION_SCORE_THRESHOLD})`;
+        gateReason = `Short Rotasyon / Göreli Zayıflık Skoru Yetersiz (${shortScore}/${ROTATION_SCORE_THRESHOLD}, RVOL: ${rvol}x)`;
       }
     } else {
       activeScore = Math.max(longScore, shortScore);
@@ -800,6 +854,7 @@ export function evaluateCryptoRotationSnapshot(
         eth_btc_bellwether: targetMacroDir !== 'SHORT' ? bellLongPts : bellShortPts,
         oi_and_funding: targetMacroDir !== 'SHORT' ? derivLongPts : derivShortPts,
         sector_breadth: targetMacroDir !== 'SHORT' ? secLongPts : secShortPts,
+        late_chase_penalty: targetMacroDir !== 'SHORT' ? -lateLongFomoPenalty : -lateShortChasePenalty,
       },
       veto_reasons_long: vetoReasonsLong,
       veto_reasons_short: vetoReasonsShort,
@@ -814,35 +869,62 @@ export function evaluateCryptoRotationSnapshot(
     const bAllowed = b.smc_handoff_allowed ? 1 : 0;
     if (bAllowed !== aAllowed) return bAllowed - aAllowed;
     if (b.active_rotation_score !== a.active_rotation_score) return b.active_rotation_score - a.active_rotation_score;
-    return Math.abs(b.rs_vs_btc_24h_pct) - Math.abs(a.rs_vs_btc_24h_pct);
+    if (b.effective_rvol !== a.effective_rvol) return b.effective_rvol - a.effective_rvol;
+    return Math.abs(b.rs_vs_btc_4h_pct) - Math.abs(a.rs_vs_btc_4h_pct);
   });
 
-  const onDemandSmcTargets: OnDemandSmcTarget[] = rankedCandidates
-    .filter(item => item.smc_handoff_allowed)
-    .slice(0, maxOnDemandTargets)
-    .map(item => ({
-      coin: item.coin,
-      smc_symbol: item.smc_symbol as Symbol,
-      spot_symbol: item.spot_symbol,
-      futures_symbol: item.futures_symbol,
-      direction: item.rotation_gate === 'LONG_ONLY' ? 'long' : 'short',
-      rotation_gate: item.rotation_gate as 'LONG_ONLY' | 'SHORT_ONLY',
-      rotation_score: item.active_rotation_score,
-      rs_vs_btc_24h_pct: item.rs_vs_btc_24h_pct,
-      rs_vs_eth_24h_pct: item.rs_vs_eth_24h_pct,
-      effective_rvol: item.effective_rvol,
-      volume_regime: item.volume_regime,
-      derivatives_regime: item.derivatives_regime,
-      funding_rate_pct: item.funding_rate_pct,
-      oi_change_4h_pct: item.oi_change_4h_pct,
-      layer: item.layer,
-      layer_name: item.layer_name,
-      sector: item.sector,
-      rationale: item.rationale,
-    }));
+  // Sector-Diversified Top 3 On-Demand SMC Targets (Max 1 per sector on first pass, prioritizing Layer 2-6 altcoins)
+  let approvedCandidates = rankedCandidates.filter(item => item.smc_handoff_allowed && item.layer >= 2);
+  if (approvedCandidates.length === 0) {
+    approvedCandidates = rankedCandidates.filter(item => item.smc_handoff_allowed);
+  }
+  const diversifiedItems: CoinRotationAssessment[] = [];
+  const seenSectors = new Set<string>();
+
+  for (const item of approvedCandidates) {
+    if (diversifiedItems.length >= maxOnDemandTargets) break;
+    if (!seenSectors.has(item.sector)) {
+      diversifiedItems.push(item);
+      seenSectors.add(item.sector);
+    }
+  }
+  if (diversifiedItems.length < maxOnDemandTargets) {
+    const pickedCoins = new Set(diversifiedItems.map(x => x.coin));
+    for (const item of approvedCandidates) {
+      if (diversifiedItems.length >= maxOnDemandTargets) break;
+      if (!pickedCoins.has(item.coin)) {
+        diversifiedItems.push(item);
+        pickedCoins.add(item.coin);
+      }
+    }
+  }
+
+  const onDemandSmcTargets: OnDemandSmcTarget[] = diversifiedItems.map(item => ({
+    coin: item.coin,
+    smc_symbol: item.smc_symbol as Symbol,
+    spot_symbol: item.spot_symbol,
+    futures_symbol: item.futures_symbol,
+    direction: item.rotation_gate === 'LONG_ONLY' ? 'long' : 'short',
+    rotation_gate: item.rotation_gate as 'LONG_ONLY' | 'SHORT_ONLY',
+    rotation_score: item.active_rotation_score,
+    rs_vs_btc_1h_pct: item.rs_vs_btc_1h_pct,
+    rs_vs_btc_4h_pct: item.rs_vs_btc_4h_pct,
+    rs_vs_btc_24h_pct: item.rs_vs_btc_24h_pct,
+    rs_vs_eth_24h_pct: item.rs_vs_eth_24h_pct,
+    effective_rvol: item.effective_rvol,
+    volume_regime: item.volume_regime,
+    derivatives_regime: item.derivatives_regime,
+    funding_rate_pct: item.funding_rate_pct,
+    oi_change_4h_pct: item.oi_change_4h_pct,
+    layer: item.layer,
+    layer_name: item.layer_name,
+    sector: item.sector,
+    rationale: item.rationale,
+  }));
 
   return {
     status: rawSnapshot.status ?? 'AVAILABLE',
+    evaluated_at_epoch_ms: Date.now(),
     universe_size: Object.keys(parsedCoins).length,
     macro_btc_gate: macroBtcGate,
     target_macro_direction: targetMacroDir,
@@ -883,19 +965,31 @@ export class CryptoRotationEngine {
   }
 
   public extractRotationFromPayload(payload: MacroGatePayload | null): CryptoRotationEvaluationReport | null {
-    if (!payload) return null;
-    const direct = (payload as any).crypto_rotation;
-    if (direct && typeof direct === 'object' && direct.coin_assessments) {
-      return direct as CryptoRotationEvaluationReport;
-    }
-    const fromRegime = payload.regime_state?.crypto_rotation;
-    if (fromRegime && typeof fromRegime === 'object' && fromRegime.coin_assessments) {
-      return fromRegime as CryptoRotationEvaluationReport;
-    }
-    if (this.cachedLiveReport) {
+    if (!payload) return this.cachedLiveReport;
+
+    const direct = (payload as any).crypto_rotation as CryptoRotationEvaluationReport | undefined;
+    const fromRegime = payload.regime_state?.crypto_rotation as CryptoRotationEvaluationReport | undefined;
+    const payloadReport =
+      direct && typeof direct === 'object' && direct.coin_assessments
+        ? direct
+        : fromRegime && typeof fromRegime === 'object' && fromRegime.coin_assessments
+          ? fromRegime
+          : null;
+
+    // If we have a fresh 15m intraday live report that is newer than the morning macro_bias_gate.json, prefer it!
+    const payloadEvalMs = Number(payloadReport?.evaluated_at_epoch_ms ?? 0);
+    if (
+      this.cachedLiveReport &&
+      payloadEvalMs > 0 &&
+      this.cachedLiveReportAtMs > payloadEvalMs
+    ) {
       return this.cachedLiveReport;
     }
-    return null;
+
+    if (payloadReport) {
+      return payloadReport;
+    }
+    return this.cachedLiveReport;
   }
 
   public getCoinAssessment(symbolOrCoin: string, payload: MacroGatePayload | null): CoinRotationAssessment | null {
@@ -911,9 +1005,11 @@ export class CryptoRotationEngine {
   }
 
   /**
-   * Resolves the max 2 On-Demand SMC target altcoins from the macro gate payload
-   * (or triggers a lightweight 2-stage Binance bulk refresh if the macro gate is directional
-   * and no cached rotation report is present).
+   * Resolves up to 3 Sector-Diversified On-Demand SMC target altcoins.
+   * - Uses the Macro BTC direction (`LONG_ONLY` / `SHORT_ONLY`) from `macro_bias_gate.json`.
+   * - If the rotation report in `macro_bias_gate.json` is older than 15 minutes (`INTRADAY_ROTATION_TTL_MS`),
+   *   automatically refreshes the 39-coin 8-factor rotation live from Binance so intraday capital flows
+   *   and short-squeeze vetoes are never stale.
    */
   public async resolveOnDemandSmcTargets(payload: MacroGatePayload | null): Promise<OnDemandSmcTarget[]> {
     if (!payload) return [];
@@ -924,34 +1020,99 @@ export class CryptoRotationEngine {
       return [];
     }
 
-    const fromPayload = this.extractRotationFromPayload(payload);
-    if (fromPayload && Array.isArray(fromPayload.on_demand_smc_targets)) {
-      return fromPayload.on_demand_smc_targets.slice(0, MAX_ON_DEMAND_SMC_TARGETS);
+    const now = Date.now();
+    const direct = (payload as any).crypto_rotation as CryptoRotationEvaluationReport | undefined;
+    const fromRegime = payload.regime_state?.crypto_rotation as CryptoRotationEvaluationReport | undefined;
+    const payloadReport =
+      direct && typeof direct === 'object' && Array.isArray(direct.on_demand_smc_targets)
+        ? direct
+        : fromRegime && typeof fromRegime === 'object' && Array.isArray(fromRegime.on_demand_smc_targets)
+          ? fromRegime
+          : null;
+
+    if (payloadReport) {
+      const evalEpochMs = Number(payloadReport.evaluated_at_epoch_ms ?? 0);
+      // If evaluated_at_epoch_ms is omitted (e.g. deterministic unit test fixture) or fresh (<15m), use it directly
+      if (!evalEpochMs || now - evalEpochMs <= INTRADAY_ROTATION_TTL_MS) {
+        return payloadReport.on_demand_smc_targets.slice(0, MAX_ON_DEMAND_SMC_TARGETS);
+      }
     }
 
-    // Fallback: if macro_bias_gate.json was generated before crypto_rotation was added,
-    // run a 15m-cached live 2-stage bulk rotation check.
-    const now = Date.now();
-    if (this.cachedLiveReport && now - this.cachedLiveReportAtMs < 15 * 60 * 1000) {
+    // Intraday Live Refresh (when macro_bias_gate.json is >15 minutes old or missing crypto_rotation)
+    if (
+      this.cachedLiveReport &&
+      now - this.cachedLiveReportAtMs < INTRADAY_ROTATION_TTL_MS &&
+      this.cachedLiveReport.macro_btc_gate === btcGate
+    ) {
       return this.cachedLiveReport.on_demand_smc_targets.slice(0, MAX_ON_DEMAND_SMC_TARGETS);
     }
 
     try {
-      const snapshot = await this.fetchLiveBulkSnapshot();
+      const snapshot = await this.fetchLiveBulkSnapshot(
+        payloadReport?.btc_dominance_panel?.btc_dominance_pct ?? null
+      );
       const report = evaluateCryptoRotationSnapshot(snapshot, btcGate, {
         btcDecouplingActive: payload.btc_decoupling_active ?? false,
         capitalPreservationMode: payload.capital_preservation_mode ?? false,
       });
       this.cachedLiveReport = report;
       this.cachedLiveReportAtMs = now;
+      console.log(
+        `[CryptoRotationEngine] 🔄 Canlı 15dk Gün İçi Rotasyon Yenilendi (${btcGate}): ` +
+        `On-Demand Hedefler = ${report.on_demand_smc_targets.map(t => `${t.smc_symbol}(${t.rotation_score})`).join(', ') || 'YOK'}`
+      );
       return report.on_demand_smc_targets.slice(0, MAX_ON_DEMAND_SMC_TARGETS);
     } catch (err) {
-      console.warn('[CryptoRotationEngine] Live bulk rotation check failed:', err);
+      console.warn('[CryptoRotationEngine] Live intraday rotation refresh failed, falling back to gate payload:', err);
+      if (payloadReport) {
+        return payloadReport.on_demand_smc_targets.slice(0, MAX_ON_DEMAND_SMC_TARGETS);
+      }
       return [];
     }
   }
 
-  private async fetchLiveBulkSnapshot(): Promise<RawRotationSnapshot> {
+  private async fetchCoinIntradayDetail(meta: CryptoUniverseEntry): Promise<{
+    bars_1h: RawBar[];
+    bars_4h: RawBar[];
+    oi_history_1h: RawOiPoint[];
+    deep_fetched: boolean;
+  }> {
+    const [k1hRes, k4hRes, oiRes] = await Promise.all([
+      fetch(`https://api.binance.com/api/v3/klines?symbol=${meta.spotSymbol}&interval=1h&limit=26`),
+      fetch(`https://api.binance.com/api/v3/klines?symbol=${meta.spotSymbol}&interval=4h&limit=32`),
+      fetch(`https://fapi.binance.com/futures/data/openInterestHist?symbol=${meta.futuresSymbol}&period=1h&limit=25`).catch(() => null),
+    ]);
+
+    const parseKlines = (rows: any[]): RawBar[] =>
+      Array.isArray(rows)
+        ? rows.map(r => ({
+            open: Number(r[1] ?? 0),
+            high: Number(r[2] ?? 0),
+            low: Number(r[3] ?? 0),
+            close: Number(r[4] ?? 0),
+            quote_volume: Number(r[7] ?? 0),
+          }))
+        : [];
+
+    const bars_1h = k1hRes.ok ? parseKlines((await k1hRes.json()) as any[]) : [];
+    const bars_4h = k4hRes.ok ? parseKlines((await k4hRes.json()) as any[]) : [];
+    const oiRaw = oiRes && oiRes.ok ? ((await oiRes.json()) as any[]) : [];
+    const oi_history_1h: RawOiPoint[] = Array.isArray(oiRaw)
+      ? oiRaw.map(item => ({
+          sum_open_interest: Number(item.sumOpenInterest ?? 0),
+          sum_open_interest_value: Number(item.sumOpenInterestValue ?? 0),
+        }))
+      : [];
+
+    return {
+      bars_1h,
+      bars_4h,
+      oi_history_1h,
+      deep_fetched: bars_1h.length > 0 || bars_4h.length > 0,
+    };
+  }
+
+  private async fetchLiveBulkSnapshot(fallbackBtcDomPct: number | null = null): Promise<RawRotationSnapshot> {
     const [spotRes, futRes, premRes] = await Promise.all([
       fetch('https://api.binance.com/api/v3/ticker/24hr'),
       fetch('https://fapi.binance.com/fapi/v1/ticker/24hr'),
@@ -967,7 +1128,8 @@ export class CryptoRotationEngine {
     const premMap = new Map<string, any>(premList.map(i => [String(i.symbol), i]));
 
     const coins: Record<string, RawCoinRotationInput> = {};
-    for (const [coin, meta] of Object.entries(CRYPTO_ROTATION_UNIVERSE_META)) {
+    const entries = Object.entries(CRYPTO_ROTATION_UNIVERSE_META);
+    for (const [coin, meta] of entries) {
       const sp = spotMap.get(meta.spotSymbol) ?? {};
       const ft = futMap.get(meta.futuresSymbol) ?? {};
       const pr = premMap.get(meta.futuresSymbol) ?? {};
@@ -987,11 +1149,27 @@ export class CryptoRotationEngine {
       };
     }
 
+    // Parallel batch fetch (chunk size 8) for all 39 coins' 1H/4H klines + 1H OI history
+    const batchSize = 8;
+    for (let i = 0; i < entries.length; i += batchSize) {
+      const batch = entries.slice(i, i + batchSize);
+      await Promise.all(
+        batch.map(async ([coin, meta]) => {
+          try {
+            const detail = await this.fetchCoinIntradayDetail(meta);
+            Object.assign(coins[coin], detail);
+          } catch {
+            // Keep bulk fallback if individual kline fetch fails
+          }
+        })
+      );
+    }
+
     const btcdomTicker = futMap.get('BTCDOMUSDT');
     return {
       status: 'AVAILABLE',
       btc_dominance: {
-        btc_dominance_pct: null,
+        btc_dominance_pct: fallbackBtcDomPct,
         btcdom_change_24h_pct: btcdomTicker ? Number(btcdomTicker.priceChangePercent ?? 0) : null,
         btcdom_change_4h_pct: null,
       },
