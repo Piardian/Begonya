@@ -61,16 +61,26 @@ def send_telegram_message(text: str, parse_mode: str = "HTML") -> bool:
         logger.warning("[TelegramNotifier] TELEGRAM_BOT_TOKEN veya TELEGRAM_CHAT_ID ayarlanmamış!")
         return False
 
-    # Telegram 4096 karakter limiti: Metin 3800'ü aşarsa mantıksal bloktan 2 parçaya bölüp ilet
+    # Telegram 4096 karakter limiti: Metin 3800'ü aşarsa mantıksal bloktan bölüp ilet
     if len(text) > 3800:
-        logger.info(f"[TelegramNotifier] Mesaj uzunluğu ({len(text)} karakter) limiti aşıyor, akıllı 2 parçaya bölünüyor...")
+        logger.info(f"[TelegramNotifier] Mesaj uzunluğu ({len(text)} karakter) limiti aşıyor, akıllı parçaya bölünüyor...")
         split_marker = "\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n💡 <b>EYLEM PLANI"
         if split_marker in text:
-            parts = text.split(split_marker)
+            parts = text.split(split_marker, 1)
             part1 = parts[0] + "\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n<i>(Devamı Aşağıda ⬇️)</i>"
             part2 = "🌺 <b>BEGONYA | STRATEJİ & EYLEM PLANI (DEVAM)</b>\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n💡 <b>EYLEM PLANI" + parts[1]
             return send_telegram_message(part1, parse_mode=parse_mode) and send_telegram_message(part2, parse_mode=parse_mode)
         else:
+            for sec_marker in [
+                "\n📝 <b>BAŞ STRATEJİST RAPORU:",
+                "\n🔄 <b>KRİPTO SERMAYE AKIŞI",
+                "\n🌐 <b>GÜNÜN ÇAPRAZ KUR",
+            ]:
+                idx = text.find(sec_marker)
+                if 800 < idx <= 3700:
+                    part1 = text[:idx] + "\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n<i>(Devamı Aşağıda ⬇️)</i>"
+                    part2 = "🌺 <b>BEGONYA | GÜNLÜK MAKRO BÜLTEN (DEVAM)</b>" + text[idx:]
+                    return send_telegram_message(part1, parse_mode=parse_mode) and send_telegram_message(part2, parse_mode=parse_mode)
             split_idx = text.rfind("\n\n", 0, 3500)
             if split_idx == -1:
                 split_idx = 3500
@@ -107,7 +117,7 @@ def send_telegram_message(text: str, parse_mode: str = "HTML") -> bool:
         if "can't parse entities" in err_body and parse_mode != "":
             logger.info("[TelegramNotifier] 🔄 Format hatası nedeniyle düz metin olarak tekrar deneniyor...")
             import re
-            plain_text = re.sub(r'<[^>]+>', '', text)
+            plain_text = html.unescape(re.sub(r'<[^>]+>', '', text))
             return send_telegram_message(plain_text, parse_mode="")
         elif "message is too long" in err_body:
             logger.warning("[TelegramNotifier] ⚠️ Mesaj uzunluğu hatası alındı, zorla ikiye bölünüyor...")
@@ -654,10 +664,10 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
         crypto_rot_block = f"""
 🔄 <b>KRİPTO SERMAYE AKIŞI & 8-FAKTÖR ALTCOIN ROTASYONU:</b>
 • <b>Makro Altcoin Rotasyon Yönü:</b> {rot_dir_badge}
-• <b>BTC Dominance (BTC.D):</b> %{_fmt(btcd_info.get('btc_dominance_pct'), '.2f')} (BTCDOM 24s: %{_fmt(btcd_info.get('btcdom_change_24h_pct'), '+.2f')} -> {html.escape(str(btcd_info.get('dominance_regime', 'NEUTRAL_DOMINANCE')))})
+• <b>BTC Dominance (BTC.D):</b> %{_fmt(btcd_info.get('btc_dominance_pct'), '.2f')} (BTCDOM 24s: %{_fmt(btcd_info.get('btcdom_change_24h_pct'), '+.2f')} → {html.escape(str(btcd_info.get('dominance_regime', 'NEUTRAL_DOMINANCE')), quote=False)})
 • <b>Liderlik Çiftleri:</b> ETH/BTC 24s: %{_fmt(bell_info.get('eth_btc_24h_pct'), '+.2f')} | SOL/ETH 24s: %{_fmt(bell_info.get('sol_eth_24h_pct'), '+.2f')} | SUI/SOL 24s: %{_fmt(bell_info.get('sui_sol_24h_pct'), '+.2f')}
-• <b>Katman Akışı:</b> Katman {max_layer} (Pozitif Giriş Katmanları: {html.escape(str(inflow_layers))})
-• <b>{sector_label}:</b> {html.escape(str(lead_sec_name))} — {breadth_str}{meme_warn_line}
+• <b>Katman Akışı:</b> Katman {max_layer} (Pozitif Giriş Katmanları: {html.escape(str(inflow_layers), quote=False)})
+• <b>{sector_label}:</b> {html.escape(str(lead_sec_name), quote=False)} — {breadth_str}{meme_warn_line}
 • {smc_target_line}{approved_line}{veto_line}
 """
 
@@ -666,11 +676,11 @@ def format_morning_briefing(pipeline_result: Dict[str, Any], upcoming_events: Op
     active_event_info = regime_st.get("active_event_info", "")
     event_freeze_banner = ""
     if event_freeze_active:
-        event_freeze_banner = f"\n🛑 <b>KIRMIZI BÜLTEN DEVRE KESİCİSİ (DEVREDE):</b>\n└ ⚠️ <i>{html.escape(str(active_event_info))}</i> nedeniyle tüm yeni girişler donduruldu (±15 dk haber koruması)!\n"
+        event_freeze_banner = f"\n🛑 <b>KIRMIZI BÜLTEN DEVRE KESİCİSİ (DEVREDE):</b>\n└ ⚠️ <i>{html.escape(str(active_event_info), quote=False)}</i> nedeniyle tüm yeni girişler donduruldu (±15 dk haber koruması)!\n"
 
     # Rasyonel (Smart chunking devrede olduğundan metin tam ve eksiksiz korunur)
-    raw_rat = sanitize_unverified_price_levels(strat.get("macro_rationale", "").strip())
-    rationale = html.escape(raw_rat)
+    raw_rat = sanitize_unverified_price_levels(html.unescape(strat.get("macro_rationale", "").strip()))
+    rationale = html.escape(raw_rat, quote=False)
 
     # Haber Takvimi Bölümü
     news_lines = []

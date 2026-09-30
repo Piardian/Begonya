@@ -12,6 +12,7 @@ import { recordRuntimeTrace } from './runtimeTrace';
 import { elapsedMs, recordScreenshotTelemetry, telemetryTimer } from './telemetry';
 import { FileSignalLedger } from './signalLedger';
 import type { DeliveryProcessingResult, QueuedSignalDelivery } from './signalDeliveryQueue';
+import { ActivePoiWatchlist } from './activePoiWatchlist';
 
 const signalLedger = new FileSignalLedger();
 
@@ -334,6 +335,11 @@ function markCandidateAsInvalidated(store: NotifiedStore, candidate: QueuedSigna
   clearCandidatePending(store, candidate);
   store.markAsInvalidated(candidate.uniqueKey);
   if (candidate.dedupeKey) store.markAsInvalidated(candidate.dedupeKey);
+  try {
+    ActivePoiWatchlist.getInstance().markPoiInvalidated(candidate.symbol, candidate.dedupeKey ?? candidate.uniqueKey);
+  } catch {
+    // Non-blocking watchlist update
+  }
 }
 
 function markCandidateAsNotified(store: NotifiedStore, candidate: QueuedSignalDelivery['candidate']): void {
@@ -341,6 +347,11 @@ function markCandidateAsNotified(store: NotifiedStore, candidate: QueuedSignalDe
   if (candidate.dedupeKey) store.markAsNotified(candidate.dedupeKey);
   const impulseKey = candidateImpulseKey(candidate);
   if (impulseKey) store.markAsNotified(impulseKey);
+  try {
+    ActivePoiWatchlist.getInstance().markPoiTested(candidate.symbol, candidate.dedupeKey ?? candidate.uniqueKey);
+  } catch {
+    // Non-blocking watchlist update
+  }
 }
 
 function candidateWasDurablyNotified(

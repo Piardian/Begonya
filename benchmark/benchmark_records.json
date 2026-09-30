@@ -1523,7 +1523,7 @@
       "m1_displacement_occurred": true,
       "m1_confirmation_received": true,
       "entry_triggered": true,
-      "execution_state": "ACTIVE_IN_TRADE",
+      "execution_state": "STOPPED_OUT",
       "session": "NY_Late",
       "spread_pips_at_signal": 1.5,
       "risk_pct_allocated": 0.56,
@@ -1531,20 +1531,20 @@
       "risk_allocated_usd": 560.0
     },
     "post_trade_audit": {
-      "actual_outcome": "ACTIVE",
-      "realized_r": 0.0,
-      "realized_usd": 0.0,
-      "realized_pnl_usd": 0.0,
+      "actual_outcome": "LOSS",
+      "realized_r": -0.56,
+      "realized_usd": -560.0,
+      "realized_pnl_usd": -560.0,
       "was_whipsawed": false,
-      "outcome_category": "ACTIVE",
-      "failure_attribution": "None",
+      "outcome_category": "LOSS",
+      "failure_attribution": "POI_Invalidated_Stopped_Out",
       "account_size_usd": 100000,
       "risk_allocated_usd": 560.0,
       "risk_pct": 0.56,
-      "exit_reason": "21:32 OB ve 22:17 FVG sinyalleri tek bir Unicorn bölgesi olarak birleştirildi; 1M konfirmasyon alınarak tek işlem açıldı ve şu an aktif (2630.81 EQL hedefi bekleniyor).",
-      "smc_notes": "Üçlü Pahalı (Premium) hizalanması, sakin basamaklı yükseliş ve karşı engelin EQL mıknatısının altında kalması kusursuz bir kurgu oluşturdu.",
-      "macro_notes": "SHORT_ONLY makro kapısı ve 0.56x lot risk yönetimiyle aktif işlemde.",
-      "key_learning": "Örtüşen OB ve FVG sinyallerini çifte risk almak yerine tek bir Unicorn kurulumu olarak birleştirip 1M onayıyla girmek kurumsal icra standardıdır."
+      "exit_reason": "2725.32 - 2738.81 Unicorn bölgesinden 0.56x lot (560$) riskle açılan short pozisyon, 2738.81 üstü stop seviyesine ulaşarak kapandı (-560.00 $ / -0.56 R).",
+      "smc_notes": "21:32 OB ve 22:17 FVG sinyalleri çifte risk almak yerine tek bir Unicorn bölgesi olarak birleştirilip girildiği için olası ikinci bir stop önlendi.",
+      "macro_notes": "0.56x indirimli makro risk yönetimi sayesinde zarar 560$ (-0.56 R) ile sınırlandırıldı.",
+      "key_learning": "Örtüşen OB ve FVG sinyallerini tek bir Unicorn işlemi olarak birleştirmek, stop olunan senaryoda hasarı yarı yarıya düşürerek sermayeyi korudu."
     }
   },
   {
@@ -1672,12 +1672,12 @@
       "gate_decision": "Makro kapı SHORT_ONLY onaylı, 98/100 elit skor ve 7'li EQL hedefiyle 0.75x lot SAT."
     },
     "m1_execution_reality": {
-      "poi_retested": false,
-      "m1_sweep_occurred": false,
-      "m1_displacement_occurred": false,
-      "m1_confirmation_received": false,
-      "entry_triggered": false,
-      "execution_state": "PENDING_RETEST",
+      "poi_retested": true,
+      "m1_sweep_occurred": true,
+      "m1_displacement_occurred": true,
+      "m1_confirmation_received": true,
+      "entry_triggered": true,
+      "execution_state": "ACTIVE_IN_TRADE",
       "session": "London_Open",
       "spread_pips_at_signal": 5.0,
       "risk_pct_allocated": 0.75,
@@ -1685,20 +1685,20 @@
       "risk_allocated_usd": 750.0
     },
     "post_trade_audit": {
-      "actual_outcome": "PENDING",
+      "actual_outcome": "ACTIVE",
       "realized_r": 0.0,
       "realized_usd": 0.0,
       "realized_pnl_usd": 0.0,
       "was_whipsawed": false,
-      "outcome_category": "PENDING",
+      "outcome_category": "ACTIVE",
       "failure_attribution": "None",
       "account_size_usd": 100000,
       "risk_allocated_usd": 750.0,
       "risk_pct": 0.75,
-      "exit_reason": "Fiyat giriş kutusunun 528 USD altında; 84572.00 - 84881.55 Bearish OB kutusuna geri çekilme (retest) ve 1M manuel onay bekleniyor.",
-      "smc_notes": "Giriş kutusu 1H ve 15M grafiklerinde tam Pahalı (Premium) bölgede yer alıyor; tekrarlayan sinyaller arasından 98/100 puanlı bu ana kutu referans seçildi.",
-      "macro_notes": "SHORT_ONLY makro kapısı ve 0.75x lot çarpanı.",
-      "key_learning": "Beklemede."
+      "exit_reason": "Fiyat 84572.00 - 84881.55 Bearish OB kutusuna geri çekilip (retest) 1M manuel onay verdi; 0.75x lot (750$) risk ile SAT pozisyonu açıldı ve şu an aktif işlemde (80308.49 7'li EQL hedefi bekleniyor).",
+      "smc_notes": "Giriş kutusu 1H ve 15M grafiklerinde tam Pahalı (Premium) bölgede yer alıyor; tekrarlayan sinyaller arasından 98/100 puanlı bu ana kutu referans seçilerek işleme girildi.",
+      "macro_notes": "SHORT_ONLY makro kapısı ve 0.75x lot çarpanı ile aktif işlemde.",
+      "key_learning": "Aktif işlemde."
     }
   },
   {

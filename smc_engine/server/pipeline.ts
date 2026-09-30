@@ -9,7 +9,7 @@ import { detectAllFVGs } from '../src/fvgDetector';
 import { findDisplacementLeg } from '../src/displacementLeg';
 import { scoreDisplacementQuality } from '../src/displacementQualityScorer';
 import { calculateRange } from '../src/rangeCalculator';
-import { detectSweeps } from '../src/sweepDetector';
+import { detectSweeps, detectSwingSweeps, mergeSweepEvents } from '../src/sweepDetector';
 import { determineModel, ModelState } from '../src/modelDeterminer';
 import { countOBTests, countFVGTests } from '../src/poiTestCounter';
 import { calculateGrade, GradeInput, GradeResult } from '../src/gradeCalculator';
@@ -27,6 +27,7 @@ import { MacroGateAdapter, MacroGateEvaluation } from './macroGateAdapter';
 import { detectLiquidityMagnet, LiquidityMagnet } from '../src/liquidityMagnetDetector';
 import { detectOpposingObstacle, OpposingObstacle } from '../src/opposingObstacleDetector';
 import { isCryptoSymbol } from './killzone';
+import { ActivePoiWatchlist } from './activePoiWatchlist';
 
 export interface NotificationCandidate {
   symbol: Symbol;
@@ -265,6 +266,46 @@ export function runPipeline(
       isTouching: insideZone,
       isInvalidated,
     });
+
+    const isFatalRejection = blockingRules.some(r =>
+      r === 'poi_expired_ttl_48h' ||
+      r === 'poi_or_structure_direction_conflict' ||
+      r === '15m_displacement_insufficient'
+    );
+    const isDuplicate = blockingRules.includes('duplicate_poi');
+
+    try {
+      if (isInvalidated) {
+        ActivePoiWatchlist.getInstance().registerOrUpdatePoi({
+          symbol,
+          timeframe: '15m',
+          poiType,
+          direction: tradeDirection,
+          low: zone.low,
+          high: zone.high,
+          formedTimestamp,
+          breakTimestamp: origin.breakTimestamp,
+          testCount: poiTestCount,
+          isInvalidated: true,
+        });
+      } else if (!isFatalRejection && poiTestCount < 3) {
+        ActivePoiWatchlist.getInstance().registerOrUpdatePoi({
+          symbol,
+          timeframe: '15m',
+          poiType,
+          direction: tradeDirection,
+          low: zone.low,
+          high: zone.high,
+          formedTimestamp,
+          breakTimestamp: origin.breakTimestamp,
+          testCount: poiTestCount,
+          isInvalidated: false,
+          isNotified: isDuplicate,
+        });
+      }
+    } catch {
+      // Safe fallback if persistence encounters temporary disk lock
+    }
   };
 
   const candidates: NotificationCandidate[] = [];
@@ -272,6 +313,13 @@ export function runPipeline(
   // Collect all OBs and FVGs
   const obs = detectAllOrderBlocks(candles15mCast, structureState15m.events);
   const fvgs = detectAllFVGs(candles15mCast, structureState15m.events, symbol, '15m');
+  const rangeStates = candles15mCast.map((_, idx) =>
+    calculateRange(candles15mCast, swings15m, structureState15m, idx)
+  );
+  const sweeps = mergeSweepEvents(
+    detectSweeps(candles15mCast, rangeStates, symbol, '15m'),
+    detectSwingSweeps(candles15mCast, swings15m, symbol, '15m')
+  );
 
   // Process OBs
   for (const ob of obs) {
@@ -329,10 +377,6 @@ export function runPipeline(
     }
 
     // Range, Sweeps, Model
-    const rangeStates = candles15mCast.map((_, idx) =>
-      calculateRange(candles15mCast, swings15m, structureState15m, idx)
-    );
-    const sweeps = detectSweeps(candles15mCast, rangeStates, symbol, '15m');
     const modelState = determineModel(structureState15m, sweeps, lastIndex15m, ob.relatedEvent);
 
     // Tests count
@@ -354,7 +398,8 @@ export function runPipeline(
       bias1H,
       pd15M,
       modelState,
-      dq
+      dq,
+      pd1H
     );
 
     // Build GradeInput
@@ -366,7 +411,9 @@ export function runPipeline(
       has15mEvent,
       displacementQuality15m: dq,
       modelState,
-      poiTestResultForSweep: modelState.model === 'model1_reversal' ? poiTestResult : null,
+      poiTestResultForSweep: modelState.model === 'model1_reversal'
+        ? (modelState.triggeringSweep ? { ...poiTestResult, testCount: Math.max(1, poiTestResult.testCount) } : poiTestResult)
+        : null,
       poiTimeframe: '15m',
       poiTestCount: poiTestResult.testCount,
       pd1H: pd1H,
@@ -531,10 +578,6 @@ export function runPipeline(
     }
 
     // Range, Sweeps, Model
-    const rangeStates = candles15mCast.map((_, idx) =>
-      calculateRange(candles15mCast, swings15m, structureState15m, idx)
-    );
-    const sweeps = detectSweeps(candles15mCast, rangeStates, symbol, '15m');
     const modelState = determineModel(structureState15m, sweeps, lastIndex15m, fvg.relatedEvent);
 
     // Tests count
@@ -556,7 +599,8 @@ export function runPipeline(
       bias1H,
       pd15M,
       modelState,
-      dq
+      dq,
+      pd1H
     );
 
     // Build GradeInput
@@ -568,7 +612,9 @@ export function runPipeline(
       has15mEvent,
       displacementQuality15m: dq,
       modelState,
-      poiTestResultForSweep: modelState.model === 'model1_reversal' ? poiTestResult : null,
+      poiTestResultForSweep: modelState.model === 'model1_reversal'
+        ? (modelState.triggeringSweep ? { ...poiTestResult, testCount: Math.max(1, poiTestResult.testCount) } : poiTestResult)
+        : null,
       poiTimeframe: '15m',
       poiTestCount: poiTestResult.testCount,
       pd1H: pd1H,
@@ -741,9 +787,9 @@ export function getEffectiveMarketAgeMs(currentMarketTime: number, formedTimesta
 
 /**
  * Determines whether a setup qualifies for Macro Trend Continuation 4H P/D Relief.
- * When a pair is in a strong runaway trend (aligned 4H+1H, continuation model, non-opposite local 15M entry),
+ * When a pair is in a strong runaway trend (aligned 4H+1H, continuation or sweep-backed pullback model, non-opposite local 15M/1H entry),
  * being in 4H discount (for shorts) or 4H premium (for longs) should NOT veto the trade if confirmed by
- * macro directional bias or strong institutional displacement.
+ * macro directional bias, intraday P/D alignment, or strong institutional displacement.
  */
 export function shouldAllowTrendContinuationPD(
   symbol: string,
@@ -752,22 +798,31 @@ export function shouldAllowTrendContinuationPD(
   bias1H: 'bullish' | 'bearish' | 'range' | 'undefined',
   pd15M: PremiumDiscountState | undefined,
   modelState: ModelState,
-  dq: DisplacementQuality | null
+  dq: DisplacementQuality | null,
+  pd1H?: PremiumDiscountState
 ): boolean {
-  // 1. Must be a continuation model (never for reversal or unconfirmed models)
-  if (modelState.model !== 'model2_continuation') return false;
+  // 1. Must have a valid continuation or sweep-confirmed pullback reversal model
+  const hasValidModel =
+    modelState.model === 'model2_continuation' ||
+    (modelState.model === 'model1_reversal' && modelState.triggeringSweep !== null);
+  if (!hasValidModel) return false;
 
   // 2. Both 4H and 1H must align with trade direction
   const expectedBias = tradeDirection === 'long' ? 'bullish' : 'bearish';
   if (bias4H !== expectedBias || bias1H !== expectedBias) return false;
 
-  // 3. Intraday 15M entry must NOT be directly opposite (e.g. short must not enter in 15M discount)
+  // 3. Intraday 15M entry must NOT be directly opposite unless 1H is in the ideal zone
   const is15MPDOpposite = Boolean(
     pd15M &&
     ((tradeDirection === 'long' && pd15M.status === 'premium') ||
      (tradeDirection === 'short' && pd15M.status === 'discount'))
   );
-  if (is15MPDOpposite) return false;
+  const is1HPDInIdealZone = Boolean(
+    pd1H &&
+    ((tradeDirection === 'long' && pd1H.status === 'discount') ||
+     (tradeDirection === 'short' && pd1H.status === 'premium'))
+  );
+  if (is15MPDOpposite && !is1HPDInIdealZone) return false;
 
   // 4. Check Macro Gate alignment
   try {
@@ -779,7 +834,16 @@ export function shouldAllowTrendContinuationPD(
     // If macro gate evaluation fails or in isolated test environments
   }
 
-  // 5. Strong institutional displacement fallback
+  // 5. Intraday 1H/15M P/D alignment with valid displacement, or strong institutional displacement
+  const is15MPDInIdealZone = Boolean(
+    pd15M &&
+    ((tradeDirection === 'long' && pd15M.status === 'discount') ||
+     (tradeDirection === 'short' && pd15M.status === 'premium'))
+  );
+  if (dq !== null && dq.gradePoints >= 1 && (is1HPDInIdealZone || is15MPDInIdealZone)) {
+    return true;
+  }
+
   return dq !== null && dq.gradePoints >= 2 && dq.quality === 'güçlü';
 }
 

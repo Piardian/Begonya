@@ -2,6 +2,7 @@ import express from 'express';
 import { getTwelveDataQueueMetrics } from './twelveDataClient';
 import { getTelegramHealthSnapshot } from './telegramSender';
 import type { SignalDeliveryQueueMetrics } from './signalDeliveryQueue';
+import { ActivePoiWatchlist } from './activePoiWatchlist';
 
 export const app = express();
 app.use(express.json());
@@ -113,6 +114,21 @@ app.get('/provider/metrics', (req, res) => {
     provider: 'TWELVE_DATA',
     ...getTwelveDataQueueMetrics(),
   });
+});
+
+app.get('/watchlist', (req, res) => {
+  try {
+    const watchlist = ActivePoiWatchlist.getInstance();
+    const activeSymbols = watchlist.getActiveSymbols();
+    const activePois = watchlist.getActivePois();
+    res.status(200).json({
+      count: activePois.length,
+      activeSymbols,
+      activePois,
+    });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
 });
 
 function heartbeatIsFresh(timestamp: string | null): boolean {

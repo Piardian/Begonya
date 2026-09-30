@@ -30,6 +30,7 @@ import type { SignalDeliveryQueue } from './signalDeliveryQueue';
 import { evaluateKillzoneFilter } from './killzone';
 import { SetupFamilyGuard } from './setupFamilyGuard';
 import { MacroGateAdapter } from './macroGateAdapter';
+import { ActivePoiWatchlist } from './activePoiWatchlist';
 
 const signalIntelligenceSnapshotWriter = new FileSignalIntelligenceSnapshotWriter();
 const signalRepository = new InMemorySignalRepository();
@@ -843,11 +844,21 @@ function markCandidateAsInvalidated(store: NotifiedStore, candidate: Notificatio
   clearCandidatePending(store, candidate);
   store.markAsInvalidated(candidate.uniqueKey);
   if (candidate.dedupeKey) store.markAsInvalidated(candidate.dedupeKey);
+  try {
+    ActivePoiWatchlist.getInstance().markPoiInvalidated(candidate.symbol, candidate.dedupeKey ?? candidate.uniqueKey);
+  } catch {
+    // Non-blocking watchlist update
+  }
 }
 
 function markCandidateAsNotified(store: NotifiedStore, candidate: NotificationCandidate): void {
   for (const key of candidateReservationKeys(candidate)) {
     store.markAsNotified(key);
+  }
+  try {
+    ActivePoiWatchlist.getInstance().markPoiTested(candidate.symbol, candidate.dedupeKey ?? candidate.uniqueKey);
+  } catch {
+    // Non-blocking watchlist update
   }
 }
 

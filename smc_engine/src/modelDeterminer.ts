@@ -58,40 +58,60 @@ export function determineModel(
   const matchingTransitions = validTransitions.filter(t => t.newTrend === currentTrendAtIdx);
   const regimeStartIndex = matchingTransitions[matchingTransitions.length - 1].atIndex;
 
-  // Model 1: Reversal. A CHoCH is the structure confirmation of a
-  // reversal, so evaluate the liquidity sweep that occurred during the
-  // immediately preceding regime rather than requiring the current regime
-  // to still be range.
-  if (focusEvent?.type === 'CHoCH') {
+  // Evaluate focusEvent (specific POI origin event) when provided
+  if (focusEvent && focusEvent.breakCandleIndex <= currentIndex) {
+    const expectedSweepType = focusEvent.direction === 'bullish'
+      ? 'sweep_low'
+      : 'sweep_high';
+
     const priorTransitions = validTransitions.filter(
       transition => transition.atIndex < focusEvent.breakCandleIndex
     );
     const priorTransition = priorTransitions[priorTransitions.length - 1];
+    const priorRegime = priorTransition?.newTrend ?? currentTrendAtIdx;
+    const priorRegimeStartIndex = priorTransitions
+      .filter(transition => transition.newTrend === priorRegime)
+      .at(-1)?.atIndex ?? Math.max(0, focusEvent.breakCandleIndex - 40);
+    const lookbackStartIndex = Math.min(
+      priorRegimeStartIndex,
+      Math.max(0, focusEvent.breakCandleIndex - 40)
+    );
 
-    if (priorTransition) {
-      const priorRegime = priorTransition.newTrend;
-      const priorRegimeStartIndex = priorTransitions
-        .filter(transition => transition.newTrend === priorRegime)
-        .at(-1)?.atIndex ?? priorTransition.atIndex;
+    const validSweepsForEvent = sweepEvents.filter(
+      sweep =>
+        sweep.type === expectedSweepType &&
+        sweep.candleIndex >= lookbackStartIndex &&
+        sweep.candleIndex <= focusEvent.breakCandleIndex &&
+        sweep.candleIndex <= currentIndex
+    );
+    const latestSweepForEvent = validSweepsForEvent.length > 0
+      ? validSweepsForEvent[validSweepsForEvent.length - 1]
+      : null;
 
-      const expectedSweepType = focusEvent.direction === 'bullish'
-        ? 'sweep_low'
-        : 'sweep_high';
-
-      const validReversalSweeps = sweepEvents.filter(
-        sweep =>
-          sweep.type === expectedSweepType &&
-          sweep.candleIndex >= priorRegimeStartIndex &&
-          sweep.candleIndex < focusEvent.breakCandleIndex &&
-          sweep.candleIndex <= currentIndex
-      );
-
-      if (validReversalSweeps.length > 0) {
+    if (focusEvent.type === 'CHoCH') {
+      if (latestSweepForEvent) {
         return {
           model: 'model1_reversal',
           regime: priorRegime,
-          triggeringSweep: validReversalSweeps[validReversalSweeps.length - 1],
+          triggeringSweep: latestSweepForEvent,
           triggeringBOS: null,
+        };
+      }
+    }
+
+    if (focusEvent.type === 'BOS') {
+      const matchingBOS = (structureState.events || []).find(
+        e =>
+          e.type === 'BOS' &&
+          e.breakCandleIndex <= currentIndex &&
+          sameStructureEvent(e, focusEvent)
+      );
+      if (matchingBOS) {
+        return {
+          model: 'model2_continuation',
+          regime: matchingBOS.direction,
+          triggeringSweep: latestSweepForEvent,
+          triggeringBOS: matchingBOS,
         };
       }
     }

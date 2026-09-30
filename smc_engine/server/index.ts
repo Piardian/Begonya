@@ -14,8 +14,9 @@ import { acquireRuntimeInstanceLock, RuntimeInstanceLock } from './runtimeInstan
 import { evaluateHardMarketWindow } from './killzone';
 import { MacroGateAdapter } from './macroGateAdapter';
 import { CryptoRotationEngine } from './cryptoRotationEngine';
+import { ActivePoiWatchlist } from './activePoiWatchlist';
 
-const port = environmentInteger('PORT', 3000);
+const port = environmentInteger('PORT', 3010);
 const symbols: Symbol[] = [...ALL_SYMBOLS];
 const timeframes: Timeframe[] = ['4h', '1h', '15m'];
 const latestPollResults = new Map<string, PollAndProcessResult>();
@@ -189,19 +190,30 @@ async function executeOnDemandRotationSmcPolling(
 ): Promise<void> {
   try {
     const payload = MacroGateAdapter.getInstance().loadGatePayload();
-    const targets = await CryptoRotationEngine.getInstance().resolveOnDemandSmcTargets(payload);
-    if (targets.length === 0) {
-      console.log('[OnDemandRotation] Aktif rotasyon eşiği (≥65) geçen altcoin hedefi yok; gereksiz SMC grafik isteği atılmadı.');
+    const rotationTargets = await CryptoRotationEngine.getInstance().resolveOnDemandSmcTargets(payload);
+    const watchlistSymbols = ActivePoiWatchlist.getInstance().getActiveSymbols();
+
+    // Unique target symbols across fresh rotation leaders and active unmitigated POI retest watchlist
+    const allTargetSymbols = new Set<Symbol>();
+    for (const t of rotationTargets) {
+      allTargetSymbols.add(t.smc_symbol);
+    }
+    for (const s of watchlistSymbols) {
+      allTargetSymbols.add(s);
+    }
+
+    if (allTargetSymbols.size === 0) {
+      console.log('[OnDemandRotation] Aktif rotasyon eşiği (≥65) geçen veya unmitigated POI retest bekleyen altcoin hedefi yok; gereksiz SMC grafik isteği atılmadı.');
       return;
     }
 
     console.log(
-      `[OnDemandRotation] 🎯 Makro + 8-Faktör Rotasyon Onaylı On-Demand SMC Hedefleri (${targets.length}): ` +
-      targets.map(t => `${t.smc_symbol} (${t.rotation_score}/100 ${t.rotation_gate} [${t.sector}])`).join(', ')
+      `[OnDemandRotation] 🎯 On-Demand SMC Hedefleri (Toplam: ${allTargetSymbols.size}) | ` +
+      `Rotasyon Liderleri: [${rotationTargets.map(t => `${t.smc_symbol} (${t.rotation_score}/100)`).join(', ') || 'Yok'}] | ` +
+      `Retest Memory Watchlist: [${watchlistSymbols.join(', ') || 'Yok'}]`
     );
 
-    for (const target of targets) {
-      const targetSym = target.smc_symbol;
+    for (const targetSym of allTargetSymbols) {
       if ((ALL_SYMBOLS as readonly string[]).includes(targetSym)) {
         // Zaten ana döngüde taranan sembol (örn. SOLUSD, ETHUSD, LTCUSD)
         continue;
@@ -273,10 +285,17 @@ function clearCandidatePending(notifiedStore: NotifiedStore, item: QueuedSignalD
   if (item.candidate.dedupeKey) notifiedStore.clearPending(item.candidate.dedupeKey);
 }
 
-function bindHttpServer(listenPort: number): Promise<Server> {
+function bindHttpServer(listenPort: number, maxRetries = 10): Promise<Server> {
   return new Promise((resolve, reject) => {
     const server = app.listen(listenPort);
-    const onError = (error: Error) => reject(error);
+    const onError = (error: NodeJS.ErrnoException) => {
+      if (error.code === 'EADDRINUSE' && maxRetries > 0) {
+        console.warn(`[HTTP] Port ${listenPort} in use, retrying on ${listenPort + 1}...`);
+        resolve(bindHttpServer(listenPort + 1, maxRetries - 1));
+        return;
+      }
+      reject(error);
+    };
     server.once('error', onError);
     server.once('listening', () => {
       server.off('error', onError);

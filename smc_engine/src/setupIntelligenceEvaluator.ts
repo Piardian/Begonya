@@ -67,6 +67,14 @@ function analyzeContext(detector: DetectorResult): ContextAnalysis {
     (detector.direction === 'long' && pd4H === 'discount') ||
     (detector.direction === 'short' && pd4H === 'premium');
 
+  const intradayPdSupportsDirection =
+    (detector.direction === 'long' && (pd1H === 'discount' || pd15M === 'discount') && !(pd1H === 'premium' && pd15M === 'premium')) ||
+    (detector.direction === 'short' && (pd1H === 'premium' || pd15M === 'premium') && !(pd1H === 'discount' && pd15M === 'discount'));
+  const is4HEqAcceptable =
+    pd4H === 'eq' &&
+    !((detector.direction === 'long' && pd1H === 'premium') || (detector.direction === 'short' && pd1H === 'discount'));
+  const pdAcceptable = pdSupportsDirection || is4HEqAcceptable || (htfSupportsDirection && intradayPdSupportsDirection);
+
   if (!pdSupportsDirection) {
     pdConflicts.push(`4H Premium/Discount does not ideally support ${detector.direction}.`);
   }
@@ -90,8 +98,8 @@ function analyzeContext(detector: DetectorResult): ContextAnalysis {
       conflictReasons: htfConflicts,
     },
     premiumDiscount: {
-      quality: pdConflicts.length === 0 ? 'Ideal' : pdSupportsDirection ? 'Acceptable' : 'Weak',
-      supportsDirection: pdSupportsDirection,
+      quality: pdConflicts.length === 0 ? 'Ideal' : pdAcceptable ? 'Acceptable' : 'Weak',
+      supportsDirection: pdAcceptable,
       conflicts: pdConflicts,
     },
     marketPhase: {
@@ -199,7 +207,7 @@ function analyzeQuality(
       narrativeAssessment.overallNarrative === 'High' ? 'High' :
         narrativeAssessment.overallNarrative === 'Medium' ? 'Medium' : 'Low';
 
-  const overallQuality = weakestQuality([
+  const overallQuality = aggregateQuality([
     poiQuality,
     structureQuality,
     displacementQuality,
@@ -292,7 +300,7 @@ function explainAssessment(
   };
 }
 
-function weakestQuality(values: readonly QualityLevel[]): QualityLevel {
+export function aggregateQuality(values: readonly QualityLevel[]): QualityLevel {
   const rank: Record<QualityLevel, number> = {
     Elite: 5,
     High: 4,
@@ -301,7 +309,28 @@ function weakestQuality(values: readonly QualityLevel[]): QualityLevel {
     Invalid: 1,
     Unknown: 0,
   };
-  return values.reduce((weakest, value) => rank[value] < rank[weakest] ? value : weakest, 'Elite' as QualityLevel);
+
+  if (values.some(value => value === 'Invalid' || value === 'Unknown')) {
+    return 'Invalid';
+  }
+
+  if (values.some(value => value === 'Low')) {
+    return 'Low';
+  }
+
+  const total = values.reduce((sum, value) => sum + rank[value], 0);
+  const average = total / values.length;
+  const eliteCount = values.filter(value => value === 'Elite').length;
+
+  if (eliteCount >= 2 && average >= 4) {
+    return 'Elite';
+  }
+
+  if (average >= 3.5) {
+    return 'High';
+  }
+
+  return 'Medium';
 }
 
 function qualityToGrade(quality: QualityLevel): SetupGradeValue {

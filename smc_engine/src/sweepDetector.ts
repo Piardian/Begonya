@@ -1,4 +1,4 @@
-import { Candle } from './types';
+import { Candle, SwingPoint } from './types';
 import { RangeState } from './rangeCalculator';
 import type { Symbol } from '../server/universe';
 
@@ -120,4 +120,98 @@ export function detectSweeps(
   }
 
   return events;
+}
+
+/**
+ * Detects Swing High (BSL) and Swing Low (SSL) liquidity sweeps during directional trends
+ * (where rangeState.isRange is false). Evaluates only confirmed swings prior to each candle
+ * to maintain strict zero-lookahead safety.
+ */
+export function detectSwingSweeps(
+  candles: Candle[],
+  swings: SwingPoint[],
+  pair: Symbol,
+  timeframe: '15m' | '1h' | '4h'
+): SweepEvent[] {
+  const events: SweepEvent[] = [];
+  const minPenetrationPips = (MIN_SWEEP_PIPS[pair] ?? MIN_SWEEP_PIPS['EURUSD'])[timeframe];
+  const pipMultiplier = getPipMultiplier(pair);
+  const minPenetrationPrice = minPenetrationPips * pipMultiplier;
+  const sweptSwingKeys = new Set<string>();
+  const MAX_SWING_AGE_BARS = 80;
+
+  for (let idx = 0; idx < candles.length; idx++) {
+    const candle = candles[idx];
+    const recentConfirmedLows = swings.filter(
+      s =>
+        s.type === 'low' &&
+        s.confirmedAtIndex < idx &&
+        s.formedAtIndex < idx &&
+        idx - s.formedAtIndex <= MAX_SWING_AGE_BARS
+    ).slice(-4);
+
+    for (const swingLow of recentConfirmedLows) {
+      const key = `low-${swingLow.formedAtIndex}`;
+      if (sweptSwingKeys.has(key)) continue;
+      const penetratedByThreshold = candle.low < swingLow.price - minPenetrationPrice;
+      const wickedAndClosedAbove = candle.low < swingLow.price && candle.close >= swingLow.price;
+      if (penetratedByThreshold || wickedAndClosedAbove) {
+        const penetrationDistance = (swingLow.price - candle.low) / pipMultiplier;
+        events.push({
+          type: 'sweep_low',
+          sweptLevel: swingLow.price,
+          penetrationDistance,
+          candleIndex: idx,
+          timestamp: candle.timestamp,
+          wickPrice: candle.low,
+        });
+        sweptSwingKeys.add(key);
+        break;
+      }
+    }
+
+    const recentConfirmedHighs = swings.filter(
+      s =>
+        s.type === 'high' &&
+        s.confirmedAtIndex < idx &&
+        s.formedAtIndex < idx &&
+        idx - s.formedAtIndex <= MAX_SWING_AGE_BARS
+    ).slice(-4);
+
+    for (const swingHigh of recentConfirmedHighs) {
+      const key = `high-${swingHigh.formedAtIndex}`;
+      if (sweptSwingKeys.has(key)) continue;
+      const penetratedByThreshold = candle.high > swingHigh.price + minPenetrationPrice;
+      const wickedAndClosedBelow = candle.high > swingHigh.price && candle.close <= swingHigh.price;
+      if (penetratedByThreshold || wickedAndClosedBelow) {
+        const penetrationDistance = (candle.high - swingHigh.price) / pipMultiplier;
+        events.push({
+          type: 'sweep_high',
+          sweptLevel: swingHigh.price,
+          penetrationDistance,
+          candleIndex: idx,
+          timestamp: candle.timestamp,
+          wickPrice: candle.high,
+        });
+        sweptSwingKeys.add(key);
+        break;
+      }
+    }
+  }
+
+  return events;
+}
+
+export function mergeSweepEvents(
+  rangeSweeps: readonly SweepEvent[],
+  swingSweeps: readonly SweepEvent[]
+): SweepEvent[] {
+  const byCandleAndType = new Map<string, SweepEvent>();
+  for (const s of [...rangeSweeps, ...swingSweeps]) {
+    const key = `${s.candleIndex}-${s.type}`;
+    if (!byCandleAndType.has(key)) {
+      byCandleAndType.set(key, s);
+    }
+  }
+  return [...byCandleAndType.values()].sort((a, b) => a.candleIndex - b.candleIndex);
 }

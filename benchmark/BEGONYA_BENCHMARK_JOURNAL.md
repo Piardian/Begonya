@@ -24,10 +24,10 @@ Bu günlük, Telegram sinyalleri ile Begonya makro-kantitatif orkestrasyonunun k
 | Kategori | Adet | Oran | Açıklama |
 | :--- | :---: | :---: | :--- |
 | 🎯 **TP / KÂR ALINDI** | **8** | **%33.3** | Realize edilen net kazançlar (ETH, NZDUSD, EURCHF, USDCHF, GBPCHF, GBPUSD, EURUSD, NZDCHF) |
-| ❌ **STOP / LOSS** | **8** | **%33.3** | Stopla kapanan işlemler (SOL #3, ETH #4, USDJPY #5, SOL #9, GBPCHF #12, USDJPY #13, USDCHF #14, CADJPY #22) |
+| ❌ **STOP / LOSS** | **9** | **%37.5** | Stopla kapanan işlemler (SOL #3, ETH #4, USDJPY #5, SOL #9, GBPCHF #12, USDJPY #13, USDCHF #14, ETHUSD #21, CADJPY #22) |
 | 🛡️ **KORUNDU / AVERTED LOSS** | **5** | **%20.8** | BE korunan (SOL #1) ve M1 teyitsiz pas geçilen (LTC #10, BTC #15, SOL #16, LTC #19) |
-| 🔄 **AKTİF / İŞLEMDE** | **1** | **%4.2** | 1M konfirmasyonla açık olan işlem (ETHUSD #21 Unicorn SAT) |
-| ⏳ **BEKLEMEDE** | **2** | **%8.3** | Retest ve 1M onayı bekleyen kurulumlar (BTCUSD #23, CADCHF #24) |
+| 🔄 **AKTİF / İŞLEMDE** | **1** | **%4.2** | 1M konfirmasyonla açık olan işlem (BTCUSD #23 SAT) |
+| ⏳ **BEKLEMEDE** | **1** | **%4.2** | Retest ve 1M onayı bekleyen kurulum (CADCHF #24 AL) |
 | **TOPLAM** | **24** | **%100** | **Eksiksiz 24 Canlı Begonya Sinyali** |
 
 ---
@@ -37,9 +37,9 @@ Bu günlük, Telegram sinyalleri ile Begonya makro-kantitatif orkestrasyonunun k
 | Metrik | Tutar ($) | R Değeri | Açıklama |
 | :--- | :---: | :---: | :--- |
 | 🟢 **Brüt Kâr (TP & Kısmi)** | **+$14.049,25** | **+18.93 R** | Realize edilen toplam kâr (NZDCHF +5.60 RR / +$4,200 dahil) |
-| 🔴 **Brüt Zarar (Stop)** | **-$4.950,00** | **-5.85 R** | Stop olan 8 işlemin toplam maliyeti (Son CADJPY limit emri -500$ dahil) |
-| 🏆 **NET GELİR (KÂR)** | **+$9.099,25** | **+13.08 R** | **Kasaya Giren Net Kazanç (#1 BE +$325 dahil: +$9.424,25)** |
-| 📈 **Net Portföy Büyümesi** | **~+%9.10** | — | Dinamik makro risk çarpanı disiplini ile |
+| 🔴 **Brüt Zarar (Stop)** | **-$5.510,00** | **-6.41 R** | Stop olan 9 işlemin toplam maliyeti (ETHUSD #21 -560$ ve CADJPY #22 -500$ dahil) |
+| 🏆 **NET GELİR (KÂR)** | **+$8.539,25** | **+12.52 R** | **Kasaya Giren Net Kazanç (#1 BE +$325 dahil: +$8.864,25)** |
+| 📈 **Net Portföy Büyümesi** | **~+%8.54** | — | Dinamik makro risk çarpanı disiplini ile |
 | 🛡️ **Averted Loss (Kurtarılan)** | **+$1.690,00** | **+2.01 R** | M1 onayı gelmediği için kurtarılan sermaye (LTC 750$ + BTC 190$ + SOL 190$ + LTC 560$) |
 
 ---
@@ -726,32 +726,31 @@ Her yeni canlı Begonya sinyali incelenirken aşağıdaki standart 5+1 şablon �
 
 ---
 
-### 21. [2026-09-24 21:32 & 22:17 TSİ / 18:32 & 19:17 UTC] — ETHUSD (15M Bearish OB + FVG Unicorn - SAT) 🔄 AKTİF İŞLEMDE (560 $ RİSK)
+### 21. [2026-09-24 21:32 & 22:17 TSİ / 18:32 & 19:17 UTC] — ETHUSD (15M Bearish OB + FVG Unicorn - SAT) ❌ STOP (-560.00 $ / -0.56 R)
 - **Kayıt Kodu:** BG-20260924-003
 - **Telegram Girişi:** ETHUSD SAT (İkili Sinyal Kümesi: 21:32 OB `2730.00 - 2738.81` & 22:17 FVG `2725.32 - 2731.33`) | Grade A (7/9) | Skor: 82/100 | Makro: SHORT_ONLY
 - **Giriş Bölgesi (POI):** `2725.32 — 2738.81` (15M Bearish OB + FVG Unicorn Kesişimi) | **Sinyal Fiyatı:** 2691.13 / 2685.56 | **Stop:** 2738.81 üstü
 - **Çarpımsal Begonya Skoru:** SMC: 82 × G_macro: 1.0 = **82 / 100 (Tier A)** | Önerilen Risk: **0.56x Lot** (560 $)
-- **Hedef (TP / Likidite Mıknatısı):** 2630.8114 (7 dip EQL — SSL Mıknatısı) | **Karşı Engel:** 2620.34 - 2627.97 (15M Bullish OB — EQL hedefinin altında!)
+- **Hedef (TP / Likidite Mıknatısı):** 2630.8114 (7 dip EQL — SSL Mıknatısı) | **Gerçekleşen Sonuç:** ❌ **STOP (-560.00 $ / -0.56 R)**
 
 #### 🔬 1. SMC Teknik Katmanı & Unicorn Birleştirme
 - **3 Zaman Dilimli Pahalı (Premium) Hizalanması:** 4H Pahalı, 1H Pahalı ve 15M Pahalı bölgededir. HTF trendi çift zaman diliminde (4H ve 1H) net Aşağı (Bearish) yönlüdür.
-- **Unicorn Kurgusu:** Peş peşe gelen OB (`2730.00 - 2738.81`) ve FVG (`2725.32 - 2731.33`) sinyalleri operatör tarafından çifte risk almak yerine **tek bir kurumsal bölge olarak birleştirilmiş**, 1M konfirmasyon aranarak **tek işlem** olarak açılmıştır.
-- **Açık Hedef Yolu:** Karşı engel (`2620.34 - 2627.97`), 7'li dip EQL mıknatısının (`2630.81`) daha da altında yer aldığı için hedefe giden yolda hiçbir engel bulunmamaktadır.
+- **Unicorn Kurgusu:** Peş peşe gelen OB (`2730.00 - 2738.81`) ve FVG (`2725.32 - 2731.33`) sinyalleri operatör tarafından çifte risk almak yerine **tek bir kurumsal bölge olarak birleştirilmiş**, 1M konfirmasyon aranarak **tek işlem** olarak açılmıştır. Bu disiplin sayesinde stop olunduğunda çifte hasar alınması engellenmiştir.
 
 #### 🌐 2. Makroekonomik Katman & Gating Notu
 - **Birincil Rejim:** *Reflationary Growth with Bear Steepening*.
 - **Makro Kapı Durumu:** SHORT_ONLY (G_macro: 1.0) -> **0.56x Lot** (560 $).
 
 #### ⚡ 3. M1 İcra Gerçekliği (Execution Reality)
-- **Geri Çekilme & Giriş:** ✅ **AKTİF İŞLEMDE (`ACTIVE`)** — Fiyat sakin basamaklı yükselişle Unicorn bölgesine ulaşmış, 1M CHoCH konfirmasyonu alınarak tek işlem olarak pozisyona girilmiştir.
+- **Geri Çekilme & Sonuç:** ❌ **STOPPED_OUT (`LOSS`)** — Unicorn bölgesinden açılan short pozisyon `2738.81` üstü stop seviyesine ulaşarak `-560.00 $` (`-0.56 R`) ile kapanmıştır.
 
 #### 📋 Standart 5+1 Doğrulama Anketi
 - **Soru 1 (Kutuya Yaklaşım):** [A] Sakin düzeltme (Basamaklı yükseliş)
 - **Soru 2 (1M Formasyonu):** [A] 1M CHoCH/BOS kırılımı (1M konfirmasyon alındı)
 - **Soru 3 (Giriş Kararı):** [A] 1M FVG/OB retesti (İki sinyal birleştirilip tek işlem açıldı)
-- **Soru 4 (Sonuç):** [E] Aktif işlemde (`ACTIVE` — 2630.81 EQL hedefi bekleniyor)
-- **Soru 5 (Stop/İptal Nedeni):** — (İşlem açık)
-- **Ekstra (Makro Doğruluk):** SHORT_ONLY kapısı ve 0.56x lot risk çarpanıyla kusursuz senkronizasyon.
+- **Soru 4 (Sonuç):** [B] Stop (**-0.56 R / -560.00 $**)
+- **Soru 5 (Stop/İptal Nedeni):** [A] Kutu tutmadı / Üst likiditeye devam etti
+- **Ekstra (Makro Doğruluk):** 0.56x indirimli lot ve iki sinyalin tek işlemde birleştirilmesi hasarı yarı yarıya sınırladı.
 
 ---
 
@@ -793,7 +792,7 @@ Her yeni canlı Begonya sinyali incelenirken aşağıdaki standart 5+1 şablon �
 
 ---
 
-### 23. [2026-09-25 11:03 TSİ / 08:03 UTC] — BTCUSD (15M Bearish OB - SAT) ⏳ BEKLEMEDE (RETEST BEKLENİYOR)
+### 23. [2026-09-25 11:03 TSİ / 08:03 UTC] — BTCUSD (15M Bearish OB - SAT) 🔄 AKTİF İŞLEMDE (750 $ RİSK)
 - **Kayıt Kodu:** BG-20260925-002
 - **Telegram Girişi:** BTCUSD SAT | Grade A (9/9) | Skor: 98/100 | Makro: SHORT_ONLY | Giriş: 84572.00 - 84881.55 | Anlık: 84043.96 | Stop: 84881.55 üstü
 - **Giriş Bölgesi (POI):** 84572.00 — 84881.55 (15M Bearish OB — 309.55 USD) | **Sinyal Fiyatı:** 84043.96 (528.0 USD / %0.62 aşağıda)
@@ -801,7 +800,7 @@ Her yeni canlı Begonya sinyali incelenirken aşağıdaki standart 5+1 şablon �
 - **Hedef (TP / Likidite Mıknatısı):** 80308.4871 (3735.5 pip aşağıdaki 7 dip EQL havuzu) | **Karşı Engel:** 84143.17 - 84275.57 (15M Bullish OB)
 
 #### 🔬 1. SMC Teknik Katmanı & Kurulum Notu
-- **HTF Uyum & P/D Durumu:** 4H ve 1H trendi Aşağı (Bearish). `84572.00 - 84881.55` giriş kutusu 1H ve 15M grafiklerinde tam Pahalı (Premium) bölgenin içinde yer almaktadır; fiyat kutuya geri çekildiğinde üçlü Pahalı (Premium) hizalanması sağlanacaktır.
+- **HTF Uyum & P/D Durumu:** 4H ve 1H trendi Aşağı (Bearish). `84572.00 - 84881.55` giriş kutusu 1H ve 15M grafiklerinde tam Pahalı (Premium) bölgenin içinde yer almaktadır; fiyat kutuya geri çekildiğinde üçlü Pahalı (Premium) hizalanması sağlanmıştır.
 - **Tekil Referans Seçimi:** Kutu henüz test edilmediği için tekrarlayan bildirimler arasından en yüksek puanlı (`9/9` ve `98/100 Tier A+`) bu ana kurulum referans seçilmiştir.
 
 #### 🌐 2. Makroekonomik Katman & Gating Notu
@@ -809,15 +808,15 @@ Her yeni canlı Begonya sinyali incelenirken aşağıdaki standart 5+1 şablon �
 - **Makro Kapı Durumu:** SHORT_ONLY (G_macro: 1.0) -> **0.75x Lot** (750 $).
 
 #### ⚡ 3. M1 İcra Gerçekliği (Execution Reality)
-- **Durum:** ⏳ **PENDING_RETEST** — Fiyat giriş kutusunun 528 USD altındadır; kutuya geri çekilme (retest) ve 1M manuel onay beklenmektedir.
+- **Durum:** 🔄 **ACTIVE_IN_TRADE (`ACTIVE`)** — Fiyat `84572.00 - 84881.55` Bearish OB kutusuna geri çekilip (retest) 1M onayını vermiş, `0.75x Lot` (`$750` risk) ile SAT pozisyonu açılmıştır ve şu an aktif olarak `80308.49` EQL hedefini beklemektedir.
 
 #### 📋 Standart 5+1 Doğrulama Anketi
-- **Soru 1 (Kutuya Yaklaşım):** [C] Kutuya ulaşmadı (528 USD aşağıda / Beklemede)
-- **Soru 2 (1M Formasyonu):** ⏳ Beklemede
-- **Soru 3 (Giriş Kararı):** [D] Henüz girilmedi (Retest ve 1M teyidi bekleniyor)
-- **Soru 4 (Sonuç):** ⏳ Beklemede (`PENDING`)
-- **Soru 5 (Stop/İptal Nedeni):** ⏳ Beklemede
-- **Ekstra (Makro Doğruluk):** SHORT_ONLY makro kapısı ve 98/100 Tier A+ elit skor ile takipte.
+- **Soru 1 (Kutuya Yaklaşım):** [A] Kutuya retest (84572.00 - 84881.55 bölgesine yükseliş)
+- **Soru 2 (1M Formasyonu):** [A] 1M CHoCH/BOS kırılımı (1M onay alındı)
+- **Soru 3 (Giriş Kararı):** [A] 1M FVG/OB retesti ile giriş
+- **Soru 4 (Sonuç):** [E] Aktif işlemde (`ACTIVE` — 80308.49 EQL hedefi bekleniyor)
+- **Soru 5 (Stop/İptal Nedeni):** — (İşlem açık)
+- **Ekstra (Makro Doğruluk):** SHORT_ONLY makro kapısı ve 98/100 Tier A+ elit skor ile aktif işlemde.
 
 ---
 

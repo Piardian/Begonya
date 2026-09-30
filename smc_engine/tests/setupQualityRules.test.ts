@@ -198,13 +198,13 @@ describe('Setup Quality Rulebook', () => {
     expect(assessment.decision.appliedRules?.hardRejects.map(rule => rule.id)).toContain('POI_BOX_TOO_NARROW');
   });
 
-  test('hard rejects P/D territory conflict (BUY in 15M Premium)', () => {
+  test('hard rejects P/D territory conflict (BUY in 1H and 15M Premium)', () => {
     const assessment = evaluateSetupIntelligenceV2({
       detector: detector({
         direction: 'long',
         premiumDiscount: {
           fourHour: { status: 'discount', fibValue: 0.2, rangeHigh: 1.11, rangeLow: 1.1 },
-          oneHour: { status: 'discount', fibValue: 0.2, rangeHigh: 1.11, rangeLow: 1.1 },
+          oneHour: { status: 'premium', fibValue: 0.8, rangeHigh: 1.11, rangeLow: 1.1 },
           fifteenMinute: { status: 'premium', fibValue: 0.8, rangeHigh: 1.11, rangeLow: 1.1 },
         },
       }),

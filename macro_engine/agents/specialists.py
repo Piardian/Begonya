@@ -186,7 +186,7 @@ class MacroSpecialists:
         - Enflasyon: {economic_panel.get('inflation_regime', {})}
         - İstihdam: {economic_panel.get('labor_regime', {})}
         - Büyüme: {economic_panel.get('growth_regime', {})}
-        - PMI/Sanayi: {economic_panel.get('pmi_regime', {})}
+        - Sanayi & Reel İvme: INDPRO + GDPC1 + Bakır/Altın rasyosu aktif (Not: FRED kamu API'sinden kaldırılan eski ISM PMI serisi yapısal olarak INDPRO/Bakır-Altın ile ikame edilmiştir, bunu veri eksikliği olarak raporlama)
         - Getiri Eğrisi: {economic_panel.get('rate_curve_regime', {})}
         - Politika Rejimi: {economic_panel.get('policy_regime', {})}
 
@@ -235,7 +235,7 @@ class MacroSpecialists:
         1. VERİYİ ÖNCELE: Sonucu önceden varsayma. Her yönsel çıkarımı, onu destekleyen ölçülebilir faktörlerle açıkla.
         2. TEK FAKTÖR YETMEZ: Bir varlık/parite için LONG/SHORT yönü tek bir göstergeye dayanıyorsa bunu düşük güven olarak belirt ve çatışma varsa nötr kal.
         3. BAĞIMSIZ KANIT: Faiz/reel getiri, dolar momentumu, likidite/kredi, emtia/dış ticaret ve risk iştahı gibi farklı mekanizmaların aynı yönde olup olmadığını kontrol et.
-        4. VERİ EKSİKLİĞİ: Bir gerekli veri kaynağı "UNAVAILABLE", fallback veya stale ise o faktörü yok sayma; açıkça veri eksikliği olarak raporla ve kesin yön üretme.
+        4. VERİ EKSİKLİĞİ: Yalnızca aktif canlı piyasa/makro beslemelerinde gerçek bir kopukluk veya bayat veri varsa uyar; FRED'den kalıcı olarak kaldırılmış eski ISM PMI serilerini (INDPRO ve Bakır/Altın ile ikame edildiği için) raporda "Veri Eksikliği" maddesi olarak yazma.
         5. GATE AYRIMI: execution_bias_gates alanı yalnızca advisory analizdir. Gerçek execution kararı deterministic gate katmanından gelir.
         6. BTC: Debasement teması tek başına LONG gerekçesi değildir; likidite, reel faiz, dolar, kredi ve T-0 stres ile birlikte değerlendir.
         7. XAUUSD: Reel getiri, dolar, risk iştahı ve enerji/enflasyon kanallarını birlikte değerlendir; yapısal görüşü kısa vadeli işlem yönüyle karıştırma.

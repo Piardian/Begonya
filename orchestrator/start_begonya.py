@@ -15,9 +15,10 @@ if sys.stdout.encoding != 'utf-8':
 BASE_DIR = Path(__file__).resolve().parent.parent
 MACRO_DIR = BASE_DIR / "macro_engine"
 SMC_DIR = BASE_DIR / "smc_engine"
+CLT_DIR = BASE_DIR.parent / "swing-bos-core"
 LOCK_FILE = BASE_DIR / "orchestrator" / "begonya_orchestrator.lock"
 
-def is_pid_running(pid: int) -> bool:
+def is_pid_running(pid: int, expected_image: str = "python") -> bool:
     if pid <= 0:
         return False
     if sys.platform == "win32":
@@ -26,7 +27,7 @@ def is_pid_running(pid: int) -> bool:
                 ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
                 text=True, stderr=subprocess.DEVNULL
             ).strip().lower()
-            return "python" in out
+            return expected_image.lower() in out
         except Exception:
             return False
     return False
@@ -41,7 +42,7 @@ def acquire_orchestrator_lock() -> bool:
         except FileExistsError:
             try:
                 old_pid = int(LOCK_FILE.read_text(encoding="utf-8").strip())
-                if is_pid_running(old_pid):
+                if is_pid_running(old_pid, "python"):
                     print(f"[Begonya Orchestrator] ℹ️ Begonya zaten çalışıyor (PID: {old_pid}). Çıkılıyor.")
                     return False
                 LOCK_FILE.unlink(missing_ok=True)
@@ -62,14 +63,22 @@ def release_orchestrator_lock():
     except Exception:
         pass
 
-def cleanup_stale_lock():
-    lock_file = SMC_DIR / "data" / "runtime.lock"
+def cleanup_stale_lock(engine_dir: Path, label: str):
+    lock_file = engine_dir / "data" / "runtime.lock"
     if lock_file.exists():
         try:
+            import json
+            data = json.loads(lock_file.read_text(encoding="utf-8"))
+            pid = int(data.get("pid", 0))
+            if is_pid_running(pid, "node"):
+                return
+        except Exception:
+            pass
+        try:
             lock_file.unlink()
-            print("[Begonya Orchestrator] 🧹 Eski runtime.lock temizlendi.")
+            print(f"[Begonya Orchestrator] 🧹 {label} eski runtime.lock temizlendi.")
         except Exception as e:
-            print(f"[Begonya Orchestrator] ⚠️ runtime.lock silinemedi: {e}")
+            print(f"[Begonya Orchestrator] ⚠️ {label} runtime.lock silinemedi: {e}")
 
 def prevent_system_sleep():
     if sys.platform == "win32":
@@ -92,6 +101,15 @@ def restore_system_sleep():
 
 
 def run_macro_sync():
+    state_file = BASE_DIR / "shared" / "macro_regime_state.json"
+    if state_file.exists():
+        try:
+            age_sec = time.time() - state_file.stat().st_mtime
+            if age_sec < 3600:
+                print(f"\n[Begonya Orchestrator] ℹ️ Makro Kapı Verisi güncel ({int(age_sec // 60)} dk önce güncellendi). Servisler doğrudan başlatılıyor...")
+                return
+        except Exception:
+            pass
     print("\n[Begonya Orchestrator] 🚀 1. Makro Rejim Motoru İlk Analiz Döngüsü Çalıştırılıyor...")
     cmd = [sys.executable, str(MACRO_DIR / "main.py")]
     try:
@@ -109,33 +127,52 @@ def spawn_macro_daemon():
     return subprocess.Popen(daemon_cmd, cwd=str(MACRO_DIR))
 
 def spawn_smc_engine():
-    print("[Begonya Orchestrator] 🎯 SMC Engine başlatılıyor...")
-    cleanup_stale_lock()
+    print("[Begonya Orchestrator] 🎯 Begonya SMC Engine başlatılıyor (Port 3010)...")
+    cleanup_stale_lock(SMC_DIR, "Begonya SMC")
     node_script = str(SMC_DIR / "dist" / "server" / "index.js")
+    env = os.environ.copy()
+    env.setdefault("PORT", "3010")
     cmd = ["node", node_script]
-    return subprocess.Popen(cmd, cwd=str(SMC_DIR))
+    return subprocess.Popen(cmd, cwd=str(SMC_DIR), env=env)
+
+def spawn_clt_engine():
+    if not (CLT_DIR / "dist" / "server" / "index.js").exists():
+        print(f"[Begonya Orchestrator] ⚠️ ChecklistTrigger bulunamadı: {CLT_DIR}")
+        return None
+    print("[Begonya Orchestrator] ⚡ ChecklistTrigger (swing-bos-core) başlatılıyor (Port 3000)...")
+    cleanup_stale_lock(CLT_DIR, "ChecklistTrigger")
+    node_script = str(CLT_DIR / "dist" / "server" / "index.js")
+    env = os.environ.copy()
+    env.setdefault("PORT", "3000")
+    cmd = ["node", node_script]
+    return subprocess.Popen(cmd, cwd=str(CLT_DIR), env=env)
 
 def main():
     if not acquire_orchestrator_lock():
         sys.exit(0)
 
     print("=" * 70)
-    print(" 🌺 BEGONYA: KURUMSAL MAKRO & SMC HİBRİT İŞLEM SİSTEMİ 🌺 ")
+    print(" 🌺 BEGONYA & CHECKLISTTRIGGER: BİRLEŞİK OTONOM İŞLEM SİSTEMİ 🌺 ")
     print("=" * 70)
-    print("Mimari: Macro Multi-AGI Army + ChecklistTrigger SMC Engine")
-    print(f"Konum: {BASE_DIR}")
+    print("Mimari: Macro Multi-AGI Army + Begonya SMC + ChecklistTrigger SMC")
+    print(f"Konum: {BASE_DIR} & {CLT_DIR}")
     print("-" * 70)
 
-    try:
-        # 1. Başlangıçta Makro Verisini Senkronize Et
-        run_macro_sync()
+    p_daemon = None
+    p_smc = None
+    p_clt = None
 
-        # 2. Servisleri Başlat
+    try:
+        # 1. Servisleri Anında Başlat (SMC motorları makro senkronizasyonu beklemeden hemen devreye girsin)
         p_daemon = spawn_macro_daemon()
         p_smc = spawn_smc_engine()
+        p_clt = spawn_clt_engine()
+
+        # 2. Başlangıçta Makro Verisini Kontrol Et / Güncelle
+        run_macro_sync()
 
         print("\n" + "=" * 70)
-        print(" 🟢 TÜM BEGONYA SERVİSLERİ AKTİF VE NÖBETTE. DURDURMAK İÇİN CTRL+C.")
+        print(" 🟢 BEGONYA VE CHECKLISTTRIGGER AKTİF VE NÖBETTE. DURDURMAK İÇİN CTRL+C.")
         print("=" * 70)
         prevent_system_sleep()
 
@@ -143,21 +180,27 @@ def main():
             time.sleep(3)
 
             # Makro Daemon Süpervizör Kontrolü
-            if p_daemon.poll() is not None:
+            if p_daemon is not None and p_daemon.poll() is not None:
                 print(f"\n[Begonya Orchestrator] ⚠️ Macro Daemon durdu (Kod: {p_daemon.returncode}). 5s içinde yeniden başlatılıyor...")
                 time.sleep(5)
                 p_daemon = spawn_macro_daemon()
 
-            # SMC Engine Süpervizör Kontrolü
-            if p_smc.poll() is not None:
-                print(f"\n[Begonya Orchestrator] ⚠️ SMC Engine durdu (Kod: {p_smc.returncode}). 5s içinde yeniden başlatılıyor...")
+            # Begonya SMC Engine Süpervizör Kontrolü
+            if p_smc is not None and p_smc.poll() is not None:
+                print(f"\n[Begonya Orchestrator] ⚠️ Begonya SMC Engine durdu (Kod: {p_smc.returncode}). 5s içinde yeniden başlatılıyor...")
                 time.sleep(5)
                 p_smc = spawn_smc_engine()
 
+            # ChecklistTrigger (swing-bos-core) Süpervizör Kontrolü
+            if p_clt is not None and p_clt.poll() is not None:
+                print(f"\n[Begonya Orchestrator] ⚠️ ChecklistTrigger durdu (Kod: {p_clt.returncode}). 5s içinde yeniden başlatılıyor...")
+                time.sleep(5)
+                p_clt = spawn_clt_engine()
+
     except KeyboardInterrupt:
         print("\n[Begonya Orchestrator] 🛑 Kapatma sinyali alındı...")
-        for name, proc in [("Macro Daemon", p_daemon), ("SMC Engine", p_smc)]:
-            if proc.poll() is None:
+        for name, proc in [("Macro Daemon", p_daemon), ("Begonya SMC Engine", p_smc), ("ChecklistTrigger", p_clt)]:
+            if proc is not None and proc.poll() is None:
                 print(f"  -> {name} sonlandırılıyor...")
                 proc.terminate()
                 try:

@@ -2,7 +2,7 @@ import { Symbol } from './candleStore';
 import { MacroGatePayload } from './macroGateAdapter';
 
 export const ROTATION_SCORE_THRESHOLD = 65;
-export const MAX_ON_DEMAND_SMC_TARGETS = 3;
+export const MAX_ON_DEMAND_SMC_TARGETS = 8;
 export const INTRADAY_ROTATION_TTL_MS = 15 * 60 * 1000;
 
 export interface CryptoUniverseEntry {

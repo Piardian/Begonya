@@ -102,11 +102,11 @@ export const SETUP_QUALITY_RULES: readonly QualityRule[] = [
     id: 'PD_TERRITORY_CONFLICT',
     category: 'HardReject',
     severity: 'High',
-    message: 'Trade direction conflicts with 1H or 15M Premium-Discount territory.',
-    recommendation: 'Do not buy in 1H/15M Premium or sell in 1H/15M Discount territory.',
+    message: 'Trade direction conflicts with 1H and 15M Premium-Discount territory.',
+    recommendation: 'Do not buy in 1H+15M Premium or sell in 1H+15M Discount territory.',
     condition: ({ detector }) =>
-      (detector.direction === 'long' && (detector.premiumDiscount.oneHour.status === 'premium' || detector.premiumDiscount.fifteenMinute.status === 'premium')) ||
-      (detector.direction === 'short' && (detector.premiumDiscount.oneHour.status === 'discount' || detector.premiumDiscount.fifteenMinute.status === 'discount')),
+      (detector.direction === 'long' && (detector.premiumDiscount.oneHour.status === 'premium' && detector.premiumDiscount.fifteenMinute.status === 'premium')) ||
+      (detector.direction === 'short' && (detector.premiumDiscount.oneHour.status === 'discount' && detector.premiumDiscount.fifteenMinute.status === 'discount')),
   },
   {
     id: 'SELL_IN_4H_DISCOUNT',
