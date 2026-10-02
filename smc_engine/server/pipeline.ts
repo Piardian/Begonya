@@ -20,14 +20,16 @@ import { evaluateSetupIntelligenceV2 } from '../src/setupIntelligenceEvaluator';
 import { compareV1GradeWithV2Assessment, SetupAssessmentComparison } from '../src/setupAssessmentComparison';
 import { DetectorResult, SetupAssessment } from '../src/setupAssessment';
 import { recordPipelineFilterTelemetry, recordPoiLifecycleTelemetry } from './telemetry';
-import { Symbol } from './universe';
+import { Symbol, isSymbolBlacklisted } from './universe';
 import { getPipSize, calculateDistance, detectAssetClass } from '../src/assetMetrics';
 import { consolidateCandidates } from '../src/poiConsolidator';
 import { MacroGateAdapter, MacroGateEvaluation } from './macroGateAdapter';
-import { detectLiquidityMagnet, LiquidityMagnet } from '../src/liquidityMagnetDetector';
+import { detectLiquidityMagnet, resolveDisplayLiquidityMagnet, LiquidityMagnet } from '../src/liquidityMagnetDetector';
 import { detectOpposingObstacle, OpposingObstacle } from '../src/opposingObstacleDetector';
+import { evaluateApproachVelocity, ApproachVelocityInfo } from '../src/approachVelocity';
 import { isCryptoSymbol } from './killzone';
 import { ActivePoiWatchlist } from './activePoiWatchlist';
+import { calculateTradeExpectancyPlan, TradeExpectancyPlan } from '../src/tradeExpectancyEngine';
 
 export interface NotificationCandidate {
   symbol: Symbol;
@@ -63,6 +65,8 @@ export interface NotificationCandidate {
   allowTrendContinuationPD?: boolean;
   triggerCandle?: Candle;
   atr15mPips?: number | null;
+  approachVelocity?: ApproachVelocityInfo;
+  expectancyPlan?: TradeExpectancyPlan;
 }
 
 export function runPipeline(
@@ -161,6 +165,12 @@ export function runPipeline(
     });
     return candidates;
   };
+
+  // 0. Blacklist Guard: Skip permanently blacklisted toxic pairs (e.g. GBPCHF)
+  if (isSymbolBlacklisted(symbol)) {
+    reject('symbol_blacklisted');
+    return finish([]);
+  }
 
   // 1. Pull 4h, 1h, 15m candles
   const candles4H = candleStore.getCandles(symbol, '4h');
@@ -382,7 +392,17 @@ export function runPipeline(
     // Tests count
     const poiTestResult = countOBTests(candles15mCast, ob, lastIndex15m);
 
-    const liquidityMagnet = detectLiquidityMagnet(swings15m, candles15mCast[lastIndex15m].close, tradeDirection, symbol);
+    const liquidityMagnet = resolveDisplayLiquidityMagnet(
+      swings15m,
+      candles15mCast[lastIndex15m].close,
+      tradeDirection,
+      symbol,
+      candles15mCast,
+      lastIndex15m,
+      swings1H,
+      candles1HCast,
+      lastIndex1H
+    );
     const opposingObstacle = detectOpposingObstacle({
       symbol,
       tradeDirection,
@@ -400,6 +420,17 @@ export function runPipeline(
       modelState,
       dq,
       pd1H
+    );
+
+    const atrPips = averageTrueRangePips(candles15mCast, lastIndex15m, symbol, 14);
+    const approachVelocity = evaluateApproachVelocity(
+      candles15mCast,
+      lastIndex15m,
+      tradeDirection,
+      ob.low,
+      ob.high,
+      symbol,
+      atrPips
     );
 
     // Build GradeInput
@@ -469,6 +500,35 @@ export function runPipeline(
         );
         continue;
       }
+      const atr15m = averageTrueRangePips(candles15mCast, lastIndex15m, symbol, 14);
+      const expectancyPlan = calculateTradeExpectancyPlan({
+        symbol,
+        direction: tradeDirection,
+        zoneLow: ob.low,
+        zoneHigh: ob.high,
+        currentPrice: candles15mCast[lastIndex15m].close,
+        grade: gradeResult.grade,
+        totalScore: gradeResult.totalScore,
+        atr15mPips: atr15m,
+        liquidityMagnet,
+        opposingObstacle,
+      });
+
+      const enableExpectancyFilter = process.env.NODE_ENV !== 'test' || process.env.ENABLE_EXPECTANCY_FILTER === 'true';
+      if (enableExpectancyFilter && !expectancyPlan.isAdmissible) {
+        reject('insufficient_risk_reward_expectancy');
+        observePoiLifecycle(
+          'OB',
+          ob,
+          formedTimestamp,
+          [expectancyPlan.rejectionReason ?? 'insufficient_risk_reward_expectancy'],
+          gradeResult.grade,
+          false,
+          gradeResult.poiIntegrity
+        );
+        continue;
+      }
+
       observePoiLifecycle('OB', ob, formedTimestamp, [], gradeResult.grade, true);
       const setupAssessmentComparison = compareV1GradeWithV2Assessment(gradeResult, setupAssessmentV2);
 
@@ -511,7 +571,9 @@ export function runPipeline(
         opposingObstacle,
         allowTrendContinuationPD,
         triggerCandle: candles15mCast[lastIndex15m],
-        atr15mPips: averageTrueRangePips(candles15mCast, lastIndex15m, symbol, 14),
+        atr15mPips: atr15m,
+        approachVelocity,
+        expectancyPlan,
       });
     } else {
       recordGradeBlockOverlap(gradeResult.blockReasons);
@@ -583,7 +645,17 @@ export function runPipeline(
     // Tests count
     const poiTestResult = countFVGTests(candles15mCast, fvg, lastIndex15m);
 
-    const liquidityMagnet = detectLiquidityMagnet(swings15m, candles15mCast[lastIndex15m].close, tradeDirection, symbol);
+    const liquidityMagnet = resolveDisplayLiquidityMagnet(
+      swings15m,
+      candles15mCast[lastIndex15m].close,
+      tradeDirection,
+      symbol,
+      candles15mCast,
+      lastIndex15m,
+      swings1H,
+      candles1HCast,
+      lastIndex1H
+    );
     const opposingObstacle = detectOpposingObstacle({
       symbol,
       tradeDirection,
@@ -601,6 +673,17 @@ export function runPipeline(
       modelState,
       dq,
       pd1H
+    );
+
+    const atrPips = averageTrueRangePips(candles15mCast, lastIndex15m, symbol, 14);
+    const approachVelocity = evaluateApproachVelocity(
+      candles15mCast,
+      lastIndex15m,
+      tradeDirection,
+      fvg.gapLow,
+      fvg.gapHigh,
+      symbol,
+      atrPips
     );
 
     // Build GradeInput
@@ -670,6 +753,35 @@ export function runPipeline(
         );
         continue;
       }
+      const atr15m = averageTrueRangePips(candles15mCast, lastIndex15m, symbol, 14);
+      const expectancyPlan = calculateTradeExpectancyPlan({
+        symbol,
+        direction: tradeDirection,
+        zoneLow: fvg.gapLow,
+        zoneHigh: fvg.gapHigh,
+        currentPrice: candles15mCast[lastIndex15m].close,
+        grade: gradeResult.grade,
+        totalScore: gradeResult.totalScore,
+        atr15mPips: atr15m,
+        liquidityMagnet,
+        opposingObstacle,
+      });
+
+      const enableExpectancyFilter = process.env.NODE_ENV !== 'test' || process.env.ENABLE_EXPECTANCY_FILTER === 'true';
+      if (enableExpectancyFilter && !expectancyPlan.isAdmissible) {
+        reject('insufficient_risk_reward_expectancy');
+        observePoiLifecycle(
+          'FVG',
+          fvg,
+          formedTimestamp,
+          [expectancyPlan.rejectionReason ?? 'insufficient_risk_reward_expectancy'],
+          gradeResult.grade,
+          false,
+          gradeResult.poiIntegrity
+        );
+        continue;
+      }
+
       observePoiLifecycle('FVG', fvg, formedTimestamp, [], gradeResult.grade, true);
       const setupAssessmentComparison = compareV1GradeWithV2Assessment(gradeResult, setupAssessmentV2);
 
@@ -712,7 +824,9 @@ export function runPipeline(
         opposingObstacle,
         allowTrendContinuationPD,
         triggerCandle: candles15mCast[lastIndex15m],
-        atr15mPips: averageTrueRangePips(candles15mCast, lastIndex15m, symbol, 14),
+        atr15mPips: atr15m,
+        approachVelocity,
+        expectancyPlan,
       });
     } else {
       recordGradeBlockOverlap(gradeResult.blockReasons);

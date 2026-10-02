@@ -122,9 +122,11 @@ export function extractCandidateDisplay(candidate: NotificationCandidate) {
     zoneHigh,
     zoneLow,
     entryZoneText: `${formatPrice(zoneLow, candidate.symbol)} - ${formatPrice(zoneHigh, candidate.symbol)}`,
-    stopLossText: tradeDirection === 'long'
-      ? `Altı ${formatPrice(zoneLow, candidate.symbol)} - manuel onay`
-      : `Üstü ${formatPrice(zoneHigh, candidate.symbol)} - manuel onay`,
+    stopLossText: candidate.expectancyPlan
+      ? `${formatPrice(candidate.expectancyPlan.stopLoss, candidate.symbol)} (Tampon: ${candidate.expectancyPlan.smartStopBufferPips}p | Risk: ${candidate.expectancyPlan.riskDistancePips}p)`
+      : (tradeDirection === 'long'
+          ? `Altı ${formatPrice(zoneLow, candidate.symbol)} - manuel onay`
+          : `Üstü ${formatPrice(zoneHigh, candidate.symbol)} - manuel onay`),
     currentPriceText: formatPrice(currentPrice, candidate.symbol),
     distanceText: distInfo.displayText,
     requiredAction,

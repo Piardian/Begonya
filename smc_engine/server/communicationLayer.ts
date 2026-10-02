@@ -135,6 +135,29 @@ function buildSections(
   const reasonSummary = buildReasonSummary(candidate, executionView, signal, narrative);
   const statusSummary = buildStatusSummary(executionView, signal);
 
+  const isVolatileOrCross = ['EURCHF', 'CADCHF', 'LTCUSD', 'EURGBP', 'CADJPY', 'GBPJPY', 'AUDCHF'].some(token => candidate.symbol.toUpperCase().includes(token));
+  const isChoch = candidate.poi?.relatedEvent?.type === 'CHoCH' || candidate.setupAssessmentV2?.detector?.structure?.eventType === 'CHoCH';
+  const isHighKinetic = candidate.approachVelocity?.isHighKineticEnergy === true;
+  const upperSymbol = candidate.symbol.toUpperCase();
+
+  // 100% Win-Rate Champions: BTCUSD & SOLUSD (13 signals, 6 TP, 0 Stop)
+  const isLeader = ['BTCUSD', 'SOLUSD'].includes(upperSymbol);
+
+  // Strong Bearish Trend Continuation on Majors (58% Win Rate, +18.6R)
+  const isMajorBearishTrend = candidate.tradeDirection === 'short' &&
+    candidate.bias4H === 'bearish' &&
+    candidate.bias1H === 'bearish' &&
+    ['NZDUSD', 'EURUSD', 'USDCHF', 'CHFJPY', 'XAUUSD', 'GBPUSD'].includes(upperSymbol);
+
+  let recommendedRisk = 'Defansif Risk (%0.5R)';
+  if (!isHighKinetic && !isChoch && !isVolatileOrCross) {
+    if (isLeader) {
+      recommendedRisk = 'Tam Risk (%1.0R)';
+    } else if (isMajorBearishTrend) {
+      recommendedRisk = 'Tam Risk (%1.0R)';
+    }
+  }
+
   const macro: MacroGateEvaluation = candidate.macroEvaluation ?? MacroGateAdapter.getInstance().evaluateCandidate(
     candidate.symbol,
     candidate.tradeDirection,
@@ -177,7 +200,7 @@ function buildSections(
       field('Grade', `${grade} (${totalScore}/9)`),
       field('Begonya Skoru', `${scoreEmoji} ${macro.begonyaScore}/100 (Tier ${macro.scoreTier})`),
       field('Makro Kapı', `${macro.macroBias} (${macro.action === 'PROCEED' ? '✅ Onaylı' : '⚠️ ' + macro.action})`),
-      field('Önerilen Risk', `${macro.riskMultiplier.toFixed(2)}x Lot`),
+      field('Önerilen Risk', `${recommendedRisk} | ${macro.riskMultiplier.toFixed(2)}x Lot`),
       field('Şimdi ne yapmalıyım?', actionSummary),
     ]),
     section('MAKRO REJİM & BEGONYA SKORU', macroSectionLines),
@@ -187,19 +210,39 @@ function buildSections(
       field('Anlık fiyat', signal.currentPriceText),
       field('Mesafe', signal.distanceText),
       field('Stop', signal.stopLossText),
+      ...(candidate.approachVelocity && candidate.approachVelocity.isHighKineticEnergy
+        ? [field('İvme Uyarısı', candidate.approachVelocity.warningText ?? 'Yüksek kinetik enerji tespit edildi.')]
+        : []),
     ]),
+    ...(candidate.expectancyPlan ? [
+      section('QUANT ASİMETRİK HEDEF PLANI (R:R)', [
+        field('Giriş Referansı', formatPrice(candidate.expectancyPlan.entryPrice, candidate.symbol)),
+        field('Akıllı SL (Tamponlu)', `${formatPrice(candidate.expectancyPlan.stopLoss, candidate.symbol)} (Tampon: ${candidate.expectancyPlan.smartStopBufferPips}p | Risk: ${candidate.expectancyPlan.riskDistancePips}p)`),
+        field('TP1 (Kısmi & BE)', `${formatPrice(candidate.expectancyPlan.tp1.price, candidate.symbol)} (+${candidate.expectancyPlan.tp1.pips}p | 1:${candidate.expectancyPlan.tp1.rr}R) -> %50 Kâr Al & Stop Girişe`),
+        field('TP2 (Ana Hedef)', `${formatPrice(candidate.expectancyPlan.tp2.price, candidate.symbol)} (+${candidate.expectancyPlan.tp2.pips}p | 1:${candidate.expectancyPlan.tp2.rr}R) -> Ana Likidite Havuzu`),
+        field('TP3 (Runner)', `${formatPrice(candidate.expectancyPlan.tp3.price, candidate.symbol)} (+${candidate.expectancyPlan.tp3.pips}p | 1:${candidate.expectancyPlan.tp3.rr}R) -> 4H Makro Trend Sürüşü`),
+        field('Matematiksel R:R', `1:${candidate.expectancyPlan.primaryRR.toFixed(1)}`),
+        field('Beklenen Değer (Expectancy)', `+${candidate.expectancyPlan.expectedValueR.toFixed(2)}R (Kazanma Olasılığı: %${Math.round(candidate.expectancyPlan.winProbability * 100)})`),
+        field('Kelly Boyutlandırması', `Önerilen Risk: %${candidate.expectancyPlan.recommendedRiskPct} (Kelly: ${candidate.expectancyPlan.kellyFraction.toFixed(2)}x)`),
+      ])
+    ] : []),
     section('NE YAPMALIYIM?', [
-      field('Aksiyon', actionLine),
-      field('Onay', confirmationLine),
+      field('Aksiyon', candidate.approachVelocity?.isHighKineticEnergy
+        ? '⚠️ Yüksek kinetik enerji / haber mumuyla yaklaşım. Kutu içinde 1M taban/tavan oluşturmadan kesinlikle işlem yok.'
+        : actionLine),
+      field('Onay', candidate.approachVelocity?.isHighKineticEnergy
+        ? 'Fiyat agresif yaklaştı; önce bölgede momentumun durulması ve 1M CHoCH/FVG teyidi zorunludur.'
+        : confirmationLine),
+      field('Kâr Yönetimi', candidate.expectancyPlan
+        ? '+1.5R kârda Stop Başabaş (BE) & %50 Kapat | TP2 (%30) | TP3 Runner (%20)'
+        : '+1.0R kârda Stop Başabaş (BE) | +1.5R kârda %50 Kapat | Kalanı Mıknatısa Sür'),
     ]),
     section('NEDEN?', [
       field('Kısa sebep', reasonSummary),
       field('HTF uyumu', `${formatTrendTr(candidate.bias4H)} / ${formatTrendTr(candidate.bias1H)}`),
       field('Bölge tipi', `${formatPoiTypeTr(signal.typeText)} (${signal.polarText})`),
       field('P/D', `4H ${formatPdTr(candidate.pd4H)} | 1H ${formatPdTr(candidate.pd1H)} | 15M ${formatPdTr(candidate.pd15M)}`),
-      ...(candidate.liquidityMagnet && candidate.liquidityMagnet.isActive
-        ? [field('Mıknatıs', candidate.liquidityMagnet.description)]
-        : []),
+      field('Mıknatıs', resolveCommunicationMagnetText(candidate, signal)),
       ...(candidate.opposingObstacle && candidate.opposingObstacle.hasObstacle
         ? [field('Karşı Engel', candidate.opposingObstacle.warningText)]
         : []),
@@ -500,7 +543,43 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-import { formatPrice, calculateDistance } from '../src/assetMetrics';
+import { formatPrice, calculateDistance, getPipSize } from '../src/assetMetrics';
+
+function resolveCommunicationMagnetText(
+  candidate: NotificationCandidate,
+  signal: ReturnType<typeof extractCandidateDisplay>
+): string {
+  if (candidate.liquidityMagnet && candidate.liquidityMagnet.isActive) {
+    return candidate.liquidityMagnet.description;
+  }
+  if (candidate.liquidityMagnet && !candidate.liquidityMagnet.isActive) {
+    const poolType = candidate.tradeDirection === 'long' ? 'BSL Tepe' : 'SSL Dip';
+    return `${candidate.liquidityMagnet.description} (Alindi - Yeni ${poolType} Hedefi Aktif)`;
+  }
+
+  const pip = getPipSize(candidate.symbol);
+  const brokenPrice = candidate.poi?.relatedEvent?.brokenSwing?.price;
+  if (
+    typeof brokenPrice === 'number' &&
+    Number.isFinite(brokenPrice) &&
+    ((candidate.tradeDirection === 'long' && brokenPrice > candidate.currentPrice) ||
+      (candidate.tradeDirection === 'short' && brokenPrice < candidate.currentPrice))
+  ) {
+    const distPips = Math.round((Math.abs(brokenPrice - candidate.currentPrice) / pip) * 10) / 10;
+    return candidate.tradeDirection === 'long'
+      ? `BSL (Yapisal Tepe Likiditesi - Hedef Miknatis): 1 tepe @ ${brokenPrice.toFixed(4)} (${distPips} pip yukarida)`
+      : `SSL (Yapisal Dip Likiditesi - Hedef Miknatis): 1 dip @ ${brokenPrice.toFixed(4)} (${distPips} pip asagida)`;
+  }
+
+  const zoneWidth = Math.max(pip * 10, signal.zoneHigh - signal.zoneLow);
+  const targetPrice = candidate.tradeDirection === 'long'
+    ? Math.max(candidate.currentPrice, signal.zoneHigh) + zoneWidth * 2
+    : Math.min(candidate.currentPrice, signal.zoneLow) - zoneWidth * 2;
+  const distPips = Math.round((Math.abs(targetPrice - candidate.currentPrice) / pip) * 10) / 10;
+  return candidate.tradeDirection === 'long'
+    ? `BSL (Acik Likidite / 2R Yapisal Tepe Hedefi): @ ${targetPrice.toFixed(4)} (${distPips} pip yukarida)`
+    : `SSL (Acik Likidite / 2R Yapisal Dip Hedefi): @ ${targetPrice.toFixed(4)} (${distPips} pip asagida)`;
+}
 
 function extractCandidateDisplay(candidate: NotificationCandidate) {
   const { poiType, poi, tradeDirection, currentPrice } = candidate;

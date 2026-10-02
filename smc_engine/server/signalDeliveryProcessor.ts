@@ -13,6 +13,11 @@ import { elapsedMs, recordScreenshotTelemetry, telemetryTimer } from './telemetr
 import { FileSignalLedger } from './signalLedger';
 import type { DeliveryProcessingResult, QueuedSignalDelivery } from './signalDeliveryQueue';
 import { ActivePoiWatchlist } from './activePoiWatchlist';
+import { Candle } from '../src/types';
+import { detectSwings } from '../src/swingDetector';
+import { resolveDisplayLiquidityMagnet } from '../src/liquidityMagnetDetector';
+import { PaperOutcomeTracker } from './paperOutcomeTracker';
+import { captureMacroSnapshot } from './macroOutcomeEvidence';
 
 const signalLedger = new FileSignalLedger();
 
@@ -66,6 +71,12 @@ export function createSignalDeliveryProcessor(
     } catch (error) {
       console.warn(`[SignalLedger] Signal record failed for ${refreshedCandidate.signalId ?? refreshedCandidate.uniqueKey}:`, error);
     }
+    try {
+      const macroSnapshot = captureMacroSnapshot(refreshedCandidate);
+      PaperOutcomeTracker.getInstance().registerCandidate(refreshedCandidate, macroSnapshot);
+    } catch (error) {
+      console.warn(`[PaperOutcomeTracker] Candidate registration failed for ${refreshedCandidate.signalId ?? refreshedCandidate.uniqueKey}:`, error);
+    }
 
     try {
       const screenshotsOk = await deliverSignalScreenshots(refreshedCandidate, candleStore);
@@ -93,13 +104,38 @@ async function refreshCandidate(item: QueuedSignalDelivery, candleStore: CandleS
     candles15m = candleStore.getCandles(candidate.symbol, '15m');
   }
   const last = candles15m[candles15m.length - 1];
+  const currentPrice = last?.close ?? candidate.currentPrice;
+
+  let refreshedMagnet = candidate.liquidityMagnet;
+  if (candles15m.length >= 15 && (!refreshedMagnet || !refreshedMagnet.isActive || currentPrice !== candidate.currentPrice)) {
+    const candles15mCast = candles15m as unknown as Candle[];
+    const candles1hCast = candleStore.getCandles(candidate.symbol, '1h') as unknown as Candle[];
+    const swings15m = detectSwings(candles15mCast);
+    const swings1h = candles1hCast.length >= 15 ? detectSwings(candles1hCast) : undefined;
+    const resolved = resolveDisplayLiquidityMagnet(
+      swings15m,
+      currentPrice,
+      candidate.tradeDirection,
+      candidate.symbol,
+      candles15mCast,
+      candles15mCast.length - 1,
+      swings1h,
+      candles1hCast.length >= 15 ? candles1hCast : undefined,
+      candles1hCast.length >= 15 ? candles1hCast.length - 1 : undefined
+    );
+    if (resolved) {
+      refreshedMagnet = resolved;
+    }
+  }
+
   return {
     ...candidate,
-    currentPrice: last?.close ?? candidate.currentPrice,
+    currentPrice,
     marketDataTimestamp: last?.timestamp ?? candidate.marketDataTimestamp,
     validationClosePrice: last?.close ?? candidate.validationClosePrice,
     validationCloseTimestamp: last?.timestamp ?? candidate.validationCloseTimestamp,
     triggerCandle: last ?? candidate.triggerCandle,
+    ...(refreshedMagnet !== undefined ? { liquidityMagnet: refreshedMagnet } : {}),
   };
 }
 
@@ -130,7 +166,8 @@ async function deliverSignalScreenshots(candidate: QueuedSignalDelivery['candida
     output: { hasScreenshot: Boolean(capturedChart.screenshotPng?.length) },
   });
 
-  let fifteenMinuteDelivered = false;
+  const deliveredTimeframes = new Set<string>();
+  const mtfTimeoutMs = Number(process.env.MTF_SCREENSHOT_TIMEOUT_MS ?? 90000);
 
   if (process.env.ENABLE_RC5_1_MTF === 'true') {
     let timedOut = false;
@@ -161,7 +198,7 @@ async function deliverSignalScreenshots(candidate: QueuedSignalDelivery['candida
         let allOk = true;
         for (const item of charts.sort((a, b) => (order[a.timeframe] ?? 99) - (order[b.timeframe] ?? 99))) {
           if (timedOut) break;
-          if (item.timeframe === '15m' && fifteenMinuteDelivered) continue;
+          if (deliveredTimeframes.has(item.timeframe)) continue;
           const ok = await deliverRenderedChart(
             candidate.symbol,
             signalId,
@@ -171,33 +208,46 @@ async function deliverSignalScreenshots(candidate: QueuedSignalDelivery['candida
             item.candidate === candidate ? candles15m : candleStore.getCandles(candidate.symbol, item.timeframe),
             item.candidate
           );
-          if (item.timeframe === '15m' && ok) {
-            fifteenMinuteDelivered = true;
+          if (ok) {
+            deliveredTimeframes.add(item.timeframe);
           }
           allOk = allOk && ok;
         }
         return allOk;
       };
 
-      return await withTimeout(mtfWork(), 30000, `Multi-timeframe screenshot capture timed out after 30000ms for ${candidate.symbol}`);
+      await withTimeout(mtfWork(), mtfTimeoutMs, `Multi-timeframe screenshot capture timed out after ${mtfTimeoutMs}ms for ${candidate.symbol}`);
     } catch (mtfError) {
       timedOut = true;
       console.warn(`[SignalDelivery] Multi-timeframe screenshot capture failed/timed out for ${candidate.symbol}, checking 15m fallback:`, mtfError);
-      if (fifteenMinuteDelivered) {
-        return true;
+    }
+  }
+
+  let fallbackOk = true;
+  if (!deliveredTimeframes.has('15m')) {
+    fallbackOk = await deliverRenderedChart(candidate.symbol, signalId, '15m', capturedChart.screenshotPng, capturedChart.metadata, candles15m, candidate);
+    if (fallbackOk) {
+      deliveredTimeframes.add('15m');
+    }
+  }
+
+  if (process.env.ENABLE_RC5_1_MTF === 'true' && !deliveredTimeframes.has('1h')) {
+    const candles1h = candleStore.getCandles(candidate.symbol, '1h');
+    if (candles1h.length > 0) {
+      try {
+        const mapped1hCandidate = mapCandidateToExecutionCandles(candidate, candles1h);
+        const captured1h = await captureLightweightChartWithMetadata(candles1h, mapped1hCandidate, '1h');
+        const delivered1h = await deliverRenderedChart(candidate.symbol, signalId, '1h', captured1h.screenshotPng, captured1h.metadata, candles1h, mapped1hCandidate);
+        if (delivered1h) {
+          deliveredTimeframes.add('1h');
+        }
+      } catch (err1h) {
+        console.warn(`[SignalDelivery] Fallback 1h screenshot capture failed for ${candidate.symbol}:`, err1h);
       }
     }
   }
 
-  if (fifteenMinuteDelivered) {
-    return true;
-  }
-
-  const delivered = await deliverRenderedChart(candidate.symbol, signalId, '15m', capturedChart.screenshotPng, capturedChart.metadata, candles15m, candidate);
-  if (delivered) {
-    fifteenMinuteDelivered = true;
-  }
-  return delivered;
+  return fallbackOk && deliveredTimeframes.has('15m');
 }
 
 async function deliverRenderedChart(
@@ -254,9 +304,18 @@ async function deliverRenderedChart(
 }
 
 async function loadExecutionCandles1m(symbol: Symbol, candleStore: CandleStore) {
-  const fetched1m = await fetchCandles(symbol, '1m', 200);
-  for (const candle of fetched1m) {
-    candleStore.appendCandle(symbol, '1m', candle);
+  const fetchTimeoutMs = Number(process.env.MTF_1M_FETCH_TIMEOUT_MS ?? 65000);
+  try {
+    const fetched1m = await withTimeout(
+      fetchCandles(symbol, '1m', 200),
+      fetchTimeoutMs,
+      `1m candle fetch timed out after ${fetchTimeoutMs}ms for ${symbol}`
+    );
+    for (const candle of fetched1m) {
+      candleStore.appendCandle(symbol, '1m', candle);
+    }
+  } catch (err) {
+    console.warn(`[SignalDelivery] 1m candle fetch failed/timed out for ${symbol}, using cached store candles:`, err);
   }
   return candleStore.getCandles(symbol, '1m');
 }

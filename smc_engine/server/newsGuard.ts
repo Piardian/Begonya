@@ -204,4 +204,55 @@ export class NewsGuard {
       isFrozen: false,
     };
   }
+
+  public getNearestUpcomingEvent(
+    symbol?: string,
+    checkTimeMs?: number
+  ): { event: NewsEvent; minutesToEvent: number; isFrozen: boolean } | null {
+    const config = this.loadConfig();
+    const defaultBefore = config.default_freeze_minutes_before ?? 15;
+    const defaultAfter = config.default_freeze_minutes_after ?? 15;
+    const nowMs = checkTimeMs ?? Date.now();
+    const cleanSym = (symbol || 'ALL').toUpperCase();
+
+    const events = this.getAllEvents();
+    let bestEvent: NewsEvent | null = null;
+    let minMinutes = Number.POSITIVE_INFINITY;
+
+    for (const event of events) {
+      if (!this.isSymbolAffected(event, cleanSym)) continue;
+
+      const eventTimeMs = new Date(event.event_time_utc).getTime();
+      if (isNaN(eventTimeMs)) continue;
+
+      const freezeBeforeMs = (event.freeze_minutes_before ?? defaultBefore) * 60 * 1000;
+      const freezeAfterMs = (event.freeze_minutes_after ?? defaultAfter) * 60 * 1000;
+
+      const inFreeze = nowMs >= (eventTimeMs - freezeBeforeMs) && nowMs <= (eventTimeMs + freezeAfterMs);
+      const diffMinutes = Math.round((eventTimeMs - nowMs) / (60 * 1000));
+
+      if (inFreeze) {
+        return {
+          event,
+          minutesToEvent: diffMinutes,
+          isFrozen: true,
+        };
+      }
+
+      if (diffMinutes > 0 && diffMinutes < minMinutes) {
+        minMinutes = diffMinutes;
+        bestEvent = event;
+      }
+    }
+
+    if (bestEvent) {
+      return {
+        event: bestEvent,
+        minutesToEvent: minMinutes,
+        isFrozen: false,
+      };
+    }
+
+    return null;
+  }
 }

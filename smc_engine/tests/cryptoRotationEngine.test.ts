@@ -162,7 +162,7 @@ describe('8-Factor Crypto Rotation & On-Demand SMC Engine Bridge', () => {
     setCoin(snap, 'WLD', { chg24: 5.1, chg4: 1.6, rvol: 1.5, oi4: 2.2, fundingPct: 0.009 });
     setCoin(snap, 'ARKM', { chg24: 4.6, chg4: 1.5, rvol: 1.4, oi4: 2.0, fundingPct: 0.008 });
 
-    const report = evaluateCryptoRotationSnapshot(snap, 'LONG_ONLY');
+    const report = evaluateCryptoRotationSnapshot(snap, 'LONG_ONLY', { maxOnDemandTargets: 3 });
     expect(report.btc_dominance_panel.dominance_regime).toBe('ALT_CAPITAL_DISPERSION');
     expect(report.coin_assessments.TAO.rotation_gate).toBe('LONG_ONLY');
     expect(report.coin_assessments.TAO.active_rotation_score).toBeGreaterThanOrEqual(65);

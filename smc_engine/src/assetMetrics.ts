@@ -293,6 +293,26 @@ export function isBoxTooNarrow(
     }
   }
 
+  // 4. Spread-to-Box Friction Check: Spread must not exceed 20% of box width
+  const spreadPips = getEstimatedSpreadPips(symbol);
+  if (zoneWidthUnits > 0 && (spreadPips / zoneWidthUnits) > 0.20) {
+    return true;
+  }
+
   return false;
+}
+
+export function getEstimatedSpreadPips(symbol: string): number {
+  const upper = symbol.toUpperCase();
+  if (upper === 'EURUSD' || upper === 'USDJPY') return 0.8;
+  if (upper === 'GBPUSD' || upper === 'USDCHF' || upper === 'AUDUSD' || upper === 'NZDUSD' || upper === 'USDCAD') return 1.2;
+  if (upper === 'GBPCHF') return 1.5;
+  if (upper.includes('JPY')) return 1.5;
+  if (upper.includes('CHF') || upper.includes('CAD') || upper.includes('AUD') || upper.includes('NZD') || upper === 'EURGBP') return 1.8;
+  if (upper.startsWith('XAU')) return 2.0;
+  if (upper.startsWith('NAS') || upper.startsWith('US100') || upper.startsWith('SPX')) return 1.5;
+  if (upper.startsWith('BTC')) return 1.0;
+  if (upper.startsWith('ETH') || upper.startsWith('SOL') || upper.startsWith('LTC')) return 0.2;
+  return 1.2;
 }
 

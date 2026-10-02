@@ -15,6 +15,7 @@ import { evaluateHardMarketWindow } from './killzone';
 import { MacroGateAdapter } from './macroGateAdapter';
 import { CryptoRotationEngine } from './cryptoRotationEngine';
 import { ActivePoiWatchlist } from './activePoiWatchlist';
+import { PaperOutcomeTracker } from './paperOutcomeTracker';
 
 const port = environmentInteger('PORT', 3010);
 const symbols: Symbol[] = [...ALL_SYMBOLS];
@@ -74,6 +75,9 @@ async function start(): Promise<void> {
 
   console.log(`[Startup] Profile: ${process.env.ENABLE_PVP_KILLZONE_BYPASS === 'true' ? 'PVP_ACCELERATION' : 'PRODUCTION'} | Killzone Filter: ${process.env.ENABLE_PVP_KILLZONE_BYPASS === 'true' ? 'BYPASSED' : 'ACTIVE'}`);
   console.log(`[Startup] ${new Date().toISOString()} - Bot started. Symbols: ${symbols.join(', ')} | Timeframes: ${timeframes.join(', ')} | Killzone: ${process.env.ENABLE_KILLZONE === 'true' ? 'ACTIVE' : 'PASSIVE'}`);
+
+  const trackedOpen = PaperOutcomeTracker.getInstance().listOpen();
+  console.log(`[Startup] PaperOutcomeTracker active tracked signals: ${trackedOpen.length} (${trackedOpen.map(s => `${s.symbol} ${s.direction} [${s.status}]`).join(', ') || 'none'})`);
 
   installShutdownHandlers();
   await initializeBackgroundServices(candleStore, notifiedStore, deliveryQueue);

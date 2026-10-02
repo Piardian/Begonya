@@ -31,6 +31,8 @@ import { evaluateKillzoneFilter } from './killzone';
 import { SetupFamilyGuard } from './setupFamilyGuard';
 import { MacroGateAdapter } from './macroGateAdapter';
 import { ActivePoiWatchlist } from './activePoiWatchlist';
+import { PaperOutcomeTracker } from './paperOutcomeTracker';
+import { captureMacroSnapshot } from './macroOutcomeEvidence';
 
 const signalIntelligenceSnapshotWriter = new FileSignalIntelligenceSnapshotWriter();
 const signalRepository = new InMemorySignalRepository();
@@ -82,6 +84,12 @@ export async function pollAndProcess(
     }
 
     if (timeframe === '15m') {
+      try {
+        PaperOutcomeTracker.getInstance().update(symbol, candleStore.getCandles(symbol, '15m'));
+      } catch (trackerErr) {
+        console.warn(`[PaperOutcomeTracker] Update failed for ${symbol}:`, trackerErr);
+      }
+
       const kz = evaluateKillzoneFilter(symbol);
       if (!kz.active) {
         console.log(`[Killzone] ${symbol} 15m taraması atlandı. Sebep: ${kz.reason}`);
@@ -469,6 +477,12 @@ export async function pollAndProcess(
             }
             markCandidateAsNotified(notifiedStore, candidate);
             setupFamilyGuard.recordNotification(candidate);
+            try {
+              const macroSnapshot = captureMacroSnapshot(candidate);
+              PaperOutcomeTracker.getInstance().registerCandidate(candidate, macroSnapshot);
+            } catch (trackerErr) {
+              console.warn(`[PaperOutcomeTracker] Candidate registration failed for ${signalId}:`, trackerErr);
+            }
             console.log(`[Signal: ${signalId}] Notification Success`);
             operationalState.healthStatus.telegram = 'OK';
 

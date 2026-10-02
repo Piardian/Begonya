@@ -96,6 +96,12 @@ export type UniverseCohort =
 
 export const UNIVERSE_VERSION = 'fx-metals-indices-crypto-v2-ondemand' as const;
 
+export const BLACKLISTED_SYMBOLS: readonly string[] = ['GBPCHF'];
+
+export function isSymbolBlacklisted(symbol: string): boolean {
+  return BLACKLISTED_SYMBOLS.includes(symbol.toUpperCase());
+}
+
 export function isOnDemandAltcoinSymbol(symbol: string): boolean {
   return (ON_DEMAND_ALTCOIN_UNIVERSE as readonly string[]).includes(symbol.toUpperCase());
 }

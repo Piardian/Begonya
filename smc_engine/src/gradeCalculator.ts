@@ -195,8 +195,8 @@ export function calculateGrade(input: GradeInput): GradeResult {
     }
   }
 
-  // Liquidity Magnet Bonus (+1) if active
-  if (input.liquidityMagnet && input.liquidityMagnet.isActive && totalScore < 9) {
+  // Liquidity Magnet Bonus (+1) if active multi-swing EQH/EQL cluster
+  if (input.liquidityMagnet && input.liquidityMagnet.isActive && (input.liquidityMagnet.pointsCount ?? 2) >= 2 && totalScore < 9) {
     totalScore += 1;
   }
 

@@ -9,7 +9,8 @@
     "test": "jest",
     "test:notify": "ts-node server/testNotify.ts",
     "demo:preview": "ts-node server/demoPreview.ts",
-    "nas100:visualization": "ts-node server/nas100Visualization.ts"
+    "nas100:visualization": "ts-node server/nas100Visualization.ts",
+    "report:macro-outcomes": "ts-node scripts/macroOutcomeReport.ts"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",

@@ -5,6 +5,15 @@ import type { NotificationCandidate } from './pipeline';
 import type { StoredCandle } from './candleStore';
 import type { OrderBlock, FVG } from '../src/types';
 import { getPipSize } from '../src/assetMetrics';
+import { FileSignalLedger } from './signalLedger';
+import {
+  captureMacroSnapshot,
+  createFallbackMacroSnapshot,
+  FileMacroOutcomeStore,
+  MacroOutcomeEvidenceRecord,
+  MacroOutcomeStore,
+  MacroSnapshot,
+} from './macroOutcomeEvidence';
 
 export type PaperOutcomeType = 'TP' | 'SL' | 'BE' | 'EXPIRED' | 'UNKNOWN';
 type Direction = NotificationCandidate['tradeDirection'];
@@ -14,6 +23,10 @@ export interface TrackedSignal {
   symbol: string;
   direction: Direction;
   signalTimestamp: number;
+  poiType?: 'OB' | 'FVG';
+  grade?: string;
+  smcScore?: number;
+  macroSnapshot?: MacroSnapshot;
   zoneLow: number;
   zoneHigh: number;
   entryPrice: number | null;
@@ -53,23 +66,48 @@ const DEFAULT_CONFIG: PaperOutcomeTrackerConfig = Object.freeze({
 });
 
 export class PaperOutcomeTracker {
+  private static instance: PaperOutcomeTracker | null = null;
+
   private readonly config: PaperOutcomeTrackerConfig;
   private readonly statePath: string;
   private readonly evidenceStore: JsonlEvidenceStore;
+  private readonly macroOutcomeStore: MacroOutcomeStore;
+  private readonly signalLedger: FileSignalLedger;
   private state: TrackerState;
 
   constructor(options?: {
     readonly statePath?: string;
     readonly evidenceStore?: JsonlEvidenceStore;
+    readonly macroOutcomeStore?: MacroOutcomeStore;
+    readonly signalLedger?: FileSignalLedger;
     readonly config?: Partial<PaperOutcomeTrackerConfig>;
   }) {
     this.config = Object.freeze({ ...DEFAULT_CONFIG, ...(options?.config ?? {}) });
     this.statePath = options?.statePath ?? process.env.OUTCOME_LEDGER_PATH ?? path.join(process.env.EVIDENCE_DIRECTORY ?? 'evidence', 'outcomes', 'outcome-ledger.json');
     this.evidenceStore = options?.evidenceStore ?? new JsonlEvidenceStore();
+    this.macroOutcomeStore = options?.macroOutcomeStore ?? new FileMacroOutcomeStore();
+    this.signalLedger = options?.signalLedger ?? new FileSignalLedger();
     this.state = this.loadState();
   }
 
-  registerCandidate(candidate: NotificationCandidate): void {
+  public static getInstance(options?: {
+    readonly statePath?: string;
+    readonly evidenceStore?: JsonlEvidenceStore;
+    readonly macroOutcomeStore?: MacroOutcomeStore;
+    readonly signalLedger?: FileSignalLedger;
+    readonly config?: Partial<PaperOutcomeTrackerConfig>;
+  }): PaperOutcomeTracker {
+    if (!PaperOutcomeTracker.instance) {
+      PaperOutcomeTracker.instance = new PaperOutcomeTracker(options);
+    }
+    return PaperOutcomeTracker.instance;
+  }
+
+  public static resetInstance(): void {
+    PaperOutcomeTracker.instance = null;
+  }
+
+  registerCandidate(candidate: NotificationCandidate, macroSnapshot?: MacroSnapshot): void {
     const signalId = candidate.signalId ?? candidate.uniqueKey;
     const existing = this.state.signals[signalId];
     if (existing && existing.status !== 'CLOSED') return;
@@ -80,11 +118,17 @@ export class PaperOutcomeTracker {
       : { low: (candidate.poi as FVG).gapLow, high: (candidate.poi as FVG).gapHigh };
     const signalTimestamp = candidate.marketDataTimestamp ?? candidate.signalContext?.timestamp ?? Date.now();
 
+    const snapshot = macroSnapshot ?? captureMacroSnapshot(candidate, signalTimestamp);
+
     this.state.signals[signalId] = {
       signalId,
       symbol: candidate.symbol,
       direction: candidate.tradeDirection,
       signalTimestamp,
+      poiType: candidate.poiType,
+      grade: candidate.gradeResult?.grade ?? 'B',
+      smcScore: candidate.macroEvaluation?.begonyaScore ?? candidate.gradeResult?.totalScore ?? 80,
+      macroSnapshot: snapshot,
       zoneLow: zone.low,
       zoneHigh: zone.high,
       entryPrice: null,
@@ -163,6 +207,17 @@ export class PaperOutcomeTracker {
       signal.entryTriggeredAt = candle.timestamp;
       signal.status = 'OPEN';
 
+      void this.signalLedger.recordEntry(signal.signalId, {
+        executionSource: 'PAPER',
+        entryTimestamp: candle.timestamp,
+        entryPrice,
+        brokerOrderId: null,
+        positionId: null,
+        slippageBps: 0,
+      }).catch(err => {
+        // Non-blocking signal ledger recording
+      });
+
       const exit = evaluateOpenCandle(signal, candle, true, this.config);
       if (exit) {
         this.close(signal, exit.type, candle.timestamp, exit.reason);
@@ -209,9 +264,64 @@ export class PaperOutcomeTracker {
     signal.exitTimestamp = timestamp;
     signal.exitReason = reason;
 
+    const exitPrice = resolveSyntheticExitPrice(signal, outcome);
     const rrAchieved = outcome === 'TP' ? this.config.riskReward : outcome === 'SL' ? -1 : outcome === 'BE' ? 0 : null;
     const holdingTimeMs = signal.entryTriggeredAt === null ? null : Math.max(0, timestamp - signal.entryTriggeredAt);
 
+    // 1. Durably update Signal Ledger if applicable
+    if (signal.entryTriggeredAt !== null) {
+      const exitOutcome = outcome === 'TP' ? 'TAKE_PROFIT'
+        : outcome === 'SL' ? 'STOP_LOSS'
+        : outcome === 'BE' ? 'BREAK_EVEN'
+        : outcome === 'EXPIRED' ? 'EXPIRED'
+        : 'UNKNOWN';
+
+      void this.signalLedger.recordExit(signal.signalId, {
+        executionSource: 'PAPER',
+        exitTimestamp: timestamp,
+        exitPrice: exitPrice ?? (signal.entryPrice ?? 0),
+        outcome: exitOutcome,
+        realizedR: rrAchieved,
+        holdingTimeMs,
+        slippageBps: 0,
+      }).catch(() => {});
+    } else {
+      void this.signalLedger.recordCancelled(signal.signalId, timestamp, reason).catch(() => {});
+    }
+
+    // 2. Append enriched Macro Outcome Evidence Record
+    const snapshot = signal.macroSnapshot ?? createFallbackMacroSnapshot(signal.symbol, signal.direction, signal.signalTimestamp);
+    const macroOutcomeRecord: MacroOutcomeEvidenceRecord = {
+      schemaVersion: 1,
+      signalId: signal.signalId,
+      symbol: signal.symbol,
+      direction: signal.direction,
+      poiType: signal.poiType ?? 'OB',
+      grade: signal.grade ?? 'B',
+      smcScore: signal.smcScore ?? 80,
+      signalTimestamp: signal.signalTimestamp,
+      entryTimestamp: signal.entryTriggeredAt,
+      exitTimestamp: timestamp,
+      holdingTimeMs,
+      outcome,
+      realizedR: rrAchieved,
+      entryPrice: signal.entryPrice,
+      exitPrice,
+      stopLoss: signal.stopLoss,
+      takeProfit: signal.takeProfit,
+      riskDistance: signal.riskDistance,
+      maximumFavorableExcursion: signal.maximumFavorableExcursion,
+      maximumAdverseExcursion: signal.maximumAdverseExcursion,
+      exitReason: reason,
+      macroSnapshot: snapshot,
+      recordedAt: new Date(timestamp).toISOString(),
+    };
+
+    void this.macroOutcomeStore.appendRecord(macroOutcomeRecord).catch(error => {
+      console.warn(`[PaperOutcomeTracker] Macro outcome evidence write failed for ${signal.signalId}:`, error);
+    });
+
+    // 3. Append legacy outcome evidence
     void this.evidenceStore.appendOutcomeEvidence({
       evidenceSchemaVersion: 1,
       signalId: signal.signalId,
@@ -267,6 +377,13 @@ function resolveEntryPrice(direction: Direction, zoneLow: number, zoneHigh: numb
     if (candleOpen > zoneHigh) return zoneHigh;
   }
   return (zoneLow + zoneHigh) / 2;
+}
+
+function resolveSyntheticExitPrice(signal: TrackedSignal, outcome: PaperOutcomeType): number | null {
+  if (outcome === 'TP') return signal.takeProfit;
+  if (outcome === 'SL') return signal.stopLoss;
+  if (outcome === 'BE') return signal.entryPrice;
+  return signal.entryPrice;
 }
 
 function evaluateOpenCandle(
