@@ -149,9 +149,67 @@ describe('MacroOutcomeAnalytics', () => {
     const records = [dummyRecord('t1', 'TP', 2.0)];
     const analytics = generateMacroOutcomeAnalytics(records);
     const report = formatMacroOutcomeReport(analytics);
-
     expect(report).toContain('BEGONYA MAKRO-SMC GERÇEK SONUÇ & KANIT RAPORU');
     expect(report).toContain('TOPLAM KAPALI İŞLEM : 1');
     expect(report).toContain('MAKRO PİYASA REJİMLERİNE GÖRE PERFORMANS');
+  });
+
+  test('correctly segments ablation cohorts, asset classes, and transaction costs', () => {
+    const records: MacroOutcomeEvidenceRecord[] = [
+      {
+        ...dummyRecord('fx1', 'TP', 2.0),
+        symbol: 'EURUSD',
+        assetClass: 'FOREX',
+        macroGatingCohort: 'MACRO_PLUS_SMC',
+        forecastHorizon: 'SCALP_INTRADAY',
+        executionSource: 'PAPER',
+        entryConfirmed: true,
+        spreadCostR: 0.08,
+        slippageCostR: 0.02,
+        netRealizedR: 1.90,
+      },
+      {
+        ...dummyRecord('crypto1', 'SL', -1.0),
+        symbol: 'BTCUSD',
+        assetClass: 'CRYPTO',
+        macroGatingCohort: 'SMC_ONLY',
+        forecastHorizon: 'SWING_4H_24H',
+        executionSource: 'LIVE',
+        entryConfirmed: true,
+        spreadCostR: 0.04,
+        slippageCostR: 0.05,
+        netRealizedR: -1.09,
+      },
+    ];
+
+    const analytics = generateMacroOutcomeAnalytics(records);
+
+    // 1. Ablation cohorts
+    expect(analytics.byMacroContribution.length).toBeGreaterThanOrEqual(1);
+    const macroPlusSmc = analytics.byMacroContribution.find(c => c.groupKey.startsWith('MACRO_PLUS_SMC'));
+    expect(macroPlusSmc?.totalTrades).toBe(1);
+    expect(macroPlusSmc?.totalNetRealizedR).toBe(1.90);
+
+    // 2. Asset classes strictly segmented
+    expect(analytics.byAssetClass.length).toBe(2);
+    const forexGroup = analytics.byAssetClass.find(c => c.groupKey.startsWith('FOREX'));
+    const cryptoGroup = analytics.byAssetClass.find(c => c.groupKey.startsWith('CRYPTO'));
+    expect(forexGroup?.totalTrades).toBe(1);
+    expect(forexGroup?.winRatePct).toBe(100.0);
+    expect(cryptoGroup?.totalTrades).toBe(1);
+    expect(cryptoGroup?.winRatePct).toBe(0.0);
+
+    // 3. Execution sources
+    expect(analytics.byExecutionSource.length).toBe(2);
+    expect(analytics.byExecutionSource.some(g => g.groupKey.startsWith('PAPER'))).toBe(true);
+    expect(analytics.byExecutionSource.some(g => g.groupKey.startsWith('LIVE'))).toBe(true);
+
+    // 4. Report includes new cost columns and sections
+    const report = formatMacroOutcomeReport(analytics);
+    expect(report).toContain('MAKRO VE SMC AYRI KATKI ANALİZİ');
+    expect(report).toContain('VARLIK SINIFI AYRIMI (Forex ve Kripto Ayrı Ölçüm)');
+    expect(report).toContain('TAHMİN UFKU VE TAŞINMA VADESİNE GÖRE PERFORMANS');
+    expect(report).toContain('Net R');
+    expect(report).toContain('Maliyet');
   });
 });

@@ -14,6 +14,7 @@ import {
   MacroOutcomeEvidenceRecord,
   MacroOutcomeStore,
   MacroSnapshot,
+  estimateTransactionCost,
 } from './macroOutcomeEvidence';
 
 export type PaperOutcomeType = 'TP' | 'SL' | 'BE' | 'EXPIRED' | 'UNKNOWN';
@@ -414,8 +415,21 @@ export class PaperOutcomeTracker {
       });
     }
 
-    // 2. Append enriched Macro Outcome Evidence Record
+    // 2. Append enriched Macro Outcome Evidence Record with transaction costs and source tagging
     const snapshot = signal.macroSnapshot ?? createFallbackMacroSnapshot(signal.symbol, signal.direction, signal.signalTimestamp);
+    const costs = estimateTransactionCost(signal.symbol, signal.riskDistance ?? 0, signal.entryPrice);
+    const netRealizedR = rrAchieved !== null ? Math.round((rrAchieved - costs.totalCostR) * 100) / 100 : null;
+    const assetClass = detectAssetClass(signal.symbol);
+    const forecastHorizon = holdingTimeMs === null || holdingTimeMs < 4 * 3600 * 1000
+      ? 'SCALP_INTRADAY'
+      : (holdingTimeMs <= 24 * 3600 * 1000 ? 'SWING_4H_24H' : 'MULTI_DAY');
+    const macroGatingCohort = snapshot.macroAction === 'PROCEED'
+      ? 'MACRO_PLUS_SMC'
+      : 'SMC_ONLY';
+    const executionSource = process.env.NODE_ENV === 'test'
+      ? 'TEST'
+      : (process.env.EXECUTION_SOURCE === 'LIVE' ? 'LIVE' : 'PAPER');
+
     const macroOutcomeRecord: MacroOutcomeEvidenceRecord = {
       schemaVersion: 1,
       signalId: signal.signalId,
@@ -440,6 +454,14 @@ export class PaperOutcomeTracker {
       exitReason: reason,
       macroSnapshot: snapshot,
       recordedAt: new Date(timestamp).toISOString(),
+      executionSource,
+      entryConfirmed: signal.entryTriggeredAt !== null,
+      spreadCostR: costs.spreadCostR,
+      slippageCostR: costs.slippageCostR,
+      netRealizedR,
+      assetClass,
+      forecastHorizon,
+      macroGatingCohort,
     };
 
     void this.macroOutcomeStore.appendRecord(macroOutcomeRecord).catch(error => {

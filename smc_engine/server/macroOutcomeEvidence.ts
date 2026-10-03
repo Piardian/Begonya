@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { NotificationCandidate } from './pipeline';
 import { MacroGateAdapter } from './macroGateAdapter';
+import { detectAssetClass, getPipSize, AssetClass } from '../src/assetMetrics';
 import { NewsGuard } from './newsGuard';
 import {
   CRYPTO_ROTATION_UNIVERSE_META,
@@ -64,6 +65,63 @@ export interface MacroSnapshot {
   readonly cryptoRotation?: CryptoRotationSnapshotData;
 }
 
+export function estimateTransactionCost(symbol: string, riskDistance: number, entryPrice?: number | null): {
+  spreadDistance: number;
+  slippageDistance: number;
+  spreadCostR: number;
+  slippageCostR: number;
+  totalCostR: number;
+} {
+  const assetClass = detectAssetClass(symbol);
+  const pip = getPipSize(symbol);
+  let spreadDist = 2.0 * pip;
+  let slipDist = 0.5 * pip;
+
+  switch (assetClass) {
+    case 'FOREX':
+      spreadDist = 1.2 * pip;
+      slipDist = 0.4 * pip;
+      break;
+    case 'FOREX_JPY':
+      spreadDist = 1.5 * pip;
+      slipDist = 0.5 * pip;
+      break;
+    case 'COMMODITY':
+      spreadDist = 0.25;
+      slipDist = 0.15;
+      break;
+    case 'INDEX':
+      spreadDist = 1.2;
+      slipDist = 0.6;
+      break;
+    case 'CRYPTO': {
+      const price = entryPrice && entryPrice > 0 ? entryPrice : 1000;
+      const upper = symbol.toUpperCase();
+      if (upper.startsWith('BTC') || upper.startsWith('ETH')) {
+        spreadDist = price * 0.00015;
+        slipDist = price * 0.00020;
+      } else {
+        spreadDist = price * 0.00060;
+        slipDist = price * 0.00060;
+      }
+      break;
+    }
+  }
+
+  const safeRisk = riskDistance > 0 ? riskDistance : 1;
+  const spreadCostR = Math.round((spreadDist / safeRisk) * 1000) / 1000;
+  const slippageCostR = Math.round((slipDist / safeRisk) * 1000) / 1000;
+  const totalCostR = Math.round((spreadCostR + slippageCostR) * 1000) / 1000;
+
+  return {
+    spreadDistance: spreadDist,
+    slippageDistance: slipDist,
+    spreadCostR,
+    slippageCostR,
+    totalCostR,
+  };
+}
+
 export interface MacroOutcomeEvidenceRecord {
   readonly schemaVersion: 1;
   readonly signalId: string;
@@ -88,6 +146,16 @@ export interface MacroOutcomeEvidenceRecord {
   readonly exitReason: string;
   readonly macroSnapshot: MacroSnapshot;
   readonly recordedAt: string;
+
+  // Realistic Execution & Cost Metrics
+  readonly executionSource?: 'TEST' | 'PAPER' | 'LIVE';
+  readonly entryConfirmed?: boolean;
+  readonly spreadCostR?: number;
+  readonly slippageCostR?: number;
+  readonly netRealizedR?: number | null;
+  readonly assetClass?: AssetClass;
+  readonly forecastHorizon?: 'SCALP_INTRADAY' | 'SWING_4H_24H' | 'MULTI_DAY';
+  readonly macroGatingCohort?: 'SMC_ONLY' | 'MACRO_ONLY' | 'MACRO_PLUS_SMC';
 }
 
 export interface MacroOutcomeStore {
@@ -97,8 +165,11 @@ export interface MacroOutcomeStore {
 
 export class FileMacroOutcomeStore implements MacroOutcomeStore {
   constructor(
-    private readonly filePath = process.env.MACRO_OUTCOME_LEDGER_PATH ??
-      path.join(process.env.EVIDENCE_DIRECTORY ?? 'evidence', 'outcomes', 'macro-outcome-evidence.jsonl')
+    private readonly filePath = process.env.MACRO_OUTCOME_LEDGER_PATH ?? (
+      process.env.NODE_ENV === 'test'
+        ? path.join(process.cwd(), 'tests', 'temp_evidence', 'outcomes', 'macro-outcome-evidence.jsonl')
+        : path.join(process.env.EVIDENCE_DIRECTORY ?? 'evidence', 'outcomes', 'macro-outcome-evidence.jsonl')
+    )
   ) {}
 
   async appendRecord(record: MacroOutcomeEvidenceRecord): Promise<void> {

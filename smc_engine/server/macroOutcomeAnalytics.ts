@@ -12,6 +12,9 @@ export interface GroupPerformanceMetrics {
   readonly stopOutRatePct: number;
   readonly totalRealizedR: number;
   readonly expectancyR: number;
+  readonly totalNetRealizedR: number;
+  readonly netExpectancyR: number;
+  readonly avgCostR: number;
   readonly avgMfeR: number;
   readonly avgMaeR: number;
   readonly avgHoldingTimeHours: number;
@@ -19,6 +22,10 @@ export interface GroupPerformanceMetrics {
 
 export interface MacroOutcomeReportSummary {
   readonly overall: GroupPerformanceMetrics;
+  readonly byMacroContribution: readonly GroupPerformanceMetrics[];
+  readonly byAssetClass: readonly GroupPerformanceMetrics[];
+  readonly byForecastHorizon: readonly GroupPerformanceMetrics[];
+  readonly byExecutionSource: readonly GroupPerformanceMetrics[];
   readonly byRegime: readonly GroupPerformanceMetrics[];
   readonly byVixBucket: readonly GroupPerformanceMetrics[];
   readonly byScoreTier: readonly GroupPerformanceMetrics[];
@@ -46,6 +53,9 @@ export function computeGroupMetrics(
       stopOutRatePct: 0,
       totalRealizedR: 0,
       expectancyR: 0,
+      totalNetRealizedR: 0,
+      netExpectancyR: 0,
+      avgCostR: 0,
       avgMfeR: 0,
       avgMaeR: 0,
       avgHoldingTimeHours: 0,
@@ -57,6 +67,8 @@ export function computeGroupMetrics(
   let beCount = 0;
   let expiredCount = 0;
   let sumRealizedR = 0;
+  let sumNetRealizedR = 0;
+  let sumCostR = 0;
   let sumMfe = 0;
   let sumMae = 0;
   let sumHoldingHours = 0;
@@ -68,9 +80,14 @@ export function computeGroupMetrics(
     else if (r.outcome === 'BE') beCount++;
     else if (r.outcome === 'EXPIRED') expiredCount++;
 
-    if (typeof r.realizedR === 'number') {
-      sumRealizedR += r.realizedR;
-    }
+    const realized = typeof r.realizedR === 'number' ? r.realizedR : 0;
+    const cost = (r.spreadCostR ?? 0) + (r.slippageCostR ?? 0);
+    const netRealized = typeof r.netRealizedR === 'number' ? r.netRealizedR : (realized - cost);
+
+    sumRealizedR += realized;
+    sumNetRealizedR += netRealized;
+    sumCostR += cost;
+
     sumMfe += r.maximumFavorableExcursion ?? 0;
     sumMae += r.maximumAdverseExcursion ?? 0;
 
@@ -87,6 +104,9 @@ export function computeGroupMetrics(
   const stopOutRatePct = totalTrades > 0 ? (slCount / totalTrades) * 100 : 0;
   const totalRealizedR = Math.round(sumRealizedR * 100) / 100;
   const expectancyR = Math.round((sumRealizedR / totalTrades) * 100) / 100;
+  const totalNetRealizedR = Math.round(sumNetRealizedR * 100) / 100;
+  const netExpectancyR = Math.round((sumNetRealizedR / totalTrades) * 100) / 100;
+  const avgCostR = Math.round((sumCostR / totalTrades) * 1000) / 1000;
   const avgMfeR = Math.round((sumMfe / totalTrades) * 100) / 100;
   const avgMaeR = Math.round((sumMae / totalTrades) * 100) / 100;
   const avgHoldingTimeHours = holdingCount > 0 ? Math.round((sumHoldingHours / holdingCount) * 10) / 10 : 0;
@@ -103,6 +123,9 @@ export function computeGroupMetrics(
     stopOutRatePct: Math.round(stopOutRatePct * 10) / 10,
     totalRealizedR,
     expectancyR,
+    totalNetRealizedR,
+    netExpectancyR,
+    avgCostR,
     avgMfeR,
     avgMaeR,
     avgHoldingTimeHours,
@@ -112,11 +135,78 @@ export function computeGroupMetrics(
 export function generateMacroOutcomeAnalytics(
   records: readonly MacroOutcomeEvidenceRecord[]
 ): MacroOutcomeReportSummary {
-  const overall = computeGroupMetrics('TOTAL', records);
+  // Exclude test fixture rows from empirical statistics
+  const validRecords = records.filter(r => r.executionSource !== 'TEST' && !r.signalId.startsWith('test_'));
+  const effectiveRecords = validRecords.length > 0 ? validRecords : records;
+
+  const overall = computeGroupMetrics('TOTAL', effectiveRecords);
+
+  // A. By Macro Contribution (Ablation: SMC-Only vs. Macro+SMC vs. Macro-Only)
+  const macroMap = new Map<string, MacroOutcomeEvidenceRecord[]>();
+  macroMap.set('SMC_ONLY (Salt SMC Fiyat/Teknik)', []);
+  macroMap.set('MACRO_PLUS_SMC (Makro Onaylı SMC)', []);
+  macroMap.set('MACRO_ONLY (Yalnızca Makro Yön Eğilimi)', []);
+  for (const r of effectiveRecords) {
+    const cohort = r.macroGatingCohort ?? (r.macroSnapshot?.macroAction === 'PROCEED' ? 'MACRO_PLUS_SMC' : 'SMC_ONLY');
+    if (cohort === 'MACRO_PLUS_SMC') {
+      macroMap.get('MACRO_PLUS_SMC (Makro Onaylı SMC)')!.push(r);
+    } else {
+      macroMap.get('SMC_ONLY (Salt SMC Fiyat/Teknik)')!.push(r);
+    }
+
+    const dir = r.direction;
+    const mb = r.macroSnapshot?.macroBias;
+    if ((dir === 'long' && (mb === 'LONG_ONLY' || mb === 'Bullish')) ||
+        (dir === 'short' && (mb === 'SHORT_ONLY' || mb === 'Bearish'))) {
+      macroMap.get('MACRO_ONLY (Yalnızca Makro Yön Eğilimi)')!.push(r);
+    }
+  }
+  const byMacroContribution = Array.from(macroMap.entries())
+    .filter(([, list]) => list.length > 0)
+    .map(([k, list]) => computeGroupMetrics(k, list));
+
+  // B. By Asset Class (FOREX vs. CRYPTO - Never blended!)
+  const assetMap = new Map<string, MacroOutcomeEvidenceRecord[]>();
+  for (const r of effectiveRecords) {
+    const rawClass = r.assetClass || (r.macroSnapshot?.isCrypto ? 'CRYPTO' : 'FOREX');
+    const label = rawClass.startsWith('FOREX') ? 'FOREX (Döviz Çiftleri)'
+      : rawClass === 'CRYPTO' ? 'CRYPTO (Kripto Varlıklar)'
+      : rawClass === 'COMMODITY' ? 'COMMODITY (Emtia / Altın)'
+      : rawClass === 'INDEX' ? 'INDEX (Hisse Endeksleri)'
+      : rawClass;
+    if (!assetMap.has(label)) assetMap.set(label, []);
+    assetMap.get(label)!.push(r);
+  }
+  const byAssetClass = Array.from(assetMap.entries()).map(([k, list]) => computeGroupMetrics(k, list));
+
+  // C. By Forecast Horizon (Holding Duration)
+  const horizonMap = new Map<string, MacroOutcomeEvidenceRecord[]>();
+  horizonMap.set('SCALP_INTRADAY (< 4 Saat)', []);
+  horizonMap.set('SWING_4H_24H (4 - 24 Saat)', []);
+  horizonMap.set('MULTI_DAY (> 24 Saat)', []);
+
+  for (const r of effectiveRecords) {
+    const hours = (r.holdingTimeMs ?? 0) / (3600 * 1000);
+    if (hours < 4) horizonMap.get('SCALP_INTRADAY (< 4 Saat)')!.push(r);
+    else if (hours <= 24) horizonMap.get('SWING_4H_24H (4 - 24 Saat)')!.push(r);
+    else horizonMap.get('MULTI_DAY (> 24 Saat)')!.push(r);
+  }
+  const byForecastHorizon = Array.from(horizonMap.entries())
+    .filter(([, list]) => list.length > 0)
+    .map(([k, list]) => computeGroupMetrics(k, list));
+
+  // D. By Execution Source
+  const sourceMap = new Map<string, MacroOutcomeEvidenceRecord[]>();
+  for (const r of effectiveRecords) {
+    const src = r.executionSource || 'PAPER';
+    if (!sourceMap.has(src)) sourceMap.set(src, []);
+    sourceMap.get(src)!.push(r);
+  }
+  const byExecutionSource = Array.from(sourceMap.entries()).map(([k, list]) => computeGroupMetrics(k, list));
 
   // 1. By Primary Macro Regime
   const regimeMap = new Map<string, MacroOutcomeEvidenceRecord[]>();
-  for (const r of records) {
+  for (const r of effectiveRecords) {
     const key = r.macroSnapshot?.primaryRegime || 'Bilinmeyen Rejim';
     if (!regimeMap.has(key)) regimeMap.set(key, []);
     regimeMap.get(key)!.push(r);
@@ -130,7 +220,7 @@ export function generateMacroOutcomeAnalytics(
   vixMap.set('VIX > 22 (Yüksek Oynaklık / Kriz)', []);
   vixMap.set('VIX Belirsiz / Yok', []);
 
-  for (const r of records) {
+  for (const r of effectiveRecords) {
     const vix = r.macroSnapshot?.vixLevel;
     if (typeof vix === 'number') {
       if (vix < 16) vixMap.get('VIX < 16 (Sakin / Risk-On)')!.push(r);
@@ -146,7 +236,7 @@ export function generateMacroOutcomeAnalytics(
 
   // 3. By Begonya Score Tier
   const tierMap = new Map<string, MacroOutcomeEvidenceRecord[]>();
-  for (const r of records) {
+  for (const r of effectiveRecords) {
     const key = `Tier ${r.macroSnapshot?.scoreTier || 'Belirsiz'} (Skor: ${r.macroSnapshot?.begonyaScore ?? 'N/A'})`;
     if (!tierMap.has(key)) tierMap.set(key, []);
     tierMap.get(key)!.push(r);
@@ -159,7 +249,7 @@ export function generateMacroOutcomeAnalytics(
   newsMap.set('Haber 45-120 Dk (Orta Mesafe)', []);
   newsMap.set('Haber > 120 Dk / Yok (Temiz)', []);
 
-  for (const r of records) {
+  for (const r of effectiveRecords) {
     const mins = r.macroSnapshot?.minutesToNewsEvent;
     if (typeof mins === 'number') {
       const absMins = Math.abs(mins);
@@ -176,7 +266,7 @@ export function generateMacroOutcomeAnalytics(
 
   // 5. By Crypto Derivatives Regime
   const derivMap = new Map<string, MacroOutcomeEvidenceRecord[]>();
-  for (const r of records) {
+  for (const r of effectiveRecords) {
     if (r.macroSnapshot?.isCrypto && r.macroSnapshot?.cryptoRotation) {
       const key = r.macroSnapshot.cryptoRotation.derivativesRegime || 'Türev Verisi Yok';
       if (!derivMap.has(key)) derivMap.set(key, []);
@@ -187,7 +277,7 @@ export function generateMacroOutcomeAnalytics(
 
   // 6. By Crypto Sector
   const sectorMap = new Map<string, MacroOutcomeEvidenceRecord[]>();
-  for (const r of records) {
+  for (const r of effectiveRecords) {
     if (r.macroSnapshot?.isCrypto && r.macroSnapshot?.cryptoRotation) {
       const key = r.macroSnapshot.cryptoRotation.sector || 'Sektörsüz';
       if (!sectorMap.has(key)) sectorMap.set(key, []);
@@ -198,7 +288,7 @@ export function generateMacroOutcomeAnalytics(
 
   // 7. By Symbol & Direction
   const symDirMap = new Map<string, MacroOutcomeEvidenceRecord[]>();
-  for (const r of records) {
+  for (const r of effectiveRecords) {
     const key = `${r.symbol} ${r.direction.toUpperCase()}`;
     if (!symDirMap.has(key)) symDirMap.set(key, []);
     symDirMap.get(key)!.push(r);
@@ -207,6 +297,10 @@ export function generateMacroOutcomeAnalytics(
 
   return {
     overall,
+    byMacroContribution,
+    byAssetClass,
+    byForecastHorizon,
+    byExecutionSource,
     byRegime,
     byVixBucket,
     byScoreTier,
@@ -220,9 +314,9 @@ export function generateMacroOutcomeAnalytics(
 export function formatMacroOutcomeReport(summary: MacroOutcomeReportSummary): string {
   const lines: string[] = [];
 
-  lines.push('═══════════════════════════════════════════════════════════════════════════════════');
+  lines.push('═══════════════════════════════════════════════════════════════════════════════════════════════');
   lines.push('               🌺 BEGONYA MAKRO-SMC GERÇEK SONUÇ & KANIT RAPORU');
-  lines.push('═══════════════════════════════════════════════════════════════════════════════════');
+  lines.push('═══════════════════════════════════════════════════════════════════════════════════════════════');
   lines.push('');
 
   const o = summary.overall;
@@ -230,8 +324,9 @@ export function formatMacroOutcomeReport(summary: MacroOutcomeReportSummary): st
   lines.push(`🎯 TP: ${o.tpCount} | 🛑 SL: ${o.slCount} | ⚖️ BE: ${o.beCount} | ⏳ Expired: ${o.expiredCount}`);
   lines.push(`📈 Win Rate (BE dahil) : %${o.winRatePct.toFixed(1)}`);
   lines.push(`📈 Win Rate (BE hariç) : %${o.winRateExcludingBePct.toFixed(1)}`);
-  lines.push(`💰 Toplam Kazanılan R  : ${o.totalRealizedR > 0 ? '+' : ''}${o.totalRealizedR.toFixed(2)}R`);
-  lines.push(`📐 İşlem Başına Beklenti: ${o.expectancyR > 0 ? '+' : ''}${o.expectancyR.toFixed(2)}R / işlem`);
+  lines.push(`💰 Brüt Kazanılan R    : ${o.totalRealizedR > 0 ? '+' : ''}${o.totalRealizedR.toFixed(2)}R`);
+  lines.push(`💵 NET Kazanılan R     : ${o.totalNetRealizedR > 0 ? '+' : ''}${o.totalNetRealizedR.toFixed(2)}R (Spread & Kayma Maliyetleri Sonrası)`);
+  lines.push(`📐 Net Beklenti (Exp)  : ${o.netExpectancyR > 0 ? '+' : ''}${o.netExpectancyR.toFixed(2)}R / işlem`);
   lines.push(`🚀 Ort. MFE (Zirve Kâr): ${o.avgMfeR.toFixed(2)}R | 📉 Ort. MAE (Dip Zarar): ${o.avgMaeR.toFixed(2)}R`);
   lines.push(`⏱️ Ort. Taşınma Süresi : ${o.avgHoldingTimeHours.toFixed(1)} saat`);
   lines.push('');
@@ -246,31 +341,38 @@ export function formatMacroOutcomeReport(summary: MacroOutcomeReportSummary): st
     lines.push(
       'Kategori'.padEnd(38) +
       'İşlem'.padStart(6) +
-      'TP'.padStart(5) +
-      'SL'.padStart(5) +
-      'BE'.padStart(5) +
+      'TP'.padStart(4) +
+      'SL'.padStart(4) +
       'Win %'.padStart(8) +
-      'Top R'.padStart(9) +
-      'Ort R'.padStart(8)
+      'Brüt R'.padStart(9) +
+      'Maliyet'.padStart(8) +
+      'Net R'.padStart(9) +
+      'Net Exp'.padStart(9)
     );
-    lines.push('─'.repeat(84));
+    lines.push('─'.repeat(95));
     for (const m of metrics) {
-      const sign = m.totalRealizedR > 0 ? '+' : '';
-      const expSign = m.expectancyR > 0 ? '+' : '';
+      const grossSign = m.totalRealizedR > 0 ? '+' : '';
+      const netSign = m.totalNetRealizedR > 0 ? '+' : '';
+      const expSign = m.netExpectancyR > 0 ? '+' : '';
       lines.push(
         m.groupKey.slice(0, 36).padEnd(38) +
         String(m.totalTrades).padStart(6) +
-        String(m.tpCount).padStart(5) +
-        String(m.slCount).padStart(5) +
-        String(m.beCount).padStart(5) +
+        String(m.tpCount).padStart(4) +
+        String(m.slCount).padStart(4) +
         `${m.winRatePct.toFixed(1)}%`.padStart(8) +
-        `${sign}${m.totalRealizedR.toFixed(1)}R`.padStart(9) +
-        `${expSign}${m.expectancyR.toFixed(2)}R`.padStart(8)
+        `${grossSign}${m.totalRealizedR.toFixed(1)}R`.padStart(9) +
+        `-${m.avgCostR.toFixed(2)}R`.padStart(8) +
+        `${netSign}${m.totalNetRealizedR.toFixed(1)}R`.padStart(9) +
+        `${expSign}${m.netExpectancyR.toFixed(2)}R`.padStart(9)
       );
     }
     lines.push('');
   };
 
+  renderTable('A. MAKRO VE SMC AYRI KATKI ANALİZİ (Ablasyon: SMC-Only vs. Makro+SMC)', summary.byMacroContribution);
+  renderTable('B. VARLIK SINIFI AYRIMI (Forex ve Kripto Ayrı Ölçüm)', summary.byAssetClass);
+  renderTable('C. TAHMİN UFKU VE TAŞINMA VADESİNE GÖRE PERFORMANS', summary.byForecastHorizon);
+  renderTable('D. İCRA KAYNAĞINA GÖRE PERFORMANS (Paper vs. Live)', summary.byExecutionSource);
   renderTable('1. MAKRO PİYASA REJİMLERİNE GÖRE PERFORMANS', summary.byRegime);
   renderTable('2. VIX OYNAKLIK SEVİYELERİNE GÖRE PERFORMANS', summary.byVixBucket);
   renderTable('3. BEGONYA PUAN VE TIER KALİTESİNE GÖRE PERFORMANS', summary.byScoreTier);
@@ -279,6 +381,6 @@ export function formatMacroOutcomeReport(summary: MacroOutcomeReportSummary): st
   renderTable('6. KRİPTO SEKTÖRLERİNE GÖRE PERFORMANS', summary.byCryptoSector);
   renderTable('7. ENSTRÜMAN VE YÖNLERE GÖRE PERFORMANS', summary.bySymbolDirection);
 
-  lines.push('═══════════════════════════════════════════════════════════════════════════════════');
+  lines.push('═══════════════════════════════════════════════════════════════════════════════════════════════');
   return lines.join('\n');
 }
