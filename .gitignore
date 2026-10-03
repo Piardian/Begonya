@@ -12,6 +12,7 @@
 orchestrator/*.lock
 smc_engine/data/*.lock
 macro_engine/gateways/calendar_cache.json
+macro_engine/data/cache/
 
 
 # Python Bytecode & Cache

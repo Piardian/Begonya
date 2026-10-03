@@ -60,7 +60,10 @@ class MacroEventScheduler:
             logger.warning(f"State dosyası okunamadı: {e}")
         return {
             "last_morning_briefing_date": "",
+            "last_london_session_date": "",
+            "last_ny_session_date": "",
             "last_daily_close_date": "",
+            "last_cycle_timestamp": 0.0,
             "executed_news_events": []
         }
 
@@ -87,6 +90,12 @@ class MacroEventScheduler:
                 f"Deterministic Kapılar: XAUUSD={gates.get('XAUUSD')}, "
                 f"EURUSD={gates.get('EURUSD')}, BTC={gates.get('BTC')}"
             )
+            try:
+                state = self._load_state()
+                state["last_cycle_timestamp"] = time.time()
+                self._save_state(state)
+            except Exception:
+                pass
             return True
         except Exception as e:
             logger.error(f"❌ Makro analiz döngüsünde hata: {e}", exc_info=True)
@@ -141,7 +150,27 @@ class MacroEventScheduler:
             "type": "MORNING_BRIEFING"
         })
 
-        # 2. Günlük D1 Kapanış Tetikleyicisi (Her gece 23:55)
+        # 2. Londra Seans Açılışı (10:30 TRT)
+        london_target = now.replace(hour=10, minute=30, second=0, microsecond=0)
+        if state.get("last_london_session_date") == today_str or london_target < now:
+            london_target += datetime.timedelta(days=1)
+        triggers.append({
+            "name": "Londra Seans Açılışı (10:30)",
+            "scheduled_time": london_target,
+            "type": "LONDON_SESSION"
+        })
+
+        # 3. New York Seans Açılışı (16:00 TRT)
+        ny_target = now.replace(hour=16, minute=0, second=0, microsecond=0)
+        if state.get("last_ny_session_date") == today_str or ny_target < now:
+            ny_target += datetime.timedelta(days=1)
+        triggers.append({
+            "name": "New York Seans Açılışı (16:00)",
+            "scheduled_time": ny_target,
+            "type": "NY_SESSION"
+        })
+
+        # 4. Günlük D1 Kapanış Tetikleyicisi (Her gece 23:55)
         d1_target = now.replace(hour=23, minute=55, second=0, microsecond=0)
         if state.get("last_daily_close_date") == today_str or d1_target < now:
             d1_target += datetime.timedelta(days=1)
@@ -151,7 +180,7 @@ class MacroEventScheduler:
             "type": "DAILY_CLOSE"
         })
 
-        # 3. Yüksek Etkili Olaylar (Kırmızı Bayrak)
+        # 5. Yüksek Etkili Olaylar (Kırmızı Bayrak)
         events = self._get_calendar_events_cached(ttl_seconds=300)
         for ev in events:
             title = ev.get('title', 'Ekonomik Olay')
@@ -195,14 +224,38 @@ class MacroEventScheduler:
                     state["last_morning_briefing_date"] = today_str
                     self._save_state(state)
 
-                # 2. Günlük D1 Kapanış Kontrolü (Her gece 23:55 veya sonrası)
+                # 2. Londra Seans Açılışı Kontrolü (10:30 TRT)
+                if ((now.hour == 10 and now.minute >= 30) or (now.hour > 10 and now.hour < 15)) and state.get("last_london_session_date") != today_str:
+                    logger.info(f"🔔 [ZAMANLAYICI TETİKLENDİ] Londra Seans Açılışı (10:30) | Tarih: {today_str}")
+                    self.run_cycle(trigger_source="Londra Seans Açılışı (10:30)")
+                    state = self._load_state()
+                    state["last_london_session_date"] = today_str
+                    self._save_state(state)
+
+                # 3. New York Seans Açılışı Kontrolü (16:00 TRT)
+                if (now.hour >= 16 and now.hour < 23) and state.get("last_ny_session_date") != today_str:
+                    logger.info(f"🔔 [ZAMANLAYICI TETİKLENDİ] New York Seans Açılışı (16:00) | Tarih: {today_str}")
+                    self.run_cycle(trigger_source="New York Seans Açılışı (16:00)")
+                    state = self._load_state()
+                    state["last_ny_session_date"] = today_str
+                    self._save_state(state)
+
+                # 4. Günlük D1 Kapanış Kontrolü (Her gece 23:55 veya sonrası)
                 if (now.hour == 23 and now.minute >= 55) and state.get("last_daily_close_date") != today_str:
                     logger.info(f"🔔 [ZAMANLAYICI TETİKLENDİ] D1 Günlük Bar Kapanışı (23:55) | Tarih: {today_str}")
                     self.run_cycle(trigger_source="D1 Günlük Bar Kapanışı (23:55)")
+                    state = self._load_state()
                     state["last_daily_close_date"] = today_str
                     self._save_state(state)
 
-                # 3. Yüksek Etkili Haber / Olay Tetikleyicileri (Kırmızı Bayrak)
+                # 5. Seans İçi Emniyet Tazelemesi (09:00 - 23:00 arası son analizden bu yana > 4 saat geçtiyse)
+                last_cycle = state.get("last_cycle_timestamp", 0.0)
+                if (now.hour >= 9 and now.hour < 23) and (time.time() - last_cycle > 4 * 3600):
+                    logger.info("🔔 [ZAMANLAYICI TETİKLENDİ] Seans İçi 4 Saatlik Emniyet Tazelemesi")
+                    self.run_cycle(trigger_source="Seans İçi 4 Saatlik Emniyet Tazelemesi")
+                    state = self._load_state()
+
+                # 6. Yüksek Etkili Haber / Olay Tetikleyicileri (Kırmızı Bayrak)
                 events = self._get_calendar_events_cached(ttl_seconds=300)
                 executed_events = set(state.get("executed_news_events", []))
 

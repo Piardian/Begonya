@@ -67,6 +67,14 @@ class MarketDataIngestion:
                 except Exception as nz_err:
                     logger.warning("NZ02Y RBNZ verisi çekilemedi: %s", nz_err)
 
+            if name in ("CA02Y", "GB02Y", "DE02Y", "AU02Y", "NZ02Y"):
+                # Merkez bankası API'si ve önbellek kullanılamadıysa; yfinance'de 404 delisted hatası üretmek yerine güvenli fallback atanır
+                if name in OPTIONAL_MARKET_FIELDS:
+                    logger.info("%s resmi merkez bankası ve önbellek verisi yok; opsiyonel veri atlanıyor.", name)
+                    continue
+                results[name] = self._get_fallback_price(name)
+                continue
+
             # 3. Öncelik: yfinance Web Verisi
             try:
                 t = yf.Ticker(ticker)

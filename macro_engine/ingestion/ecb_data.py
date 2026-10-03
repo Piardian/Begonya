@@ -2,11 +2,17 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import logging
+import os
+from pathlib import Path
 import urllib.parse
 import urllib.request
 from typing import Any, Dict, Optional
 
 from data_quality import DataUnavailableError
+
+logger = logging.getLogger("ECBDataIngestion")
+CACHE_FILE = Path(__file__).parent.parent / "data" / "cache" / "ecb_2y_yield.json"
 
 
 class ECBDataIngestion:
@@ -15,8 +21,33 @@ class ECBDataIngestion:
     SERIES_KEY = "B.U2.EUR.4F.G_N_A.SV_C_YM.SR_2Y"
     ENDPOINT = "https://data-api.ecb.europa.eu/service/data/YC"
 
-    def __init__(self, timeout: int = 8):
+    def __init__(self, timeout: int = 15):
         self.timeout = timeout
+
+    @staticmethod
+    def _save_cache(data: Dict[str, Any]) -> None:
+        try:
+            os.makedirs(CACHE_FILE.parent, exist_ok=True)
+            with open(CACHE_FILE, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        except Exception as err:
+            logger.warning("ECB önbellek dosyası yazılamadı: %s", err)
+
+    @staticmethod
+    def _load_cache(as_of: dt.datetime) -> Optional[Dict[str, Any]]:
+        try:
+            if CACHE_FILE.exists():
+                with open(CACHE_FILE, "r", encoding="utf-8") as f:
+                    cached = json.load(f)
+                if isinstance(cached, dict) and "value" in cached:
+                    cached = dict(cached)
+                    cached["source"] = f"{cached.get('source', 'ECB Data Portal')} [Cached Fallback]"
+                    cached["status"] = "AVAILABLE"
+                    cached["fallback_used"] = False
+                    return cached
+        except Exception as err:
+            logger.warning("ECB önbellek dosyası okunamadı: %s", err)
+        return None
 
     def fetch_2y_yield(
         self,
@@ -36,6 +67,13 @@ class ECBDataIngestion:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 payload = json.loads(resp.read().decode("utf-8"))
         except Exception as exc:
+            cached = self._load_cache(as_of)
+            if cached:
+                logger.info(
+                    "ECB API erişiminde gecikme (%s); yerel disk önbelleğindeki son ECB verisi kullanılıyor (Tarih: %s, Değer: %s)",
+                    exc, cached.get("observation_date"), cached.get("value")
+                )
+                return cached
             raise DataUnavailableError(
                 f"ECB 2Y yield request failed: {exc}"
             ) from None
@@ -72,7 +110,7 @@ class ECBDataIngestion:
         history_close = [r[1] for r in completed]
         pct_rank_60d = round((sum(1 for x in history_close if x <= value) / len(history_close)) * 100, 1) if history_close else 50.0
 
-        return {
+        res = {
             "value": round(value, 4),
             "prev": round(prev_val, 4),
             "val_5d_ago": round(val_5d_ago, 4),
@@ -87,3 +125,5 @@ class ECBDataIngestion:
             "status": "AVAILABLE",
             "fallback_used": False,
         }
+        self._save_cache(res)
+        return res
