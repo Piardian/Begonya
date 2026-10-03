@@ -135,7 +135,7 @@ describe('MacroOutcomeEvidence & Snapshot Capture', () => {
     const store = new FileMacroOutcomeStore(testFilePath);
 
     const record: MacroOutcomeEvidenceRecord = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       signalId: 'sig_test_101',
       symbol: 'BTCUSD',
       direction: 'long',
@@ -188,6 +188,7 @@ describe('MacroOutcomeEvidence & Snapshot Capture', () => {
         minutesToNewsEvent: null,
         newsFreezeActive: false,
         isCrypto: true,
+        pointInTimeVerified: true,
         cryptoRotation: {
           coin: 'BTC',
           sector: 'CORE_RESERVE',
@@ -201,7 +202,26 @@ describe('MacroOutcomeEvidence & Snapshot Capture', () => {
           btcDominancePct: 56.4,
         },
       },
+      executionSource: 'PAPER',
+      entryConfirmed: true,
+      fillModel: 'STRICT_BID_ASK',
+      spreadCostR: 0.015,
+      slippageCostR: 0.02,
+      commissionCostR: 0.05,
+      totalCostR: 0.085,
+      netRealizedR: 1.915,
+      assetClass: 'CRYPTO',
+      exAnteForecastHorizon: 'SCALP_INTRADAY',
+      realizedHoldingDuration: 'SCALP_INTRADAY',
+      macroGatingCohort: 'MACRO_APPROVED',
+      macroDecisionAtSignal: 'PROCEED',
+      signalGeneratedAt: new Date(1700000000000).toISOString(),
+      candleClosedAt: new Date(1700000000000).toISOString(),
+      entryTriggeredAt: new Date(1700000900000).toISOString(),
+      exitOccurredAt: new Date(1700005400000).toISOString(),
       recordedAt: new Date().toISOString(),
+      pipelineLatencyMs: 120,
+      decisionEngineVersion: 'v2.1.0',
     };
 
     await store.appendRecord(record);
@@ -210,6 +230,8 @@ describe('MacroOutcomeEvidence & Snapshot Capture', () => {
     expect(loaded).toHaveLength(1);
     expect(loaded[0].signalId).toBe('sig_test_101');
     expect(loaded[0].outcome).toBe('TP');
+    expect(loaded[0].schemaVersion).toBe(2);
+    expect(loaded[0].entryConfirmed).toBe(true);
     expect(loaded[0].macroSnapshot.vixLevel).toBe(14.8);
     expect(loaded[0].macroSnapshot.cryptoRotation?.derivativesRegime).toBe('HEALTHY_ACCUMULATION');
   });

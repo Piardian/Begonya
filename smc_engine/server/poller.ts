@@ -146,6 +146,12 @@ export async function pollAndProcess(
             console.log(`[Begonya Score: ${macroGate.begonyaScore}/100 - ${macroGate.scoreTier}] [Signal: ${signalId}] ${symbol} ${candidate.tradeDirection.toUpperCase()} -> ${macroGate.gateStatusMessage}`);
             if (!macroGate.allowed) {
               console.log(`[Signal: ${signalId}] 🛑 SUPPRESSED BY BEGONYA MACRO GATE: ${macroGate.gateStatusMessage}`);
+              try {
+                // Causal Counterfactual Shadow Tracking: Register blocked candidate to track what would have happened
+                PaperOutcomeTracker.getInstance().registerCandidate(candidate, undefined, { isShadowCounterfactual: true });
+              } catch (trackerErr) {
+                console.warn(`[PaperOutcomeTracker] Shadow registration failed for ${signalId}:`, trackerErr);
+              }
               for (const k of pendingKeys) {
                 notifiedStore.clearPending(k);
               }

@@ -14,10 +14,12 @@ import {
   MacroOutcomeEvidenceRecord,
   MacroOutcomeStore,
   MacroSnapshot,
-  estimateTransactionCost,
+  estimateDynamicTransactionCost,
+  ForecastHorizonType,
+  MacroGatingCohortType,
 } from './macroOutcomeEvidence';
 
-export type PaperOutcomeType = 'TP' | 'SL' | 'BE' | 'EXPIRED' | 'UNKNOWN';
+export type PaperOutcomeType = 'TP' | 'SL' | 'BE' | 'EXPIRED' | 'CANCELLED' | 'UNKNOWN';
 type Direction = NotificationCandidate['tradeDirection'];
 
 export interface TrackedSignal {
@@ -47,6 +49,14 @@ export interface TrackedSignal {
   outcome?: PaperOutcomeType;
   exitTimestamp?: number;
   exitReason?: string;
+
+  // Measurement & Provenance extensions
+  exAnteForecastHorizon: ForecastHorizonType;
+  macroGatingCohort: MacroGatingCohortType;
+  macroDecisionAtSignal: 'PROCEED' | 'WAIT' | 'BLOCK';
+  isShadowCounterfactual: boolean;
+  ambiguousIntracandleConflict: boolean;
+  signalGeneratedAt: string;
 }
 
 interface TrackerState {
@@ -82,16 +92,13 @@ export function calculateAssetCalibratedStopBuffer(symbol: string, zoneLow: numb
       return 2.5 * 0.01; // 2.5 pips
     case 'COMMODITY':
       if (upper.startsWith('XAU')) {
-        // Gold: minimum $1.50 (15 pips) or 10% of zone width to absorb broker spread spikes
         return Math.max(1.50, zoneWidth * 0.10);
       }
       return Math.max(0.15, zoneWidth * 0.10);
     case 'INDEX':
-      // NAS100 / SPX: minimum 10.0 points or 10% of zone
       return Math.max(10.0, zoneWidth * 0.10);
     case 'CRYPTO':
       if (upper.startsWith('BTC')) {
-        // BTC: minimum $35.0 buffer or 10% of zone
         return Math.max(35.0, zoneWidth * 0.10);
       }
       if (upper.startsWith('ETH')) {
@@ -100,7 +107,6 @@ export function calculateAssetCalibratedStopBuffer(symbol: string, zoneLow: numb
       if (upper.startsWith('SOL')) {
         return Math.max(0.35, zoneWidth * 0.10);
       }
-      // Altcoins: 10% of zone width or 5 minimum pip units
       return Math.max(getPipSize(symbol) * 5, zoneWidth * 0.10);
     default:
       return 2.0 * getPipSize(symbol);
@@ -114,11 +120,26 @@ export function isSliceThroughCandle(
   zoneHigh: number
 ): boolean {
   if (direction === 'long') {
-    // Slices down completely through support zone without rejection
     return candle.open > zoneLow && candle.close < zoneLow;
   } else {
-    // Slices up completely through resistance zone without rejection
     return candle.open < zoneHigh && candle.close > zoneHigh;
+  }
+}
+
+export function touchesZoneWithSpread(
+  candle: StoredCandle,
+  zoneLow: number,
+  zoneHigh: number,
+  direction: Direction,
+  symbol: string
+): boolean {
+  const pip = getPipSize(symbol);
+  // Spread buffer: Long entry needs Ask <= zoneHigh (Bid <= zoneHigh - spread)
+  const spreadDist = pip * 1.0;
+  if (direction === 'long') {
+    return candle.low + spreadDist <= zoneHigh && candle.high >= zoneLow;
+  } else {
+    return candle.high - spreadDist >= zoneLow && candle.low <= zoneHigh;
   }
 }
 
@@ -168,7 +189,11 @@ export class PaperOutcomeTracker {
     PaperOutcomeTracker.instance = null;
   }
 
-  registerCandidate(candidate: NotificationCandidate, macroSnapshot?: MacroSnapshot): void {
+  registerCandidate(
+    candidate: NotificationCandidate,
+    macroSnapshot?: MacroSnapshot,
+    options?: { readonly isShadowCounterfactual?: boolean }
+  ): void {
     const signalId = candidate.signalId ?? candidate.uniqueKey;
     const existing = this.state.signals[signalId];
     if (existing && existing.status !== 'CLOSED') return;
@@ -180,6 +205,15 @@ export class PaperOutcomeTracker {
     const signalTimestamp = candidate.marketDataTimestamp ?? candidate.signalContext?.timestamp ?? Date.now();
 
     const snapshot = macroSnapshot ?? captureMacroSnapshot(candidate, signalTimestamp);
+
+    // Ex-ante forecast horizon determined from timeframe structure at signal emission (NOT ex-post holding time)
+    const exAnteForecastHorizon: ForecastHorizonType = 'SCALP_INTRADAY';
+
+    const isShadow = options?.isShadowCounterfactual ?? (snapshot.macroAction !== 'PROCEED');
+    const macroGatingCohort: MacroGatingCohortType = snapshot.macroAction === 'PROCEED'
+      ? 'MACRO_APPROVED'
+      : 'MACRO_BLOCKED';
+    const macroDecisionAtSignal = snapshot.macroAction === 'PROCEED' ? 'PROCEED' : 'BLOCK';
 
     this.state.signals[signalId] = {
       signalId,
@@ -205,10 +239,16 @@ export class PaperOutcomeTracker {
       maximumFavorableExcursion: 0,
       maximumAdverseExcursion: 0,
       status: 'WAITING_ENTRY',
+      exAnteForecastHorizon,
+      macroGatingCohort,
+      macroDecisionAtSignal,
+      isShadowCounterfactual: isShadow,
+      ambiguousIntracandleConflict: false,
+      signalGeneratedAt: new Date(signalTimestamp).toISOString(),
     };
     this.persist();
 
-    // Ensure Signal Ledger records base SIGNAL_ISSUED so lifecycle is cleanly initiated
+    // Record base SIGNAL_ISSUED
     void this.signalLedger.ensureSignalIssued({
       signalId,
       symbol: candidate.symbol,
@@ -278,15 +318,16 @@ export class PaperOutcomeTracker {
         return { changed: true, closed: true };
       }
 
-      if (!touchesZone(candle, signal.zoneLow, signal.zoneHigh)) {
+      if (!touchesZoneWithSpread(candle, signal.zoneLow, signal.zoneHigh, signal.direction, signal.symbol)) {
         return { changed: false, closed: false };
       }
 
-      // Approach Velocity & Rejection Guard: Check if the candle sliced completely through the zone
+      // Approach Velocity Guard: If candle sliced through without entry confirmation, order was never filled!
+      // Must NOT record a filled -1R loss for an unfilled/cancelled setup.
       if (isSliceThroughCandle(signal.direction, candle, signal.zoneLow, signal.zoneHigh)) {
         this.close(
           signal,
-          'SL',
+          'CANCELLED',
           candle.timestamp,
           'Entry zone sliced through aggressively on entry candle without structural rejection (Approach Velocity breach).'
         );
@@ -294,7 +335,6 @@ export class PaperOutcomeTracker {
       }
 
       const entryPrice = resolveEntryPrice(signal.direction, signal.zoneLow, signal.zoneHigh, candle.open);
-      // Asset-calibrated dynamic stop buffer
       const buffer = calculateAssetCalibratedStopBuffer(signal.symbol, signal.zoneLow, signal.zoneHigh);
       const stopLoss = signal.direction === 'long' ? signal.zoneLow - buffer : signal.zoneHigh + buffer;
       const riskDistance = Math.abs(entryPrice - stopLoss);
@@ -304,7 +344,6 @@ export class PaperOutcomeTracker {
         return { changed: true, closed: true };
       }
 
-      // Dynamic Target based on Liquidity Magnet / Opposing Obstacle (Strictly minimum 2.0R, max 5.0R)
       const targetSelection = selectPaperTarget({
         entryPrice,
         stopLossPrice: stopLoss,
@@ -314,7 +353,6 @@ export class PaperOutcomeTracker {
         opposingObstacle: signal.opposingObstacle,
       });
 
-      // Strict user rule: "ama burda yinede minimum 2 r olsun hedef"
       const targetR = Math.max(2.0, Math.min(5.0, targetSelection.targetR));
       const takeProfit = signal.direction === 'long'
         ? entryPrice + riskDistance * targetR
@@ -328,13 +366,22 @@ export class PaperOutcomeTracker {
       signal.entryTriggeredAt = candle.timestamp;
       signal.status = 'OPEN';
 
+      const initialCosts = estimateDynamicTransactionCost({
+        symbol: signal.symbol,
+        riskDistance,
+        entryPrice,
+        vixLevel: signal.macroSnapshot?.vixLevel,
+        newsFreezeActive: signal.macroSnapshot?.newsFreezeActive,
+        minutesToNewsEvent: signal.macroSnapshot?.minutesToNewsEvent,
+      });
+
       void this.signalLedger.recordEntry(signal.signalId, {
         executionSource: 'PAPER',
         entryTimestamp: candle.timestamp,
         entryPrice,
         brokerOrderId: null,
         positionId: null,
-        slippageBps: 0,
+        slippageBps: initialCosts.slippageBps,
       }).catch(err => {
         console.warn(`[PaperOutcomeTracker] Ledger recordEntry failed for ${signal.signalId}:`, err);
       });
@@ -385,17 +432,59 @@ export class PaperOutcomeTracker {
     signal.exitTimestamp = timestamp;
     signal.exitReason = reason;
 
+    const isFilledTrade = signal.entryTriggeredAt !== null;
     const exitPrice = resolveSyntheticExitPrice(signal, outcome);
     const targetMultiplier = signal.targetR ?? this.config.riskReward;
-    const rrAchieved = outcome === 'TP' ? targetMultiplier : outcome === 'SL' ? -1 : outcome === 'BE' ? 0 : null;
-    const holdingTimeMs = signal.entryTriggeredAt === null ? null : Math.max(0, timestamp - signal.entryTriggeredAt);
 
-    // 1. Durably update Signal Ledger if applicable
-    if (signal.entryTriggeredAt !== null) {
+    // Realized R only exists for filled trades!
+    const rrAchieved = isFilledTrade
+      ? (outcome === 'TP' ? targetMultiplier : outcome === 'SL' ? -1 : outcome === 'BE' ? 0 : null)
+      : null;
+
+    const holdingTimeMs = isFilledTrade ? Math.max(0, timestamp - signal.entryTriggeredAt!) : null;
+
+    // Realized holding duration ex-post
+    let realizedHoldingDuration: ForecastHorizonType | undefined;
+    if (holdingTimeMs !== null) {
+      realizedHoldingDuration = holdingTimeMs < 4 * 3600 * 1000
+        ? 'SCALP_INTRADAY'
+        : (holdingTimeMs <= 24 * 3600 * 1000 ? 'SWING_4H_24H' : 'MULTI_DAY');
+    }
+
+    // Dynamic cost calculation (costs only apply to filled trades)
+    const snapshot = signal.macroSnapshot ?? createFallbackMacroSnapshot(signal.symbol, signal.direction, signal.signalTimestamp);
+    const dynamicCosts = isFilledTrade
+      ? estimateDynamicTransactionCost({
+          symbol: signal.symbol,
+          riskDistance: signal.riskDistance ?? 0,
+          entryPrice: signal.entryPrice,
+          vixLevel: snapshot.vixLevel,
+          newsFreezeActive: snapshot.newsFreezeActive,
+          minutesToNewsEvent: snapshot.minutesToNewsEvent,
+        })
+      : {
+          spreadDistance: 0,
+          slippageDistance: 0,
+          commissionDistance: 0,
+          spreadCostR: 0,
+          slippageCostR: 0,
+          commissionCostR: 0,
+          totalCostR: 0,
+          slippageBps: 0,
+          spreadPips: 0,
+        };
+
+    const netRealizedR = rrAchieved !== null
+      ? Math.round((rrAchieved - dynamicCosts.totalCostR) * 100) / 100
+      : null;
+
+    // 1. Durably update Signal Ledger
+    if (isFilledTrade) {
       const exitOutcome = outcome === 'TP' ? 'TAKE_PROFIT'
         : outcome === 'SL' ? 'STOP_LOSS'
         : outcome === 'BE' ? 'BREAK_EVEN'
         : outcome === 'EXPIRED' ? 'EXPIRED'
+        : outcome === 'CANCELLED' ? 'CANCELLED'
         : 'UNKNOWN';
 
       void this.signalLedger.recordExit(signal.signalId, {
@@ -405,7 +494,7 @@ export class PaperOutcomeTracker {
         outcome: exitOutcome,
         realizedR: rrAchieved,
         holdingTimeMs,
-        slippageBps: 0,
+        slippageBps: dynamicCosts.slippageBps,
       }).catch(err => {
         console.warn(`[PaperOutcomeTracker] Ledger recordExit failed for ${signal.signalId}:`, err);
       });
@@ -415,23 +504,13 @@ export class PaperOutcomeTracker {
       });
     }
 
-    // 2. Append enriched Macro Outcome Evidence Record with transaction costs and source tagging
-    const snapshot = signal.macroSnapshot ?? createFallbackMacroSnapshot(signal.symbol, signal.direction, signal.signalTimestamp);
-    const costs = estimateTransactionCost(signal.symbol, signal.riskDistance ?? 0, signal.entryPrice);
-    const netRealizedR = rrAchieved !== null ? Math.round((rrAchieved - costs.totalCostR) * 100) / 100 : null;
-    const assetClass = detectAssetClass(signal.symbol);
-    const forecastHorizon = holdingTimeMs === null || holdingTimeMs < 4 * 3600 * 1000
-      ? 'SCALP_INTRADAY'
-      : (holdingTimeMs <= 24 * 3600 * 1000 ? 'SWING_4H_24H' : 'MULTI_DAY');
-    const macroGatingCohort = snapshot.macroAction === 'PROCEED'
-      ? 'MACRO_PLUS_SMC'
-      : 'SMC_ONLY';
-    const executionSource = process.env.NODE_ENV === 'test'
+    // 2. Append enriched Macro Outcome Evidence Record (Schema v2)
+    const executionSource: 'TEST' | 'PAPER' | 'LIVE' = process.env.NODE_ENV === 'test'
       ? 'TEST'
       : (process.env.EXECUTION_SOURCE === 'LIVE' ? 'LIVE' : 'PAPER');
 
     const macroOutcomeRecord: MacroOutcomeEvidenceRecord = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       signalId: signal.signalId,
       symbol: signal.symbol,
       direction: signal.direction,
@@ -453,15 +532,29 @@ export class PaperOutcomeTracker {
       maximumAdverseExcursion: signal.maximumAdverseExcursion,
       exitReason: reason,
       macroSnapshot: snapshot,
-      recordedAt: new Date(timestamp).toISOString(),
+
       executionSource,
-      entryConfirmed: signal.entryTriggeredAt !== null,
-      spreadCostR: costs.spreadCostR,
-      slippageCostR: costs.slippageCostR,
+      entryConfirmed: isFilledTrade,
+      fillModel: 'STRICT_BID_ASK',
+      spreadCostR: dynamicCosts.spreadCostR,
+      slippageCostR: dynamicCosts.slippageCostR,
+      commissionCostR: dynamicCosts.commissionCostR,
+      totalCostR: dynamicCosts.totalCostR,
       netRealizedR,
-      assetClass,
-      forecastHorizon,
-      macroGatingCohort,
+      assetClass: detectAssetClass(signal.symbol),
+      exAnteForecastHorizon: signal.exAnteForecastHorizon ?? 'SCALP_INTRADAY',
+      realizedHoldingDuration,
+      macroGatingCohort: signal.macroGatingCohort ?? 'SMC_ONLY',
+      macroDecisionAtSignal: signal.macroDecisionAtSignal ?? 'PROCEED',
+
+      signalGeneratedAt: signal.signalGeneratedAt ?? new Date(signal.signalTimestamp).toISOString(),
+      candleClosedAt: new Date(signal.signalTimestamp).toISOString(),
+      entryTriggeredAt: signal.entryTriggeredAt ? new Date(signal.entryTriggeredAt).toISOString() : null,
+      exitOccurredAt: new Date(timestamp).toISOString(),
+      recordedAt: new Date().toISOString(),
+      pipelineLatencyMs: 0,
+      decisionEngineVersion: 'v2.1.0',
+      ambiguousIntracandleConflict: signal.ambiguousIntracandleConflict,
     };
 
     void this.macroOutcomeStore.appendRecord(macroOutcomeRecord).catch(error => {
@@ -474,7 +567,7 @@ export class PaperOutcomeTracker {
       signalId: signal.signalId,
       appendedAt: new Date(timestamp).toISOString(),
       outcome: {
-        type: outcome,
+        type: (outcome === 'CANCELLED' ? 'UNKNOWN' : outcome) as any,
         holdingTimeMs,
         rrAchieved,
         maximumFavorableExcursion: signal.maximumFavorableExcursion,
@@ -489,12 +582,18 @@ export class PaperOutcomeTracker {
 
   private loadState(): TrackerState {
     try {
-      const parsed = JSON.parse(fs.readFileSync(this.statePath, 'utf8')) as TrackerState;
-      if (parsed.version === 1 && parsed.signals && typeof parsed.signals === 'object') return parsed;
+      if (!fs.existsSync(this.statePath)) {
+        return { version: 1, signals: {} };
+      }
+      const raw = fs.readFileSync(this.statePath, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && parsed.signals) {
+        return parsed as TrackerState;
+      }
+      return { version: 1, signals: {} };
     } catch {
-      // Missing/corrupt ledger starts empty; runtime remains operational.
+      return { version: 1, signals: {} };
     }
-    return { version: 1, signals: {} };
   }
 
   private persist(): void {
@@ -509,10 +608,6 @@ export class PaperOutcomeTracker {
       try { fs.unlinkSync(temp); } catch {}
     }
   }
-}
-
-function touchesZone(candle: StoredCandle, zoneLow: number, zoneHigh: number): boolean {
-  return candle.high >= zoneLow && candle.low <= zoneHigh;
 }
 
 function resolveEntryPrice(direction: Direction, zoneLow: number, zoneHigh: number, candleOpen: number): number {
@@ -538,7 +633,7 @@ function evaluateOpenCandle(
   candle: StoredCandle,
   entryCandle: boolean,
   config: PaperOutcomeTrackerConfig,
-): { type: PaperOutcomeType; reason: string } | null {
+): { type: PaperOutcomeType; reason: string; ambiguousConflict?: boolean } | null {
   if (signal.entryPrice === null || signal.stopLoss === null || signal.takeProfit === null) return null;
 
   const hitsTP = signal.direction === 'long' ? candle.high >= signal.takeProfit : candle.low <= signal.takeProfit;
@@ -546,7 +641,13 @@ function evaluateOpenCandle(
   const hitsBE = signal.beArmed && (signal.direction === 'long' ? candle.low <= signal.entryPrice : candle.high >= signal.entryPrice);
 
   if (hitsTP && hitsSL) {
-    return { type: 'UNKNOWN', reason: 'TP and SL were both inside the same OHLC candle; execution order is unknowable from candle data alone.' };
+    // Institutional conservative execution rule: SL assumed hit first during high-volatility intra-candle whipsaw
+    signal.ambiguousIntracandleConflict = true;
+    return {
+      type: signal.beArmed ? 'BE' : 'SL',
+      reason: 'Intra-candle conflict: TP and SL both within candle range. Applied conservative worst-case stop execution.',
+      ambiguousConflict: true,
+    };
   }
   if (hitsTP) return { type: 'TP', reason: `Synthetic take-profit reached at ${signal.targetR ?? config.riskReward}R (Liquidity Target).` };
   if (hitsSL) return { type: signal.beArmed ? 'BE' : 'SL', reason: signal.beArmed ? 'Break-even stop was hit after the BE threshold was armed.' : 'Synthetic stop-loss reached before break-even activation.' };

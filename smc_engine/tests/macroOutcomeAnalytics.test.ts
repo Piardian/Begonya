@@ -59,7 +59,7 @@ describe('MacroOutcomeAnalytics', () => {
     realizedR: number,
     snapshotOverrides?: any
   ): MacroOutcomeEvidenceRecord => ({
-    schemaVersion: 1,
+    schemaVersion: 2,
     signalId: id,
     symbol: 'BTCUSD',
     direction: 'long',
@@ -81,7 +81,26 @@ describe('MacroOutcomeAnalytics', () => {
     maximumAdverseExcursion: outcome === 'SL' ? 1.0 : 0.3,
     exitReason: `Test outcome ${outcome}`,
     macroSnapshot: dummySnapshot(snapshotOverrides),
+    executionSource: 'PAPER',
+    entryConfirmed: true,
+    fillModel: 'STRICT_BID_ASK',
+    spreadCostR: 0.05,
+    slippageCostR: 0.05,
+    commissionCostR: 0.01,
+    totalCostR: 0.11,
+    netRealizedR: realizedR - 0.11,
+    assetClass: 'CRYPTO',
+    exAnteForecastHorizon: 'SCALP_INTRADAY',
+    realizedHoldingDuration: 'SCALP_INTRADAY',
+    macroGatingCohort: 'MACRO_APPROVED',
+    macroDecisionAtSignal: 'PROCEED',
+    signalGeneratedAt: '2026-10-01T12:00:00.000Z',
+    candleClosedAt: '2026-10-01T12:00:00.000Z',
+    entryTriggeredAt: '2026-10-01T12:15:00.000Z',
+    exitOccurredAt: '2026-10-01T13:15:00.000Z',
     recordedAt: '2026-10-01T13:00:00.000Z',
+    pipelineLatencyMs: 50,
+    decisionEngineVersion: 'v2.1.0',
   });
 
   test('computes metrics on empty list gracefully', () => {
@@ -149,8 +168,8 @@ describe('MacroOutcomeAnalytics', () => {
     const records = [dummyRecord('t1', 'TP', 2.0)];
     const analytics = generateMacroOutcomeAnalytics(records);
     const report = formatMacroOutcomeReport(analytics);
-    expect(report).toContain('BEGONYA MAKRO-SMC GERÇEK SONUÇ & KANIT RAPORU');
-    expect(report).toContain('TOPLAM KAPALI İŞLEM : 1');
+    expect(report).toContain('BEGONYA MAKRO-SMC DOĞRULANMIŞ İCRA VE NEDENSEL KANIT RAPORU');
+    expect(report).toContain('GERÇEKLEŞEN İŞLEM (Fill): 1');
     expect(report).toContain('MAKRO PİYASA REJİMLERİNE GÖRE PERFORMANS');
   });
 
@@ -160,25 +179,29 @@ describe('MacroOutcomeAnalytics', () => {
         ...dummyRecord('fx1', 'TP', 2.0),
         symbol: 'EURUSD',
         assetClass: 'FOREX',
-        macroGatingCohort: 'MACRO_PLUS_SMC',
-        forecastHorizon: 'SCALP_INTRADAY',
+        macroGatingCohort: 'MACRO_APPROVED',
+        exAnteForecastHorizon: 'SCALP_INTRADAY',
         executionSource: 'PAPER',
         entryConfirmed: true,
         spreadCostR: 0.08,
         slippageCostR: 0.02,
-        netRealizedR: 1.90,
+        commissionCostR: 0.01,
+        totalCostR: 0.11,
+        netRealizedR: 1.89,
       },
       {
         ...dummyRecord('crypto1', 'SL', -1.0),
         symbol: 'BTCUSD',
         assetClass: 'CRYPTO',
-        macroGatingCohort: 'SMC_ONLY',
-        forecastHorizon: 'SWING_4H_24H',
+        macroGatingCohort: 'MACRO_BLOCKED',
+        exAnteForecastHorizon: 'SWING_4H_24H',
         executionSource: 'LIVE',
         entryConfirmed: true,
         spreadCostR: 0.04,
         slippageCostR: 0.05,
-        netRealizedR: -1.09,
+        commissionCostR: 0.02,
+        totalCostR: 0.11,
+        netRealizedR: -1.11,
       },
     ];
 
@@ -186,9 +209,9 @@ describe('MacroOutcomeAnalytics', () => {
 
     // 1. Ablation cohorts
     expect(analytics.byMacroContribution.length).toBeGreaterThanOrEqual(1);
-    const macroPlusSmc = analytics.byMacroContribution.find(c => c.groupKey.startsWith('MACRO_PLUS_SMC'));
-    expect(macroPlusSmc?.totalTrades).toBe(1);
-    expect(macroPlusSmc?.totalNetRealizedR).toBe(1.90);
+    const macroApproved = analytics.byMacroContribution.find(c => c.groupKey.startsWith('MACRO_APPROVED'));
+    expect(macroApproved?.totalTrades).toBe(1);
+    expect(macroApproved?.totalNetRealizedR).toBe(1.89);
 
     // 2. Asset classes strictly segmented
     expect(analytics.byAssetClass.length).toBe(2);
@@ -206,10 +229,36 @@ describe('MacroOutcomeAnalytics', () => {
 
     // 4. Report includes new cost columns and sections
     const report = formatMacroOutcomeReport(analytics);
-    expect(report).toContain('MAKRO VE SMC AYRI KATKI ANALİZİ');
+    expect(report).toContain('NEDENSEL MAKRO ABLASYON ANALİZİ');
     expect(report).toContain('VARLIK SINIFI AYRIMI (Forex ve Kripto Ayrı Ölçüm)');
-    expect(report).toContain('TAHMİN UFKU VE TAŞINMA VADESİNE GÖRE PERFORMANS');
+    expect(report).toContain('EX-ANTE TAHMİN UFKUNA GÖRE PERFORMANS');
     expect(report).toContain('Net R');
     expect(report).toContain('Maliyet');
+  });
+
+  test('strictly separates unfilled candidates from filled trades and prevents cost leakage', () => {
+    const records: MacroOutcomeEvidenceRecord[] = [
+      dummyRecord('t1', 'TP', 2.0),
+      {
+        ...dummyRecord('cand_expired', 'EXPIRED', 0),
+        entryConfirmed: false,
+        entryTimestamp: null,
+        entryPrice: null,
+        realizedR: null,
+        netRealizedR: null,
+        spreadCostR: 0,
+        slippageCostR: 0,
+        commissionCostR: 0,
+        totalCostR: 0,
+      },
+    ];
+
+    const metrics = computeGroupMetrics('CANDIDATE_TEST', records);
+    expect(metrics.candidateCount).toBe(2);
+    expect(metrics.filledTradesCount).toBe(1);
+    expect(metrics.fillRatePct).toBe(50.0);
+    expect(metrics.expiredCount).toBe(1);
+    expect(metrics.winRatePct).toBe(100.0); // 1 TP out of 1 filled trade (NOT 50%)
+    expect(metrics.totalNetRealizedR).toBe(1.89); // Only the filled trade's PnL
   });
 });
