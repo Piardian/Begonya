@@ -742,6 +742,36 @@ export class MacroGateAdapter {
       ? CryptoRotationEngine.getInstance().getCoinAssessment(baseCoin, payload)
       : null;
 
+    // D.1) KRİPTO HAFTA SONU LİKİDİTE TUZAĞI VE DÜŞÜK HACİM KALKANI (WEEKEND LIQUIDITY TRAP SHIELD)
+    const isWeekendUtc = (regimeState as any)?.is_weekend_utc !== undefined
+      ? Boolean((regimeState as any).is_weekend_utc)
+      : (payload.timestamp && Math.abs(Date.now() - new Date(payload.timestamp).getTime()) > 24 * 3600 * 1000)
+        ? (new Date(payload.timestamp).getUTCDay() === 0 || new Date(payload.timestamp).getUTCDay() === 6)
+        : (new Date().getUTCDay() === 0 || new Date().getUTCDay() === 6);
+
+    let weekendCryptoPenalty = 1.0;
+    if (candidateLegs.isCrypto && isWeekendUtc) {
+      const cryptoAssessment = coinRotation ?? CryptoRotationEngine.getInstance().getCoinAssessment(baseCoin, payload);
+      const effectiveRvol = cryptoAssessment?.effective_rvol ?? ((regimeState as any)?.btc_rvol ?? 1.0);
+      const rotationScore = cryptoAssessment?.active_rotation_score ?? ((regimeState as any)?.crypto_rotation_score ?? 70);
+
+      if (rotationScore < 75 || effectiveRvol < 1.15) {
+        return this.buildVetoResult(
+          cleanSym,
+          macroKey,
+          tradeDirection,
+          macroBias,
+          regime,
+          capitalPreservation,
+          btcDecoupling,
+          rationale,
+          smcScore,
+          `🛑 VETO [CRYPTO_WEEKEND_LOW_LIQUIDITY]: CME kapalı hafta sonu likidite tuzağı kalkanı devrede! Düşük hacimli hafta sonu piyasasında işlem için RVOL >= 1.15x ve Rotasyon Skoru >= 75 şarttır. (Mevcut RVOL: ${effectiveRvol.toFixed(2)}x, Rotasyon Skoru: ${rotationScore}/100)`
+        );
+      }
+      weekendCryptoPenalty = 0.50;
+    }
+
     if (isAltcoin && coinRotation) {
       if (tradeDirection === 'long') {
         if (coinRotation.veto_reasons_long && coinRotation.veto_reasons_long.length > 0) {
@@ -981,13 +1011,15 @@ export class MacroGateAdapter {
       tierRationale = 'Zayıf Kurulum (Pas Geçilmesi Önerilir - 0.15x)';
     }
 
-    // Nihai Risk = Taban SMC Riski * Makro Risk Çarpanı (Örn: 1.00 * 0.25 = 0.25x)
-    const finalRiskMultiplier = Math.round(baseRisk * macroMultiplier * 100) / 100;
-    const gateStatusMessage = coinRotation
+    // Nihai Risk = Taban SMC Riski * Makro Risk Çarpanı * Hafta Sonu Kripto Koruma Çarpanı
+    const effectiveMacroMultiplier = Math.round(macroMultiplier * weekendCryptoPenalty * 100) / 100;
+    const finalRiskMultiplier = Math.round(baseRisk * effectiveMacroMultiplier * 100) / 100;
+    const weekendSuffix = weekendCryptoPenalty < 1.0 ? ' [Hafta Sonu Kripto Koruması: %50 Risk İndirimi]' : '';
+    const gateStatusMessage = (coinRotation
       ? `🌟 ${scoreTier} 8-FAKTÖR ROTASYON & MAKRO ONAYI (Rotasyon: ${coinRotation.active_rotation_score}/100 | ALT/BTC 24s: %${coinRotation.rs_vs_btc_24h_pct.toFixed(2)} | RVOL: ${coinRotation.effective_rvol}x | Türev: ${coinRotation.derivatives_regime}) -> ${finalRiskMultiplier.toFixed(2)}x Lot ile Uygula`
       : mapped?.macro_type === 'SYNTHETIC_CROSS'
         ? `🌟 ${scoreTier} SENTETİK ÇAPRAZ MAKRO ONAYI (${macroResolution.reason}) -> ${finalRiskMultiplier.toFixed(2)}x Lot ile Uygula`
-        : `🌟 ${scoreTier} DOĞRU ORANTILI MAKRO İŞLEM (Skor: ${begonyaScore}/100) -> ${finalRiskMultiplier.toFixed(2)}x Lot (Makro Çarpan: ${macroMultiplier}x) ile Uygula`;
+        : `🌟 ${scoreTier} DOĞRU ORANTILI MAKRO İŞLEM (Skor: ${begonyaScore}/100) -> ${finalRiskMultiplier.toFixed(2)}x Lot (Makro Çarpan: ${effectiveMacroMultiplier}x) ile Uygula`) + weekendSuffix;
 
     return {
       allowed: true,
@@ -1006,7 +1038,7 @@ export class MacroGateAdapter {
       smcTechnicalScore: smcScore,
       begonyaScore,
       scoreTier,
-      tierRationale: `${tierRationale} [Makro Çarpan: ${macroMultiplier}x]`,
+      tierRationale: `${tierRationale} [Makro Çarpan: ${effectiveMacroMultiplier}x${weekendCryptoPenalty < 1.0 ? ', Hafta Sonu Kripto İndirimi 0.50x' : ''}]`,
       ...(coinRotation ? { cryptoRotationAssessment: coinRotation } : {}),
     };
   }

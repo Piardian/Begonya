@@ -214,4 +214,48 @@ describe('8-Factor Crypto Rotation & On-Demand SMC Engine Bridge', () => {
     expect(report.coin_assessments.CHZ.rotation_gate).toBe('NEUTRAL_RANGE');
     expect(report.coin_assessments.CHZ.veto_reasons_long.some(r => r.includes('NO_SECTOR_BREADTH'))).toBe(true);
   });
+
+  it('5. WEEKEND LIQUIDITY TRAP SHIELD: Vetoes low-volume weekend chop (RVOL < 1.15x or Score < 75) and applies 50% risk discount on approved momentum', () => {
+    const snap = buildBaseSnapshot(2.0, 3.6);
+    // SOL with moderate stats (score ~70, rvol 1.05x)
+    setCoin(snap, 'SOL', { chg24: 3.5, chg4: 1.2, rvol: 1.05, oi4: 1.0, oi24: 2.0 });
+    // AI Sector peers so TAO has sector breadth and high momentum (score >= 75, rvol >= 1.5x)
+    setCoin(snap, 'TAO', { chg24: 8.5, chg4: 2.8, rvol: 2.2, oi4: 4.5, oi24: 8.0, fundingPct: 0.012 });
+    setCoin(snap, 'RENDER', { chg24: 7.4, chg4: 2.1, rvol: 2.4, oi4: 3.8, fundingPct: 0.010 });
+    setCoin(snap, 'FET', { chg24: 5.9, chg4: 1.8, rvol: 1.8, oi4: 3.0, fundingPct: 0.011 });
+    setCoin(snap, 'WLD', { chg24: 5.1, chg4: 1.6, rvol: 1.5, oi4: 2.2, fundingPct: 0.009 });
+    setCoin(snap, 'ARKM', { chg24: 4.6, chg4: 1.5, rvol: 1.4, oi4: 2.0, fundingPct: 0.008 });
+
+    const report = evaluateCryptoRotationSnapshot(snap, 'LONG_ONLY');
+
+    const weekendPayload: MacroGatePayload = {
+      timestamp: '2026-10-04 12:00:00',
+      primary_regime: 'Bullish Expansion',
+      volatility_risk_score: 0.30,
+      capital_preservation_mode: false,
+      btc_decoupling_active: false,
+      recommended_risk_multiplier: 1.0,
+      execution_bias_gates: { BTC: 'LONG_ONLY' },
+      regime_state: {
+        is_weekend_utc: true,
+      },
+      crypto_rotation: report,
+    };
+    fs.writeFileSync(sharedGatePath, JSON.stringify(weekendPayload, null, 2), 'utf-8');
+
+    const adapter = MacroGateAdapter.getInstance();
+
+    // A) Moderate SOL should be vetoed because of weekend liquidity trap shield (RVOL < 1.15 or Score < 75)
+    const solEval = adapter.evaluateCandidate('SOLUSD', 'long', 85);
+    expect(solEval.allowed).toBe(false);
+    expect(solEval.action).toBe('VETO');
+    expect(solEval.gateStatusMessage).toContain('CRYPTO_WEEKEND_LOW_LIQUIDITY');
+
+    // B) High momentum TAO should pass with 50% risk discount
+    const taoEval = adapter.evaluateCandidate('TAOUSD', 'long', 90);
+    expect(taoEval.allowed).toBe(true);
+    expect(taoEval.action).toBe('PROCEED');
+    expect(taoEval.riskMultiplier).toBe(0.50);
+    expect(taoEval.gateStatusMessage).toContain('Hafta Sonu Kripto Koruması: %50 Risk İndirimi');
+  });
 });

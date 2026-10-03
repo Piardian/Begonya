@@ -19,16 +19,16 @@ Bu günlük, Telegram sinyalleri ile Begonya makro-kantitatif orkestrasyonunun k
 
 ---
 
-## 📊 24 Sinyallik Begonya Canlı Sistem Karnesi
+## 📊 38 Sinyallik Begonya Canlı Sistem Karnesi
 
 | Kategori | Adet | Oran | Açıklama |
 | :--- | :---: | :---: | :--- |
-| 🎯 **TP / KÂR ALINDI** | **8** | **%33.3** | Realize edilen net kazançlar (ETH, NZDUSD, EURCHF, USDCHF, GBPCHF, GBPUSD, EURUSD, NZDCHF) |
-| ❌ **STOP / LOSS** | **9** | **%37.5** | Stopla kapanan işlemler (SOL #3, ETH #4, USDJPY #5, SOL #9, GBPCHF #12, USDJPY #13, USDCHF #14, ETHUSD #21, CADJPY #22) |
-| 🛡️ **KORUNDU / AVERTED LOSS** | **5** | **%20.8** | BE korunan (SOL #1) ve M1 teyitsiz pas geçilen (LTC #10, BTC #15, SOL #16, LTC #19) |
-| 🔄 **AKTİF / İŞLEMDE** | **1** | **%4.2** | 1M konfirmasyonla açık olan işlem (BTCUSD #23 SAT) |
-| ⏳ **BEKLEMEDE** | **1** | **%4.2** | Retest ve 1M onayı bekleyen kurulum (CADCHF #24 AL) |
-| **TOPLAM** | **24** | **%100** | **Eksiksiz 24 Canlı Begonya Sinyali** |
+| 🎯 **TP / KÂR ALINDI** | **10** | **%26.3** | Realize edilen net kazançlar (ETH, NZDUSD, EURCHF, USDCHF, GBPCHF, GBPUSD, EURUSD, NZDCHF, SEIUSD, USDJPY) |
+| ❌ **STOP / LOSS** | **13** | **%34.2** | Stopla kapanan işlemler (SOL #3, ETH #4, USDJPY #5, SOL #9, GBPCHF #12, USDJPY #13, USDCHF #14, ETHUSD #21, CADJPY #22, BTCUSD #23, BTCUSD #26, CADJPY #29, ETHUSD #35) |
+| 🛡️ **KORUNDU / AVERTED LOSS** | **12** | **%31.6** | BE korunan (SOL #1) ve teyitsiz/mükerrer pas geçilenler (LTC #10, BTC #15, SOL #16, LTC #19, CADCHF #24, BTC #25, USDJPY #30, ADAUSD #34, BTCUSD #36, LTCUSD #37, XRPUSD #38) |
+| 🔄 **AKTİF / İŞLEMDE** | **1** | **%2.6** | 1M konfirmasyonla açık olan işlemler (CADJPY #32 AL) |
+| ⏳ **BEKLEMEDE** | **2** | **%5.3** | Retest ve 1M onayı bekleyen kurulumlar (AUDUSD #31 SAT, EURUSD #33 SAT) |
+| **TOPLAM** | **38** | **%100** | **Eksiksiz 38 Canlı Begonya Sinyali** |
 
 ---
 
@@ -36,11 +36,11 @@ Bu günlük, Telegram sinyalleri ile Begonya makro-kantitatif orkestrasyonunun k
 
 | Metrik | Tutar ($) | R Değeri | Açıklama |
 | :--- | :---: | :---: | :--- |
-| 🟢 **Brüt Kâr (TP & Kısmi)** | **+$14.049,25** | **+18.93 R** | Realize edilen toplam kâr (NZDCHF +5.60 RR / +$4,200 dahil) |
-| 🔴 **Brüt Zarar (Stop)** | **-$5.510,00** | **-6.41 R** | Stop olan 9 işlemin toplam maliyeti (ETHUSD #21 -560$ ve CADJPY #22 -500$ dahil) |
-| 🏆 **NET GELİR (KÂR)** | **+$8.539,25** | **+12.52 R** | **Kasaya Giren Net Kazanç (#1 BE +$325 dahil: +$8.864,25)** |
-| 📈 **Net Portföy Büyümesi** | **~+%8.54** | — | Dinamik makro risk çarpanı disiplini ile |
-| 🛡️ **Averted Loss (Kurtarılan)** | **+$1.690,00** | **+2.01 R** | M1 onayı gelmediği için kurtarılan sermaye (LTC 750$ + BTC 190$ + SOL 190$ + LTC 560$) |
+| 🟢 **Brüt Kâr (TP & Kısmi)** | **+$15.464,25** | **+21.43 R** | Realize edilen toplam kâr (USDJPY 1R %50 TP +$375 dahil) |
+| 🔴 **Brüt Zarar (Stop)** | **-$7.870,00** | **-8.77 R** | Stop olan 13 işlemin toplam maliyeti (BTCUSD #23 -$750 ve CADJPY #29 -$560 dahil) |
+| 🏆 **NET GELİR (KÂR)** | **+$7.594,25** | **+12.66 R** | **Kasaya Giren Net Kazanç (#1 BE +$325 dahil: +$7.919,25)** |
+| 📈 **Net Portföy Büyümesi** | **~+%7.59** | — | Dinamik makro risk çarpanı disiplini ile (#1 dahil: **+%7.92**) |
+| 🛡️ **Averted Loss (Kurtarılan)** | **+$6.745,00** | **+7.19 R** | M1 onayı gelmeyen/mükerrer kutu pas geçme ve BE ile kurtarılan sermaye (LTCUSD #37 +$560 dahil) |
 
 ---
 
@@ -792,40 +792,47 @@ Her yeni canlı Begonya sinyali incelenirken aşağıdaki standart 5+1 şablon �
 
 ---
 
-### 23. [2026-09-25 11:03 TSİ / 08:03 UTC] — BTCUSD (15M Bearish OB - SAT) 🔄 AKTİF İŞLEMDE (750 $ RİSK)
+### 23. [2026-09-25 11:03 TSİ / 08:03 UTC] — BTCUSD (15M Bearish OB - SAT) ❌ STOP (-750.00 $ / -0.75 R)
 - **Kayıt Kodu:** BG-20260925-002
 - **Telegram Girişi:** BTCUSD SAT | Grade A (9/9) | Skor: 98/100 | Makro: SHORT_ONLY | Giriş: 84572.00 - 84881.55 | Anlık: 84043.96 | Stop: 84881.55 üstü
 - **Giriş Bölgesi (POI):** 84572.00 — 84881.55 (15M Bearish OB — 309.55 USD) | **Sinyal Fiyatı:** 84043.96 (528.0 USD / %0.62 aşağıda)
 - **Çarpımsal Begonya Skoru:** SMC: 98 × G_macro: 1.0 = **98 / 100 (Tier A+)** | Önerilen Risk: **0.75x Lot** (750 $)
 - **Hedef (TP / Likidite Mıknatısı):** 80308.4871 (3735.5 pip aşağıdaki 7 dip EQL havuzu) | **Karşı Engel:** 84143.17 - 84275.57 (15M Bullish OB)
+- **Gerçekleşen Sonuç:** ❌ **STOP / LOSS (-750.00 $ / -0.75 R)** — `84572.00 - 84881.55` Bearish OB kutusundan 1M onayıyla açılan short pozisyon, 2 Ekim seansında Bitcoin'in 86,000+ üzerine agresif genişlemesiyle 84881.55 üstü stop seviyesine çarparak kapanmıştır.
 
 #### 🔬 1. SMC Teknik Katmanı & Kurulum Notu
-- **HTF Uyum & P/D Durumu:** 4H ve 1H trendi Aşağı (Bearish). `84572.00 - 84881.55` giriş kutusu 1H ve 15M grafiklerinde tam Pahalı (Premium) bölgenin içinde yer almaktadır; fiyat kutuya geri çekildiğinde üçlü Pahalı (Premium) hizalanması sağlanmıştır.
-- **Tekil Referans Seçimi:** Kutu henüz test edilmediği için tekrarlayan bildirimler arasından en yüksek puanlı (`9/9` ve `98/100 Tier A+`) bu ana kurulum referans seçilmiştir.
+- **HTF Uyum & P/D Durumu:** 4H ve 1H trendi Aşağı (Bearish). `84572.00 - 84881.55` giriş kutusu 1H ve 15M grafiklerinde tam Pahalı (Premium) bölgenin içinde yer almaktaydı.
+- **Tekil Referans Seçimi:** Kutu henüz test edilmediği için tekrarlayan bildirimler arasından en yüksek puanlı (`9/9` ve `98/100 Tier A+`) bu ana kurulum referans seçilerek girilmişti. Ancak HTF'de başlayan alıcı dalgası kutuyu yukarı patlatmıştır.
 
 #### 🌐 2. Makroekonomik Katman & Gating Notu
 - **Birincil Rejim:** *Reflationary Growth with Tight Liquidity* (ICSA: 197K, Bakır/Altın %10.78).
 - **Makro Kapı Durumu:** SHORT_ONLY (G_macro: 1.0) -> **0.75x Lot** (750 $).
 
-#### ⚡ 3. M1 İcra Gerçekliği (Execution Reality)
-- **Durum:** 🔄 **ACTIVE_IN_TRADE (`ACTIVE`)** — Fiyat `84572.00 - 84881.55` Bearish OB kutusuna geri çekilip (retest) 1M onayını vermiş, `0.75x Lot` (`$750` risk) ile SAT pozisyonu açılmıştır ve şu an aktif olarak `80308.49` EQL hedefini beklemektedir.
+#### ⚡ 3. M1 İcra Gerçekliği & Sonuç
+- **Gerçekleşen Sonuç:** ❌ **LOSS (STOP)**
+- **Gerçekleşen R:** **-0.75 R**
+- **Finansal Getiri:** **-750.00 $**
+- **Kategori:** LOSS
+- **Hata / Zafiyet Atfı:** HTF_Expansion_And_Opposing_Bullish_Trend
+- **Kritik Ders:** HTF (4H/1H) seviyesinde yapı yukarı döndüğünde, geçmiş günlerden kalan 15M Bearish OB kutuları trend yönündeki agresif genişlemeye karşı tutunamaz.
 
 #### 📋 Standart 5+1 Doğrulama Anketi
 - **Soru 1 (Kutuya Yaklaşım):** [A] Kutuya retest (84572.00 - 84881.55 bölgesine yükseliş)
 - **Soru 2 (1M Formasyonu):** [A] 1M CHoCH/BOS kırılımı (1M onay alındı)
-- **Soru 3 (Giriş Kararı):** [A] 1M FVG/OB retesti ile giriş
-- **Soru 4 (Sonuç):** [E] Aktif işlemde (`ACTIVE` — 80308.49 EQL hedefi bekleniyor)
-- **Soru 5 (Stop/İptal Nedeni):** — (İşlem açık)
-- **Ekstra (Makro Doğruluk):** SHORT_ONLY makro kapısı ve 98/100 Tier A+ elit skor ile aktif işlemde.
+- **Soru 3 (Giriş Kararı):** [A] 1M FVG/OB retesti ile giriş (0.75x Lot / 750 $)
+- **Soru 4 (Sonuç):** [B] Stop (-0.75 R / -750.00 $)
+- **Soru 5 (Stop/İptal Nedeni):** [A] Kutu tutmadı (BTC'nin 86k üzerine kurumsal ralli genişlemesi)
+- **Ekstra (Makro Doğruluk):** Sinyal anındaki SHORT_ONLY bias'ı yerel düşüş verse de, HTF alıcı genişlemesi stopu tetikledi.
 
 ---
 
-### 24. [2026-09-25 19:17 TSİ / 16:17 UTC] — CADCHF (15M Bullish OB - AL) ⏳ BEKLEMEDE (RETEST BEKLENİYOR)
+### 24. [2026-09-25 19:17 TSİ / 16:17 UTC] — CADCHF (15M Bullish OB - AL) 🛡️ PAS GEÇİLDİ (AVERTED LOSS / +560 $ KORUNDU)
 - **Kayıt Kodu:** BG-20260925-003
 - **Telegram Girişi:** CADCHF AL | Grade A (7/9) | Skor: 82/100 | Makro: LONG | Giriş: 0.58349 - 0.58389 | Anlık: 0.58524 | Stop: 0.58349 altı
 - **Giriş Bölgesi (POI):** 0.58349 — 0.58389 (15M Bullish OB — 4.0 pip) | **Sinyal Fiyatı:** 0.58524 (13.5 pip yukarıda)
 - **Çarpımsal Begonya Skoru:** SMC: 82 × G_macro: 1.0 = **82 / 100 (Tier A)** | Önerilen Risk: **0.56x Lot** (560 $)
 - **Hedef (TP / Likidite Mıknatısı):** 0.5876 (23.6 pip yukarıdaki 5 tepe EQH havuzu) | **Karşı Engel:** 0.5855 - 0.5857 (15M Bearish OB — 16.3 pip yukarıda)
+- **Gerçekleşen Sonuç:** 🛡️ **PAS GEÇİLDİ / AVERTED LOSS (+560 $ Sermaye Korundu)** — Fiyat 0.58349 - 0.58389 Bullish OB kutusuna yaklaşırken 1 dakikalık grafikte (LTF) geçerli alıcı konfirmasyonu (CHoCH / displacement) üretmemiştir. Operatör kural gereği emri tetiklemeyerek pas geçmiş ve 560 $ sermayeyi korumuştur.
 
 #### 🔬 1. SMC Teknik Katmanı & Kurulum Notu
 - **HTF Uyum & P/D Durumu:** 4H Denge, **1H Ucuz ve 15M Ucuz** bölgededir. HTF trendi çift zaman diliminde (4H ve 1H) Yukarı (Bullish) yönlüdür.
@@ -835,15 +842,533 @@ Her yeni canlı Begonya sinyali incelenirken aşağıdaki standart 5+1 şablon �
 - **Birincil Rejim:** *Reflationary Growth with Tight Liquidity* (ICSA: 197K, Bakır/Altın %10.78).
 - **Makro Kapı Durumu:** LONG (`CADCHF LONG_ONLY` Sentetik Çapraz Makro Onayı, G_macro: 1.0) -> **0.56x Lot** (560 $).
 
-#### ⚡ 3. M1 İcra Gerçekliği (Execution Reality)
-- **Durum:** ⏳ **PENDING_RETEST** — Fiyat giriş kutusunun 13.5 pip üzerindedir; kutuya geri çekilme (retest) ve 1M manuel onay beklenmektedir.
+#### ⚡ 3. M1 İcra Gerçekliği & Sonuç
+- **Gerçekleşen Sonuç:** 🛡️ **INVALID_NO_ENTRY (AVERTED LOSS)**
+- **Gerçekleşen R:** **0.00 R (0.56 R Risk Önlendi)**
+- **Finansal Getiri:** **0.00 $ (560.00 $ Sermaye Korundu)**
+- **Kategori:** AVERTED_LOSS
+- **Hata / Zafiyet Atfı:** No_M1_Confirmation_Passed
+- **Kritik Ders:** POI ne kadar temiz olursa olsun, LTF teyit filtresi çalışmadığında pozisyon açmamak kasanın korunmasındaki birincil kalkandır.
 
 #### 📋 Standart 5+1 Doğrulama Anketi
-- **Soru 1 (Kutuya Yaklaşım):** [C] Kutuya ulaşmadı (13.5 pip yukarıda / Beklemede)
+- **Soru 1 (Kutuya Yaklaşım):** [A] Sakin düzeltme ile kutuya iniş
+- **Soru 2 (1M Formasyonu):** [C] Onay yok (LTF alıcı CHoCH/Displacement oluşmadı)
+- **Soru 3 (Giriş Kararı):** [D] Girmedim (Pas — LTF onay vermediği için kural gereği girilmedi)
+- **Soru 4 (Sonuç):** [D] İşlem alınmadı (Averted Loss — 560 $ Korundu)
+- **Soru 5 (Stop/İptal Nedeni):** LTF onay eksikliği
+- **Ekstra (Makro Doğruluk):** Sentetik çapraz makro onayı (`CADCHF LONG_ONLY`) açık olsa da 1M filtresi sermayeyi korudu.
+
+---
+
+### 25. [2026-09-26 18:41 TSİ / 15:41 UTC] — BTCUSD (15M Bearish OB - SAT) 🛡️ ENGELLENEN ZARAR (ÇİZİMSİZ PAS GEÇİLDİ - 750 $ KURTARILDI)
+- **Kayıt Kodu:** BG-20260926-001
+- **Telegram Girişi:** BTCUSD SAT | Grade A+ (9/9) | Skor: 98/100 | Makro: SHORT_ONLY | Giriş: 84103.65 - 84204.88 | Anlık: 84058.49 | Stop: 84204.88 üstü
+- **Giriş Bölgesi (POI):** 84103.65 — 84204.88 (15M Bearish OB — 101.23 USD) | **Sinyal Fiyatı:** 84058.49 (45.2 USD aşağıda)
+- **Çarpımsal Begonya Skoru:** SMC: 98 × G_macro: 1.0 = **98 / 100 (Tier A+)** | Önerilen Risk: **0.75x Lot** (750 $)
+- **Korunan Sermaye:** **+$750.00 (+0.75 R)** (Çizim gelmediği ve üstte ana kutu olduğu için kurtarılan zarar)
+
+#### 🔬 1. SMC Teknik Katmanı & Otopsi Notu
+- **HTF Uyum & P/D Durumu:** 4H ve 1H trendi Aşağı (Bearish). Çift zaman diliminde Pahalı (Premium) bölgededir.
+- **Üstteki Ana Kutu Çarpışması:** Bu sinyaldeki `84103.65 - 84204.88` kutusu, 25 Eylül'deki `84572.00 - 84881.55` ana Tier A+ kutusuna giden yol üzerinde ara bir kutuydu. Fiyat ana kutuya doğru yükseldiği için bu alt kutu delindi.
+- **İcra Disiplini:** Operatör, Telegram'a grafik çizimi gelmediği için ("çizim gelmedi 26 eylül 18.41 işleme bakmadım çizimsiz olduğu için") kural gereği işleme bakmamış ve girmemiştir (`INVALID_NO_ENTRY`).
+
+#### 🌐 2. Makroekonomik Katman & Gating Notu
+- **Birincil Rejim:** *Reflationary Growth with Bear Steepening Yield Curve* (İşsizlik %4.1, ICSA 197K).
+- **Makro Kapı Durumu:** SHORT_ONLY (G_macro: 1.0) -> **0.75x Lot** (750 $).
+
+#### 📊 3. Post-Trade Audit & Sonuç
+- **Gerçekleşen Sonuç:** 🛡️ **INVALID_NO_ENTRY (AVERTED LOSS)**
+- **Gerçekleşen R:** **0.00 R (+0.75 R Kurtarıldı)**
+- **Finansal Getiri:** **0.00 $ (750 $ Kayıp Önlendi)**
+- **Kategori:** AVERTED_LOSS
+- **Hata / Zafiyet Atfı:** Skipped_Due_To_Missing_Chart_And_Existing_Active_Upper_Zone
+- **Kritik Ders:** Grafik çizimi gelmeyen sinyallere şüpheyle yaklaşıp girmeme disiplini, yukarıdaki ana kutuya koşan fiyatın ara kutuyu delmesinden doğacak 750$'lık stop kaybını doğrudan engellemiştir.
+
+#### 📋 Standart 5+1 Doğrulama Anketi
+- **Soru 1 (Kutuya Yaklaşım):** [B] Yukarıdaki ana kutuya (`84572`) doğru yükseliş
+- **Soru 2 (1M Formasyonu):** [C] Çizim gelmedi / Teyit aranmadı
+- **Soru 3 (Giriş Kararı):** [D] Girmedim (Pas - Çizim gelmediği için bakılmadı)
+- **Soru 4 (Sonuç):** [D] İşlem alınmadı (Averted Loss - 750$ Sermaye Korundu)
+- **Soru 5 (Stop/İptal Nedeni):** [A] Çizim iletilmedi ve fiyat üst ana kutuya çıktı
+- **Ekstra (Makro Doğruluk):** SHORT_ONLY yönü doğruydu, ancak üstteki ana kutu referans alınmalıydı; disiplin sayesinde hasar sıfırlandı.
+
+---
+
+### 26. [2026-09-30 12:17 TSİ / 09:17 UTC] — BTCUSD (15M Bearish OB - SAT) ❌ STOP (-490.00 $ / -0.49 R)
+- **Kayıt Kodu:** BG-20260930-001
+- **Telegram Girişi:** BTCUSD SAT | Grade A (6/9) | Skor: 75/100 | Makro: SHORT_ONLY | Giriş: 83383.96 - 83521.98 | Anlık: 83291.04 | Stop: 83521.98 üstü
+- **Giriş Bölgesi (POI):** 83383.96 — 83521.98 (15M Bearish OB — 138.02 USD) | **Sinyal Fiyatı:** 83291.04 (92.9 USD / %0.11 aşağıda)
+- **Çarpımsal Begonya Skoru:** SMC: 75 × G_macro: 1.0 = **75 / 100 (Tier A)** | Önerilen Risk: **0.49x Lot** (Makro Çarpan: 0.65x -> 490 $ Risk)
+- **Hedef (TP / Likidite Mıknatısı):** 83114.7540 (176.3 pip aşağıdaki 10 dip EQL — SSL Mıknatısı) | **Karşı Engel:** 82929.00 - 83266.19 (15M Bullish OB)
+- **Gerçekleşen Sonuç:** ❌ **STOP (-490.00 $ / -0.49 R)** — 30 Eylül 12:19 TSİ'de `83521.98` üstü stop seviyesine çarptı.
+
+#### 🔬 1. SMC Teknik Katmanı & TradingView Grafikleriyle Otopsi
+- **1H HTF Ucuz (Discount) Uyarısı (1. Görsel):** 1H grafiğinde (`1H HTF • AŞAĞI • UCUZ • A`) fiyat açıkça Ucuz (Discount) bölgedeydi. 1H salınımının en dibinde short aramak, alttaki likidite süpürüldükten sonra sert kurumsal karşı alım tepkisine maruz kalma riskini artırır.
+- **Tüketilmiş Kutu & Alttaki 15M Bullish OB Karşı Engeli (2. Görsel):** `83383.96 - 83521.98` kutusu sabah `07:45 UTC`'de test edilmiş ve `83025` seviyesine inerek `83114.75` EQL havuzunu süpürmüştü. Alttaki `82929 - 83266` Bullish OB desteğinden kalkan V-şekilli toparlanma bu kutuyu yukarı doğru delip geçti.
+- **1M İcra Akışı (3. Görsel):** `07:45`'te kutudan red yiyip `83040`'a inen fiyat, `08:50`'den itibaren agresif yeşil mumlarla tekrar kutuya girdi ve `12:19 TSİ`'de kutu tavanını (`83521.98`) yukarı kırarak stop etti.
+
+#### 🌐 2. Makroekonomik Katman & Gating Notu
+- **Birincil Rejim:** *Reflationary Growth with Bear Steepening Yield Pressures* (ABD işsizlik %4.1, ICSA 197.0K, Bakır/Altın oranı +%5.45).
+- **Makro Kapı Durumu:** SHORT_ONLY (G_macro: 1.0).
+- **Makro Risk Kalkanı:** Makro motor late-cycle baskısı nedeniyle standart 1,000$ tam lot yerine riski **0.49x lot (490$)** seviyesine düşürmüştü. Böylece tam lot stop kaybı yerine **510 $ sermaye kurtarılmıştır**.
+
+#### 📊 3. Post-Trade Audit & Sonuç
+- **Gerçekleşen Sonuç:** ❌ **STOP / LOSS**
+- **Gerçekleşen R:** **-0.49 R**
+- **Finansal Getiri:** **-$490.00**
+- **Kategori:** LOSS
+- **Hata / Zafiyet Atfı:** HTF_Discount_Opposing_OB_Sweep (1H Ucuz Bölgede Short Denemesi)
+- **Kritik Ders:** 1H ve 4H zaman dilimlerinde fiyat Ucuz (Discount) bölgedeyken Bearish OB satışı arandığında, alttaki Bullish OB desteğinden gelen alıcı tepkisi çok sert olabilir. Bu tür kurulumlarda ilk kâr görüldüğünde pozisyon erken başabaş (BE) çekilmelidir.
+
+#### 📋 Standart 5+1 Doğrulama Anketi
+- **Soru 1 (Kutuya Yaklaşım):** [A] Karşı engelden (`83025`) gelen toparlanma mumu
+- **Soru 2 (1M Formasyonu):** [C] Delip geçti (1M kutu tavanı kırıldı)
+- **Soru 3 (Giriş Kararı):** [A] Retest ile giriş
+- **Soru 4 (Sonuç):** [B] Stop (-0.49 R / -490 $)
+- **Soru 5 (Stop/İptal Nedeni):** [A] Kutu tutmadı / 1H Ucuz bölgedeki alıcılar kutuyu deldi
+- **Ekstra (Makro Doğruluk):** Makro motor yönü SHORT verse de 0.49x iskonto ile hasarı yarı yarıya sınırlandırdı.
+
+---
+
+### 27. [2026-09-30 18:31 TSİ / 15:31 UTC] — SEIUSD (15M Bearish FVG - SAT) 🎯 TAM KAPANDI (+1,040.00 $ / +2.00 R)
+- **Kayıt Kodu:** BG-20260930-002
+- **Telegram Girişi:** SEIUSD SAT | Grade A (7/9) | Skor: 82/100 | Makro: SHORT_ONLY | Giriş: 0.0728 - 0.0735 | Anlık: 0.0725 | Stop: 0.0735 üstü
+- **Giriş Bölgesi (POI):** 0.0728 — 0.0735 (15M Bearish FVG — 0.0007 USD) | **Sinyal Fiyatı:** 0.0725 (%0.43 aşağıda)
+- **Çarpımsal Begonya Skoru:** SMC: 82 × G_macro: 1.0 = **82 / 100 (Tier A)** | Önerilen Risk: **0.52x Lot** (Makro Çarpan: 0.70x -> 520 $ Risk)
+- **Hedef (TP / Likidite Mıknatısı):** 0.0720 (2 dip EQL — SSL Mıknatısı, 4.1 pip aşağıda) | **Karşı Engel:** Yok
+- **Gerçekleşen Sonuç:** 🎯 **TP (+1,040.00 $ / +2.00 R)** — 30 Eylül 18:31 TSİ işlemi, 1M manuel onay sonrası hedefine ulaşarak 2.00 R kârla kapandı (+1,040.00 $).
+
+#### 🔬 1. SMC Teknik Katmanı & TradingView Grafikleriyle İcra Analizi
+- **1H HTF Trend & Akış (1. Görsel):** `1H HTF • AŞAĞI • UCUZ • A`. 0.088 zirvesinden başlayan ana düşüş akışı güçlü şekilde devam etmekte, HTF trendi çift zaman diliminde (4H ve 1H) kurumsal satıcıların tam kontrolünde bulunmaktaydı.
+- **15M Kurulum & Bearish FVG (2. Görsel):** `15M KURULUM • FVG • A`. `0.0728 - 0.0735` FVG bölgesine retest sonrası satıcıların agresif devreye girmesiyle fiyat şelale şeklinde aşağı süzüldü. Karşı engel bulunmaması hareketin önünü tamamen açtı.
+- **1M İcra & Mükemmel Zamanlama (3. Görsel):** `1M GİRİŞ • SAT • A`. FVG tabanına (`0.0728`) gelen geri çekilme sonrası 1 dakikalık grafikte net satıcı teyidi ve displacement mumları görüldü. `0.0720` seviyesindeki 2'li dip EQL likidite havuzunu temizleyerek net 2.00 RR kâr üretti.
+
+#### 🌐 2. Makroekonomik Katman & 8-Faktör Rotasyon Sentezi
+- **Birincil Rejim:** *Reflationary Growth*.
+- **Makro Kapı Durumu:** SHORT_ONLY (G_macro: 1.0) -> **0.52x Lot** (520 $ Risk).
+- **8-Faktör Rotasyon & Türev Onayı:**
+  - **Rotasyon Skoru:** `95/100` (`Katman 2: HIGH_BETA_L1_L2`) — Yüksek beta altcoinlerde tam kurumsal satış uyumu.
+  - **Göreli Güç (RS):** `ALT/BTC 24s: %-1.52 | ALT/ETH 24s: %-0.61` — BTC ve ETH'ye kıyasla belirgin negatif ayrışma ve göreli zayıflık.
+  - **Hacim Anomalisi (RVOL):** `1s: 1.92x | 4s: 1.17x (STRONG_VOLUME_EXPANSION)` — Satış mumlarında kurumsal hacim patlaması.
+  - **Türev & Funding:** `SHORT_BUILDUP_DISTRIBUTION (OI 4s: %+2.5 | Funding: %+0.0100)` — Fiyat düşerken açık pozisyonların (OI) artması, vadeli kurumsal short pozisyon inşasını doğruladı.
+
+#### 📊 3. Post-Trade Audit & Sonuç
+- **Gerçekleşen Sonuç:** 🎯 **WIN / PROFIT**
+- **Gerçekleşen R:** **+2.00 R**
+- **Finansal Getiri:** **+$1,040.00**
+- **Kategori:** PROFIT
+- **Hata / Zafiyet Atfı:** Yok (None — Kusursuz Kurumsal İcra)
+- **Kritik Ders:** 8-Faktör Rotasyon Skoru (`95/100`), RVOL (`1.92x`) ve türevde `SHORT_BUILDUP_DISTRIBUTION` onayıyla desteklenen Tier A FVG kurulumları, 1M retest teyidiyle birleştiğinde en yüksek kazanma olasılıklı kurumsal işlemleri oluşturur.
+
+#### 📋 Standart 5+1 Doğrulama Anketi
+- **Soru 1 (Kutuya Yaklaşım):** [B] Kutuya retest (`0.0728`) ve satıcı tepkisi
+- **Soru 2 (1M Formasyonu):** [A] 1M satıcı CHoCH / displacement teyidi
+- **Soru 3 (Giriş Kararı):** [A] 1M onay sonrası retest ile giriş
+- **Soru 4 (Sonuç):** [A] TP (+2.00 R / +1,040.00 $)
+- **Soru 5 (Stop/İptal Nedeni):** Yok — Tam hedefe ulaşıldı
+- **Ekstra (Makro Doğruluk):** 8-Faktör Rotasyon ve türev onayı kusursuz çalıştı; 0.52x risk ile +1,040.00 $ kasaya eklendi.
+
+---
+
+### 28. [2026-10-01 09:16 TSİ / 06:16 UTC] — USDJPY (15M Bullish OB - AL) 🎯 KISMİ TP & BE (+375.00 $ / +0.50 R)
+- **Kayıt Kodu:** BG-20261001-001
+- **Telegram Girişi:** USDJPY AL | Grade A (6/9) | Skor: 75/100 | Makro: LONG | Giriş: 158.089 - 158.177 | Anlık: 158.212 | Stop: 158.089 altı
+- **Giriş Bölgesi (POI):** 158.089 — 158.177 (15M Bullish OB — 8.8 pip) | **Sinyal Fiyatı:** 158.212 (3.5 pip yukarıda)
+- **Çarpımsal Begonya Skoru:** SMC: 75 × G_macro: 1.0 = **75 / 100 (Tier A)** | Önerilen Risk: **0.56x Lot** (Uygulanan Risk: **%0.75 / 750 $**)
+- **Hedef (TP / Likidite Mıknatısı):** 158.4767 (2 tepe EQH — BSL Mıknatısı, 26.5 pip yukarıda) | **Karşı Engel:** 158.3905 - 158.4700 (15M Bearish OB, 21.4 pip yukarıda)
+- **Gerçekleşen Sonuç:** 🎯 **KISMİ TP & BE (+375.00 $ / +0.50 R)** — 1R kârda pozisyonun %50'si realize edildi (+375 $), stop başabaşa (BE) çekildi; karşı engelden dönen fiyatla kalan %50 BE kapandı.
+
+#### 🔬 1. SMC Teknik Katmanı & TradingView Grafikleriyle İcra Otopsisi
+- **1H HTF Pahalı (Premium) Uyarısı (1. Görsel):** `1H HTF • YUKARI • PAHALI • A`. Fiyat 1H ölçeğinde tepe bölgesinde (Pahalı) ve 158.39 seviyesindeki kurumsal satış bloğunun (Bearish OB) hemen altındaydı.
+- **15M Kurulum & Karşı Engel Sıkışması (2. Görsel):** `15M KURULUM • OB • A`. Saat 02:00'deki BOS kırılımı sonrası `158.089 - 158.177` Bullish OB oluşmuştu. Ancak 21.4 pip yukarıdaki `158.3905 - 158.4700` Bearish OB karşı engeli fiyatın önünü tıkıyordu.
+- **1M İcra & Eski Çizim (Stale POI) Dinamiği (3. Görsel):** `1M GİRİŞ • AL • A`. 1M grafiğinde kutu saat 04:30'da oluşmuş ve saat 04:48'de zaten `158.19` seviyesine inerek ilk retestini vermişti. Saat 06:16'da (09:16 TSİ) sinyal düştüğünde fiyat ikinci kez kutuya geri çekiliyordu. Operatör 1M onayı ile işleme girdi, fiyat 1R yukarı tepki verince **%50 kısmi kâr aldı (+375$)** ve stopu **BE'ye çekti**. Fiyat karşı engelden sert satış yiyip kutuyu aşağı deldiğinde kalan yarı pozisyon 0 kayıpla BE seviyesinde kapandı.
+
+#### 🌐 2. Makroekonomik Katman & Gating Notu
+- **Birincil Rejim:** *Reflationary Growth with Contracting Liquidity* (ABD iç talep güçlü, GDP %2.2, Bakır/Altın +%7.84).
+- **Makro Kapı Durumu:** LONG_ONLY (G_macro: 1.0) -> Önerilen risk: 0.56x lot.
+- **Makro Değerlendirmesi:** Makro motor USD güçlenmesini doğru öngörerek yukarı yönlü 1R sıçramayı sağladı; ancak karşı engeldeki yerel likidite direnci ve POI'nin daha önce tüketilmiş olması ana hedefe (EQH) ulaşmayı engelledi.
+
+#### 📊 3. Post-Trade Audit & Sonuç
+- **Gerçekleşen Sonuç:** 🎯 **WIN_PARTIAL_TP_AND_BE**
+- **Gerçekleşen R:** **+0.50 R**
+- **Finansal Getiri:** **+$375.00** (Kalan 50% BE ile $375 stop kaybından kurtarıldı)
+- **Kategori:** PROFIT
+- **Hata / Zafiyet Atfı:** Opposing_Barrier_Rejection_And_Stale_POI_Mitigation
+- **Kritik Ders:** Karşı engeli yakın (21 pip) ve daha önce test edilmiş (stale/mitigated) bölgelerde işlem açıldığında, 1R'da %50 kâr alıp stopu BE çekmek sermayeyi koruyup net kâr üreten en profesyonel icra taktiğidir.
+
+#### 📋 Standart 5+1 Doğrulama Anketi
+- **Soru 1 (Kutuya Yaklaşım):** [A] Kutuya ikinci geri çekilme (Stale POI retesti)
+- **Soru 2 (1M Formasyonu):** [A] 1M satıcıyı emip 1R yukarı tepki veren yapı
+- **Soru 3 (Giriş Kararı):** [A] Retest ile giriş (%0.75 risk)
+- **Soru 4 (Sonuç):** [C] 1R'da %50 TP (+375 $), kalan BE kapandı
+- **Soru 5 (Stop/İptal Nedeni):** [B] Karşı engelden (`158.39` Bearish OB) döndü ve kutuyu deldi
+- **Ekstra (Makro Doğruluk):** Makro LONG_ONLY yönü doğruydu, 1R ivme verdi; aktif pozisyon yönetimi tam stop zararını (+375$ kâra) çevirdi.
+
+---
+
+### 29. [2026-10-01 11:17 TSİ / 08:17 UTC] — CADJPY (15M Bullish FVG - AL) ❌ STOP (-560.00 $ / -0.56 R)
+- **Kayıt Kodu:** BG-20261001-002
+- **Telegram Girişi:** CADJPY AL | Grade A (6/9) | Skor: 75/100 | Makro: LONG | Giriş: 111.076 - 111.194 | Anlık: 111.146 | Stop: 111.076 altı
+- **Giriş Bölgesi (POI):** 111.076 — 111.194 (15M Bullish FVG — 11.8 pip) | **Sinyal Fiyatı:** 111.146 (Kutu içinde / Aktif retest)
+- **Çarpımsal Begonya Skoru:** SMC: 75 × G_macro: 1.0 = **75 / 100 (Tier A)** | Önerilen Risk: **0.56x Lot** (560 $ Risk)
+- **Hedef (TP / Likidite Mıknatısı):** 112.5727 (2 tepe EQH — BSL Mıknatısı, 142.7 pip yukarıda) | **Karşı Engel:** 111.5041 - 111.5635 (15M Bearish OB, 31 pip yukarıda)
+- **Gerçekleşen Sonuç:** ❌ **STOP / LOSS (-560.00 $ / -0.56 R)** — `111.076 - 111.194` Bullish FVG kutusundan 1M onayı ile 0.56x lot (560 $) riskle açılan AL pozisyonu, FVG kutu tabanının aşağı kırılmasıyla `111.076` altındaki stop seviyesine çarparak kapanmıştır.
+
+#### 🔬 1. SMC Teknik Katmanı & TradingView Grafikleriyle İnceleme
+- **1H HTF Trend & CHoCH (1. Görsel):** `1H HTF • YUKARI • PAHALI • A`. Fiyat 110.40 dibinden kalkan V-şekilli agresif toparlanma mumuyla 111.20 direncini CHoCH ile kırdı ve yükseliş trendine geçti.
+- **15M Kurulum & Bullish FVG (2. Görsel):** `15M KURULUM • FVG • A`. Saat 07:00 UTC'deki kurumsal kırılım mumu sonrasında `111.076 - 111.194` aralığında net bir 15M Bullish FVG boşluğu bırakıldı. Fiyat kutu tavanına (`111.19`) ve dengesine (`111.15`) doğru geri çekildi.
+- **1M İcra & Giriş Teyidi (3. Görsel):** `1M GİRİŞ • AL • A`. 1M grafiğinde fiyat saat 07:23 zirvesinden süzülerek 08:14 UTC (11:14-11:17 TSİ) itibarıyla FVG kutusu içine girdi ve alıcı tepkisiyle 1M manuel onay sağlandı; pozisyon 0.56x lot ile açıldı. Ancak FVG desteği daha sonra gelen satış baskısını taşıyamayarak stop seviyesini gördü.
+
+#### 🌐 2. Makroekonomik Katman & Gating Notu
+- **Birincil Rejim:** *Reflationary Growth with Contracting Liquidity* (ABD iç talep güçlü, GDP %2.2, Bakır/Altın +%7.84).
+- **Makro Kapı Durumu:** LONG_ONLY (G_macro: 1.0) -> **0.56x Lot** (560 $ Risk).
+- **Stratejik Görünüm:** Küresel emtia ve sanayi döngüsü (Bakır/Altın) CAD'e destek verse de paritedeki derin düzeltme FVG tabanını delip geçmiştir. 0.56x lotluk defansif iskonto zararı sınırlandırmıştır.
+
+#### 📊 3. Post-Trade Audit & Bilanço
+- **Gerçekleşen Sonuç:** ❌ **LOSS (STOP)**
+- **Gerçekleşen R:** **-0.56 R**
+- **Finansal Getiri:** **-560.00 $**
+- **Kategori:** LOSS
+- **Hata / Zafiyet Atfı:** FVG_Invalidation_And_Pullback
+- **Kritik Ders:** FVG kutuları agresif trend devamlarında harika çalışsa da, seans içi derin likidite düzeltmelerinde OB'lere kıyasla daha kırılgan olabilmektedir.
+
+#### 📋 Standart 5+1 Doğrulama Anketi
+- **Soru 1 (Kutuya Yaklaşım):** [A] Sakin düzeltme ile FVG içine iniş
+- **Soru 2 (1M Formasyonu):** [A] 1M FVG tabanında alıcı fitilleri ve mikro CHoCH
+- **Soru 3 (Giriş Kararı):** [A] 1M onayı ile retestten giriş (0.56x Lot / 560 $)
+- **Soru 4 (Sonuç):** [B] Stop (-0.56 R / -560.00 $)
+- **Soru 5 (Stop/İptal Nedeni):** [A] Kutu tutmadı (FVG tabanı derin düzeltmeyle kırıldı)
+- **Ekstra (Makro Doğruluk):** Makro motor Sentetik Çapraz LONG_ONLY onaylıydı; defansif çarpan ile hasar 560 $ ile sınırlandı.
+
+---
+
+### 30. [2026-10-01 11:46 TSİ / 08:46 UTC] — USDJPY (15M Bullish OB - AL) 🛡️ PAS GEÇİLDİ (AVERTED LOSS / +750 $ KORUNDU)
+- **Kayıt Kodu:** BG-20261001-003
+- **Telegram Girişi:** USDJPY AL | Grade A (8/9) | Skor: 90/100 | Makro: LONG | Giriş: 158.105 - 158.204 | Anlık: 158.313 | Stop: 158.105 altı
+- **Giriş Bölgesi (POI):** 158.105 — 158.204 (15M Bullish OB — 9.9 pip) | **Sinyal Fiyatı:** 158.313 (10.9 pip yukarıda)
+- **Çarpımsal Begonya Skoru:** SMC: 90 × G_macro: 1.0 = **90 / 100 (Tier A+)** | Önerilen Risk: **0.75x Lot** (750 $ Risk)
+- **Hedef (TP / Likidite Mıknatısı):** 158.4734 (3 tepe EQH — BSL Mıknatısı, 16 pip yukarıda) | **Karşı Engel:** 158.3905 - 158.4700 (15M Bearish OB, 18.6 pip yukarıda)
+- **Gerçekleşen Sonuç:** 🛡️ **PAS GEÇİLDİ / AVERTED LOSS (+750 $ Sermaye Korundu)** — Operatör aynı gün saat 09:16'da neredeyse birebir aynı bölgeden (`158.089 - 158.177`) işleme girip BE olduğunu ve yukarıdaki `158.39` karşı engelinin kırılamadığını doğru hatırlayarak mükerrer sinyale girmemiş, sermayesini korumuştur.
+
+#### 🔬 1. SMC Teknik Katmanı & Mükerrer / Tüketilmiş Bölge Analizi
+- **Aynı Kutu Kesişimi:** 09:16 sinyali `158.089 - 158.177` iken 11:46 sinyali `158.105 - 158.204` olarak üretilmiştir (%90 örtüşen aynı 15M Bullish OB tabanı).
+- **Zirvede Karşı Engel Direnci (3. Görsel):** Fiyat saat 07:25'te `158.47` seviyesine kadar yükselerek günün tepesini yapmış, ancak `158.39 - 158.47` Bearish OB karşı engeline çarparak red yemiştir. Saat 07:25'ten 08:45'e kadar sürekli daha düşük tepeler (lower highs) oluşturmuştur.
+- **İnducement (Likidite Yemi) Tuzağı:** Karşı engel kırılamadan alttaki tüketilmiş kutuya gelen üçüncü/dördüncü ziyaretler genellikle kutunun patlatılması (stop hunt) ile sonuçlanır. Operatörün bu tuzağı fark edip pas geçmesi kurumsal bir icra olgunluğudur.
+
+#### 🌐 2. Makroekonomik Katman & Gating Notu
+- **Birincil Rejim:** *Reflationary Growth with Contracting Liquidity* (ABD iç talep güçlü, GDP %2.2, Bakır/Altın +%7.84).
+- **Makro Kapı Durumu:** LONG_ONLY (G_macro: 1.0) -> Önerilen risk: 0.75x lot (Tier A+).
+- **Makro Değerlendirmesi:** Makro motor LONG yönünü onaylasa dahi, aynı seanstaki mükerrer teknik sinyaller operatör filtresiyle elenmelidir.
+
+#### 📊 3. Post-Trade Audit & Sonuç
+- **Gerçekleşen Sonuç:** 🛡️ **INVALID_NO_ENTRY (AVERTED LOSS)**
+- **Gerçekleşen R:** **0.00 R (0.75 R Risk Önlendi)**
+- **Finansal Getiri:** **0.00 $ (750.00 $ Sermaye Korundu)**
+- **Kategori:** AVERTED_LOSS
+- **Hata / Zafiyet Atfı:** Skipped_Duplicate_Mitigated_Zone_Under_Opposing_Barrier
+- **Kritik Ders:** Aynı seans içinde zaten test edilip tepkisi alınmış ve karşı engele takılmış bir bölgeye gelen mükerrer sinyallere tekrar girmemek (pas geçmek) gereksiz stop zararlarını %100 önler.
+
+#### 📋 Standart 5+1 Doğrulama Anketi
+- **Soru 1 (Kutuya Yaklaşım):** [C] Fiyat henüz kutu dışında (10.9 pip yukarıda)
+- **Soru 2 (1M Formasyonu):** [C] Mükerrer / Stale POI olduğu için aranmadı
+- **Soru 3 (Giriş Kararı):** [D] Girmedim (Pas — Daha önce girilip BE olunduğu için es geçildi)
+- **Soru 4 (Sonuç):** [D] İşlem alınmadı (Averted Loss — 750 $ Korundu)
+- **Soru 5 (Stop/İptal Nedeni):** Mükerrer sinyal ve karşı engel baskısı
+- **Ekstra (Makro Doğruluk):** LONG_ONLY kapısı doğru olsa da seans içi mükerrer kutuya ikinci kez girilmeyerek sermaye korundu.
+
+---
+
+### 31. [2026-10-01 13:46 TSİ / 10:46 UTC] — AUDUSD (15M Bearish OB - SAT) ⏳ BEKLEMEDE (RETEST & 1M ONAY BEKLENİYOR)
+- **Kayıt Kodu:** BG-20261001-004
+- **Telegram Girişi:** AUDUSD SAT | Grade A (8/9) | Skor: 90/100 | Makro: SHORT | Giriş: 0.69675 - 0.69871 | Anlık: 0.69461 | Stop: 0.69871 üstü
+- **Giriş Bölgesi (POI):** 0.69675 — 0.69871 (15M Bearish OB — 19.6 pip) | **Sinyal Fiyatı:** 0.69461 (21.4 pip aşağıda)
+- **Çarpımsal Begonya Skoru:** SMC: 90 × G_macro: 1.0 = **90 / 100 (Tier A+)** | Önerilen Risk: **0.75x Lot** (750 $ Risk)
+- **Hedef (TP / Likidite Mıknatısı):** 0.6942 (5 dip EQL — SSL Mıknatısı, 4.1 pip aşağıda) | **Karşı Engel:** 0.6945 - 0.6948 (15M Bullish OB, 19.3 pip aşağıda)
+- **Gerçekleşen Sonuç:** ⏳ **BEKLEMEDE (PENDING)** — Fiyat giriş bölgesinin 21.4 pip altında olup kutuya geri çekilme (retest) ve 1M onayı bekleniyor.
+
+#### 🔬 1. SMC Teknik Katmanı & TradingView Grafikleriyle İnceleme
+- **1H HTF Trend & Ucuz Bölge (1. Görsel):** `1H HTF • AŞAĞI • UCUZ • A`. Fiyat 1H ölçeğinde ana düşüş trendinde olmakla birlikte Ucuz (Discount) bölgededir. 30 Eylül seansında oluşan `0.69675 - 0.69871` Bearish OB kutusu yukarıda bulunmaktadır.
+- **15M Kurulum & Bearish OB (2. Görsel):** `15M KURULUM • OB • A`. 30 Eylül 12:00 UTC'deki CHoCH düşüş mumu sonrası oluşan 19.6 piplik Bearish OB kutusu henüz test edilmemiştir (unmitigated).
+- **1M İcra & Mesafe Uyarısı (3. Görsel):** `1M GİRİŞ • SAT • A`. 1M grafiğinde fiyat `0.6946` seviyesinde yatay dip konsolidasyonundadır. Giriş kutusuna 21 pip mesafe bulunduğu için **kesinlikle acele işlem açılmamalı**, kutu içine geri çekilme ve satıcı teyidi beklenmelidir.
+
+#### 🌐 2. Makroekonomik Katman & Gating Notu
+- **Birincil Rejim:** *Reflationary Growth with Contracting Liquidity* (ABD iç talep güçlü, GDP %2.2, Bakır/Altın +%7.84).
+- **Makro Kapı Durumu:** SHORT_ONLY (G_macro: 1.0) -> **0.75x Lot** (750 $ Risk).
+- **Stratejik Görünüm:** Güçlü Dolar teması ve getiri eğrisi dinamikleri AUDUSD paritesinde kurumsal satış yönünü (SHORT_ONLY) desteklemektedir.
+
+#### 📊 3. Post-Trade Audit & Canlı Takip Notu
+- **Mevcut Durum:** ⏳ **PENDING_RETEST**
+- **İzlenecek Seviyeler:**
+  1. **Retest Giriş Alanı:** `0.69675 - 0.69871` (Kutu içine fitil veya retest görülmeden işlem yok).
+  2. **1M Teyit Kuralı:** Kutuya ulaştığında satıcı CHoCH ve displacement görülmeli.
+  3. **Karşı Engel Uyarısı:** Aşağıdaki `0.6945 - 0.6948` 15M Bullish OB bölgesine dikkat edilmelidir.
+
+#### 📋 Standart 5+1 Doğrulama Anketi
+- **Soru 1 (Kutuya Yaklaşım):** [C] Fiyat henüz kutu dışında (21.4 pip aşağıda)
 - **Soru 2 (1M Formasyonu):** ⏳ Beklemede
-- **Soru 3 (Giriş Kararı):** [D] Henüz girilmedi (Retest ve 1M teyidi bekleniyor)
-- **Soru 4 (Sonuç):** ⏳ Beklemede (`PENDING`)
-- **Soru 5 (Stop/İptal Nedeni):** ⏳ Beklemede
-- **Ekstra (Makro Doğruluk):** Sentetik çapraz makro onayı (`CADCHF LONG_ONLY`) ve 82/100 Tier A skoru ile takipte.
+- **Soru 3 (Giriş Kararı):** [D] Henüz girilmedi (Retest ve 1M onayı bekleniyor)
+- **Soru 4 (Sonuç):** [E] Beklemede (Takip ediliyor)
+- **Soru 5 (Stop/İptal Nedeni):** Kurulum aktif
+- **Ekstra (Makro Doğruluk):** SHORT_ONLY yönü onaylı; kutuya retest bekleniyor.
+
+---
+
+### 32. [2026-10-01 22:31 TSİ / 19:31 UTC] — CADJPY (15M Bullish FVG - AL) 🔄 AKTİF İŞLEMDE (POZİSYON AÇIK)
+- **Kayıt Kodu:** BG-20261001-005
+- **Telegram Girişi:** CADJPY AL | Grade A (7/9) | Skor: 82/100 | Makro: LONG | Giriş: 110.821 - 110.928 | Anlık: 111.074 | Stop: 110.821 altı
+- **Giriş Bölgesi (POI):** 110.821 — 110.928 (15M Bullish FVG — 10.7 pip) | **Sinyal Fiyatı:** 111.074 (14.6 point yukarıda)
+- **Çarpımsal Begonya Skoru:** SMC: 82 × G_macro: 1.0 = **82 / 100 (Tier A)** | Önerilen Risk: **0.56x Lot** (560 $ Risk)
+- **Hedef (TP / Likidite Mıknatısı):** 112.4406 (3 tepe EQH — BSL Mıknatısı, 136.6 pip yukarıda) | **Karşı Engel:** 111.2158 - 111.2339 (15M Bearish OB, 28.8 pip yukarıda)
+- **Gerçekleşen Sonuç:** 🔄 **AKTİF İŞLEMDE (ACTIVE)** — 110.821 - 110.928 FVG kutusu desteğinde 1M onayı ile 0.56x lot (560 $) AL pozisyonu açıldı ve canlı olarak taşınıyor.
+
+#### 🔬 1. SMC Teknik Katmanı & TradingView Grafikleriyle İnceleme
+- **1H HTF Trend & Destek (1. Görsel):** `1H HTF • YUKARI • PAHALI • A`. Fiyat öğleden sonraki düzeltme hareketini tamamlayıp 110.45 seviyesinden V-şeklinde toparlandı ve 111.00 seviyesini yukarı kırarak CHoCH üretti.
+- **15M Kurulum & Bullish FVG (2. Görsel):** `15M KURULUM • FVG • A`. Akşam seansında saat 17:50 UTC'de başlayan kurumsal yükseliş dalgası `110.821 - 110.928` aralığında net bir 15M Bullish FVG bıraktı. 4H Ucuz (Discount) bölgesi bu yükseliş dalgasını desteklemektedir.
+- **1M İcra & Giriş Teyidi (3. Görsel):** `1M GİRİŞ • AL • A`. 1M grafiğinde fiyat `111.07` seviyesinde konsolide olup 1 dakikalık alıcı teyidi sağladı; operatör pozisyona girerek işlemi aktif taşıma moduna aldı.
+
+#### 🌐 2. Makroekonomik Katman & Gating Notu
+- **Birincil Rejim:** *Reflationary Growth with Contracting Liquidity* (ABD iç talep güçlü, GDP %2.2, Bakır/Altın +%7.84).
+- **Makro Kapı Durumu:** LONG_ONLY (G_macro: 1.0) -> **0.56x Lot** (560 $ Risk).
+- **Stratejik Görünüm:** Emtia para birimi CAD'in küresel sanayi toparlanmasıyla güçlenmesi ve JPY'nin zayıf kalması LONG_ONLY sentetik çapraz tezini doğrulamaya devam ediyor.
+
+#### 📊 3. Post-Trade Audit & Canlı Takip Notu
+- **Mevcut Durum:** 🔄 **ACTIVE / IN_TRADE**
+- **İzlenecek Seviyeler:**
+  1. **İlk Karşı Engel:** `111.2158 - 111.2339` (15M Bearish OB — ~28 pip yukarıda). Bu seviyeye varıldığında kısmi kâr alma ve stopu başabaşa (BE) çekme stratejisi uygulanmalıdır.
+  2. **Ana Likidite Hedefi:** `112.4406` (3'lü Tepe EQH BSL Havuzu — ~136 pip yukarıda).
+  3. **Stop Seviyesi:** `110.821` altı.
+
+#### 📋 Standart 5+1 Doğrulama Anketi
+- **Soru 1 (Kutuya Yaklaşım):** [A] 110.82-110.92 FVG desteği ve alıcı reaksiyonu
+- **Soru 2 (1M Formasyonu):** [A] 1M alıcı displacement ve CHoCH teyidi
+- **Soru 3 (Giriş Kararı):** [A] 1M onayı ile giriş (0.56x Lot / 560 $)
+- **Soru 4 (Sonuç):** [E] Aktif işlemde (Takip ediliyor)
+- **Soru 5 (Stop/İptal Nedeni):** İşlem açık
+- **Ekstra (Makro Doğruluk):** Makro motor Sentetik Çapraz LONG_ONLY onaylı; pozisyon canlı taşınıyor.
+
+---
+
+### 33. [2026-10-01 22:46 TSİ / 19:46 UTC] — EURUSD (15M Bearish FVG - SAT) ⏳ BEKLEMEDE (RETEST & 1M ONAY BEKLENİYOR)
+- **Kayıt Kodu:** BG-20261001-006
+- **Telegram Girişi:** EURUSD SAT | Grade A (6/9) | Skor: 75/100 | Makro: SHORT_ONLY | Giriş: 1.12777 - 1.12851 | Anlık: 1.12435 | Stop: 1.12851 üstü
+- **Giriş Bölgesi (POI):** 1.12777 — 1.12851 (15M Bearish FVG — 7.4 pip) | **Sinyal Fiyatı:** 1.12435 (34.2 pip aşağıda)
+- **Çarpımsal Begonya Skoru:** SMC: 75 × G_macro: 1.0 = **75 / 100 (Tier A)** | Önerilen Risk: **0.56x Lot** (560 $ Risk)
+- **Hedef (TP / Likidite Mıknatısı):** 1.1217 (2 dip EQL — SSL Mıknatısı, 26.7 pip aşağıda) | **Karşı Engel:** Yok
+- **Gerçekleşen Sonuç:** ⏳ **BEKLEMEDE (PENDING)** — Fiyat giriş bölgesinin 34.2 pip altında olup kutuya geri çekilme (retest) ve 1M onayı bekleniyor.
+
+#### 🔬 1. SMC Teknik Katmanı & TradingView Grafikleriyle İnceleme
+- **1H HTF Trend & Şelale Düşüşü (2. Görsel):** `1H HTF • AŞAĞI • UCUZ • A`. Fiyat 1.14 zirvelerinden başlayarak agresif şekilde değer kaybetmiş ve 1.1215 dibine inmiştir. 14:00-15:00 UTC kırılımının bıraktığı `1.12777 - 1.12851` FVG kutusu yukarıda bulunmaktadır.
+- **15M Kurulum & Bearish FVG (3. Görsel):** `15M KURULUM • FVG • A`. FVG kutusu 7.4 piplik son derece dar ve net bir satıcı dengesizlik alanıdır. Fiyat bu seviyenin 34 pip altından düzeltme başlatmıştır.
+- **1M İcra & Mesafe Uyarısı (1. Görsel):** `1M GİRİŞ • SAT • A`. 1M grafiğinde fiyat `1.12435` seviyesinde yukarı yönlü toparlanma mumları üretmektedir. Kutuya olan 34 piplik mesafe nedeniyle **kesinlikle acele işlem yapılmamalı**, kutu içine fitil / retest ve satıcı displacement teyidi beklenmelidir.
+
+#### 🌐 2. Makroekonomik Katman & Gating Notu
+- **Birincil Rejim:** *Reflationary Growth with Contracting Liquidity* (ABD iç talep güçlü, GDP %2.2, Bakır/Altın +%7.84).
+- **Makro Kapı Durumu:** SHORT_ONLY (G_macro: 1.0) -> **0.56x Lot** (560 $ Risk).
+- **Stratejik Görünüm:** ABD büyüme verilerinin ve faiz beklentilerinin Dolar'ı desteklemesi, Avrupa tarafındaki zayıflıkla birleşerek SHORT_ONLY bias'ını doğrulamaktadır.
+
+#### 📊 3. Post-Trade Audit & Canlı Takip Notu
+- **Mevcut Durum:** ⏳ **PENDING_RETEST**
+- **İzlenecek Seviyeler:**
+  1. **Retest Giriş Alanı:** `1.12777 - 1.12851` (Kutuya geri çekilme şart).
+  2. **1M Teyit Kuralı:** Fiyat kutuya ulaştığında 1M CHoCH ve satıcı tepkisi görülmeden emir açılmamalıdır.
+  3. **Ana Hedef (TP):** `1.1217` (2'li Dip EQL SSL Havuzu).
+  4. **Stop Seviyesi:** `1.12851` üstü.
+
+#### 📋 Standart 5+1 Doğrulama Anketi
+- **Soru 1 (Kutuya Yaklaşım):** [C] Fiyat henüz kutu dışında (34.2 pip aşağıda)
+- **Soru 2 (1M Formasyonu):** ⏳ Beklemede
+- **Soru 3 (Giriş Kararı):** [D] Henüz girilmedi (Retest ve 1M onayı bekleniyor)
+- **Soru 4 (Sonuç):** [E] Beklemede (Takip ediliyor)
+- **Soru 5 (Stop/İptal Nedeni):** Kurulum aktif
+- **Ekstra (Makro Doğruluk):** SHORT_ONLY yönü onaylı; kutuya retest bekleniyor.
+
+---
+
+### 34. [2026-10-02 10:31 TSİ / 07:31 UTC] — ADAUSD (15M Bullish OB - AL) 🛡️ PAS GEÇİLDİ (AVERTED LOSS / +560 $ KORUNDU)
+- **Kayıt Kodu:** BG-20261002-001
+- **Telegram Girişi:** ADAUSD AL | Grade A (6/9) | Skor: 75/100 | Makro: LONG_ONLY | Giriş: 0.2487 - 0.2504 | Anlık: 0.2531 | Stop: 0.2487 altı
+- **Giriş Bölgesi (POI):** 0.2487 — 0.2504 (15M Bullish OB — 0.0017 USD) | **Sinyal Fiyatı:** 0.2531 (%1.08 yukarıda)
+- **Çarpımsal Begonya Skoru:** SMC: 75 × G_macro: 1.0 = **75 / 100 (Tier A)** | Önerilen Risk: **0.56x Lot** (560 $ Risk)
+- **Hedef (TP / Likidite Mıknatısı):** 0.2560 (2 tepe EQH — BSL Mıknatısı, 29.5 pip yukarıda) | **Karşı Engel:** 0.2547 - 0.2562 (15M Bearish OB, 43 pip yukarıda)
+- **Gerçekleşen Sonuç:** 🛡️ **PAS GEÇİLDİ / AVERTED LOSS (+560 $ Sermaye Korundu)** — Fiyat 0.2487 - 0.2504 OB kutusuna yaklaşırken/test ederken 1 dakikalık grafikte hiçbir geçerli alıcı konfirmasyonu (CHoCH / displacement) vermedi; kural gereği işleme girilmedi ve sermaye korundu.
+
+#### 🔬 1. SMC Teknik Katmanı & 1M Filtresiyle Otopsi
+- **1H HTF Pahalı (Premium) Uyarısı (1. Görsel):** `1H HTF • YUKARI • PAHALI • A`. Fiyat 0.26 zirvesinden sonra 1H grafiğinde Pahalı bölgede bulunuyordu.
+- **15M Kurulum & Bullish OB (2. Görsel):** `15M KURULUM • OB • A`. 0.26 kırılımı sonrası `0.2487 - 0.2504` OB kutusu çizilmişti.
+- **1M İcra & Onay Eksikliği (3. Görsel):** `1M GİRİŞ • AL • A`. 1 dakikalık grafikte fiyat kırmızı mumlarla süzülürken satıcı baskısını kıracak hiçbir yeşil displacement veya mikro CHoCH üretmedi. Operatörün "LTF confirmasyon vermedi" tespitiyle emri tetiklememesi sistem kuralının eksiksiz uygulandığını gösterdi.
+
+#### 🌐 2. Makroekonomik Katman & 8-Faktör Rotasyon Notu
+- **Birincil Rejim:** *Reflationary Expansion with Tight Discount Rates*.
+- **Makro Kapı Durumu:** LONG_ONLY (G_macro: 1.0) -> Önerilen risk: 0.56x lot.
+- **8-Faktör Rotasyon & Türev:** Rotasyon Skoru `65/100` (Katman 3: Legacy Payment Infra), RVOL `1.82x`, türev tarafında `ORGANIC_CAPITAL_INFLOW` (OI +%4.9) görülse de 1M icra filtresi hatalı girişi engelledi.
+
+#### 📊 3. Post-Trade Audit & Sonuç
+- **Gerçekleşen Sonuç:** 🛡️ **INVALID_NO_ENTRY (AVERTED LOSS)**
+- **Gerçekleşen R:** **0.00 R (0.56 R Risk Önlendi)**
+- **Finansal Getiri:** **0.00 $ (560.00 $ Sermaye Korundu)**
+- **Kategori:** AVERTED_LOSS
+- **Hata / Zafiyet Atfı:** No_M1_Confirmation_Passed
+- **Kritik Ders:** Kripto varlıklarda 1M net CHoCH ve alıcı displacement görülmeden destek kutularına kör emir atmamak olası stop zararlarını sıfıra indirir.
+
+#### 📋 Standart 5+1 Doğrulama Anketi
+- **Soru 1 (Kutuya Yaklaşım):** [A] Sakin kırmızı mumlarla süzülüş
+- **Soru 2 (1M Formasyonu):** [C] Onay yok (Alıcı CHoCH/displacement oluşmadı)
+- **Soru 3 (Giriş Kararı):** [D] Girmedim (Pas — 1M teyit vermediği için işlem açılmadı)
+- **Soru 4 (Sonuç):** [D] İşlem alınmadı (Averted Loss — 560 $ Korundu)
+- **Soru 5 (Stop/İptal Nedeni):** 1M teyit eksikliği
+- **Ekstra (Makro Doğruluk):** LONG_ONLY açık olsa dahi M1 filtresi sermayeyi başarıyla korudu.
+
+---
+
+### 35. [2026-10-02 12:31 TSİ / 09:31 UTC] — ETHUSD (15M Bullish FVG - AL) ❌ STOP (-560.00 $ / -0.56 R)
+- **Kayıt Kodu:** BG-20261002-002
+- **Telegram Girişi:** ETHUSD AL | Grade A (6/9) | Skor: 75/100 | Makro: LONG_ONLY | Giriş: 2727.41 - 2737.16 | Anlık: 2746.26 | Stop: 2727.41 altı | Önerilen Risk: Defansif Risk (%0.5R) | 0.56x Lot
+- **Giriş Bölgesi (POI):** 2727.41 — 2737.16 (15M Bullish FVG — 9.75 USD) | **Sinyal Fiyatı:** 2746.26 (9.1 USD / %0.33 yukarıda)
+- **Çarpımsal Begonya Skoru:** SMC: 75 × G_macro: 1.0 = **75 / 100 (Tier A)** | Önerilen Risk: **Defansif Risk (%0.5R) | 0.56x Lot** (560 $ Risk)
+- **Hedef (TP / Likidite Mıknatısı):** 2788.50 (2 tepe EQH — BSL Mıknatısı, 4224 pip yukarıda) [1H]
+- **Gerçekleşen Sonuç:** ❌ **STOP / LOSS (-560.00 $ / -0.56 R)** — Fiyat 2727.41 - 2737.16 Bullish FVG kutusuna geri çekilip içine girdikten sonra, sabah 08:15 UTC'deki tepe süpürmesinin ardından gelen hacimli satış dalgasıyla kutu tabanını delip geçerek 2727.41 altındaki stop seviyesine çarpmıştır.
+
+#### 🔬 1. SMC Teknik Katmanı & Çoklu Zaman Dilimi Otopsisi (3 Görsel Analizi)
+- **1H HTF Pahalı (Premium) Rejection (1. Görsel):** `1H HTF • YUKARI • PAHALI • A`. Fiyat 2753.74 seviyesinde, 1H grafiğinde net biçimde Pahalı (Premium) bölgedeydi. 2780 seviyesine atılan devasa yukarı iğne önceki tepe likiditesini (BSL) süpürdükten sonra kapanışı tepede yapamayarak sert bir satıcı fitili bıraktı.
+- **15M Kurulum & Bullish FVG (2. Görsel):** `15M KURULUM • FVG • A`. Fiyat patlama mumu sonrasında `2727.41 - 2737.16` aralığında bir Bullish FVG (İmbalance) alanı bıraktı. Ancak tepe likiditesi süpürüldüğü için ardından gelen 15M mumları ardışık kırmızı gövdelerle FVG kutusuna doğru agresif satış baskısı üretti.
+- **1M İcra & Kutu Delinmesi (3. Görsel):** `1M GİRİŞ • AL • A`. 1 dakikalık grafikte fiyat 2778 zirvesinden itibaren sürekli "Lower High - Lower Low" serisi çizerek düşen bıçak momentumuyla 2746.26'dan FVG kutusuna indi. Kutu içerisinde alıcı yönlü bir mikro CHoCH veya taban akümülasyonu oluşturamadan kutu tabanı olan 2727.41 seviyesini kırdı ve stop oldu.
+
+#### 🌐 2. Makroekonomik Katman & 8-Faktör Rotasyon Notu
+- **Birincil Rejim:** *Reflationary Expansion with Tight Discount Rates*.
+- **Makro Kapı Durumu:** LONG_ONLY (G_macro: 1.0) -> Önerilen risk: **0.56x Lot** (Defansif Risk).
+- **8-Faktör Rotasyon & Türev:** Rotasyon Skoru `69/100` (Katman 1: Large-Cap Smart Contract), RVOL 1s: `2.78x`, 4s: `1.70x` (Stealth Accumulation), türev tarafında `ORGANIC_CAPITAL_INFLOW` (OI 4s: %+0.9 | Funding: %+0.0100).
+- **Sermaye Koruma Kalkanı (Risk İndirimi):** Makro motorun standart 1.0R (1.000 $) yerine **0.56x Lot ($560)** defansif risk tahsis etmesi sayesinde, pozisyon stop olmasına rağmen kasadaki **440 $ nakit korunmuş**, hasar 560 $ (-0.56 R) ile sınırlandırılmıştır.
+
+#### 📊 3. Post-Trade Audit & Bilanço
+- **Gerçekleşen Sonuç:** ❌ **LOSS (STOP)**
+- **Gerçekleşen R:** **-0.56 R**
+- **Finansal Getiri:** **-560.00 $**
+- **Kategori:** LOSS
+- **Hata / Zafiyet Atfı:** HTF_Premium_Liquidity_Sweep_And_FVG_Invalidation
+- **Kritik Ders:** HTF (1H) Pahalı (Premium) bölgede tepe likiditesi süpürüldükten (uzun üst iğne oluştuktan) sonra gelen geri çekilmelerde 15M FVG'ler zayıf kalabilir; çünkü kurumsal oyuncular likiditeyi tepe iğnesinde realize etmiştir. Bu tür ortamlarda ya daha derin Discount bölgeler (1H OTE) beklenmeli ya da 1M'de tersine dönüş teyidi (CHoCH) olmadan kutuya girilmemelidir. Makro defansif lot iskonto kuralı hasarı minimize etmiştir.
+
+#### 📋 Standart 5+1 Doğrulama Anketi
+- **Soru 1 (Kutuya Yaklaşım):** [B] Tepe likidite süpürmesi sonrası ardışık kırmızı mumlarla agresif iniş
+- **Soru 2 (1M Formasyonu):** [C] Delip geçti (1M'de yukarı yönlü CHoCH/Displacement oluşmadı, taban kırıldı)
+- **Soru 3 (Giriş Kararı):** [B] Kutu içine girişte manuel/market emri ile pozisyona dahil olundu
+- **Soru 4 (Sonuç):** [B] Stop (-0.56 R / -560.00 $)
+- **Soru 5 (Stop/İptal Nedeni):** [A] Kutu tutmadı (Tepe likidite alımı sonrası kâr realizasyonu kutuyu deldi)
+- **Ekstra (Makro Doğruluk):** Makro LONG_ONLY yönünü desteklese de defansif risk çarpanı (0.56x) uygulayarak 440 $ sermayeyi korudu.
+
+---
+
+### 36. [2026-10-02 13:15 TSİ / 10:15 UTC] — BTCUSD (15M Bullish OB - AL) 🛡️ PAS GEÇİLDİ (AVERTED LOSS / +750 $ KORUNDU)
+- **Kayıt Kodu:** BG-20261002-003
+- **Telegram Girişi:** BTCUSD AL | Grade A (8/9) | Skor: 90/100 (Tier A+) | Makro: LONG_ONLY | Giriş: 85767.45 - 85956.01 | Anlık: 86336.01 | Stop: 85767.45 altı | Önerilen Risk: Defansif Risk (%0.5R) | 0.75x Lot
+- **Giriş Bölgesi (POI):** 85767.45 — 85956.01 (15M Bullish OB — 188.56 USD) | **Sinyal Fiyatı:** 86336.01 (380.0 USD / %0.44 yukarıda)
+- **Çarpımsal Begonya Skoru:** SMC: 90 × G_macro: 1.0 = **90 / 100 (Tier A+)** | Önerilen Risk: **Defansif Risk (%0.5R) | 0.75x Lot** (750 $ Risk)
+- **Hedef (TP / Likidite Mıknatısı):** 87337.105 (2 tepe EQH — BSL Mıknatısı, 1001.1 pip yukarıda) [1H]
+- **Gerçekleşen Sonuç:** 🛡️ **PAS GEÇİLDİ / AVERTED LOSS (+750 $ Sermaye Korundu)** — Fiyat sinyal sonrasında 85767.45 - 85956.01 Bullish OB kutusuna tam olarak inememiş (en düşük 86090 seviyesine kadar süzülüp kutu tavanının 134 USD üzerinde kalmış), 1 dakikalık grafikte (LTF/ŞTF) hiçbir geçerli giriş ve tersine dönüş konfirmasyonu üretmemiştir. Operatör kural gereği pas geçmiş ve sermayeyi korumuştur.
+
+#### 🔬 1. SMC Teknik Katmanı & Çoklu Zaman Dilimi Analizi (3 Görsel İncelemesi)
+- **1H HTF Denge & CHoCH (1. Görsel):** `1H HTF • YUKARI • DENGE • A`. Fiyat 86364.02 seviyesinde, 1H grafiğinde Denge (Equilibrium) bölgesinde hareket ediyordu. 87000 zirvesinden sonra gelen geri çekilme sonrası altta 85767 - 85956 Bullish OB destek alanı olarak belirlendi.
+- **15M Kurulum & Bullish OB (2. Görsel):** `15M KURULUM • OB • A`. 15 dakikalık grafikte sabah 07:00 UTC'de OB'ye temas sonrası gelen yükselişin ardından, 09:00+ seansında fiyat 86336.01 seviyesinde kutunun 380 USD üzerinde salınmaktaydı. Sinyal net olarak *"Giriş bölgesine geri çekilmeyi (retest) bekle. Bölgeye dönmeden kesinlikle işlem yok"* uyarısı verdi.
+- **1M İcra & LTF Onay Eksikliği (3. Görsel):** `1M GİRİŞ • AL • A`. 1 dakikalık grafikte 08:30 - 10:15 UTC aralığında fiyat 86450'den 86090'a kadar inmiş; ancak alttaki `85767.45 - 85956.01` OB kutusuna ulaşamamıştır. Kutu seviyesinde herhangi bir 1M CHoCH veya displacement onayı gerçekleşmediği için operatör *"ştf confirmasyon vermedi"* tespitini yaparak emri tetiklememiş, disiplini korumuştur.
+
+#### 🌐 2. Makroekonomik Katman & Gating Notu
+- **Birincil Rejim:** *Reflationary Expansion with Tight Discount Rates*.
+- **Makro Kapı Durumu:** LONG_ONLY (G_macro: 1.0) -> Önerilen risk: **0.75x Lot** (750 $ Risk).
+- **Stratejik Görünüm:** INDPRO ve Bakır/Altın momentumundaki %+7.28 artış, düşük kredi stresi (HY OAS %3.12) ve genişleyen net likidite (+$25.4B) ile makro zemin AL yönünü desteklemektedir. Ancak SMC icra filtresi (POI teması ve 1M teyit) oluşmadığı için erken piyasa girişi engellenmiştir.
+
+#### 📊 3. Post-Trade Audit & Bilanço
+- **Gerçekleşen Sonuç:** 🛡️ **INVALID_NO_ENTRY (AVERTED LOSS)**
+- **Gerçekleşen R:** **0.00 R (0.75 R Risk Önlendi)**
+- **Finansal Getiri:** **0.00 $ (750.00 $ Sermaye Korundu)**
+- **Kategori:** AVERTED_LOSS
+- **Hata / Zafiyet Atfı:** No_M1_Confirmation_Passed
+- **Kritik Ders:** 90/100 Tier A+ elit seviyede bir skor olsa bile, fiyat POI kutusuna tam retest vermeden ve 1M zaman diliminde net konfirmasyon üretmeden FOMO (kaçırma korkusu) ile erken işleme girmemek esastır. Bu disiplin kasadaki 750 $ sermayeyi ve portföyün kümülatif kârını korumuştur.
+
+#### 📋 Standart 5+1 Doğrulama Anketi
+- **Soru 1 (Kutuya Yaklaşım):** [C] Kutuya tam ulaşmadı (En düşük 86090'a indi, kutu tavanının 134 USD üzerinde kaldı)
+- **Soru 2 (1M Formasyonu):** [C] Onay yok (1M grafiğinde POI içi alıcı CHoCH/Displacement oluşmadı)
+- **Soru 3 (Giriş Kararı):** [D] Girmedim (Pas — ŞTF/LTF konfirmasyon vermediği için kural gereği işlem açılmadı)
+- **Soru 4 (Sonuç):** [D] İşlem alınmadı (Averted Loss — 750 $ Korundu)
+- **Soru 5 (Stop/İptal Nedeni):** Kutuya retest ve LTF onay eksikliği
+- **Ekstra (Makro Doğruluk):** LONG_ONLY makro kapısı açık olsa dahi 1M icra kapısı teyitsiz girişi engelleyerek operatörü korudu.
+
+---
+
+### 37. [2026-10-02 18:01 TSİ / 15:01 UTC] — LTCUSD (15M Bullish FVG - AL) 🛡️ PAS GEÇİLDİ (AVERTED LOSS / +560 $ KORUNDU)
+- **Kayıt Kodu:** BG-20261002-004
+- **Telegram Girişi:** LTCUSD AL | Grade A (6/9) | Skor: 75/100 | Makro: LONG_ONLY | Giriş: 68.90 - 69.36 | Anlık: 69.70 | Stop: 68.90 altı | Önerilen Risk: Defansif Risk (%0.5R) | 0.56x Lot
+- **Giriş Bölgesi (POI):** 68.90 — 69.36 (15M Bullish FVG — 0.46 USD) | **Sinyal Fiyatı:** 69.70 (0.34 USD / %0.49 yukarıda)
+- **Çarpımsal Begonya Skoru:** SMC: 75 × G_macro: 1.0 = **75 / 100 (Tier A)** | Önerilen Risk: **Defansif Risk (%0.5R) | 0.56x Lot** (560 $ Risk)
+- **Hedef (TP / Likidite Mıknatısı):** 71.2067 (3 tepe EQH — BSL Mıknatısı, 150.7 pip yukarıda) | **Karşı Engel:** 70.7400 - 71.3000 (15M Bearish OB, 138 pip yukarıda)
+- **Gerçekleşen Sonuç:** 🛡️ **PAS GEÇİLDİ / AVERTED LOSS (+560 $ Sermaye Korundu)** — Fiyat 68.90 - 69.36 Bullish FVG kutusuna temas ederken/yaklaşırken 1 dakikalık grafikte (LTF) geçerli alıcı konfirmasyonu (CHoCH / displacement) üretmemiştir. Operatör kural gereği emri tetiklemeyerek pas geçmiş ve 560 $ sermayeyi korumuştur.
+
+#### 🔬 1. SMC Teknik Katmanı & Çoklu Zaman Dilimi Analizi (3 Görsel İncelemesi)
+- **1H HTF Ucuz (Discount) & BOS (1. Görsel):** `1H HTF • YUKARI • UCUZ • A`. Fiyat 69.70 seviyesinde, 1H grafiğinde Ucuz (Discount) bölgede yer almaktaydı. 71.30 tepesinden sonra gelen düzeltme dalgasında altta `68.90 — 69.36` FVG alanı talep dengesizliği olarak belirlendi.
+- **15M Kurulum & Bullish FVG (2. Görsel):** `15M KURULUM • FVG • A`. Fiyat 71.30 zirvesinden ardışık kırmızı mumlarla geri çekilerek FVG tavanı olan 69.36 seviyesine yaklaşmıştı.
+- **1M İcra & LTF Onay Eksikliği (3. Görsel):** `1M GİRİŞ • AL • A`. 1 dakikalık grafikte fiyat süzülmüş, ancak kutu seviyesinde yukarı yönlü net bir CHoCH veya alıcı displacement teyidi vermemiştir. Operatörün *"ltf confirmasyon vermedi"* tespitiyle pas geçmesi sermayeyi korumuştur.
+
+#### 🌐 2. Makroekonomik Katman & 8-Faktör Rotasyon Notu
+- **Birincil Rejim:** *Reflationary Expansion with Tight Discount Rates*.
+- **Makro Kapı Durumu:** LONG_ONLY (G_macro: 1.0) -> Önerilen risk: **0.56x Lot** (Defansif Risk).
+- **8-Faktör Rotasyon:** Skor **79/100** (Katman 3: Legacy Payment Infra). RS: ALT/BTC 24s `%+2.35`, ALT/ETH 24s `%+3.25`, RVOL 1s: `1.87x`. Makro zemin alımı desteklese de 1M icra kapısı teyitsiz girişi engellemiştir.
+
+#### 📊 3. Post-Trade Audit & Bilanço
+- **Gerçekleşen Sonuç:** 🛡️ **INVALID_NO_ENTRY (AVERTED LOSS)**
+- **Gerçekleşen R:** **0.00 R (0.56 R Risk Önlendi)**
+- **Finansal Getiri:** **0.00 $ (560.00 $ Sermaye Korundu)**
+- **Kategori:** AVERTED_LOSS
+- **Hata / Zafiyet Atfı:** No_M1_Confirmation_Passed
+- **Kritik Ders:** LTF konfirmasyon kuralı piyasadaki geçici dengesizliklerde veya zayıf retestlerde hatalı pozisyona girilmesini önleyen en kritik koruma kalkanıdır.
+
+#### 📋 Standart 5+1 Doğrulama Anketi
+- **Soru 1 (Kutuya Yaklaşım):** [A] Sakin kırmızı mumlarla FVG kutusuna iniş
+- **Soru 2 (1M Formasyonu):** [C] Onay yok (LTF alıcı CHoCH/Displacement oluşmadı)
+- **Soru 3 (Giriş Kararı):** [D] Girmedim (Pas — LTF onay vermediği için kural gereği girilmedi)
+- **Soru 4 (Sonuç):** [D] İşlem alınmadı (Averted Loss — 560 $ Korundu)
+- **Soru 5 (Stop/İptal Nedeni):** LTF onay eksikliği
+- **Ekstra (Makro Doğruluk):** LONG_ONLY kapısı ve 79/100 rotasyon skoru yönü destekliyor; ancak 1M filtresi teyitsiz girişi önledi.
+
+---
+
+### 38. [2026-10-02 18:16 TSİ / 15:16 UTC] — XRPUSD (15M Bullish OB - AL) 🛡️ PAS GEÇİLDİ (AVERTED LOSS / +750 $ KORUNDU)
+- **Kayıt Kodu:** BG-20261002-005
+- **Telegram Girişi:** XRPUSD AL | Grade A (9/9) | Skor: 98/100 (Tier A+) | Makro: LONG_ONLY | Giriş: 1.4859 - 1.4912 | Anlık: 1.5116 | Stop: 1.4859 altı | Önerilen Risk: Defansif Risk (%0.5R) | 0.75x Lot
+- **Giriş Bölgesi (POI):** 1.4859 — 1.4912 (15M Bullish OB — 0.0053 USD) | **Sinyal Fiyatı:** 1.5116 (204 pip / %1.37 yukarıda)
+- **Çarpımsal Begonya Skoru:** SMC: 98 × G_macro: 1.0 = **98 / 100 (Tier A+)** | Önerilen Risk: **Defansif Risk (%0.5R) | 0.75x Lot** (750 $ Risk)
+- **Hedef (TP / Likidite Mıknatısı):** 1.5501 (2 tepe EQH — BSL Mıknatısı, 384.5 pip yukarıda) | **Karşı Engel:** 1.5317 - 1.5353 (15M Bearish OB, 405 pip yukarıda)
+- **Gerçekleşen Sonuç:** 🛡️ **PAS GEÇİLDİ / AVERTED LOSS (+750 $ Sermaye Korundu)** — Fiyat 1.4859 - 1.4912 Bullish OB kutusuna tam olarak inememiş (en düşük 1.5030 seviyesine kadar çekilip kutu tavanının 118 pip üzerinde kalmış), 1 dakikalık grafikte (LTF/LYF) hiçbir geçerli giriş ve tersine dönüş konfirmasyonu üretmemiştir. Operatör "lyf confirme vermedi" kuralı gereğince emri tetiklememiş ve sermayeyi korumuştur.
+
+#### 🔬 1. SMC Teknik Katmanı & Çoklu Zaman Dilimi Analizi (3 Görsel İncelemesi)
+- **1H HTF Ucuz (Discount) & CHoCH (1. Görsel):** `1H HTF • YUKARI • UCUZ • A`. Fiyat 1.5116 seviyesinde, 1H grafiğinde Ucuz (Discount) bölgede işlem görüyordu. 1.55 zirvesinden gelen sert satış dalgasında altta `1.4859 — 1.4912` Bullish OB destek alanı olarak belirlendi.
+- **15M Kurulum & Bullish OB (2. Görsel):** `15M KURULUM • OB • A`. 15 dakikalık grafikte fiyat 1.55 zirvesinden aralıksız kırmızı mumlarla 1.5116'ya kadar inmiş; ancak alttaki `1.4859 - 1.4912` OB kutusuna 204 pip mesafe bırakmıştır. Sinyal net biçimde *"Giriş bölgesine geri çekilmeyi (retest) bekle. Bölgeye dönmeden kesinlikle işlem yok"* uyarısı vermiştir.
+- **1M İcra & LTF Onay Eksikliği (3. Görsel):** `1M GİRİŞ • AL • A`. 1 dakikalık grafikte 13:30 - 15:15 UTC seansında fiyat 1.55'ten süzülüp 15:05'te 1.5030'a kadar inmiş, ardından 1.5116'ya tepki vermiştir. Alttaki OB kutusuna hiçbir temas gerçekleşmemiş, POI seviyesinde 1M alıcı CHoCH veya displacement oluşmamıştır. Operatörün *"lyf confirme vermedi"* tespitiyle pas geçmesi icra kuralının eksiksiz uygulandığını kanıtlamıştır.
+
+#### 🌐 2. Makroekonomik Katman & 8-Faktör Rotasyon Notu
+- **Birincil Rejim:** *Reflationary Expansion with Tight Discount Rates*.
+- **Makro Kapı Durumu:** LONG_ONLY (G_macro: 1.0) -> Önerilen risk: **0.75x Lot** (750 $ Risk).
+- **8-Faktör Rotasyon & Türev:** Rotasyon Skoru `66/100` (Katman 3: Legacy Payment Infra), RVOL 1s: `1.97x`, 4s: `1.42x`, türev tarafında `ORGANIC_CAPITAL_INFLOW` (OI 4s: %+1.5 | Funding: %+0.0100). Makro zemin alımı desteklese de 1M icra kapısı teyitsiz erken girişi engellemiştir.
+
+#### 📊 3. Post-Trade Audit & Bilanço
+- **Gerçekleşen Sonuç:** 🛡️ **INVALID_NO_ENTRY (AVERTED LOSS)**
+- **Gerçekleşen R:** **0.00 R (0.75 R Risk Önlendi)**
+- **Finansal Getiri:** **0.00 $ (750.00 $ Sermaye Korundu)**
+- **Kategori:** AVERTED_LOSS
+- **Hata / Zafiyet Atfı:** No_M1_Confirmation_Passed
+- **Kritik Ders:** 98/100 Tier A+ elit seviyede bir skor olsa bile, fiyat POI kutusuna tam retest vermeden ve 1M zaman diliminde net konfirmasyon üretmeden FOMO (kaçırma korkusu) ile erken işleme girmemek esastır. Bu disiplin kasadaki 750 $ sermayeyi ve portföyün kümülatif kârını korumuştur.
+
+#### 📋 Standart 5+1 Doğrulama Anketi
+- **Soru 1 (Kutuya Yaklaşım):** [C] Kutuya tam ulaşmadı (En düşük 1.5030'a indi, kutu tavanının 118 pip üzerinde kaldı)
+- **Soru 2 (1M Formasyonu):** [C] Onay yok (1M grafiğinde POI içi alıcı CHoCH/Displacement oluşmadı)
+- **Soru 3 (Giriş Kararı):** [D] Girmedim (Pas — LYF/LTF konfirmasyon vermediği için kural gereği işlem açılmadı)
+- **Soru 4 (Sonuç):** [D] İşlem alınmadı (Averted Loss — 750 $ Korundu)
+- **Soru 5 (Stop/İptal Nedeni):** Kutuya retest ve LTF onay eksikliği
+- **Ekstra (Makro Doğruluk):** LONG_ONLY makro kapısı açık olsa dahi 1M icra kapısı teyitsiz girişi engelleyerek operatörü korudu.
+
+
+
+
+
+
+
+
 
 

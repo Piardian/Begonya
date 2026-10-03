@@ -1,6 +1,6 @@
 import { NotificationCandidate } from '../server/pipeline';
 import { RuntimeExecutionPipelineResult } from '../server/runtimeExecutionPipeline';
-import { getPipSize } from './assetMetrics';
+import { getPipSize, isBoxTooNarrow, isRolloverSpreadWindow } from './assetMetrics';
 
 export const SIGNAL_VALIDATION_GATE_VERSION = 2 as const;
 
@@ -70,6 +70,18 @@ function evaluateEntryValidation(candidate: NotificationCandidate, rejectionReas
     }
   }
 
+  // 1. Prop Firm Midnight Rollover Spread Protection (20:50 - 22:15 UTC / 23:50 - 01:15 TSİ)
+  if (isRolloverSpreadWindow(candidate.marketDataTimestamp)) {
+    rejectionReason.push('prop firm midnight rollover spread spike window (20:50 - 22:15 UTC / 23:50 - 01:15 TSİ); execution frozen');
+    return 'FAIL';
+  }
+
+  // 2. Minimum Viable POI Box Width (Dar Kutu Kalkanı - broker spread friction)
+  if (isBoxTooNarrow(candidate.symbol, zone.low, zone.high, candidate.atr15mPips)) {
+    rejectionReason.push('entry zone is too narrow to survive broker spread and execution noise');
+    return 'FAIL';
+  }
+
   if (!directionMatchesTrade(candidate.tradeDirection, candidate.poi.direction)) {
     rejectionReason.push('POI direction conflicts with trade direction');
     return 'FAIL';
@@ -97,6 +109,12 @@ function evaluateEntryValidation(candidate: NotificationCandidate, rejectionReas
     return 'FAIL';
   }
 
+  // 3. Exhaustion Sweep + Shallow FVG Guard (Sığ FVG Tuzağı)
+  if (isExhaustionSweepShallowFvg(candidate)) {
+    rejectionReason.push('exhaustion sweep with premature shallow FVG in HTF opposing territory; deep discount/OTE retracement required');
+    return 'FAIL';
+  }
+
   if (quality?.status === 'invalid') {
     rejectionReason.push('setup invalidated by signal quality analysis');
     return 'FAIL';
@@ -106,8 +124,9 @@ function evaluateEntryValidation(candidate: NotificationCandidate, rejectionReas
     rejectionReason.push('setup invalidation risk is high');
   }
 
-  if ((quality?.metrics.poiTestCount ?? candidate.poiTestCount) >= 3) {
-    rejectionReason.push('entry zone over-tested');
+  // 4. Over-tested / Depleted POI Guard: Max 1 prior test allowed (2+ touches is depleted)
+  if ((quality?.metrics.poiTestCount ?? candidate.poiTestCount) >= 2) {
+    rejectionReason.push('entry zone depleted; POI has already been tested multiple times');
     return 'FAIL';
   }
 
@@ -256,5 +275,48 @@ function isAdverseMomentumMarubozu(candidate: NotificationCandidate): boolean {
     const minimalRejection = upperWick / candleRange <= 0.12;
     return deepInAdverseEdge && minimalRejection;
   }
+}
+
+export function isExhaustionSweepShallowFvg(candidate: NotificationCandidate): boolean {
+  if (candidate.isExhaustionSweepShallowFvg === true) {
+    return true;
+  }
+  if (candidate.poiType !== 'FVG') {
+    return false;
+  }
+
+  // Long check: Price in HTF Premium + shallow 15M FVG + rejection/exhaustion wick
+  if (candidate.tradeDirection === 'long') {
+    const isHtfPremium = candidate.pd1H === 'premium' || candidate.pd4H === 'premium';
+    const isShallow = candidate.pd15M === 'premium' || candidate.pd15M === 'eq';
+    if (isHtfPremium && isShallow) {
+      if (candidate.triggerCandle) {
+        const c = candidate.triggerCandle;
+        const candleRange = c.high - c.low;
+        const upperWick = c.high - Math.max(c.open, c.close);
+        if (candleRange > 0 && upperWick / candleRange >= 0.35) {
+          return true;
+        }
+      }
+    }
+  }
+
+  // Short check: Price in HTF Discount + shallow 15M FVG + rejection/exhaustion wick
+  if (candidate.tradeDirection === 'short') {
+    const isHtfDiscount = candidate.pd1H === 'discount' || candidate.pd4H === 'discount';
+    const isShallow = candidate.pd15M === 'discount' || candidate.pd15M === 'eq';
+    if (isHtfDiscount && isShallow) {
+      if (candidate.triggerCandle) {
+        const c = candidate.triggerCandle;
+        const candleRange = c.high - c.low;
+        const lowerWick = Math.min(c.open, c.close) - c.low;
+        if (candleRange > 0 && lowerWick / candleRange >= 0.35) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
 }
 

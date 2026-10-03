@@ -4,7 +4,8 @@ import { JsonlEvidenceStore } from './evidenceStore';
 import type { NotificationCandidate } from './pipeline';
 import type { StoredCandle } from './candleStore';
 import type { OrderBlock, FVG } from '../src/types';
-import { getPipSize } from '../src/assetMetrics';
+import { detectAssetClass, getPipSize } from '../src/assetMetrics';
+import { selectPaperTarget } from '../src/paperOutcomeTracker';
 import { FileSignalLedger } from './signalLedger';
 import {
   captureMacroSnapshot,
@@ -27,12 +28,15 @@ export interface TrackedSignal {
   grade?: string;
   smcScore?: number;
   macroSnapshot?: MacroSnapshot;
+  liquidityMagnet?: NotificationCandidate['liquidityMagnet'];
+  opposingObstacle?: NotificationCandidate['opposingObstacle'];
   zoneLow: number;
   zoneHigh: number;
   entryPrice: number | null;
   stopLoss: number | null;
   takeProfit: number | null;
   riskDistance: number | null;
+  targetR?: number;
   entryTriggeredAt: number | null;
   lastProcessedCandleTimestamp: number;
   beArmed: boolean;
@@ -58,12 +62,64 @@ export interface PaperOutcomeTrackerConfig {
 }
 
 const DEFAULT_CONFIG: PaperOutcomeTrackerConfig = Object.freeze({
-  entryExpiryMs: 48 * 60 * 60 * 1000,
-  maxHoldBars: 96,
+  entryExpiryMs: 16 * 15 * 60 * 1000,
+  maxHoldBars: 32,
   riskReward: 2,
   breakEvenAtR: 1,
   stopBufferPips: 2,
 });
+
+export function calculateAssetCalibratedStopBuffer(symbol: string, zoneLow: number, zoneHigh: number): number {
+  const assetClass = detectAssetClass(symbol);
+  const upper = symbol.toUpperCase();
+  const zoneWidth = Math.abs(zoneHigh - zoneLow);
+
+  switch (assetClass) {
+    case 'FOREX':
+      return 2.0 * 0.0001; // 2.0 pips
+    case 'FOREX_JPY':
+      return 2.5 * 0.01; // 2.5 pips
+    case 'COMMODITY':
+      if (upper.startsWith('XAU')) {
+        // Gold: minimum $1.50 (15 pips) or 10% of zone width to absorb broker spread spikes
+        return Math.max(1.50, zoneWidth * 0.10);
+      }
+      return Math.max(0.15, zoneWidth * 0.10);
+    case 'INDEX':
+      // NAS100 / SPX: minimum 10.0 points or 10% of zone
+      return Math.max(10.0, zoneWidth * 0.10);
+    case 'CRYPTO':
+      if (upper.startsWith('BTC')) {
+        // BTC: minimum $35.0 buffer or 10% of zone
+        return Math.max(35.0, zoneWidth * 0.10);
+      }
+      if (upper.startsWith('ETH')) {
+        return Math.max(3.50, zoneWidth * 0.10);
+      }
+      if (upper.startsWith('SOL')) {
+        return Math.max(0.35, zoneWidth * 0.10);
+      }
+      // Altcoins: 10% of zone width or 5 minimum pip units
+      return Math.max(getPipSize(symbol) * 5, zoneWidth * 0.10);
+    default:
+      return 2.0 * getPipSize(symbol);
+  }
+}
+
+export function isSliceThroughCandle(
+  direction: 'long' | 'short',
+  candle: StoredCandle,
+  zoneLow: number,
+  zoneHigh: number
+): boolean {
+  if (direction === 'long') {
+    // Slices down completely through support zone without rejection
+    return candle.open > zoneLow && candle.close < zoneLow;
+  } else {
+    // Slices up completely through resistance zone without rejection
+    return candle.open < zoneHigh && candle.close > zoneHigh;
+  }
+}
 
 export class PaperOutcomeTracker {
   private static instance: PaperOutcomeTracker | null = null;
@@ -83,7 +139,7 @@ export class PaperOutcomeTracker {
     readonly config?: Partial<PaperOutcomeTrackerConfig>;
   }) {
     this.config = Object.freeze({ ...DEFAULT_CONFIG, ...(options?.config ?? {}) });
-    this.statePath = options?.statePath ?? process.env.OUTCOME_LEDGER_PATH ?? path.join(process.env.EVIDENCE_DIRECTORY ?? 'evidence', 'outcomes', 'outcome-ledger.json');
+    this.statePath = options?.statePath ?? process.env.OUTCOME_LEDGER_PATH ?? path.resolve(process.cwd(), 'data', 'active_outcomes.json');
     this.evidenceStore = options?.evidenceStore ?? new JsonlEvidenceStore();
     this.macroOutcomeStore = options?.macroOutcomeStore ?? new FileMacroOutcomeStore();
     this.signalLedger = options?.signalLedger ?? new FileSignalLedger();
@@ -129,12 +185,15 @@ export class PaperOutcomeTracker {
       grade: candidate.gradeResult?.grade ?? 'B',
       smcScore: candidate.macroEvaluation?.begonyaScore ?? candidate.gradeResult?.totalScore ?? 80,
       macroSnapshot: snapshot,
+      liquidityMagnet: candidate.liquidityMagnet,
+      opposingObstacle: candidate.opposingObstacle,
       zoneLow: zone.low,
       zoneHigh: zone.high,
       entryPrice: null,
       stopLoss: null,
       takeProfit: null,
       riskDistance: null,
+      targetR: undefined,
       entryTriggeredAt: null,
       lastProcessedCandleTimestamp: signalTimestamp,
       beArmed: false,
@@ -186,8 +245,20 @@ export class PaperOutcomeTracker {
         return { changed: false, closed: false };
       }
 
+      // Approach Velocity & Rejection Guard: Check if the candle sliced completely through the zone
+      if (isSliceThroughCandle(signal.direction, candle, signal.zoneLow, signal.zoneHigh)) {
+        this.close(
+          signal,
+          'SL',
+          candle.timestamp,
+          'Entry zone sliced through aggressively on entry candle without structural rejection (Approach Velocity breach).'
+        );
+        return { changed: true, closed: true };
+      }
+
       const entryPrice = resolveEntryPrice(signal.direction, signal.zoneLow, signal.zoneHigh, candle.open);
-      const buffer = this.config.stopBufferPips * getPipSize(signal.symbol);
+      // Asset-calibrated dynamic stop buffer
+      const buffer = calculateAssetCalibratedStopBuffer(signal.symbol, signal.zoneLow, signal.zoneHigh);
       const stopLoss = signal.direction === 'long' ? signal.zoneLow - buffer : signal.zoneHigh + buffer;
       const riskDistance = Math.abs(entryPrice - stopLoss);
 
@@ -196,14 +267,27 @@ export class PaperOutcomeTracker {
         return { changed: true, closed: true };
       }
 
+      // Dynamic Target based on Liquidity Magnet / Opposing Obstacle (Strictly minimum 2.0R, max 5.0R)
+      const targetSelection = selectPaperTarget({
+        entryPrice,
+        stopLossPrice: stopLoss,
+        tradeDirection: signal.direction,
+        symbol: signal.symbol,
+        liquidityMagnet: signal.liquidityMagnet,
+        opposingObstacle: signal.opposingObstacle,
+      });
+
+      // Strict user rule: "ama burda yinede minimum 2 r olsun hedef"
+      const targetR = Math.max(2.0, Math.min(5.0, targetSelection.targetR));
       const takeProfit = signal.direction === 'long'
-        ? entryPrice + riskDistance * this.config.riskReward
-        : entryPrice - riskDistance * this.config.riskReward;
+        ? entryPrice + riskDistance * targetR
+        : entryPrice - riskDistance * targetR;
 
       signal.entryPrice = entryPrice;
       signal.stopLoss = stopLoss;
       signal.takeProfit = takeProfit;
       signal.riskDistance = riskDistance;
+      signal.targetR = targetR;
       signal.entryTriggeredAt = candle.timestamp;
       signal.status = 'OPEN';
 
@@ -265,7 +349,8 @@ export class PaperOutcomeTracker {
     signal.exitReason = reason;
 
     const exitPrice = resolveSyntheticExitPrice(signal, outcome);
-    const rrAchieved = outcome === 'TP' ? this.config.riskReward : outcome === 'SL' ? -1 : outcome === 'BE' ? 0 : null;
+    const targetMultiplier = signal.targetR ?? this.config.riskReward;
+    const rrAchieved = outcome === 'TP' ? targetMultiplier : outcome === 'SL' ? -1 : outcome === 'BE' ? 0 : null;
     const holdingTimeMs = signal.entryTriggeredAt === null ? null : Math.max(0, timestamp - signal.entryTriggeredAt);
 
     // 1. Durably update Signal Ledger if applicable
@@ -401,7 +486,7 @@ function evaluateOpenCandle(
   if (hitsTP && hitsSL) {
     return { type: 'UNKNOWN', reason: 'TP and SL were both inside the same OHLC candle; execution order is unknowable from candle data alone.' };
   }
-  if (hitsTP) return { type: 'TP', reason: `Synthetic take-profit reached at ${config.riskReward}R.` };
+  if (hitsTP) return { type: 'TP', reason: `Synthetic take-profit reached at ${signal.targetR ?? config.riskReward}R (Liquidity Target).` };
   if (hitsSL) return { type: signal.beArmed ? 'BE' : 'SL', reason: signal.beArmed ? 'Break-even stop was hit after the BE threshold was armed.' : 'Synthetic stop-loss reached before break-even activation.' };
   if (hitsBE && !entryCandle) return { type: 'BE', reason: 'Break-even threshold was armed and price returned to the synthetic entry.' };
   return null;

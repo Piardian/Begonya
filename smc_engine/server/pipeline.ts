@@ -9,7 +9,7 @@ import { detectAllFVGs } from '../src/fvgDetector';
 import { findDisplacementLeg } from '../src/displacementLeg';
 import { scoreDisplacementQuality } from '../src/displacementQualityScorer';
 import { calculateRange } from '../src/rangeCalculator';
-import { detectSweeps, detectSwingSweeps, mergeSweepEvents } from '../src/sweepDetector';
+import { detectSweeps, detectSwingSweeps, mergeSweepEvents, SweepEvent } from '../src/sweepDetector';
 import { determineModel, ModelState } from '../src/modelDeterminer';
 import { countOBTests, countFVGTests } from '../src/poiTestCounter';
 import { calculateGrade, GradeInput, GradeResult } from '../src/gradeCalculator';
@@ -67,6 +67,7 @@ export interface NotificationCandidate {
   atr15mPips?: number | null;
   approachVelocity?: ApproachVelocityInfo;
   expectancyPlan?: TradeExpectancyPlan;
+  isExhaustionSweepShallowFvg?: boolean;
 }
 
 export function runPipeline(
@@ -664,7 +665,18 @@ export function runPipeline(
       activeFVGs15m: fvgs,
     });
 
-    const allowTrendContinuationPD = shouldAllowTrendContinuationPD(
+    const isExhaustionSweep = evaluateIsExhaustionSweepShallowFvg(
+      tradeDirection,
+      fvg,
+      candles15mCast,
+      lastIndex15m,
+      sweeps,
+      pd1H,
+      pd4H,
+      pd15M
+    );
+
+    let allowTrendContinuationPD = shouldAllowTrendContinuationPD(
       symbol,
       tradeDirection,
       bias4H,
@@ -674,6 +686,9 @@ export function runPipeline(
       dq,
       pd1H
     );
+    if (isExhaustionSweep) {
+      allowTrendContinuationPD = false;
+    }
 
     const atrPips = averageTrueRangePips(candles15mCast, lastIndex15m, symbol, 14);
     const approachVelocity = evaluateApproachVelocity(
@@ -827,6 +842,7 @@ export function runPipeline(
         atr15mPips: atr15m,
         approachVelocity,
         expectancyPlan,
+        isExhaustionSweepShallowFvg: isExhaustionSweep,
       });
     } else {
       recordGradeBlockOverlap(gradeResult.blockReasons);
@@ -1268,4 +1284,60 @@ function resolvePoiZone(type: 'OB' | 'FVG', poi: OrderBlock | FVG): { high: numb
   }
   const fvg = poi as FVG;
   return { high: fvg.gapHigh, low: fvg.gapLow };
+}
+
+export function evaluateIsExhaustionSweepShallowFvg(
+  tradeDirection: 'long' | 'short',
+  fvg: FVG,
+  candles: Candle[],
+  lastIndex: number,
+  sweeps: readonly SweepEvent[],
+  pd1H: PremiumDiscountState,
+  pd4H: PremiumDiscountState,
+  pd15M?: PremiumDiscountState
+): boolean {
+  const isHtfOpposing =
+    (tradeDirection === 'long' && (pd1H.status === 'premium' || pd4H.status === 'premium')) ||
+    (tradeDirection === 'short' && (pd1H.status === 'discount' || pd4H.status === 'discount'));
+
+  if (!isHtfOpposing) return false;
+
+  const checkStartIndex = Math.max(0, lastIndex - 16);
+  const recentSweeps = sweeps.filter(s => s.candleIndex >= checkStartIndex && s.candleIndex <= lastIndex);
+
+  if (tradeDirection === 'long') {
+    const hasHighSweep = recentSweeps.some(s => s.type === 'sweep_high');
+    let hasWickRejection = false;
+    for (let i = checkStartIndex; i <= lastIndex; i++) {
+      const c = candles[i];
+      const range = c.high - c.low;
+      const upperWick = c.high - Math.max(c.open, c.close);
+      if (range > 0 && upperWick / range >= 0.35 && c.high >= fvg.gapHigh) {
+        hasWickRejection = true;
+        break;
+      }
+    }
+
+    if (!hasHighSweep && !hasWickRejection) return false;
+
+    const isShallow = pd15M?.status === 'premium' || pd15M?.status === 'eq';
+    return isShallow;
+  } else {
+    const hasLowSweep = recentSweeps.some(s => s.type === 'sweep_low');
+    let hasWickRejection = false;
+    for (let i = checkStartIndex; i <= lastIndex; i++) {
+      const c = candles[i];
+      const range = c.high - c.low;
+      const lowerWick = Math.min(c.open, c.close) - c.low;
+      if (range > 0 && lowerWick / range >= 0.35 && c.low <= fvg.gapLow) {
+        hasWickRejection = true;
+        break;
+      }
+    }
+
+    if (!hasLowSweep && !hasWickRejection) return false;
+
+    const isShallow = pd15M?.status === 'discount' || pd15M?.status === 'eq';
+    return isShallow;
+  }
 }

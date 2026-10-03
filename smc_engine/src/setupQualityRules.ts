@@ -109,6 +109,26 @@ export const SETUP_QUALITY_RULES: readonly QualityRule[] = [
       (detector.direction === 'short' && (detector.premiumDiscount.oneHour.status === 'discount' && detector.premiumDiscount.fifteenMinute.status === 'discount')),
   },
   {
+    id: 'EXHAUSTION_SWEEP_SHALLOW_FVG',
+    category: 'HardReject',
+    severity: 'High',
+    message: 'Exhaustion sweep followed by premature shallow FVG in HTF opposing territory.',
+    recommendation: 'Reject shallow FVGs in HTF Premium/Discount after an exhaustion sweep; require deep Discount/OTE retracement.',
+    condition: ({ detector }) => {
+      const isFvg = detector.poi.type === 'Fair Value Gap';
+      if (!isFvg) return false;
+      if (detector.direction === 'long') {
+        const isHtfPremium = detector.premiumDiscount.oneHour.status === 'premium' || detector.premiumDiscount.fourHour.status === 'premium';
+        const is15mShallow = detector.premiumDiscount.fifteenMinute.status === 'premium' || detector.premiumDiscount.fifteenMinute.status === 'eq';
+        return isHtfPremium && is15mShallow && detector.sweep.present;
+      } else {
+        const isHtfDiscount = detector.premiumDiscount.oneHour.status === 'discount' || detector.premiumDiscount.fourHour.status === 'discount';
+        const is15mShallow = detector.premiumDiscount.fifteenMinute.status === 'discount' || detector.premiumDiscount.fifteenMinute.status === 'eq';
+        return isHtfDiscount && is15mShallow && detector.sweep.present;
+      }
+    },
+  },
+  {
     id: 'SELL_IN_4H_DISCOUNT',
     category: 'GradeCap',
     severity: 'High',

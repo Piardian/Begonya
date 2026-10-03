@@ -176,6 +176,7 @@ function buildSections(
     field('Kurumsal Sınıf', `Tier ${macro.scoreTier} (${macro.tierRationale})`),
     field('Risk / Lot Çarpanı', `${macro.riskMultiplier.toFixed(2)}x Lot`),
     field('Haber Kalkanı', '✅ Güvenli (±15 dk yüksek etkili veri yok)'),
+    field('Prop Firm Kalkanı', '🛡️ Aktif (Rollover güvenli | Min kutu onaylı | Spread tamponlu)'),
     field('Makro Durum', macro.gateStatusMessage),
   ];
 

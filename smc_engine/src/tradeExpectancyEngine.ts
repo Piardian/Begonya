@@ -1,4 +1,4 @@
-import { getPipSize, formatPrice, detectAssetClass } from './assetMetrics';
+import { getPipSize, formatPrice, detectAssetClass, getEstimatedSpreadPips } from './assetMetrics';
 import { LiquidityMagnet } from './liquidityMagnetDetector';
 import { OpposingObstacle } from './opposingObstacleDetector';
 import { MacroGateEvaluation } from '../server/macroGateAdapter';
@@ -32,6 +32,7 @@ export interface TradeExpectancyPlan {
 
   readonly isAdmissible: boolean;
   readonly rejectionReason?: string;
+  readonly propFirmGuardPassed?: boolean;
 }
 
 export interface CalculateExpectancyInput {
@@ -90,10 +91,11 @@ export function calculateTradeExpectancyPlan(input: CalculateExpectancyInput): T
   const equilibrium = (zoneLow + zoneHigh) / 2;
   const entryPrice = inZone ? currentPrice : equilibrium;
 
-  // 2. Smart Stop Loss with Volatility Buffer (Noise Protection):
-  // Buffer = max(2 pips, ATR15m * 0.35)
+  // 2. Smart Stop Loss with Volatility Buffer & Prop Firm Spread Guard:
+  // Buffer = max(2 pips, ATR15m * 0.35, spread * 1.5 + 1.0)
   const effectiveAtr = atr15mPips && atr15mPips > 0 ? atr15mPips : getDefaultAtrPips(symbol);
-  const smartStopBufferPips = Number(Math.max(2.0, effectiveAtr * 0.35).toFixed(1));
+  const spreadPips = getEstimatedSpreadPips(symbol);
+  const smartStopBufferPips = Number(Math.max(2.0, effectiveAtr * 0.35, spreadPips * 1.5 + 1.0).toFixed(1));
   const bufferUnits = smartStopBufferPips * pip;
 
   let stopLoss: number;
@@ -217,5 +219,6 @@ export function calculateTradeExpectancyPlan(input: CalculateExpectancyInput): T
     recommendedRiskPct,
     isAdmissible,
     rejectionReason,
+    propFirmGuardPassed: true,
   };
 }

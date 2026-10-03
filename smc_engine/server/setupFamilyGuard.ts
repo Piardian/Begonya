@@ -1,3 +1,5 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import type { NotificationCandidate } from './pipeline';
 
 export interface SetupFamilyGuardRecord {
@@ -13,27 +15,39 @@ export interface SetupFamilyGuardRecord {
 }
 
 export interface SetupFamilyGuardOptions {
-  /** Cooldown in milliseconds for the same symbol & direction. Default: 45 minutes */
+  /** Cooldown in milliseconds for the same symbol & direction impulse. Default: 45 minutes */
   readonly cooldownMs?: number;
   /** Max price overlap ratio (0-1) to consider two zones identical family. Default: 0.4 */
   readonly overlapThreshold?: number;
+  /** Cooldown in milliseconds for overlapping price zones on the same symbol (depleted/stale POI). Default: 16 hours */
+  readonly zoneOverlapCooldownMs?: number;
+  /** Directory path to persist history. Default: 'data' in non-test mode */
+  readonly dataDir?: string;
 }
 
 const DEFAULT_COOLDOWN_MS = 45 * 60 * 1000;
+const DEFAULT_ZONE_OVERLAP_COOLDOWN_MS = 16 * 60 * 60 * 1000; // 16 hours (full intraday session window)
 const DEFAULT_OVERLAP_THRESHOLD = 0.4;
 
 export class SetupFamilyGuard {
   private readonly history: SetupFamilyGuardRecord[] = [];
   private readonly cooldownMs: number;
+  private readonly zoneOverlapCooldownMs: number;
   private readonly overlapThreshold: number;
+  private readonly dataDir?: string;
 
   constructor(options: SetupFamilyGuardOptions = {}) {
     this.cooldownMs = options.cooldownMs ?? DEFAULT_COOLDOWN_MS;
+    this.zoneOverlapCooldownMs =
+      options.zoneOverlapCooldownMs ??
+      (options.cooldownMs !== undefined ? options.cooldownMs : DEFAULT_ZONE_OVERLAP_COOLDOWN_MS);
     this.overlapThreshold = options.overlapThreshold ?? DEFAULT_OVERLAP_THRESHOLD;
+    this.dataDir = options.dataDir ?? (process.env.NODE_ENV === 'test' ? undefined : 'data');
+    this.loadFromDisk();
   }
 
   /**
-   * Evaluates if a candidate is an unwanted duplicate/spam from an already notified family.
+   * Evaluates if a candidate is an unwanted duplicate/spam from an already notified family or depleted zone.
    */
   shouldAllow(candidate: NotificationCandidate, nowMs: number = Date.now()): { allowed: boolean; reason: string } {
     this.pruneOld(nowMs);
@@ -68,20 +82,26 @@ export class SetupFamilyGuard {
       }
     }
 
-    // 2. Overlapping price zone within cooldown window
+    // 2. Overlapping price zone within zone overlap cooldown window (Stale / Depleted POI Guard)
     const recentMatching = allSymbolDirectionHistory.filter(
-      r => nowMs - r.notifiedAt <= this.cooldownMs
+      r => nowMs - r.notifiedAt <= this.zoneOverlapCooldownMs
     );
 
     for (const recent of recentMatching) {
       const overlap = calculateOverlapRatio(zone, { low: recent.zoneLow, high: recent.zoneHigh });
       if (overlap >= this.overlapThreshold) {
         const isSamePoiType = !recent.poiType || recent.poiType === candidate.poiType;
-        const isGenuineTierUpgrade = isSamePoiType && recent.grade !== 'A+' && grade === 'A+' && score > recent.score;
+        const isGenuineTierUpgrade =
+          nowMs - recent.notifiedAt <= this.cooldownMs &&
+          isSamePoiType &&
+          recent.grade !== 'A+' &&
+          grade === 'A+' &&
+          score > recent.score;
         if (!isGenuineTierUpgrade) {
+          const hoursAgo = ((nowMs - recent.notifiedAt) / (60 * 60 * 1000)).toFixed(1);
           return {
             allowed: false,
-            reason: `Duplicate zone overlap: Similar zone (%${Math.round(overlap * 100)} overlap) was notified within cooldown (${recent.grade}, score ${recent.score}).`,
+            reason: `Duplicate/depleted zone overlap: Similar zone (%${Math.round(overlap * 100)} overlap) was already notified ${hoursAgo}h ago (${recent.grade}, score ${recent.score}). Institutional orders depleted.`,
           };
         }
       }
@@ -106,6 +126,7 @@ export class SetupFamilyGuard {
       score: candidate.gradeResult.totalScore,
       notifiedAt: nowMs,
     });
+    this.saveToDisk();
   }
 
   /**
@@ -113,6 +134,14 @@ export class SetupFamilyGuard {
    */
   clear(): void {
     this.history.length = 0;
+    if (this.dataDir) {
+      const filePath = path.join(this.dataDir, 'setup_family_guard.json');
+      try {
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      } catch {}
+    }
   }
 
   private pruneOld(nowMs: number): void {
@@ -120,6 +149,31 @@ export class SetupFamilyGuard {
     while (this.history.length > 0 && this.history[0].notifiedAt < cutoff) {
       this.history.shift();
     }
+  }
+
+  private loadFromDisk(): void {
+    if (!this.dataDir) return;
+    const filePath = path.join(this.dataDir, 'setup_family_guard.json');
+    if (!fs.existsSync(filePath)) return;
+    try {
+      const raw = fs.readFileSync(filePath, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        this.history.push(...parsed);
+        this.pruneOld(Date.now());
+      }
+    } catch {}
+  }
+
+  private saveToDisk(): void {
+    if (!this.dataDir) return;
+    try {
+      if (!fs.existsSync(this.dataDir)) {
+        fs.mkdirSync(this.dataDir, { recursive: true });
+      }
+      const filePath = path.join(this.dataDir, 'setup_family_guard.json');
+      fs.writeFileSync(filePath, JSON.stringify(this.history, null, 2), 'utf8');
+    } catch {}
   }
 }
 

@@ -157,6 +157,19 @@ export function runRuntimeExecutionPipeline(
   repository.saveOutcome(signalOutcome);
   repository.saveBenchmark(signalBenchmark);
 
+  if (firstRisk?.evaluation.executionAllowed) {
+    try {
+      const { PaperOutcomeTracker } = require('./paperOutcomeTracker');
+      PaperOutcomeTracker.getInstance().registerCandidate({
+        ...candidate,
+        signalContext,
+        signalId: candidate.signalId ?? candidate.uniqueKey,
+      });
+    } catch {
+      // Best-effort registration
+    }
+  }
+
   return Object.freeze({
     decisionReport,
     executionPlan,

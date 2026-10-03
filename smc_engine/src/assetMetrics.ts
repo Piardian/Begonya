@@ -316,3 +316,21 @@ export function getEstimatedSpreadPips(symbol: string): number {
   return 1.2;
 }
 
+/**
+ * Checks if the given timestamp falls into the midnight rollover spread spike window.
+ * Window: 20:50 UTC to 22:15 UTC (23:50 to 01:15 TSİ / Turkey Time).
+ * During this window, institutional liquidity thins and prop firm brokers widen spreads 3x-10x.
+ */
+export function isRolloverSpreadWindow(timestampMs?: number): boolean {
+  if (timestampMs === undefined || !Number.isFinite(timestampMs)) {
+    return false;
+  }
+  const d = new Date(timestampMs);
+  const utcHours = d.getUTCHours();
+  const utcMinutes = d.getUTCMinutes();
+  const totalUtcMinutes = utcHours * 60 + utcMinutes;
+  // 20:50 UTC = 20 * 60 + 50 = 1250 minutes
+  // 22:15 UTC = 22 * 60 + 15 = 1335 minutes
+  return totalUtcMinutes >= 1250 && totalUtcMinutes <= 1335;
+}
+

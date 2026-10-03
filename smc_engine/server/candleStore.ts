@@ -94,6 +94,19 @@ export class CandleStore {
     } catch {
       fs.writeFileSync(filePath, JSON.stringify(candles, null, 2), 'utf8');
     }
+
+    if (timeframe === '15m') {
+      void this.processOutcomeTracking(symbol, candles);
+    }
+  }
+
+  private async processOutcomeTracking(symbol: string, candles: readonly StoredCandle[]): Promise<void> {
+    try {
+      const { PaperOutcomeTracker } = await import('./paperOutcomeTracker');
+      PaperOutcomeTracker.getInstance().update(symbol, candles);
+    } catch (error) {
+      console.warn(`[PaperOutcomeTracker] Processing failed for ${symbol}:`, error);
+    }
   }
 
   getCandles(symbol: Symbol, timeframe: Timeframe): StoredCandle[] {
