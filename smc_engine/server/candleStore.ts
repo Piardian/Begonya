@@ -107,6 +107,13 @@ export class CandleStore {
     } catch (error) {
       console.warn(`[PaperOutcomeTracker] Processing failed for ${symbol}:`, error);
     }
+
+    try {
+      const { ShadowCohortTracker } = await import('./shadowCohortTracker');
+      ShadowCohortTracker.getInstance().process(symbol, candles as unknown as import('../src/types').Candle[]);
+    } catch (shadowErr) {
+      console.warn(`[ShadowCohortTracker] Processing failed for ${symbol}:`, shadowErr);
+    }
   }
 
   getCandles(symbol: Symbol, timeframe: Timeframe): StoredCandle[] {

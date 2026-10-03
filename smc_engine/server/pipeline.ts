@@ -30,6 +30,7 @@ import { evaluateApproachVelocity, ApproachVelocityInfo } from '../src/approachV
 import { isCryptoSymbol } from './killzone';
 import { ActivePoiWatchlist } from './activePoiWatchlist';
 import { calculateTradeExpectancyPlan, TradeExpectancyPlan } from '../src/tradeExpectancyEngine';
+import { ShadowCohortTracker } from './shadowCohortTracker';
 
 export interface NotificationCandidate {
   symbol: Symbol;
@@ -224,6 +225,17 @@ export function runPipeline(
   const pd15M = calculatePremiumDiscount(candles15mCast, swings15m, lastIndex15m);
   const validationCandle = latestCompletedCandle(candles15mCast);
 
+  // Collect all OBs and FVGs
+  const obs = detectAllOrderBlocks(candles15mCast, structureState15m.events);
+  const fvgs = detectAllFVGs(candles15mCast, structureState15m.events, symbol, '15m');
+  const rangeStates = candles15mCast.map((_, idx) =>
+    calculateRange(candles15mCast, swings15m, structureState15m, idx)
+  );
+  const sweeps = mergeSweepEvents(
+    detectSweeps(candles15mCast, rangeStates, symbol, '15m'),
+    detectSwingSweeps(candles15mCast, swings15m, symbol, '15m')
+  );
+
   const observePoiLifecycle = (
     poiType: 'OB' | 'FVG',
     poi: OrderBlock | FVG,
@@ -278,6 +290,40 @@ export function runPipeline(
       isInvalidated,
     });
 
+    let hasSweep = false;
+    let sweepType: string | null = null;
+    try {
+      const modelState = determineModel(structureState15m, sweeps, lastIndex15m, origin);
+      hasSweep = Boolean(modelState.triggeringSweep);
+      sweepType = modelState.triggeringSweep?.type ?? null;
+    } catch {
+      // safe fallback
+    }
+
+    try {
+      ShadowCohortTracker.getInstance().registerPoiCandidate({
+        symbol,
+        tradeDirection,
+        poiType,
+        zoneLow: zone.low,
+        zoneHigh: zone.high,
+        formedTimestamp,
+        observedTimestamp: candles15mCast[lastIndex15m].timestamp,
+        stage: candidateEligible ? 'CANDIDATE' : grade ? 'GRADED_REJECTED' : 'FILTER_REJECTED',
+        grade,
+        smcScore: null,
+        hasSweep,
+        sweepType,
+        blockingRules,
+        bias4H,
+        bias1H,
+        pd4H: pd4H?.status,
+        pd15M: pd15M?.status,
+      });
+    } catch {
+      // Safe fallback
+    }
+
     const isFatalRejection = blockingRules.some(r =>
       r === 'poi_expired_ttl_48h' ||
       r === 'poi_or_structure_direction_conflict' ||
@@ -320,17 +366,6 @@ export function runPipeline(
   };
 
   const candidates: NotificationCandidate[] = [];
-
-  // Collect all OBs and FVGs
-  const obs = detectAllOrderBlocks(candles15mCast, structureState15m.events);
-  const fvgs = detectAllFVGs(candles15mCast, structureState15m.events, symbol, '15m');
-  const rangeStates = candles15mCast.map((_, idx) =>
-    calculateRange(candles15mCast, swings15m, structureState15m, idx)
-  );
-  const sweeps = mergeSweepEvents(
-    detectSweeps(candles15mCast, rangeStates, symbol, '15m'),
-    detectSwingSweeps(candles15mCast, swings15m, symbol, '15m')
-  );
 
   // Process OBs
   for (const ob of obs) {
@@ -852,8 +887,46 @@ export function runPipeline(
       observePoiLifecycle('FVG', fvg, formedTimestamp, gradeResult.blockReasons.length ? gradeResult.blockReasons : ['grade_below_A'], gradeResult.grade, false, gradeResult.poiIntegrity);
     }
   }
+  const consolidatedCandidates = consolidateCandidates(candidates);
+  recordConsolidationRejections(candidates, consolidatedCandidates);
+  return finish(consolidatedCandidates);
 
-  return finish(consolidateCandidates(candidates));
+  function recordConsolidationRejections(
+    allCandidates: readonly NotificationCandidate[],
+    selectedCandidates: readonly NotificationCandidate[]
+  ): void {
+    const selectedKeys = new Set(selectedCandidates.map(candidate => candidate.uniqueKey));
+    for (const candidate of allCandidates) {
+      if (selectedKeys.has(candidate.uniqueKey)) continue;
+
+      const zone = candidate.poiType === 'OB'
+        ? { low: (candidate.poi as OrderBlock).low, high: (candidate.poi as OrderBlock).high }
+        : { low: (candidate.poi as FVG).gapLow, high: (candidate.poi as FVG).gapHigh };
+
+      try {
+        ShadowCohortTracker.getInstance().registerPoiCandidate({
+          symbol,
+          tradeDirection: candidate.tradeDirection,
+          poiType: candidate.poiType,
+          zoneLow: zone.low,
+          zoneHigh: zone.high,
+          formedTimestamp: candidate.poiFormedTimestamp,
+          observedTimestamp: candidate.marketDataTimestamp ?? candles15mCast[lastIndex15m].timestamp,
+          stage: 'CONSOLIDATED_REJECTED',
+          grade: candidate.gradeResult.grade,
+          smcScore: candidate.gradeResult.totalScore,
+          hasSweep: false,
+          blockingRules: ['poi_consolidation'],
+          bias4H: candidate.bias4H,
+          bias1H: candidate.bias1H,
+          pd4H: candidate.pd4H,
+          pd15M: candidate.pd15M,
+        });
+      } catch {
+        // Safe fallback
+      }
+    }
+  }
 }
 
 function latestCompletedCandle(candles: readonly Candle[]): Candle {
