@@ -88,96 +88,180 @@ export interface SignalExitPayload {
 }
 
 export class FileSignalLedger {
-  constructor(private readonly baseDir = path.join(process.env.EVIDENCE_DIRECTORY ?? 'evidence', 'ledger')) {}
+  constructor(
+    private readonly baseDir = process.env.EVIDENCE_DIRECTORY
+      ? path.join(process.env.EVIDENCE_DIRECTORY, 'ledger')
+      : (
+        process.env.NODE_ENV === 'test'
+          ? path.join(process.cwd(), 'tests', 'temp_evidence', 'ledger')
+          : path.join('evidence', 'ledger')
+      )
+  ) {}
+
+  private readonly queues = new Map<string, Promise<unknown>>();
+
+  private enqueue<T>(signalId: string, operation: () => Promise<T>): Promise<T> {
+    const previous = this.queues.get(signalId) ?? Promise.resolve();
+    const next = previous.then(operation, operation);
+    this.queues.set(signalId, next);
+    return next;
+  }
 
   async recordSignalIssued(input: {
     readonly candidate: NotificationCandidate;
     readonly execution: RuntimeExecutionPipelineResult;
   }): Promise<SignalLedgerEvent> {
     const signalId = input.candidate.signalId ?? input.candidate.uniqueKey;
-    const eventTimestamp = input.candidate.marketDataTimestamp ?? input.candidate.signalContext?.timestamp ?? Date.now();
-    const zone = resolveZone(input.candidate);
-    const risk = input.execution.riskResult.items[0];
-    const paperItem = input.execution.paperResult.items[0];
-    const macro = input.candidate.macroEvaluation
-      ? {
-          allowed: input.candidate.macroEvaluation.allowed,
-          action: input.candidate.macroEvaluation.action,
-          mappedMacroKey: input.candidate.macroEvaluation.mappedMacroKey,
-          tradeDirection: input.candidate.macroEvaluation.tradeDirection,
-          macroBias: input.candidate.macroEvaluation.macroBias,
-          primaryRegime: input.candidate.macroEvaluation.primaryRegime,
-          riskMultiplier: input.candidate.macroEvaluation.riskMultiplier,
-          macroGateMultiplier: input.candidate.macroEvaluation.macroGateMultiplier,
-          begonyaScore: input.candidate.macroEvaluation.begonyaScore,
-          scoreTier: input.candidate.macroEvaluation.scoreTier,
-        }
-      : null;
+    return this.enqueue(signalId, async () => {
+      const eventTimestamp = input.candidate.marketDataTimestamp ?? input.candidate.signalContext?.timestamp ?? Date.now();
+      const zone = resolveZone(input.candidate);
+      const risk = input.execution.riskResult.items[0];
+      const paperItem = input.execution.paperResult.items[0];
+      const macro = input.candidate.macroEvaluation
+        ? {
+            allowed: input.candidate.macroEvaluation.allowed,
+            action: input.candidate.macroEvaluation.action,
+            mappedMacroKey: input.candidate.macroEvaluation.mappedMacroKey,
+            tradeDirection: input.candidate.macroEvaluation.tradeDirection,
+            macroBias: input.candidate.macroEvaluation.macroBias,
+            primaryRegime: input.candidate.macroEvaluation.primaryRegime,
+            riskMultiplier: input.candidate.macroEvaluation.riskMultiplier,
+            macroGateMultiplier: input.candidate.macroEvaluation.macroGateMultiplier,
+            begonyaScore: input.candidate.macroEvaluation.begonyaScore,
+            scoreTier: input.candidate.macroEvaluation.scoreTier,
+          }
+        : null;
 
-    return this.appendOnce(signalId, 'SIGNAL_ISSUED', eventTimestamp, {
-      symbol: input.candidate.symbol,
-      timeframe: '15m',
-      direction: input.candidate.tradeDirection,
-      poiType: input.candidate.poiType,
-      signalTimestamp: input.candidate.signalContext?.timestamp ?? input.candidate.poi.relatedEvent.breakTimestamp,
-      marketDataTimestamp: input.candidate.marketDataTimestamp ?? null,
-      observedMarketPrice: input.candidate.currentPrice,
-      poiFormedTimestamp: input.candidate.poiFormedTimestamp,
-      zoneLow: zone.low,
-      zoneHigh: zone.high,
-      grade: input.candidate.gradeResult.grade,
-      score: input.candidate.gradeResult.totalScore,
-      entryAllowed: input.candidate.gradeResult.entryAllowed,
-      admissionProfile: input.candidate.admissionProfile ?? 'PRODUCTION',
-      riskStatus: risk?.riskStatus ?? 'NO_RISK',
-      executionEligibility: risk?.evaluation.executionAllowed === true,
-      executionMode: input.execution.engineResult.engineReference.engineMode,
-      paperExecutionId: input.execution.paperResult.paperExecutionReference.paperExecutionId,
-      paperStatus: paperItem?.paperStatus ?? null,
-      macro,
-      execution: {
-        realExecutionTracked: false as const,
-        brokerOrderId: null,
-        positionId: null,
-        entryTimestamp: null,
-        entryPrice: null,
-        exitTimestamp: null,
-        exitPrice: null,
-        realizedR: null,
-        entrySlippageBps: null,
-        exitSlippageBps: null,
-      },
+      return this.appendOnce(signalId, 'SIGNAL_ISSUED', eventTimestamp, {
+        symbol: input.candidate.symbol,
+        timeframe: '15m',
+        direction: input.candidate.tradeDirection,
+        poiType: input.candidate.poiType,
+        signalTimestamp: input.candidate.signalContext?.timestamp ?? input.candidate.poi.relatedEvent.breakTimestamp,
+        marketDataTimestamp: input.candidate.marketDataTimestamp ?? null,
+        observedMarketPrice: input.candidate.currentPrice,
+        poiFormedTimestamp: input.candidate.poiFormedTimestamp,
+        zoneLow: zone.low,
+        zoneHigh: zone.high,
+        grade: input.candidate.gradeResult.grade,
+        score: input.candidate.gradeResult.totalScore,
+        entryAllowed: input.candidate.gradeResult.entryAllowed,
+        admissionProfile: input.candidate.admissionProfile ?? 'PRODUCTION',
+        riskStatus: risk?.riskStatus ?? 'NO_RISK',
+        executionEligibility: risk?.evaluation.executionAllowed === true,
+        executionMode: input.execution.engineResult.engineReference.engineMode,
+        paperExecutionId: input.execution.paperResult.paperExecutionReference.paperExecutionId,
+        paperStatus: paperItem?.paperStatus ?? null,
+        macro,
+        execution: {
+          realExecutionTracked: false as const,
+          brokerOrderId: null,
+          positionId: null,
+          entryTimestamp: null,
+          entryPrice: null,
+          exitTimestamp: null,
+          exitPrice: null,
+          realizedR: null,
+          entrySlippageBps: null,
+          exitSlippageBps: null,
+        },
+      });
+    });
+  }
+
+  async ensureSignalIssued(input: {
+    readonly signalId: string;
+    readonly symbol: string;
+    readonly timeframe?: '15m';
+    readonly direction: 'long' | 'short';
+    readonly poiType?: 'OB' | 'FVG';
+    readonly signalTimestamp: number;
+    readonly marketDataTimestamp?: number | null;
+    readonly observedMarketPrice?: number | null;
+    readonly poiFormedTimestamp?: number | null;
+    readonly zoneLow: number;
+    readonly zoneHigh: number;
+    readonly grade?: string;
+    readonly score?: number;
+    readonly entryAllowed?: boolean;
+    readonly macro?: Readonly<Record<string, unknown>> | null;
+  }): Promise<SignalLedgerEvent> {
+    return this.enqueue(input.signalId, async () => {
+      const existing = await this.readEvents(input.signalId);
+      const issued = existing.find(e => e.eventType === 'SIGNAL_ISSUED');
+      if (issued) return issued;
+
+      return this.appendOnce(input.signalId, 'SIGNAL_ISSUED', input.marketDataTimestamp ?? input.signalTimestamp, {
+        symbol: input.symbol,
+        timeframe: input.timeframe ?? '15m',
+        direction: input.direction,
+        poiType: input.poiType ?? 'OB',
+        signalTimestamp: input.signalTimestamp,
+        marketDataTimestamp: input.marketDataTimestamp ?? null,
+        observedMarketPrice: input.observedMarketPrice ?? input.zoneHigh,
+        poiFormedTimestamp: input.poiFormedTimestamp ?? input.signalTimestamp,
+        zoneLow: input.zoneLow,
+        zoneHigh: input.zoneHigh,
+        grade: input.grade ?? 'UNKNOWN',
+        score: input.score ?? 0,
+        entryAllowed: input.entryAllowed ?? true,
+        admissionProfile: 'PRODUCTION',
+        riskStatus: 'ACCEPTED',
+        executionEligibility: true,
+        executionMode: 'PAPER',
+        paperExecutionId: `paper:${input.signalId}`,
+        paperStatus: 'OPEN',
+        macro: input.macro ?? null,
+        execution: {
+          realExecutionTracked: false as const,
+          brokerOrderId: null,
+          positionId: null,
+          entryTimestamp: null,
+          entryPrice: null,
+          exitTimestamp: null,
+          exitPrice: null,
+          realizedR: null,
+          entrySlippageBps: null,
+          exitSlippageBps: null,
+        },
+      });
     });
   }
 
   async recordEntry(signalId: string, payload: SignalEntryPayload): Promise<SignalLedgerEvent> {
-    await this.assertEventExists(signalId, 'SIGNAL_ISSUED');
-    if (await this.hasEventType(signalId, 'ENTRY_RECORDED')) {
-      throw new Error(`ENTRY_RECORDED already exists for signal ${signalId}.`);
-    }
-    if (await this.hasEventType(signalId, 'EXIT_RECORDED')) {
-      throw new Error(`Cannot record an entry after exit for signal ${signalId}.`);
-    }
-    return this.appendOnce(signalId, 'ENTRY_RECORDED', payload.entryTimestamp, payload as unknown as Readonly<Record<string, unknown>>);
+    return this.enqueue(signalId, async () => {
+      await this.assertEventExists(signalId, 'SIGNAL_ISSUED');
+      if (await this.hasEventType(signalId, 'ENTRY_RECORDED')) {
+        throw new Error(`ENTRY_RECORDED already exists for signal ${signalId}.`);
+      }
+      if (await this.hasEventType(signalId, 'EXIT_RECORDED')) {
+        throw new Error(`Cannot record an entry after exit for signal ${signalId}.`);
+      }
+      return this.appendOnce(signalId, 'ENTRY_RECORDED', payload.entryTimestamp, payload as unknown as Readonly<Record<string, unknown>>);
+    });
   }
 
   async recordExit(signalId: string, payload: SignalExitPayload): Promise<SignalLedgerEvent> {
-    await this.assertEventExists(signalId, 'ENTRY_RECORDED');
-    if (await this.hasEventType(signalId, 'EXIT_RECORDED')) {
-      throw new Error(`EXIT_RECORDED already exists for signal ${signalId}.`);
-    }
-    return this.appendOnce(signalId, 'EXIT_RECORDED', payload.exitTimestamp, payload as unknown as Readonly<Record<string, unknown>>);
+    return this.enqueue(signalId, async () => {
+      await this.assertEventExists(signalId, 'ENTRY_RECORDED');
+      if (await this.hasEventType(signalId, 'EXIT_RECORDED')) {
+        throw new Error(`EXIT_RECORDED already exists for signal ${signalId}.`);
+      }
+      return this.appendOnce(signalId, 'EXIT_RECORDED', payload.exitTimestamp, payload as unknown as Readonly<Record<string, unknown>>);
+    });
   }
 
   async recordCancelled(signalId: string, eventTimestamp: number, reason: string): Promise<SignalLedgerEvent> {
-    await this.assertEventExists(signalId, 'SIGNAL_ISSUED');
-    if (await this.hasEventType(signalId, 'EXIT_RECORDED')) {
-      throw new Error(`Cannot cancel a closed signal ${signalId}.`);
-    }
-    if (await this.hasEventType(signalId, 'CANCELLED')) {
-      throw new Error(`CANCELLED already exists for signal ${signalId}.`);
-    }
-    return this.appendOnce(signalId, 'CANCELLED', eventTimestamp, { reason });
+    return this.enqueue(signalId, async () => {
+      await this.assertEventExists(signalId, 'SIGNAL_ISSUED');
+      if (await this.hasEventType(signalId, 'EXIT_RECORDED')) {
+        throw new Error(`Cannot cancel a closed signal ${signalId}.`);
+      }
+      if (await this.hasEventType(signalId, 'CANCELLED')) {
+        throw new Error(`CANCELLED already exists for signal ${signalId}.`);
+      }
+      return this.appendOnce(signalId, 'CANCELLED', eventTimestamp, { reason });
+    });
   }
 
   private async appendOnce(

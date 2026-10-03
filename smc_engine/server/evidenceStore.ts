@@ -8,7 +8,13 @@ export interface EvidenceStore {
 }
 
 export class JsonlEvidenceStore implements EvidenceStore {
-  constructor(private readonly baseDir = process.env.EVIDENCE_DIRECTORY ?? 'evidence') {}
+  constructor(
+    private readonly baseDir = process.env.EVIDENCE_DIRECTORY ?? (
+      process.env.NODE_ENV === 'test'
+        ? path.join(process.cwd(), 'tests', 'temp_evidence')
+        : 'evidence'
+    )
+  ) {}
 
   async appendSignalEvidence(record: SignalEvidenceRecord): Promise<void> {
     await appendJsonl(path.join(this.baseDir, 'signals', 'signal-evidence.jsonl'), record);

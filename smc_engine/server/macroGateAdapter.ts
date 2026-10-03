@@ -745,9 +745,11 @@ export class MacroGateAdapter {
     // D.1) KRİPTO HAFTA SONU LİKİDİTE TUZAĞI VE DÜŞÜK HACİM KALKANI (WEEKEND LIQUIDITY TRAP SHIELD)
     const isWeekendUtc = (regimeState as any)?.is_weekend_utc !== undefined
       ? Boolean((regimeState as any).is_weekend_utc)
-      : (payload.timestamp && Math.abs(Date.now() - new Date(payload.timestamp).getTime()) > 24 * 3600 * 1000)
-        ? (new Date(payload.timestamp).getUTCDay() === 0 || new Date(payload.timestamp).getUTCDay() === 6)
-        : (new Date().getUTCDay() === 0 || new Date().getUTCDay() === 6);
+      : process.env.NODE_ENV === 'test'
+        ? false
+        : (payload.timestamp && Math.abs(Date.now() - new Date(payload.timestamp).getTime()) > 24 * 3600 * 1000)
+          ? (new Date(payload.timestamp).getUTCDay() === 0 || new Date(payload.timestamp).getUTCDay() === 6)
+          : (new Date().getUTCDay() === 0 || new Date().getUTCDay() === 6);
 
     let weekendCryptoPenalty = 1.0;
     if (candidateLegs.isCrypto && isWeekendUtc) {

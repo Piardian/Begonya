@@ -139,7 +139,11 @@ export class PaperOutcomeTracker {
     readonly config?: Partial<PaperOutcomeTrackerConfig>;
   }) {
     this.config = Object.freeze({ ...DEFAULT_CONFIG, ...(options?.config ?? {}) });
-    this.statePath = options?.statePath ?? process.env.OUTCOME_LEDGER_PATH ?? path.resolve(process.cwd(), 'data', 'active_outcomes.json');
+    this.statePath = options?.statePath ?? process.env.OUTCOME_LEDGER_PATH ?? (
+      process.env.NODE_ENV === 'test'
+        ? path.resolve(process.cwd(), 'tests', 'temp_evidence', 'active_outcomes.json')
+        : path.resolve(process.cwd(), 'data', 'active_outcomes.json')
+    );
     this.evidenceStore = options?.evidenceStore ?? new JsonlEvidenceStore();
     this.macroOutcomeStore = options?.macroOutcomeStore ?? new FileMacroOutcomeStore();
     this.signalLedger = options?.signalLedger ?? new FileSignalLedger();
@@ -202,6 +206,38 @@ export class PaperOutcomeTracker {
       status: 'WAITING_ENTRY',
     };
     this.persist();
+
+    // Ensure Signal Ledger records base SIGNAL_ISSUED so lifecycle is cleanly initiated
+    void this.signalLedger.ensureSignalIssued({
+      signalId,
+      symbol: candidate.symbol,
+      timeframe: '15m',
+      direction: candidate.tradeDirection,
+      poiType: candidate.poiType,
+      signalTimestamp,
+      marketDataTimestamp: candidate.marketDataTimestamp ?? null,
+      observedMarketPrice: candidate.currentPrice ?? zone.high,
+      poiFormedTimestamp: candidate.poiFormedTimestamp ?? signalTimestamp,
+      zoneLow: zone.low,
+      zoneHigh: zone.high,
+      grade: candidate.gradeResult?.grade ?? 'UNKNOWN',
+      score: candidate.gradeResult?.totalScore ?? 0,
+      entryAllowed: candidate.gradeResult?.entryAllowed ?? true,
+      macro: snapshot ? {
+        allowed: snapshot.macroAction === 'PROCEED',
+        action: snapshot.macroAction,
+        mappedMacroKey: candidate.symbol,
+        tradeDirection: candidate.tradeDirection,
+        macroBias: snapshot.macroBias,
+        primaryRegime: snapshot.primaryRegime,
+        riskMultiplier: snapshot.riskMultiplier,
+        macroGateMultiplier: snapshot.macroGateMultiplier,
+        begonyaScore: snapshot.begonyaScore,
+        scoreTier: snapshot.scoreTier,
+      } : null,
+    }).catch(err => {
+      console.warn(`[PaperOutcomeTracker] Ledger ensureSignalIssued failed for ${signalId}:`, err);
+    });
   }
 
   update(symbol: string, candles: readonly StoredCandle[]): void {
@@ -299,7 +335,7 @@ export class PaperOutcomeTracker {
         positionId: null,
         slippageBps: 0,
       }).catch(err => {
-        // Non-blocking signal ledger recording
+        console.warn(`[PaperOutcomeTracker] Ledger recordEntry failed for ${signal.signalId}:`, err);
       });
 
       const exit = evaluateOpenCandle(signal, candle, true, this.config);
@@ -369,9 +405,13 @@ export class PaperOutcomeTracker {
         realizedR: rrAchieved,
         holdingTimeMs,
         slippageBps: 0,
-      }).catch(() => {});
+      }).catch(err => {
+        console.warn(`[PaperOutcomeTracker] Ledger recordExit failed for ${signal.signalId}:`, err);
+      });
     } else {
-      void this.signalLedger.recordCancelled(signal.signalId, timestamp, reason).catch(() => {});
+      void this.signalLedger.recordCancelled(signal.signalId, timestamp, reason).catch(err => {
+        console.warn(`[PaperOutcomeTracker] Ledger recordCancelled failed for ${signal.signalId}:`, err);
+      });
     }
 
     // 2. Append enriched Macro Outcome Evidence Record

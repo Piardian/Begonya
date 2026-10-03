@@ -49,7 +49,7 @@ export function runRuntimeExecutionPipeline(
   const decisionPolicy = createDecisionPolicy({
     policyId: `runtime-decision-policy:${candidateId}`,
     name: 'Runtime Decision Policy',
-    minimumSampleSize: 1,
+    minimumSampleSize: 0,
     minimumCoverage: 0,
     minimumConfidence: 'LOW',
     allowedPatternTypes: ['PERFORMANCE_ADVANTAGE'],
@@ -190,10 +190,13 @@ function createRuntimeLearningReport(candidate: NotificationCandidate, candidate
   const datasetFingerprint = `runtime:${candidateId}`;
   const observationId = `runtime-observation:${candidateId}`;
   const patternId = `runtime-pattern:${candidateId}`;
-  const tpRate = Math.max(0, Math.min(1, candidate.gradeResult.totalScore / 9));
-  const slRate = 1 - tpRate;
-  const sampleSize = 1;
-  const coverage = 1;
+  // Pragmatic & Deterministic: Decouple heuristic rule grade from empirical win rate.
+  // Rule score / 9 is a heuristic heuristic, not a measured historical win rate.
+  // Real empirical TPRate must come from completed ledger outcomes (sampleSize = 0 until verified).
+  const tpRate = 0;
+  const slRate = 0;
+  const sampleSize = 0;
+  const coverage = 0;
   const benchmarkReference = Object.freeze({
     datasetFingerprint,
     benchmarkVersion: BENCHMARK_REPORT_VERSION,
@@ -209,19 +212,19 @@ function createRuntimeLearningReport(candidate: NotificationCandidate, candidate
       label: 'overall' as const,
       value: 0,
     }),
-    difference: tpRate,
-    relativeDifference: tpRate,
+    difference: 0,
+    relativeDifference: 0,
   });
   const counts = Object.freeze({
-    TP: tpRate,
-    SL: slRate,
+    TP: 0,
+    SL: 0,
     BE: 0,
     EXPIRED: 0,
     UNKNOWN: 0,
   });
   const rates = Object.freeze({
-    TPRate: tpRate,
-    SLRate: slRate,
+    TPRate: 0,
+    SLRate: 0,
     BERate: 0,
     EXPIREDRate: 0,
     UNKNOWNRate: 0,
@@ -239,21 +242,21 @@ function createRuntimeLearningReport(candidate: NotificationCandidate, candidate
     segment: 'grade' as const,
     value: candidate.gradeResult.grade,
     metric: 'TPRate' as const,
-    direction: 'ABOVE_BASELINE' as const,
+    direction: 'NEAR_BASELINE' as const,
     sampleSize,
     coverage,
     comparisonEvidence,
     benchmarkReference,
     explanation: Object.freeze({
       because: Object.freeze([
-        'Runtime adapter created a deterministic learning observation from the current detection candidate.',
+        'Runtime candidate registered for context evaluation; empirical sample size is 0 until ledger outcomes complete.',
       ]),
       segmentCoverage: coverage,
       overallCoverage: coverage,
       segmentBenchmark: Object.freeze({ counts, rates, duration, excursion }),
       overallBenchmark: Object.freeze({ counts, rates, duration, excursion }),
     }),
-    summary: `${candidate.uniqueKey} runtime grade observation.`,
+    summary: `${candidate.uniqueKey} runtime grade evaluation candidate (uncalibrated, 0 empirical outcomes).`,
   });
 
   const pattern = Object.freeze({
@@ -274,8 +277,8 @@ function createRuntimeLearningReport(candidate: NotificationCandidate, candidate
     evidence: Object.freeze({
       observationId,
       segmentBenchmark: Object.freeze({
-        TP: tpRate,
-        SL: slRate,
+        TP: 0,
+        SL: 0,
         BE: 0,
         EXPIRED: 0,
         UNKNOWN: 0,
@@ -283,8 +286,8 @@ function createRuntimeLearningReport(candidate: NotificationCandidate, candidate
         coverage,
       }),
       overallBenchmark: Object.freeze({
-        TP: tpRate,
-        SL: slRate,
+        TP: 0,
+        SL: 0,
         sampleSize,
         coverage,
       }),
@@ -293,9 +296,9 @@ function createRuntimeLearningReport(candidate: NotificationCandidate, candidate
     explanation: Object.freeze({
       because: Object.freeze([
         'Detection produced a grade-allowed candidate.',
-        'Runtime integration uses existing Decision/Execution/Risk contracts without modifying domain code.',
+        'Empirical outcome learning requires closed outcome ledger records; score is evaluated via decisionCalibration.',
       ]),
-      formula: 'runtime_candidate_grade / 9',
+      formula: 'uncalibrated_runtime_candidate',
       interpretation: 'DESCRIPTIVE_HISTORICAL_PATTERN' as const,
     }),
     benchmarkReference,

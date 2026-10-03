@@ -24,6 +24,11 @@ import { assessPresentationV1 } from '../src/presentationAssessment';
 import { FVG, OrderBlock } from '../src/types';
 
 const defaultStore = new JsonlEvidenceStore();
+const recordedSignalIds = new Set<string>();
+
+export function clearRecordedSignalEvidenceCache(): void {
+  recordedSignalIds.clear();
+}
 
 export function recordApprovedSignalEvidenceAsync(
   candidate: NotificationCandidate,
@@ -34,6 +39,18 @@ export function recordApprovedSignalEvidenceAsync(
 ): void {
   if (process.env.ENABLE_EVIDENCE_RECORDER === 'false') {
     return;
+  }
+
+  const signalId = candidate.signalId ?? candidate.uniqueKey;
+  if (signalId && recordedSignalIds.has(signalId)) {
+    return;
+  }
+  if (signalId) {
+    recordedSignalIds.add(signalId);
+    if (recordedSignalIds.size > 5000) {
+      const first = recordedSignalIds.values().next().value;
+      if (first) recordedSignalIds.delete(first);
+    }
   }
 
   const record = buildSignalEvidenceRecord(candidate, execution, candles15m, operational);
