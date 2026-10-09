@@ -71,12 +71,17 @@ def cleanup_stale_lock(engine_dir: Path, label: str):
             data = json.loads(lock_file.read_text(encoding="utf-8"))
             pid = int(data.get("pid", 0))
             if is_pid_running(pid, "node"):
-                return
+                print(f"[Begonya Orchestrator] ⚠️ {label} için önceki yetkisiz/askıda kalan süreç tespit edildi (PID: {pid}). Sonlandırılıyor...")
+                if sys.platform == "win32":
+                    subprocess.run(["taskkill", "/F", "/PID", str(pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                else:
+                    os.kill(pid, signal.SIGKILL)
+                time.sleep(1)
         except Exception:
             pass
         try:
-            lock_file.unlink()
-            print(f"[Begonya Orchestrator] 🧹 {label} eski runtime.lock temizlendi.")
+            lock_file.unlink(missing_ok=True)
+            print(f"[Begonya Orchestrator] 🧹 {label} runtime.lock temizlendi.")
         except Exception as e:
             print(f"[Begonya Orchestrator] ⚠️ {label} runtime.lock silinemedi: {e}")
 
@@ -101,7 +106,7 @@ def restore_system_sleep():
 
 
 def run_macro_sync():
-    state_file = BASE_DIR / "shared" / "macro_regime_state.json"
+    state_file = BASE_DIR / "shared" / "macro_bias_gate.json"
     if state_file.exists():
         try:
             age_sec = time.time() - state_file.stat().st_mtime
@@ -139,11 +144,11 @@ def spawn_clt_engine():
     if not (CLT_DIR / "dist" / "server" / "index.js").exists():
         print(f"[Begonya Orchestrator] ⚠️ ChecklistTrigger bulunamadı: {CLT_DIR}")
         return None
-    print("[Begonya Orchestrator] ⚡ ChecklistTrigger (swing-bos-core) başlatılıyor (Port 3000)...")
+    print("[Begonya Orchestrator] ⚡ ChecklistTrigger (swing-bos-core) başlatılıyor (Port 3001)...")
     cleanup_stale_lock(CLT_DIR, "ChecklistTrigger")
     node_script = str(CLT_DIR / "dist" / "server" / "index.js")
     env = os.environ.copy()
-    env.setdefault("PORT", "3000")
+    env["PORT"] = "3001"
     cmd = ["node", node_script]
     return subprocess.Popen(cmd, cwd=str(CLT_DIR), env=env)
 

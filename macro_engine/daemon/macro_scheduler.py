@@ -101,26 +101,81 @@ class MacroEventScheduler:
             logger.error(f"❌ Makro analiz döngüsünde hata: {e}", exc_info=True)
             return False
 
-    def send_morning_briefing(self) -> bool:
-        """Sabah 09:00 analizini çalıştırır ve Telegram'a detaylı bülten iletir."""
-        logger.info("☀️ [SABAH BÜLTENİ] 09:00 Makro Analizi ve Telegram Raporlama Başlatıldı...")
-        result = self.engine.run_pipeline()
-        events = []
+    def _acquire_file_lock(self, lock_path: Path, max_age_seconds: int = 900) -> bool:
+        """Atomik dosya kilidi edinir; eski/donmuş kilitleri temizler."""
+        for _ in range(2):
+            try:
+                fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                with os.fdopen(fd, "w", encoding="utf-8") as f:
+                    f.write(f"{os.getpid()}:{time.time()}")
+                return True
+            except FileExistsError:
+                try:
+                    mtime = lock_path.stat().st_mtime
+                    if time.time() - mtime > max_age_seconds:
+                        logger.warning(f"⚠️ Eski/donmuş kilit dosyası ({lock_path.name}) temizleniyor...")
+                        lock_path.unlink(missing_ok=True)
+                        continue
+                except Exception:
+                    pass
+                return False
+            except Exception as e:
+                logger.warning(f"Kilit edinme hatası: {e}")
+                return False
+        return False
+
+    def _release_file_lock(self, lock_path: Path):
+        """Dosya kilidini serbest bırakır."""
         try:
-            events = asyncio.run(self.calendar.fetch_latest_events())
+            lock_path.unlink(missing_ok=True)
+        except Exception:
+            pass
+
+    def send_morning_briefing(self, force: bool = False) -> bool:
+        """Sabah 09:00 analizini çalıştırır ve Telegram'a detaylı bülten iletir."""
+        today_str = datetime.datetime.now().strftime("%Y-%m-%d")
+        state = self._load_state()
+        if not force and state.get("last_morning_briefing_date") == today_str:
+            logger.info(f"ℹ️ [SABAH BÜLTENİ] Bugünün ({today_str}) bülteni zaten gönderilmiş veya işlemde. Mükerrer gönderim engellendi.")
+            return True
+
+        lock_path = self.state_file.parent / "morning_briefing.lock"
+        if not self._acquire_file_lock(lock_path, max_age_seconds=900):
+            logger.info("ℹ️ [SABAH BÜLTENİ] Başka bir işlem sabah bültenini hazırlıyor. Mükerrer çalıştırma atlandı.")
+            return False
+
+        try:
+            logger.info("☀️ [SABAH BÜLTENİ] 09:00 Makro Analizi ve Telegram Raporlama Başlatıldı...")
+            result = self.engine.run_pipeline()
+            events = []
+            try:
+                events = asyncio.run(self.calendar.fetch_latest_events())
+            except Exception as e:
+                logger.debug(f"Bülten için takvim çekilirken hata: {e}")
+            
+            msg = format_morning_briefing(result, events)
+            sent = send_telegram_message(msg)
+            if sent:
+                state = self._load_state()
+                state["last_morning_briefing_date"] = today_str
+                self._save_state(state)
+                logger.info("☀️ [SABAH BÜLTENİ] Telegram Sabah Makro Bülteni Başarıyla Gönderildi!")
+            else:
+                logger.warning("⚠️ [SABAH BÜLTENİ] Telegram bülteni gönderilemedi! Tarih kilidi serbest bırakılıyor.")
+                state = self._load_state()
+                if state.get("last_morning_briefing_date") == today_str:
+                    state["last_morning_briefing_date"] = ""
+                    self._save_state(state)
+            return sent
         except Exception as e:
-            logger.debug(f"Bülten için takvim çekilirken hata: {e}")
-        
-        msg = format_morning_briefing(result, events)
-        sent = send_telegram_message(msg)
-        if sent:
-            logger.info("☀️ [SABAH BÜLTENİ] Telegram Sabah Makro Bülteni Başarıyla Gönderildi!")
+            logger.error(f"❌ [SABAH BÜLTENİ] Beklenmeyen hata oluştu: {e}", exc_info=True)
             state = self._load_state()
-            state["last_morning_briefing_date"] = datetime.datetime.now().strftime("%Y-%m-%d")
-            self._save_state(state)
-        else:
-            logger.warning("⚠️ [SABAH BÜLTENİ] Telegram bülteni gönderilemedi!")
-        return sent
+            if state.get("last_morning_briefing_date") == today_str:
+                state["last_morning_briefing_date"] = ""
+                self._save_state(state)
+            return False
+        finally:
+            self._release_file_lock(lock_path)
 
     def _get_calendar_events_cached(self, ttl_seconds: int = 300) -> list:
         """Ekonomik takvim olaylarını 5 dakika önbellekli olarak çeker."""
@@ -220,9 +275,7 @@ class MacroEventScheduler:
                 # Saat 09:00 ile 18:00 arasında ise ve bugünün bülteni henüz gönderilmediyse:
                 if (now.hour >= 9 and now.hour < 18) and state.get("last_morning_briefing_date") != today_str:
                     logger.info(f"🔔 [ZAMANLAYICI TETİKLENDİ] Sabah Makro Bülteni (09:00) | Tarih: {today_str}")
-                    sent = self.send_morning_briefing()
-                    state["last_morning_briefing_date"] = today_str
-                    self._save_state(state)
+                    self.send_morning_briefing()
 
                 # 2. Londra Seans Açılışı Kontrolü (10:30 TRT)
                 if ((now.hour == 10 and now.minute >= 30) or (now.hour > 10 and now.hour < 15)) and state.get("last_london_session_date") != today_str:
@@ -243,10 +296,15 @@ class MacroEventScheduler:
                 # 4. Günlük D1 Kapanış Kontrolü (Her gece 23:55 veya sonrası)
                 if (now.hour == 23 and now.minute >= 55) and state.get("last_daily_close_date") != today_str:
                     logger.info(f"🔔 [ZAMANLAYICI TETİKLENDİ] D1 Günlük Bar Kapanışı (23:55) | Tarih: {today_str}")
-                    self.run_cycle(trigger_source="D1 Günlük Bar Kapanışı (23:55)")
-                    state = self._load_state()
-                    state["last_daily_close_date"] = today_str
-                    self._save_state(state)
+                    close_lock = self.state_file.parent / "daily_close.lock"
+                    if self._acquire_file_lock(close_lock, max_age_seconds=600):
+                        try:
+                            state = self._load_state()
+                            state["last_daily_close_date"] = today_str
+                            self._save_state(state)
+                            self.run_cycle(trigger_source="D1 Günlük Bar Kapanışı (23:55)")
+                        finally:
+                            self._release_file_lock(close_lock)
 
                 # 5. Seans İçi Emniyet Tazelemesi (09:00 - 23:00 arası son analizden bu yana > 4 saat geçtiyse)
                 last_cycle = state.get("last_cycle_timestamp", 0.0)

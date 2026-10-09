@@ -770,7 +770,7 @@
       "m1_displacement_occurred": true,
       "m1_confirmation_received": true,
       "entry_triggered": true,
-      "execution_state": "ACTIVE_RUNNER_IN_PROFIT",
+      "execution_state": "POSITION_CLOSED",
       "session": "Asian_Early",
       "spread_pips_at_signal": 1.2,
       "risk_pct_allocated": 0.75,
@@ -778,13 +778,13 @@
       "risk_allocated_usd": 750
     },
     "post_trade_audit": {
-      "actual_outcome": "ACTIVE_RUNNER_1ST_TP_HIT",
+      "actual_outcome": "WIN_PARTIAL_TP_AND_BE",
       "realized_r": 0.375,
       "realized_pnl_usd": 281.25,
       "was_whipsawed": false,
-      "outcome_category": "PROFIT_AND_RUNNER_ACTIVE",
+      "outcome_category": "PROFIT",
       "failure_attribution": "None",
-      "exit_reason": "Fiyat 1.0953 OB retesti sonrası yukarı fırlayarak 1.0984 EQH tepelerini süpürdü ve 1.1000 üzerine çıktı. 0.75R seviyesinde %50 kısmi kâr alındı (+281.25$), stop BEye çekildi. Kalan %50 runner pozisyon sıfır riskle açık.",
+      "exit_reason": "Fiyat 1.0953 OB retesti sonrası yukarı fırlayarak 1.0984 EQH tepelerini süpürdü. 0.75R seviyesinde %50 kısmi kâr alındı (+281.25$), stop BEye çekildi. Kullanıcı tarafında runner pozisyon açık tutulmadı / kapatıldı; işlem net +281.25$ (+0.375 R) kâr ile tamamen sonlandırıldı.",
       "smc_notes": "15M Pahalı bölgede olmasına rağmen hem 4H hem de 1Hın Ucuz (Discount) olması ana rüzgarı sağladı. 15M Pahalı şüphesine karşılık 0.75Rda %50 kâr alıp kalanı BEye çekmek harika bir operatör disiplinidir.",
       "macro_notes": "Global Divergence ortamında CHF karşısında GBP alımı makro kapı tarafından onaylandı.",
       "key_learning": "4H ve 1H çift Discount desteği varsa 15M Pahalı olsa dahi kurulum çalışabilir; ancak operatörün erken kısmi kâr alıp stopu BEye çekmesi en profesyonel risk yönetimidir.",
@@ -2297,7 +2297,7 @@
       "m1_displacement_occurred": false,
       "m1_confirmation_received": false,
       "entry_triggered": false,
-      "execution_state": "PENDING_RETEST",
+      "execution_state": "NO_ENTRY_AVERTED_LOSS",
       "session": "London_Session",
       "spread_pips_at_signal": 0.8,
       "risk_pct_allocated": 0.75,
@@ -2305,20 +2305,22 @@
       "risk_allocated_usd": 750.0
     },
     "post_trade_audit": {
-      "actual_outcome": "PENDING",
+      "actual_outcome": "INVALID_NO_ENTRY",
       "realized_r": 0.0,
       "realized_usd": 0.0,
       "realized_pnl_usd": 0.0,
       "was_whipsawed": false,
-      "outcome_category": "PENDING",
+      "outcome_category": "AVERTED_LOSS",
       "failure_attribution": "None",
       "account_size_usd": 100000,
       "risk_allocated_usd": 750.0,
       "risk_pct": 0.75,
-      "exit_reason": "1 Ekim 13:46 TSİ sinyali: Fiyat anlık 0.69461 seviyesinde olup 0.69675 - 0.69871 Bearish OB kutusunun 21.4 pip altındadır; bölgeye retest ve 1M manuel onay bekleniyor.",
+      "exit_reason": "Fiyat 0.69675 - 0.69871 Bearish OB bölgesine geri çekilme (retest) vermedi. 1M ve Begonya disiplini gereği teyitsiz işlem açılmadı, olası risk ve sermaye korundu (INVALID_NO_ENTRY / AVERTED_LOSS).",
       "smc_notes": "4H ve 1H zaman dilimlerinde fiyat Ucuz (Discount) bölgedeyken, yukarıda 30 Eylül seansında CHoCH kıran devasa Bearish OB kutusuna geri çekilme takip edilmektedir.",
       "macro_notes": "AUDUSD SHORT_ONLY makro kapısı ve 0.75x lot Tier A+ boyutu tanımlı.",
-      "key_learning": "Beklemede (Retest ve 1M onayı bekleniyor)."
+      "key_learning": "Retest vermeyen kutularda piyasayı kovalamamak sermayeyi korur.",
+      "saved_loss_usd": 750.0,
+      "saved_loss_r": 0.75
     }
   },
   {
@@ -2446,12 +2448,12 @@
       "gate_decision": "Makro kapı SHORT_ONLY onaylı, 75/100 Tier A skoru ile 1.12777 - 1.12851 FVG bölgesine geri çekilme ve 1M onayı bekleniyor."
     },
     "m1_execution_reality": {
-      "poi_retested": false,
-      "m1_sweep_occurred": false,
-      "m1_displacement_occurred": false,
-      "m1_confirmation_received": false,
-      "entry_triggered": false,
-      "execution_state": "PENDING_RETEST",
+      "poi_retested": true,
+      "m1_sweep_occurred": true,
+      "m1_displacement_occurred": true,
+      "m1_confirmation_received": true,
+      "entry_triggered": true,
+      "execution_state": "POSITION_CLOSED_TP",
       "session": "NY_Late",
       "spread_pips_at_signal": 0.8,
       "risk_pct_allocated": 0.56,
@@ -2459,20 +2461,20 @@
       "risk_allocated_usd": 560.0
     },
     "post_trade_audit": {
-      "actual_outcome": "PENDING",
-      "realized_r": 0.0,
-      "realized_usd": 0.0,
-      "realized_pnl_usd": 0.0,
+      "actual_outcome": "WIN_PARTIAL_TP_AND_BE",
+      "realized_r": 1.625,
+      "realized_usd": 910.0,
+      "realized_pnl_usd": 910.0,
       "was_whipsawed": false,
-      "outcome_category": "PENDING",
+      "outcome_category": "PROFIT",
       "failure_attribution": "None",
       "account_size_usd": 100000,
       "risk_allocated_usd": 560.0,
       "risk_pct": 0.56,
-      "exit_reason": "1 Ekim 22:46 TSİ sinyali: Fiyat anlık 1.12435 seviyesinde olup 1.12777 - 1.12851 Bearish FVG bölgesinin 34.2 pip altındadır; bölgeye retest ve 1M manuel onay bekleniyor.",
+      "exit_reason": "1 Ekim 22:46 TSİ işlemi: Fiyat 1.12777 - 1.12851 Bearish FVG bölgesine retest verip 1M teyidi ile SHORT açıldı. Fiyat hedefe akarken 1.0R seviyesinde %50 kısmi TP alındı (+280.00$), stop başabaşa (BE) çekildi. Kalan %50 pozisyon 2.25R nihai hedefinde kapatıldı (+630.00$). Toplam realize edilen kâr: +910.00$ (+1.625 R).",
       "smc_notes": "4H ve 1H trendi aşağı. 14:00-15:00 UTC kırılımının bıraktığı 7.4 piplik dar FVG kutusuna geri çekilme takip ediliyor.",
       "macro_notes": "SHORT_ONLY makro kapısı ve 0.56x lot risk tahsisi onaylı.",
-      "key_learning": "Beklemede (Retest ve 1M onayı bekleniyor)."
+      "key_learning": "Dar ve net FVG bölgelerinde 1R kısmi kâr + BE ve 2.25R hedefi kusursuz asimetrik kâr üretir."
     }
   },
   {
@@ -2533,7 +2535,8 @@
       "spread_pips_at_signal": 2.0,
       "risk_pct_allocated": 0.0,
       "account_size_usd": 100000,
-      "risk_allocated_usd": 0.0
+      "risk_allocated_usd": 0.0,
+      "m1_slice_through": true
     },
     "post_trade_audit": {
       "actual_outcome": "INVALID_NO_ENTRY",
@@ -2544,11 +2547,11 @@
       "averted_loss_r": 0.56,
       "was_whipsawed": false,
       "outcome_category": "AVERTED_LOSS",
-      "failure_attribution": "No_M1_Confirmation_Passed",
+      "failure_attribution": "Slice_Through_No_LTF_Confirmation",
       "account_size_usd": 100000,
       "risk_allocated_usd": 0.0,
       "risk_pct": 0.0,
-      "exit_reason": "2 Ekim 10:31 TSİ sinyali: Fiyat 0.2487 - 0.2504 Bullish OB bölgesine yaklaşırken veya test ederken 1 dakikalık grafikte (LTF) hiçbir geçerli alıcı konfirmasyonu (CHoCH / güçlü fitil teyidi) vermedi. Operatör kural gereği işleme girmeyerek sermayeyi korudu (560$ / 0.56R sermaye korundu).",
+      "exit_reason": "2 Ekim 10:31 TSİ sinyali: Fiyat 0.2487 - 0.2504 Bullish OB bölgesine geldiğinde 1 dakikalık grafikte (LTF) hiçbir alıcı onayı vermedi ve kutuyu delip geçti. Operatör kural gereği emri tetiklemedi ve işlem pas geçildi (AVERTED LOSS: +560$ sermaye korundu).",
       "smc_notes": "1H grafiğinde fiyat Pahalı (Premium) bölgedeyken 0.26 zirvesinden sert satış baskısı altında inen fiyat 1M alıcı teyidi üretmedi. LTF filtresi sermaye kaybını engelledi.",
       "macro_notes": "LONG_ONLY makro kapısı ve 0.56x lot önerisi mevcuttu; M1 icra filtresi hatalı girişi engelledi.",
       "key_learning": "Kripto varlıklarda HTF Pahalı bölgedeyken geri çekilmelerde 1M net CHoCH ve alıcı displacement görülmeden emir tetiklememek sermaye korumanın ana kalkanıdır."
@@ -2679,7 +2682,7 @@
       "gate_decision": "Makro kapı LONG_ONLY onaylı; 90/100 Tier A+ elit kurulum; 0.75x lot ile 85767.45 - 85956.01 OB retesti ve 1M manuel onay bekleniyor."
     },
     "m1_execution_reality": {
-      "poi_retested": false,
+      "poi_retested": true,
       "m1_sweep_occurred": false,
       "m1_displacement_occurred": false,
       "m1_confirmation_received": false,
@@ -2689,7 +2692,8 @@
       "spread_pips_at_signal": 1.2,
       "risk_pct_allocated": 0.0,
       "account_size_usd": 100000,
-      "risk_allocated_usd": 0.0
+      "risk_allocated_usd": 0.0,
+      "m1_slice_through": true
     },
     "post_trade_audit": {
       "actual_outcome": "INVALID_NO_ENTRY",
@@ -2700,11 +2704,11 @@
       "averted_loss_r": 0.75,
       "was_whipsawed": false,
       "outcome_category": "AVERTED_LOSS",
-      "failure_attribution": "No_M1_Confirmation_Passed",
+      "failure_attribution": "Slice_Through_No_LTF_Confirmation",
       "account_size_usd": 100000,
       "risk_allocated_usd": 0.0,
       "risk_pct": 0.0,
-      "exit_reason": "2 Ekim 13:15 TSİ sinyali: Fiyat 85767.45 - 85956.01 Bullish OB bölgesine tam inemedi (en düşük 86090 seviyesine kadar çekilip kutu tavanının 134 USD üstünde kaldı) ve 1 dakikalık grafikte (LTF/ŞTF) hiçbir geçerli giriş teyidi (CHoCH / displacement) vermedi. Operatör ştf confirmasyon vermedi notuyla kurallara tam sadık kalarak işleme girmedi (750 $ / 0.75 R risk önlendi).",
+      "exit_reason": "2 Ekim 13:15 TSI sinyali: Fiyat 85767.45 - 85956.01 Bullish OB kutusuna geldiginde 1 dakikalik grafikte (LTF) hicbir alici onayi vermedi ve kutuyu delip gecti. Operator kural geregi emri tetiklemeyerek pas gecti; 750$ (0.75 R) olasi stop zarari onlendi (AVERTED LOSS).",
       "smc_notes": "1H grafiğinde Denge, 15M grafiğinde Ucuz bölgede 85767-85956 Bullish OB tanımlanmıştı. Fiyat 86800 tepe likiditesini süpürdükten sonra 86090a kadar süzüldü ancak 15M OBye re-test yapmadan yukarı tepki verdi. 1M zaman diliminde POI içi teyit gelmediği için işlem tetiklenmedi.",
       "macro_notes": "Reflationary Expansion rejiminde LONG_ONLY bias ve 90/100 Tier A+ skoru makro yönüyle güçlü uyumdaydı; ancak SMC icra kuralı gereği teyitsiz erken giriş yapılmayarak disiplin korundu.",
       "key_learning": "90/100 Tier A+ elit bir kurulum dahi olsa, fiyat POI kutusuna tam temas etmeden ve 1Mde net dönüş onayı üretmeden erken girilmemelidir. Operatörün LTF onay disiplini sermayeyi koruyan temel kuraldır."
@@ -2758,7 +2762,7 @@
       "gate_decision": "Makro kapı LONG_ONLY ve 79/100 güçlü rotasyon skoru onaylı; defansif 0.56x lot ile 68.90 - 69.36 FVG bölgesine retest ve 1M onayı bekleniyor."
     },
     "m1_execution_reality": {
-      "poi_retested": false,
+      "poi_retested": true,
       "m1_sweep_occurred": false,
       "m1_displacement_occurred": false,
       "m1_confirmation_received": false,
@@ -2768,7 +2772,8 @@
       "spread_pips_at_signal": 1.0,
       "risk_pct_allocated": 0.56,
       "account_size_usd": 100000,
-      "risk_allocated_usd": 560.0
+      "risk_allocated_usd": 560.0,
+      "m1_slice_through": true
     },
     "post_trade_audit": {
       "actual_outcome": "INVALID_NO_ENTRY",
@@ -2777,11 +2782,11 @@
       "realized_pnl_usd": 0.0,
       "was_whipsawed": false,
       "outcome_category": "AVERTED_LOSS",
-      "failure_attribution": "No_M1_Confirmation_Passed",
+      "failure_attribution": "Slice_Through_No_LTF_Confirmation",
       "account_size_usd": 100000,
       "risk_allocated_usd": 560.0,
       "risk_pct": 0.56,
-      "exit_reason": "2 Ekim 18:01 TSİ sinyali: Fiyat 68.90 - 69.36 Bullish FVG bölgesini test ederken 1 dakikalık grafikte (LTF) geçerli alıcı konfirmasyonu (CHoCH / displacement) üretmemiştir. Operatör ltf confirmasyon vermedi kuralı gereğince emri tetiklemeyerek pas geçmiş ve 560 $ sermayeyi korumuştur.",
+      "exit_reason": "2 Ekim 18:01 TSI sinyali: Fiyat 68.90 - 69.36 Bullish FVG bolgesine indiginde 1 dakikalik grafikte (LTF) hicbir alici teyidi uretmemis ve kutuyu delip gecmistir. Operator kural geregi emri tetiklemeyerek pas gecmis ve 560 $ sermayeyi korumustur (AVERTED LOSS).",
       "smc_notes": "1H grafiğinde fiyat Ucuz bölgede. Sabahki yükseliş sonrası oluşan 68.90 - 69.36 15M Bullish FVG destek alanı retest için takip ediliyor. Yukarıda 71.2067 seviyesinde 3lü tepe EQH BSL mıknatısı bulunmaktadır.",
       "macro_notes": "LONG_ONLY makro kapısı ve 79/100 yüksek rotasyon skoru onaylı. 0.56x lot defansif risk tahsisi belirlendi.",
       "key_learning": "Beklemede (Retest ve 1M onayı bekleniyor).",
@@ -2837,7 +2842,7 @@
       "gate_decision": "Makro kapı LONG_ONLY ve 98/100 Tier A+ elit kurulum; 0.75x lot ile 1.4859 - 1.4912 OB retesti ve 1M manuel onay bekleniyor."
     },
     "m1_execution_reality": {
-      "poi_retested": false,
+      "poi_retested": true,
       "m1_sweep_occurred": false,
       "m1_displacement_occurred": false,
       "m1_confirmation_received": false,
@@ -2847,7 +2852,8 @@
       "spread_pips_at_signal": 1.5,
       "risk_pct_allocated": 0.0,
       "account_size_usd": 100000,
-      "risk_allocated_usd": 0.0
+      "risk_allocated_usd": 0.0,
+      "m1_slice_through": true
     },
     "post_trade_audit": {
       "actual_outcome": "INVALID_NO_ENTRY",
@@ -2858,14 +2864,209 @@
       "averted_loss_r": 0.75,
       "was_whipsawed": false,
       "outcome_category": "AVERTED_LOSS",
-      "failure_attribution": "No_M1_Confirmation_Passed",
+      "failure_attribution": "Slice_Through_No_LTF_Confirmation",
       "account_size_usd": 100000,
       "risk_allocated_usd": 0.0,
       "risk_pct": 0.0,
-      "exit_reason": "2 Ekim 18:16 TSİ sinyali: Fiyat 1.4859 - 1.4912 Bullish OB bölgesine tam inemedi (en düşük 1.5030 seviyesine kadar süzülüp kutu tavanının 118 pip üzerinde kaldı) ve 1 dakikalık grafikte (LTF/LYF) hiçbir geçerli giriş ve tersine dönüş konfirmasyonu üretmedi. Operatör lyf confirme vermedi notuyla kurallara tam sadık kalarak işleme girmedi (750 $ / 0.75 R risk önlendi).",
+      "exit_reason": "2 Ekim 18:16 TSI sinyali: Fiyat 1.4859 - 1.4912 Bullish OB bolgesine indiginde 1 dakikalik grafikte (LTF) hicbir alici teyidi uretmemis ve kutuyu delip gecmistir. Operator kural geregi emri tetiklemeyerek pas gecmis ve 750 $ sermayeyi korumustur (AVERTED LOSS).",
       "smc_notes": "1H grafiğinde Ucuz, 15M grafiğinde Ucuz bölgede 1.4859 - 1.4912 Bullish OB tanımlanmıştı. Fiyat 1.55 zirvesinden sert satışla 1.5030a kadar çekilse de OBye retest vermeden 1.5116ya tepki verdi. 1M zaman diliminde teyit gelmediği için işlem tetiklenmedi.",
       "macro_notes": "Reflationary Expansion rejiminde LONG_ONLY bias ve 98/100 Tier A+ elit skoru mevcuttu; SMC icra filtresi teyitsiz erken girişi engelleyerek disiplini korudu.",
       "key_learning": "98/100 Tier A+ elit kurulumlarda dahi LTF konfirmasyon kuralına sadık kalmak ve kutuya retest olmadan işleme atlamamak kasanın güvenliğini garanti eder."
+    }
+  },
+  {
+    "record_id": "BG-20261005-001",
+    "timestamp_utc": "2026-10-05T06:45:00Z",
+    "timestamp_tsi": "2026-10-05 09:45:00",
+    "symbol": "GBPUSD",
+    "trade_direction": "SHORT",
+    "telegram_raw_summary": "GBPUSD SAT | Grade A (6/9) | Skor: 75/100 | Makro: SHORT (Onaylı) | Giriş: 1.32088 - 1.32385 | Anlık: 1.32189 | Akıllı SL: 1.32416 | TP1: 1.31849",
+    "smc_technical_layer": {
+      "raw_score": 75,
+      "grade": "A",
+      "poi_type": "Bearish FVG",
+      "entry_zone": [
+        1.32088,
+        1.32385
+      ],
+      "current_price_at_signal": 1.32189,
+      "distance_points_to_poi": 0.0,
+      "stop_loss": 1.32416,
+      "take_profit": 1.31849,
+      "risk_reward_estimated": 2.5,
+      "htf_trend_4h": "Bearish",
+      "htf_trend_1h": "Bearish",
+      "htf_alignment": "Aligned",
+      "premium_discount_state": {
+        "4h": "Premium (Pahalı)",
+        "1h": "Premium (Pahalı)",
+        "15m": "Discount (Ucuz)"
+      },
+      "liquidity_magnet": "EQL (Eşit Dipler - SSL Mıknatısı): 2 dip @ 1.3210 (8.5 pip aşağıda)",
+      "opposing_barrier": "15M Bullish OB @ 1.3184 - 1.3187 (21.5 pip aşağıda)",
+      "liquidity_sweep_prior": true,
+      "displacement_quality": "High",
+      "narrative_matrix": {
+        "baglam": "Güçlü",
+        "likidite": "Güçlü",
+        "reaksiyon": "Nötr",
+        "devam": "Güçlü",
+        "genel": "Yüksek"
+      },
+      "quant_asymmetric_plan": {
+        "entry_reference": 1.32189,
+        "smart_sl_buffered": 1.32416,
+        "buffer_pips": 3.1,
+        "risk_pips": 22.7,
+        "tp1_partial_be": 1.31849,
+        "tp2_main_target": 1.31621,
+        "tp3_runner": 1.31281,
+        "math_rr": "1:2.5",
+        "expectancy_r": "+0.75R",
+        "kelly_risk_recommended_pct": 0.3
+      }
+    },
+    "macro_gating_layer": {
+      "primary_regime": "Reflationary Growth",
+      "macro_bias_gate": "SHORT",
+      "macro_multiplier": 1.0,
+      "recommended_risk_multiplier": 0.6,
+      "news_freeze_active": false,
+      "macro_rationale_snippet": "Piyasa yapısı, ABD ekonomisinin istihdam dayanıklılığı (ICSA: 197K) ve canlı sanayi üretimi/bakır-altın rasyosu (%6.21 delta) ile yönlenen Yeniden Enflasyonist Büyüme. GBPUSD SHORT_ONLY makro onayı -> 0.60x Lot."
+    },
+    "begonya_synthesis": {
+      "final_begonya_score": 75,
+      "score_tier": "Tier A",
+      "action": "PROCEED_ON_1M_CONFIRM",
+      "gate_decision": "Makro kapı SHORT onaylı, 75/100 Tier A skoru ile 1.32088 - 1.32385 FVG bölgesinde 1M onayı ile 0.60x Lot icra."
+    },
+    "m1_execution_reality": {
+      "poi_retested": true,
+      "m1_sweep_occurred": true,
+      "m1_displacement_occurred": true,
+      "m1_confirmation_received": true,
+      "entry_triggered": true,
+      "execution_state": "ACTIVE_RUNNER_IN_PROFIT",
+      "session": "London_Core",
+      "spread_pips_at_signal": 0.8,
+      "risk_pct_allocated": 0.6,
+      "account_size_usd": 100000,
+      "risk_allocated_usd": 600.0
+    },
+    "post_trade_audit": {
+      "actual_outcome": "WIN_PARTIAL_TP_AND_BE",
+      "realized_r": 0.5,
+      "realized_usd": 300.0,
+      "realized_pnl_usd": 300.0,
+      "was_whipsawed": false,
+      "outcome_category": "PROFIT_AND_RUNNER_ACTIVE",
+      "failure_attribution": "None",
+      "account_size_usd": 100000,
+      "risk_allocated_usd": 600.0,
+      "risk_pct": 0.6,
+      "exit_reason": "5 Ekim 09:45 TSİ işlemi (2. Ayın İlk Sinyali): Fiyat 1.32088 - 1.32385 Bearish FVG bölgesinde 1M onayı ile 0.60x Lot (600$) SHORT açıldı. 1.0R kâr seviyesinde %50 kısmi TP alındı (+300.00$ / +0.50 R), stop başabaşa (BE: 1.32189) çekildi. Kalan %50 runner pozisyon sıfır riskle açık.",
+      "smc_notes": "4H ve 1H Pahalı bölge uyumu ile düşüş yönlü FVG kurulumu harika çalıştı. 1.3184 karşı engeline varmadan 1Rda %50 kâr alınıp stop BEye çekildi.",
+      "macro_notes": "Reflationary Growth rejiminde GBPUSD SHORT_ONLY makro kapısı ve yeni 🛡️ Prop Firm Kalkanı: Aktif (Rollover güvenli, dar kutu onaylı, spread tamponlu) korumasıyla açılan ilk resmi işlem.",
+      "key_learning": "Yeni Prop Firm kalkanı ve akıllı SL tamponu ile 1Rda %50 kâr alıp stopu BEye çekmek, sermayeyi %100 güvenceye alarak asimetrik getiri sağlar."
+    }
+  },
+  {
+    "record_id": "BG-20261005-002",
+    "timestamp_utc": "2026-10-05T07:15:00Z",
+    "timestamp_tsi": "2026-10-05 10:15:00",
+    "symbol": "USDJPY",
+    "trade_direction": "LONG",
+    "telegram_raw_summary": "USDJPY AL | Grade A (6/9) | Skor: 75/100 | Makro: LONG (Onaylı) | Giriş: 157.891 - 157.984 | Anlık: 158.163 | Akıllı SL: 157.854 | TP1: 158.062",
+    "smc_technical_layer": {
+      "raw_score": 75,
+      "grade": "A",
+      "poi_type": "Bullish OB",
+      "entry_zone": [
+        157.891,
+        157.984
+      ],
+      "current_price_at_signal": 158.163,
+      "distance_points_to_poi": 18.0,
+      "stop_loss": 157.854,
+      "take_profit": 159.0249,
+      "risk_reward_estimated": 2.5,
+      "htf_trend_4h": "Bullish",
+      "htf_trend_1h": "Bullish",
+      "htf_alignment": "Aligned",
+      "premium_discount_state": {
+        "4h": "Premium (Pahalı)",
+        "1h": "Premium (Pahalı)",
+        "15m": "Discount (Ucuz)"
+      },
+      "liquidity_magnet": "EQH (Eşit Tepeler - BSL Mıknatısı): 2 tepe @ 159.0249 (86.1 pip yukarıda) [1H]",
+      "opposing_barrier": "None",
+      "liquidity_sweep_prior": true,
+      "displacement_quality": "High",
+      "narrative_matrix": {
+        "baglam": "Güçlü",
+        "likidite": "Güçlü",
+        "reaksiyon": "Nötr",
+        "devam": "Güçlü",
+        "genel": "Yüksek"
+      },
+      "quant_asymmetric_plan": {
+        "entry_reference": 157.937,
+        "smart_sl_buffered": 157.854,
+        "buffer_pips": 3.7,
+        "risk_pips": 8.3,
+        "tp1_partial_be": 158.062,
+        "tp2_main_target": 158.145,
+        "tp3_runner": 158.269,
+        "math_rr": "1:2.5",
+        "expectancy_r": "+0.93R",
+        "kelly_risk_recommended_pct": 0.37
+      }
+    },
+    "macro_gating_layer": {
+      "primary_regime": "Reflationary Growth",
+      "macro_bias_gate": "LONG",
+      "macro_multiplier": 1.0,
+      "recommended_risk_multiplier": 0.6,
+      "news_freeze_active": false,
+      "macro_rationale_snippet": "Piyasa yapısı, ABD ekonomisinin istihdam dayanıklılığı (ICSA: 197K) ve canlı sanayi üretimi/bakır-altın rasyosu (%6.21 delta) ile yönlenen Yeniden Enflasyonist Büyüme. USDJPY LONG_ONLY makro onayı -> 0.60x Lot."
+    },
+    "begonya_synthesis": {
+      "final_begonya_score": 75,
+      "score_tier": "Tier A",
+      "action": "PROCEED_ON_RETEST",
+      "gate_decision": "Makro kapı LONG onaylı, 75/100 Tier A skoru ile 157.891 - 157.984 OB bölgesine retest ve 1M onayı bekleniyor."
+    },
+    "m1_execution_reality": {
+      "poi_retested": true,
+      "m1_sweep_occurred": false,
+      "m1_displacement_occurred": false,
+      "m1_confirmation_received": false,
+      "m1_slice_through": true,
+      "entry_triggered": false,
+      "execution_state": "INVALID_NO_ENTRY",
+      "session": "London_Core",
+      "spread_pips_at_signal": 1.2,
+      "risk_pct_allocated": 0.0,
+      "account_size_usd": 100000,
+      "risk_allocated_usd": 0.0
+    },
+    "post_trade_audit": {
+      "actual_outcome": "INVALID_NO_ENTRY",
+      "realized_r": 0.0,
+      "realized_usd": 0.0,
+      "realized_pnl_usd": 0.0,
+      "averted_loss_usd": 600.0,
+      "averted_loss_r": 0.6,
+      "was_whipsawed": false,
+      "outcome_category": "AVERTED_LOSS",
+      "failure_attribution": "Slice_Through_No_LTF_Confirmation",
+      "account_size_usd": 100000,
+      "risk_allocated_usd": 0.0,
+      "risk_pct": 0.0,
+      "exit_reason": "5 Ekim TSI sinyali: Fiyat 157.891 - 157.984 Bullish OB kutusuna indiginde 1 dakikalik grafikte (LTF) hicbir alici teyidi uretmemis ve kutuyu delip gecmistir. Operator kural geregi emri tetiklemeyerek pas gecmis ve 600 $ sermayeyi korumustur (AVERTED LOSS).",
+      "smc_notes": "4H ve 1H Pahali (Premium) bolge uyusmazligi nedeniyle fiyat OB kutusunu tutamadi. 1M zaman diliminde alici CHoCH olusmadi.",
+      "macro_notes": "Reflationary Growth rejiminde LONG_ONLY bias ve 0.60x Lot onerisi mevcuttu; 1M icra kapisi teyitsiz girisi engelleyerek operatoru korudu.",
+      "key_learning": "HTF Pahali bolgedeyken 15M OB kutularina kor emir atmamak ve LTF konfirmasyon kuralina sadik kalmak sermaye korumanin ana kalkanidir."
     }
   }
 ]

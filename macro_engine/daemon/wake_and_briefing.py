@@ -120,7 +120,7 @@ def run_morning_wake_task():
         if success:
             logger.info("🎉 [BAŞARILI] Sabah makro bülteni Telegram'a başarıyla iletildi!")
         else:
-            logger.error("⚠️ Sabah makro bülteni iletilemedi!")
+            logger.warning("ℹ️ Sabah makro bülteni iletilemedi veya başka bir işlem tarafından rezerve edildi.")
     except Exception as e:
         logger.error(f"❌ Wake görevinde beklenmeyen hata: {e}", exc_info=True)
     finally:
@@ -143,15 +143,26 @@ def run_daily_close_wake_task():
         state = scheduler._load_state()
 
         if state.get("last_daily_close_date") == today_str:
-            logger.info(f"ℹ️ Bugünün ({today_str}) D1 kapanış analizi zaten yapılmış.")
+            logger.info(f"ℹ️ Bugünün ({today_str}) D1 kapanış analizi zaten yapılmış. Mükerrer işlem yapılmadı.")
             return
 
-        logger.info(f"🚀 D1 Bar Kapanış döngüsü tetikleniyor (Tarih: {today_str})...")
-        success = scheduler.run_cycle(trigger_source="Windows Wake Task (D1 Close)")
-        if success:
+        close_lock = scheduler.state_file.parent / "daily_close.lock"
+        if not scheduler._acquire_file_lock(close_lock, max_age_seconds=600):
+            logger.info("ℹ️ D1 Kapanış analizi şu anda başka bir işlem tarafından yürütülüyor. Mükerrer çağrı engellendi.")
+            return
+
+        try:
+            state = scheduler._load_state()
             state["last_daily_close_date"] = today_str
             scheduler._save_state(state)
-            logger.info("🎉 [BAŞARILI] D1 Günlük kapanış analizi ve kapı güncellemesi tamamlandı!")
+            logger.info(f"🚀 D1 Bar Kapanış döngüsü tetikleniyor (Tarih: {today_str})...")
+            success = scheduler.run_cycle(trigger_source="Windows Wake Task (D1 Close)")
+            if success:
+                logger.info("🎉 [BAŞARILI] D1 Günlük kapanış analizi ve kapı güncellemesi tamamlandı!")
+            else:
+                logger.warning("⚠️ D1 Günlük kapanış analizi tamamlanamadı.")
+        finally:
+            scheduler._release_file_lock(close_lock)
     except Exception as e:
         logger.error(f"❌ D1 Close wake görevinde beklenmeyen hata: {e}", exc_info=True)
     finally:

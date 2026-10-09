@@ -113,7 +113,10 @@ class FredDataIngestion:
             "sort_order": "asc",
             "limit": 1000,
         }
-        if realtime_end is not None:
+        # FRED server is in US Central Time (UTC-5/UTC-6). Local client time (e.g. UTC+3 in Turkey)
+        # can be ahead of FRED's calendar date. realtime_start/end cannot be in the future for FRED.
+        us_server_today = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=6)).date()
+        if realtime_end is not None and realtime_end < us_server_today:
             params["realtime_start"] = realtime_end.isoformat()
             params["realtime_end"] = realtime_end.isoformat()
         if units is not None:
@@ -129,6 +132,21 @@ class FredDataIngestion:
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 body = json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            if exc.code == 400 and ("realtime_start" in params or "realtime_end" in params):
+                params.pop("realtime_start", None)
+                params.pop("realtime_end", None)
+                retry_url = "https://api.stlouisfed.org/fred/series/observations?" + urllib.parse.urlencode(params)
+                retry_req = urllib.request.Request(retry_url, headers={"User-Agent": "BegonyaMacroEngine/1.0"})
+                try:
+                    with urllib.request.urlopen(retry_req, timeout=self.timeout) as resp:
+                        body = json.loads(resp.read().decode("utf-8"))
+                except Exception as inner_exc:
+                    masked_msg = _mask_api_key(str(inner_exc), self.api_key)
+                    raise DataUnavailableError(f"FRED request failed for {series_id}: {masked_msg}") from None
+            else:
+                masked_msg = _mask_api_key(str(exc), self.api_key)
+                raise DataUnavailableError(f"FRED request failed for {series_id}: {masked_msg}") from None
         except Exception as exc:
             masked_msg = _mask_api_key(str(exc), self.api_key)
             raise DataUnavailableError(
