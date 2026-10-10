@@ -33,6 +33,7 @@ import { MacroGateAdapter } from './macroGateAdapter';
 import { ActivePoiWatchlist } from './activePoiWatchlist';
 import { PaperOutcomeTracker } from './paperOutcomeTracker';
 import { captureMacroSnapshot } from './macroOutcomeEvidence';
+import { calculateTradeExpectancyPlan } from '../src/tradeExpectancyEngine';
 
 const signalIntelligenceSnapshotWriter = new FileSignalIntelligenceSnapshotWriter();
 const signalRepository = new InMemorySignalRepository();
@@ -143,6 +144,24 @@ export async function pollAndProcess(
               candidate.gradeResult.totalScore
             );
             candidate.macroEvaluation = macroGate;
+            if (candidate.expectancyPlan) {
+              const poi = candidate.poi as any;
+              const zoneLow = candidate.poiType === 'OB' ? poi.low : poi.gapLow;
+              const zoneHigh = candidate.poiType === 'OB' ? poi.high : poi.gapHigh;
+              candidate.expectancyPlan = calculateTradeExpectancyPlan({
+                symbol: candidate.symbol,
+                direction: candidate.tradeDirection,
+                zoneLow,
+                zoneHigh,
+                currentPrice: candidate.currentPrice,
+                grade: candidate.gradeResult.grade as any,
+                totalScore: candidate.gradeResult.totalScore,
+                atr15mPips: candidate.atr15mPips,
+                liquidityMagnet: candidate.liquidityMagnet,
+                opposingObstacle: candidate.opposingObstacle,
+                macroEvaluation: macroGate,
+              });
+            }
             console.log(`[Begonya Score: ${macroGate.begonyaScore}/100 - ${macroGate.scoreTier}] [Signal: ${signalId}] ${symbol} ${candidate.tradeDirection.toUpperCase()} -> ${macroGate.gateStatusMessage}`);
             if (!macroGate.allowed) {
               console.log(`[Signal: ${signalId}] 🛑 SUPPRESSED BY BEGONYA MACRO GATE: ${macroGate.gateStatusMessage}`);

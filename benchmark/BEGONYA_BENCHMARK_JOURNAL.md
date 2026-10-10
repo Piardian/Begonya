@@ -1447,3 +1447,147 @@ Her yeni canlı Begonya sinyali incelenirken aşağıdaki standart 5+1 şablon �
 - **Soru 4 (Sonuç):** [D] İşlem alınmadı (Averted Loss — 600 $ Korundu)
 - **Soru 5 (Stop/İptal Nedeni):** [A] Kutu tutmadı / Delip geçti
 - **Ekstra (Makro Doğruluk):** LONG_ONLY açık olsa dahi 1M filtresi 600 $ sermayeyi başarıyla korudu.
+
+---
+
+### 41. [2026-10-06 11:00 TSİ / 08:00 UTC] — EURUSD (15M Bearish FVG - SAT) 🛡️ PAS GEÇİLDİ (AVERTED LOSS / +640 $ KORUNDU)
+- **Kayıt Kodu:** BG-20261006-001
+- **Telegram Girişi:** EURUSD SAT | Grade A (7/9) | Skor: 82/100 | Makro: SHORT_ONLY (Onaylı) | Giriş: 1.12165 - 1.12245 | Anlık: 1.11961 | Akıllı SL: 1.12281 | TP1: 1.12091
+- **Giriş Bölgesi (POI):** 1.12165 — 1.12245 (15M Bearish FVG — 8.0 pip) | **Sinyal Fiyatı:** 1.11961 (20.4 pip aşağıda)
+- **Çarpımsal Begonya Skoru:** SMC: 82 × G_macro: 1.0 = **82 / 100 (Tier A)** | Önerilen Risk: **Tam Risk (%1.0R) | 0.64x Lot** (100k'da 640 $, 10k'da 64.00 $ Risk)
+- **Hedef (TP / Likidite Mıknatısı):** 1.11807 (15.4 pip aşağıda SSL — Tekil Dip Likiditesi) | TP3: 1.11901
+- **Prop Firm Kalkanı:** 🛡️ **Aktif** (Rollover güvenli | Min kutu onaylı | Spread tamponlu)
+- **Gerçekleşen Sonuç:** 🛡️ **PAS GEÇİLDİ / AVERTED LOSS (+640 $ / +64.00 $ Sermaye Korundu)** — Fiyat 1.12165 - 1.12245 Bearish FVG bölgesine retest verdiğinde 1 dakikalık grafikte (LTF) hiçbir satıcı teyidi/displacement üretmemiş ve kutuyu delip geçmiştir. Operatör kural gereği ("6 ekim ltf confirme vermedi deldi geçti") emri tetiklemeyerek pas geçmiş ve sermayeyi korumuştur.
+
+#### 🔬 1. SMC Teknik Katmanı & Çoklu Zaman Dilimi Analizi
+- **HTF P/D Çelişkisi:** Analiz dökümünde belirtildiği gibi: **4H Ucuz | 1H Ucuz | 15M Pahalı** durumu mevcuttu. Fiyat daha büyük zaman dilimlerinde (4H/1H) Ucuz bölgede olduğu için yukarı yönlü güçlü bir alım tepkisi hakimdi; bu durum 15M düşüş yönlü FVG kutusunun direncini kırarak delinmesine yol açtı.
+- **1M İcra Disiplini:** Kutu bölgesinde satıcı yönlü CHoCH / MSS veya aşağı yönlü displacement mumu gerçekleşmedi. Operatörün kurala sadık kalıp retest sonrası 1M teyidini beklemesi potansiyel stop kaybını sıfırladı.
+
+#### 🌐 2. Makroekonomik Katman & Prop Firm Kalkanı
+- **Birincil Rejim:** *Reflationary Growth with Tightening Discretion*.
+- **Makro Kapı Durumu:** SHORT_ONLY (G_macro: 1.0) -> Önerilen risk: **0.64x Lot**.
+- **Savunma Mekanizması:** Makro yönü SHORT_ONLY teyidi vermiş olsa bile, 1M icra kapısı teyitsiz girişi engelleyerek operatörü stop olmaktan korudu.
+
+#### 📊 3. Post-Trade Audit & Bilanço
+- **Gerçekleşen Sonuç:** 🛡️ **INVALID_NO_ENTRY (AVERTED LOSS)**
+- **Gerçekleşen R:** **0.00 R (0.64 R Risk Önlendi)**
+- **Finansal Getiri:** **0.00 $ (100k hesapta 640.00 $, 10k hesapta 64.00 $ Sermaye Korundu)**
+- **Kategori:** AVERTED_LOSS
+- **Hata / Zafiyet Atfı:** Slice_Through_No_LTF_Confirmation
+- **Kritik Ders:** HTF Ucuz bölgedeki düşüş POI kutularında 1M teyidi olmadan asla kör limit emir girilmemelidir; LTF filtresi 15. kez sermayeyi doğrudan korumuştur.
+
+#### 📋 Standart 5+1 Doğrulama Anketi
+- **Soru 1 (Kutuya Yaklaşım):** [A] Kutuya retest verdi ancak satıcı tepkisi oluşmadı
+- **Soru 2 (1M Formasyonu):** [C] Delip geçti (Onay yok — 1M grafiğinde kutu yukarı delindi)
+- **Soru 3 (Giriş Kararı):** [D] Girmedim (Pas — LTF onay vermediği ve kutuyu deldiği için girilmedi)
+- **Soru 4 (Sonuç):** [D] İşlem alınmadı (Averted Loss — 640 $ / 64 $ Korundu)
+- **Soru 5 (Stop/İptal Nedeni):** [A] Kutu tutmadı / Delip geçti
+- **Ekstra (Makro Doğruluk):** SHORT_ONLY açık olsa dahi 1M filtresi sermayeyi başarıyla korudu.
+
+---
+
+### 42. [2026-10-06 14:00 TSİ / 11:00 UTC] — XAUUSD (15M Bullish FVG - AL) ❌ STOP LOSS (-800 $ / -0.80 R)
+- **Kayıt Kodu:** BG-20261006-002
+- **Telegram Girişi:** XAUUSD AL | Grade A (8/9) | Skor: 90/100 | Makro: LONG_ONLY (Onaylı) | Giriş: 4123.14 - 4130.01 | Anlık: 4161.66 | Akıllı SL: 4121.03 | TP1: 4134.91
+- **Giriş Bölgesi (POI):** 4123.14 — 4130.01 (15M Bullish FVG — 6.87 USD) | **Sinyal Fiyatı:** 4161.66 (31.65 USD yukarıda)
+- **Çarpımsal Begonya Skoru:** SMC: 90 × G_macro: 1.0 = **90 / 100 (Tier A+)** | Önerilen Risk: **Defansif Risk (%0.5R) | 0.80x Lot** (100k'da 800 $, 10k'da 80.00 $ Risk)
+- **Hedef (TP / Likidite Mıknatısı):** 4179.28 (12 tepe EQH — BSL Mıknatısı, 176.1 pip yukarıda) | TP3: 4148.78
+- **Prop Firm Kalkanı:** 🛡️ **Aktif** (Rollover güvenli | Min kutu onaylı | Spread tamponlu)
+- **Gerçekleşen Sonuç:** ❌ **STOP LOSS (-800 $ / -0.80 R | 10k Hesapta: -80.00 $)** — Fiyat 4123.14 - 4130.01 Bullish FVG bölgesine retest verdiğinde 0.80x Lot ile işleme girildi. Ancak 4H ve 1H zaman dilimlerindeki aşırı Pahalı (Premium) bölge doygunluğu ve derin likidite süpürmesi sebebiyle fiyat 4121.03 seviyesindeki Akıllı SL tamponunu kırarak stop olmuştur.
+
+#### 🔬 1. SMC Teknik Katmanı & Çoklu Zaman Dilimi Analizi
+- **HTF P/D Çelişkisi:** Analiz dökümünde belirtildiği gibi: **4H Pahalı | 1H Pahalı | 15M Ucuz** durumu mevcuttu. Fiyat daha büyük zaman dilimlerinde (4H/1H) aşırı Pahalı bölgede olduğu için kurumsal kâr realizasyonu gerçekleşti ve 15M FVG kutusu derin SSL likiditesini temizlemek üzere aşağı yönlü delindi.
+- **Likidite Tuzağı:** Yukarıda 12 adet tepe (EQH @ 4179.28) bulunmasına rağmen, kurumsal akış yukarı sürmeden önce alttaki stopları ve zayıf alıcıları temizlemeyi tercih etti.
+
+#### 🌐 2. Makroekonomik Katman & Prop Firm Kalkanı
+- **Birincil Rejim:** *Reflation*.
+- **Makro Kapı Durumu:** LONG_ONLY (G_macro: 1.0) -> Önerilen risk: **0.80x Lot**.
+- **Risk Yönetimi:** Skor 90/100 (Tier A+) olsa bile, dinamik makro lot çarpanı (0.80x) riski 1.0R'dan 0.80R'a sınırlayarak portföyü tam stop kaybından (1000 $ yerine 800 $) korudu.
+
+#### 📊 3. Post-Trade Audit & Bilanço
+- **Gerçekleşen Sonuç:** ❌ **LOSS**
+- **Gerçekleşen R:** **-0.80 R**
+- **Finansal Getiri:** **-800.00 $ (10k hesapta: -80.00 $)**
+- **Kategori:** LOSS
+- **Hata / Zafiyet Atfı:** Deep_Liquidity_Sweep_HTF_Premium_Exhaustion
+- **Kritik Ders:** HTF Pahalı bölge uçlarında (özellikle Altın gibi yüksek volatiliteye sahip emtialarda) Tier A+ olsa dahi SL seviyesinin daha derin yapı diplerine göre kalibre edilmesi veya kısmi kârın daha erken hedeflenmesi gerekir.
+
+#### 📋 Standart 5+1 Doğrulama Anketi
+- **Soru 1 (Kutuya Yaklaşım):** [A] Kutuya retest verdi
+- **Soru 2 (1M Formasyonu):** [A] 1M grafiğinde alıcı reaksiyonu ve giriş teyidi oluştu
+- **Soru 3 (Giriş Kararı):** [A] Onayla LONG girildi (0.80x Lot)
+- **Soru 4 (Sonuç):** [B] Stop Loss (-0.80 R / -800 $ [-80 $])
+- **Soru 5 (Stop/İptal Nedeni):** [B] Derin likidite süpürmesi / HTF Pahalı bölge yorgunluğu
+- **Ekstra (Makro Doğruluk):** LONG_ONLY makro yönü doğru olsa da seans içi likidite temizliği stop ettirdi.
+
+---
+
+### 43. [2026-10-06 15:30 TSİ / 12:30 UTC] — AUDJPY (15M Bullish OB - AL) ❌ STOP LOSS (-600 $ / -0.60 R)
+- **Kayıt Kodu:** BG-20261006-003
+- **Telegram Girişi:** AUDJPY AL | Grade A (6/9) | Skor: 75/100 | Makro: LONG (Onaylı) | Giriş: 110.277 - 110.393 | Anlık: 110.344 | Akıllı SL: 110.244 | TP1: 110.493
+- **Giriş Bölgesi (POI):** 110.277 — 110.393 (15M Bullish OB — 11.6 point) | **Sinyal Fiyatı:** 110.344 (bölge içinde aktif retest)
+- **Çarpımsal Begonya Skoru:** SMC: 75 × G_macro: 1.0 = **75 / 100 (Tier A)** | Önerilen Risk: **Defansif Risk (%0.5R) | 0.60x Lot** (100k'da 600 $, 10k'da 60.00 $ Risk)
+- **Hedef (TP / Likidite Mıknatısı):** 110.723 (3 tepe EQH — BSL Mıknatısı, 37.9 pip yukarıda) [1H] | TP3: 110.740
+- **Prop Firm Kalkanı:** 🛡️ **Aktif** (Rollover güvenli | Min kutu onaylı | Spread tamponlu)
+- **Gerçekleşen Sonuç:** ❌ **STOP LOSS (-600 $ / -0.60 R | 10k Hesapta: -60.00 $)** — Fiyat 110.277 - 110.393 Bullish OB bölgesinde aktif retest halindeyken 1M teyidiyle 0.60x Lot işleme girildi. Ancak 4H ve 1H zaman dilimlerindeki Pahalı (Premium) bölge direnci ve genele yayılan Yen (JPY) güçlenmesi sebebiyle fiyat 110.244 Akıllı SL tamponunu delerek stop olmuştur.
+
+#### 🔬 1. SMC Teknik Katmanı & Çoklu Zaman Dilimi Analizi
+- **HTF P/D Çelişkisi:** Analiz dökümünde belirtildiği gibi: **4H Pahalı | 1H Pahalı | 15M Ucuz** durumu mevcuttu. Fiyat daha büyük zaman dilimlerinde (4H/1H) Pahalı bölgede olduğu için OB kutusu kurumsal JPY alımları karşısında tutunamadı.
+- **Likidite Tuzağı:** Yukarıda 3 adet eşit tepe (EQH @ 110.723) bulunmasına rağmen, piyasa yapıcı yukarı sürmeden önce alt likidite havuzuna doğru sert bir süpürme (sweep) yaptı.
+
+#### 🌐 2. Makroekonomik Katman & Prop Firm Kalkanı
+- **Birincil Rejim:** *Reflation*.
+- **Makro Kapı Durumu:** LONG (G_macro: 1.0) -> Önerilen risk: **0.60x Lot**.
+- **Risk Yönetimi:** Defansif lot çarpanı (0.60x) riski 1.0R yerine 0.60R ile sınırlandırarak zararı tamponlamıştır.
+
+#### 📊 3. Post-Trade Audit & Bilanço
+- **Gerçekleşen Sonuç:** ❌ **LOSS**
+- **Gerçekleşen R:** **-0.60 R**
+- **Finansal Getiri:** **-600.00 $ (10k hesapta: -60.00 $)**
+- **Kategori:** LOSS
+- **Hata / Zafiyet Atfı:** JPY_Broad_Strengthening_And_HTF_Premium_Rejection
+- **Kritik Ders:** JPY çaprazlarında 4H ve 1H Pahalı bölgelerdeyken birden fazla JPY AL pozisyonu biriktirmemek ve korelasyon riskine dikkat etmek esastır.
+
+#### 📋 Standart 5+1 Doğrulama Anketi
+- **Soru 1 (Kutuya Yaklaşım):** [A] Kutu içinde aktif retest
+- **Soru 2 (1M Formasyonu):** [A] 1M grafiğinde alıcı reaksiyonu ve giriş teyidi oluştu
+- **Soru 3 (Giriş Kararı):** [A] Onayla LONG girildi (0.60x Lot)
+- **Soru 4 (Sonuç):** [B] Stop Loss (-0.60 R / -600 $ [-60 $])
+- **Soru 5 (Stop/İptal Nedeni):** [B] JPY genel güçlenmesi / HTF Pahalı bölge reddi
+- **Ekstra (Makro Doğruluk):** Makro bias LONG olsa da seans içi likidite hareketi kutuyu deldi.
+
+---
+
+### 44. [2026-10-06 17:00 TSİ / 14:00 UTC] — BTCUSD (15M Bullish OB - AL) 🛡️ PAS GEÇİLDİ (AVERTED LOSS / +800 $ KORUNDU)
+- **Kayıt Kodu:** BG-20261006-004
+- **Telegram Girişi:** BTCUSD AL | Grade A (8/9) | Skor: 90/100 | Makro: LONG_ONLY (Onaylı) | Giriş: 85950.00 - 86352.05 | Anlık: 86097.06 | Akıllı SL: 85849.60 | TP1: 86468.36
+- **Giriş Bölgesi (POI):** 85950.00 — 86352.05 (15M Bullish OB — 402.05 USD) | **Sinyal Fiyatı:** 86097.06 (bölge içinde aktif retest)
+- **Çarpımsal Begonya Skoru:** SMC: 90 × G_macro: 1.0 = **90 / 100 (Tier A+)** | Önerilen Risk: **Tam Risk (%1.0R) | 0.80x Lot** (100k'da 800 $, 10k'da 80.00 $ Risk)
+- **Hedef (TP / Likidite Mıknatısı):** 86712.05 (2 tepe EQH — BSL Mıknatısı, 615 pip yukarıda) | Karşı Engel: 221.9 pip yukarıda 15M Bearish OB (86574 - 87150)
+- **Prop Firm Kalkanı:** 🛡️ **Aktif** (Rollover güvenli | Min kutu onaylı | Spread tamponlu)
+- **Gerçekleşen Sonuç:** 🛡️ **PAS GEÇİLDİ / AVERTED LOSS (+800 $ / +80.00 $ Sermaye Korundu)** — Fiyat 85950.00 - 86352.05 Bullish OB kutusuna indiğinde 1 dakikalık grafikte (LTF) hiçbir alıcı teyidi üretmemiş ve kutuyu delip geçmiştir. Operatör kural gereği ("ltf confirme vermdi deldi geçti") emri tetiklemeyerek pas geçmiş ve 800 $ (10k hesapta 80 $) sermayeyi korumuştur.
+
+#### 🔬 1. SMC Teknik Katmanı & Çoklu Zaman Dilimi Analizi
+- **HTF P/D Çelişkisi:** Analiz dökümünde belirtildiği gibi: **4H Pahalı | 1H Pahalı | 15M Ucuz** durumu mevcuttu. Fiyat daha büyük zaman dilimlerinde (4H/1H) aşırı Pahalı bölgede olduğu için kurumsal kâr realizasyonu ve derin düzeltme dalgası 15M OB kutusunu tanımayarak yardı geçti.
+- **1M İcra Disiplini:** Kutu bölgesinde alıcı yönlü CHoCH / MSS veya yukarı yönlü displacement mumu gerçekleşmedi. Operatörün kurala sadık kalıp 1M teyidini beklemesi potansiyel tam stop kaybını (-0.80 R) tamamen önledi.
+
+#### 🌐 2. Makroekonomik Katman & Prop Firm Kalkanı
+- **Birincil Rejim:** *Reflation*.
+- **Makro Kapı Durumu:** LONG_ONLY (G_macro: 1.0) -> Önerilen risk: **0.80x Lot**.
+- **Savunma Mekanizması:** Makro yönü LONG_ONLY olsa da, 1M icra filtresi 16. kez hatalı kurulumdan kaçınarak sermayeyi muhafaza etti.
+
+#### 📊 3. Post-Trade Audit & Bilanço
+- **Gerçekleşen Sonuç:** 🛡️ **INVALID_NO_ENTRY (AVERTED LOSS)**
+- **Gerçekleşen R:** **0.00 R (0.80 R Risk Önlendi)**
+- **Finansal Getiri:** **0.00 $ (100k hesapta 800.00 $, 10k hesapta 80.00 $ Sermaye Korundu)**
+- **Kategori:** AVERTED_LOSS
+- **Hata / Zafiyet Atfı:** Slice_Through_No_LTF_Confirmation
+- **Kritik Ders:** Tier A+ skorlu kurulumlarda dahi HTF Pahalı bölgede retest kutusuna kör emir atılmamalı; 1M LTF onayı olmadan pozisyon açılmamalıdır.
+
+#### 📋 Standart 5+1 Doğrulama Anketi
+- **Soru 1 (Kutuya Yaklaşım):** [A] Kutu içinde aktif retest
+- **Soru 2 (1M Formasyonu):** [C] Delip geçti (Onay yok — 1M grafiğinde kutu aşağı delindi)
+- **Soru 3 (Giriş Kararı):** [D] Girmedim (Pas — LTF onay vermediği için girilmedi)
+- **Soru 4 (Sonuç):** [D] İşlem alınmadı (Averted Loss — 800 $ / 80 $ Korundu)
+- **Soru 5 (Stop/İptal Nedeni):** [A] Kutu tutmadı / Delip geçti
+- **Ekstra (Makro Doğruluk):** Makro bias LONG_ONLY açık olsa dahi 1M filtresi 80 $ sermayeyi başarıyla korudu.

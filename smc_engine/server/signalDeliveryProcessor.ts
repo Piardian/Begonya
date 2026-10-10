@@ -112,6 +112,7 @@ async function refreshCandidate(item: QueuedSignalDelivery, candleStore: CandleS
     const candles1hCast = candleStore.getCandles(candidate.symbol, '1h') as unknown as Candle[];
     const swings15m = detectSwings(candles15mCast);
     const swings1h = candles1hCast.length >= 15 ? detectSwings(candles1hCast) : undefined;
+    const minTargetPips = candidate.expectancyPlan ? Number((candidate.expectancyPlan.riskDistancePips * 2.0).toFixed(1)) : undefined;
     const resolved = resolveDisplayLiquidityMagnet(
       swings15m,
       currentPrice,
@@ -121,7 +122,8 @@ async function refreshCandidate(item: QueuedSignalDelivery, candleStore: CandleS
       candles15mCast.length - 1,
       swings1h,
       candles1hCast.length >= 15 ? candles1hCast : undefined,
-      candles1hCast.length >= 15 ? candles1hCast.length - 1 : undefined
+      candles1hCast.length >= 15 ? candles1hCast.length - 1 : undefined,
+      minTargetPips
     );
     if (resolved) {
       refreshedMagnet = resolved;

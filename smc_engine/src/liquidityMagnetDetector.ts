@@ -34,7 +34,8 @@ export function detectLiquidityMagnet(
   tradeDirection: 'long' | 'short',
   symbol: string,
   candles?: readonly { high: number; low: number; timestamp: number }[],
-  currentIndex?: number
+  currentIndex?: number,
+  minDistancePips?: number
 ): LiquidityMagnet | null {
   if (!swings || swings.length < 2) return null;
 
@@ -57,6 +58,9 @@ export function detectLiquidityMagnet(
       if (cluster.length >= 2) {
         const avgPrice = cluster.reduce((sum, s) => sum + s.price, 0) / cluster.length;
         const distancePips = Math.round(((avgPrice - currentPrice) / pip) * 10) / 10;
+        if (minDistancePips !== undefined && distancePips < minDistancePips) {
+          continue;
+        }
         const firstTakenAt = findTakenAt('EQH', avgPrice, cluster, candles, currentIndex);
         candidates.push({
           type: 'EQH',
@@ -88,6 +92,9 @@ export function detectLiquidityMagnet(
       if (cluster.length >= 2) {
         const avgPrice = cluster.reduce((sum, s) => sum + s.price, 0) / cluster.length;
         const distancePips = Math.round(((currentPrice - avgPrice) / pip) * 10) / 10;
+        if (minDistancePips !== undefined && distancePips < minDistancePips) {
+          continue;
+        }
         const firstTakenAt = findTakenAt('EQL', avgPrice, cluster, candles, currentIndex);
         candidates.push({
           type: 'EQL',
@@ -117,15 +124,16 @@ export function resolveDisplayLiquidityMagnet(
   currentIndex15m?: number,
   swings1h?: readonly SwingPoint[],
   candles1h?: readonly { high: number; low: number; timestamp: number }[],
-  currentIndex1h?: number
+  currentIndex1h?: number,
+  minDistancePips?: number
 ): LiquidityMagnet | null {
-  const magnet15m = detectLiquidityMagnet(swings15m, currentPrice, tradeDirection, symbol, candles15m, currentIndex15m);
+  const magnet15m = detectLiquidityMagnet(swings15m, currentPrice, tradeDirection, symbol, candles15m, currentIndex15m, minDistancePips);
   if (magnet15m && magnet15m.isActive) {
     return magnet15m;
   }
 
   if (swings1h && swings1h.length >= 2) {
-    const magnet1h = detectLiquidityMagnet(swings1h, currentPrice, tradeDirection, symbol, candles1h, currentIndex1h);
+    const magnet1h = detectLiquidityMagnet(swings1h, currentPrice, tradeDirection, symbol, candles1h, currentIndex1h, minDistancePips);
     if (magnet1h && magnet1h.isActive) {
       return {
         ...magnet1h,
@@ -134,13 +142,13 @@ export function resolveDisplayLiquidityMagnet(
     }
   }
 
-  const single15m = detectNearestActiveSwingMagnet(swings15m, currentPrice, tradeDirection, symbol, candles15m, currentIndex15m);
+  const single15m = detectNearestActiveSwingMagnet(swings15m, currentPrice, tradeDirection, symbol, candles15m, currentIndex15m, '', minDistancePips);
   if (single15m) {
     return single15m;
   }
 
   if (swings1h && swings1h.length > 0) {
-    const single1h = detectNearestActiveSwingMagnet(swings1h, currentPrice, tradeDirection, symbol, candles1h, currentIndex1h, ' [1H]');
+    const single1h = detectNearestActiveSwingMagnet(swings1h, currentPrice, tradeDirection, symbol, candles1h, currentIndex1h, ' [1H]', minDistancePips);
     if (single1h) {
       return single1h;
     }
@@ -156,7 +164,8 @@ function detectNearestActiveSwingMagnet(
   symbol: string,
   candles?: readonly { high: number; low: number; timestamp: number }[],
   currentIndex?: number,
-  tfSuffix = ''
+  tfSuffix = '',
+  minDistancePips?: number
 ): LiquidityMagnet | null {
   if (!swings || swings.length === 0) return null;
   const pip = getPipSize(symbol);
@@ -164,6 +173,10 @@ function detectNearestActiveSwingMagnet(
   if (tradeDirection === 'long') {
     const activeHighs = swings
       .filter(s => s.type === 'high' && s.price > currentPrice)
+      .filter(s => {
+        const dist = Math.round(((s.price - currentPrice) / pip) * 10) / 10;
+        return minDistancePips === undefined || dist >= minDistancePips;
+      })
       .filter(s => findTakenAt('EQH', s.price, [s], candles, currentIndex) === null)
       .sort((a, b) => a.price - b.price);
 
@@ -187,6 +200,10 @@ function detectNearestActiveSwingMagnet(
 
   const activeLows = swings
     .filter(s => s.type === 'low' && s.price < currentPrice)
+    .filter(s => {
+      const dist = Math.round(((currentPrice - s.price) / pip) * 10) / 10;
+      return minDistancePips === undefined || dist >= minDistancePips;
+    })
     .filter(s => findTakenAt('EQL', s.price, [s], candles, currentIndex) === null)
     .sort((a, b) => b.price - a.price);
 

@@ -1,5 +1,6 @@
 import { getPipSize, formatPrice, detectAssetClass, getEstimatedSpreadPips } from './assetMetrics';
-import { LiquidityMagnet } from './liquidityMagnetDetector';
+import { SwingPoint } from './types';
+import { LiquidityMagnet, resolveDisplayLiquidityMagnet } from './liquidityMagnetDetector';
 import { OpposingObstacle } from './opposingObstacleDetector';
 import { MacroGateEvaluation } from '../server/macroGateAdapter';
 
@@ -33,6 +34,7 @@ export interface TradeExpectancyPlan {
   readonly isAdmissible: boolean;
   readonly rejectionReason?: string;
   readonly propFirmGuardPassed?: boolean;
+  readonly resolvedLiquidityMagnet?: LiquidityMagnet;
 }
 
 export interface CalculateExpectancyInput {
@@ -48,6 +50,12 @@ export interface CalculateExpectancyInput {
   opposingObstacle?: OpposingObstacle | null;
   macroEvaluation?: MacroGateEvaluation | null;
   minimumAcceptableRR?: number; // default 2.0
+  swings15m?: readonly SwingPoint[];
+  candles15m?: readonly { high: number; low: number; timestamp: number }[];
+  currentIndex15m?: number;
+  swings1h?: readonly SwingPoint[];
+  candles1h?: readonly { high: number; low: number; timestamp: number }[];
+  currentIndex1h?: number;
 }
 
 function getDefaultAtrPips(symbol: string): number {
@@ -123,19 +131,42 @@ export function calculateTradeExpectancyPlan(input: CalculateExpectancyInput): T
     action: 'Pozisyonun %50’si kapatılır, Kalanın Stop seviyesi Girişe (Breakeven) çekilir.',
   };
 
-  // TP2: Primary Institutional Target (Liquidity Pool or 2.5R - 3.0R)
+  // TP2: Primary Institutional Target (Liquidity Pool >= 2.0R or fallback 2.5R - 3.0R)
+  const minTargetPips = Number((riskDistancePips * 2.0).toFixed(1));
   let tp2RR = 2.5;
   let tp2Pips = Number((tp2RR * riskDistancePips).toFixed(1));
   let tp2Price = direction === 'long'
     ? entryPrice + (tp2Pips * pip)
     : entryPrice - (tp2Pips * pip);
 
-  if (liquidityMagnet && liquidityMagnet.isActive && liquidityMagnet.distancePips > 0) {
-    const magnetRR = Number((liquidityMagnet.distancePips / riskDistancePips).toFixed(2));
+  let activeMagnet = liquidityMagnet;
+
+  // If the provided magnet is null, inactive, or closer than 2.0R, but swings are provided:
+  // Dynamically search for the nearest actionable liquidity pool that satisfies distance >= 2.0R (minTargetPips)
+  if ((!activeMagnet || !activeMagnet.isActive || activeMagnet.distancePips < minTargetPips) && input.swings15m) {
+    const pool = resolveDisplayLiquidityMagnet(
+      input.swings15m,
+      entryPrice,
+      direction,
+      symbol,
+      input.candles15m,
+      input.currentIndex15m,
+      input.swings1h,
+      input.candles1h,
+      input.currentIndex1h,
+      minTargetPips
+    );
+    if (pool && pool.isActive) {
+      activeMagnet = pool;
+    }
+  }
+
+  if (activeMagnet && activeMagnet.isActive && activeMagnet.distancePips >= minTargetPips) {
+    const magnetRR = Number((activeMagnet.distancePips / riskDistancePips).toFixed(2));
     if (magnetRR >= 2.0 && magnetRR <= 4.5) {
       tp2RR = magnetRR;
-      tp2Pips = liquidityMagnet.distancePips;
-      tp2Price = liquidityMagnet.priceLevel;
+      tp2Pips = activeMagnet.distancePips;
+      tp2Price = activeMagnet.priceLevel;
     }
   }
 
@@ -220,5 +251,8 @@ export function calculateTradeExpectancyPlan(input: CalculateExpectancyInput): T
     isAdmissible,
     rejectionReason,
     propFirmGuardPassed: true,
+    resolvedLiquidityMagnet: (activeMagnet && activeMagnet.isActive && activeMagnet.distancePips >= minTargetPips)
+      ? activeMagnet
+      : (liquidityMagnet ?? undefined),
   };
 }

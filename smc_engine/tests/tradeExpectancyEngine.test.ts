@@ -104,18 +104,69 @@ describe('TradeExpectancyEngine', () => {
     expect(plan.isAdmissible).toBe(true);
   });
 
-  it('should provide recommended fractional Kelly risk percentage within safety bounds', () => {
+  it('should dynamically select nearest liquidity pool >= 2.0R when closer magnet is < 2.0R', () => {
+    // Risk is (1.1010 - 1.0990) = ~20 pips. 2.0R = 40 pips.
+    // Near cluster at 1.1030 (20 pips away = 1.0R)
+    // Far cluster at 1.1060 (50 pips away = 2.5R)
+    const swings = [
+      { type: 'high' as const, price: 1.1030, formedAtIndex: 5, confirmedAtIndex: 7, timestamp: 500 },
+      { type: 'high' as const, price: 1.1031, formedAtIndex: 8, confirmedAtIndex: 10, timestamp: 800 },
+      { type: 'high' as const, price: 1.1060, formedAtIndex: 15, confirmedAtIndex: 17, timestamp: 1500 },
+      { type: 'high' as const, price: 1.1061, formedAtIndex: 20, confirmedAtIndex: 22, timestamp: 2000 },
+    ];
+
     const plan = calculateTradeExpectancyPlan({
-      symbol: 'BTCUSD',
+      symbol: 'EURUSD',
       direction: 'long',
-      zoneLow: 60000,
-      zoneHigh: 60500,
-      currentPrice: 60250,
-      grade: 'A',
-      totalScore: 85,
+      zoneLow: 1.1000,
+      zoneHigh: 1.1020,
+      currentPrice: 1.1010,
+      grade: 'A+',
+      totalScore: 90,
+      atr15mPips: 10,
+      swings15m: swings,
     });
 
-    expect(plan.recommendedRiskPct).toBeGreaterThanOrEqual(0.25);
-    expect(plan.recommendedRiskPct).toBeLessThanOrEqual(1.25);
+    // The nearest pool >= 2.0R (40 pips) must be selected (1.10605, ~50 pips)
+    expect(plan.tp2.rr).toBeGreaterThanOrEqual(2.0);
+    expect(plan.tp2.pips).toBeGreaterThanOrEqual(40);
+    expect(plan.tp2.price).toBeCloseTo(1.10605, 3);
+    expect(plan.resolvedLiquidityMagnet).toBeDefined();
+    expect(plan.resolvedLiquidityMagnet?.priceLevel).toBeCloseTo(1.10605, 3);
+  });
+
+  it('should enhance win probability and risk sizing when macroEvaluation has high begonya score', () => {
+    const basePlan = calculateTradeExpectancyPlan({
+      symbol: 'EURUSD',
+      direction: 'long',
+      zoneLow: 1.1000,
+      zoneHigh: 1.1020,
+      currentPrice: 1.1010,
+      grade: 'A',
+      totalScore: 80,
+    });
+
+    const macroEnhancedPlan = calculateTradeExpectancyPlan({
+      symbol: 'EURUSD',
+      direction: 'long',
+      zoneLow: 1.1000,
+      zoneHigh: 1.1020,
+      currentPrice: 1.1010,
+      grade: 'A',
+      totalScore: 80,
+      macroEvaluation: {
+        allowed: true,
+        begonyaScore: 85,
+        scoreTier: 'YUKSEK_GUVEN',
+        macroGateMultiplier: 1.25,
+        primaryRegime: 'RISK_ON',
+        gateStatusMessage: 'APPROVED',
+        vetoReasons: [],
+      } as any,
+    });
+
+    expect(macroEnhancedPlan.winProbability).toBeGreaterThan(basePlan.winProbability);
+    expect(macroEnhancedPlan.expectedValueR).toBeGreaterThan(basePlan.expectedValueR);
+    expect(macroEnhancedPlan.recommendedRiskPct).toBeGreaterThanOrEqual(basePlan.recommendedRiskPct);
   });
 });

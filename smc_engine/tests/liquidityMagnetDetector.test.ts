@@ -46,4 +46,26 @@ describe('Liquidity Magnet Detector (EQH / EQL)', () => {
     const magnet = detectLiquidityMagnet(swings, currentPrice, 'long', 'EURUSD');
     expect(magnet).toBeNull();
   });
+
+  it('filters out EQH clusters closer than minDistancePips and selects the next cluster >= minDistancePips', () => {
+    const swings: SwingPoint[] = [
+      // Cluster 1 at 1.0535 (15 pips away)
+      { type: 'high', price: 1.0535, formedAtIndex: 5, confirmedAtIndex: 7, timestamp: 500 },
+      { type: 'high', price: 1.0536, formedAtIndex: 8, confirmedAtIndex: 10, timestamp: 800 },
+      // Cluster 2 at 1.0560 (40 pips away)
+      { type: 'high', price: 1.0560, formedAtIndex: 15, confirmedAtIndex: 17, timestamp: 1500 },
+      { type: 'high', price: 1.0561, formedAtIndex: 20, confirmedAtIndex: 22, timestamp: 2000 },
+    ];
+    const currentPrice = 1.0520;
+
+    // Without minDistancePips: selects Cluster 1 (closer, 15 pips)
+    const magnetNear = detectLiquidityMagnet(swings, currentPrice, 'long', 'EURUSD');
+    expect(magnetNear?.distancePips).toBeCloseTo(15.5, 0.5);
+
+    // With minDistancePips = 30.0 (e.g. 2.0R): skips Cluster 1, selects Cluster 2 (40 pips)
+    const magnetFar = detectLiquidityMagnet(swings, currentPrice, 'long', 'EURUSD', undefined, undefined, 30.0);
+    expect(magnetFar).not.toBeNull();
+    expect(magnetFar?.distancePips).toBeCloseTo(40.5, 0.5);
+    expect(magnetFar?.priceLevel).toBeCloseTo(1.05605, 4);
+  });
 });

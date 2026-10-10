@@ -428,6 +428,22 @@ export function runPipeline(
     // Tests count
     const poiTestResult = countOBTests(candles15mCast, ob, lastIndex15m);
 
+    const atr15m = averageTrueRangePips(candles15mCast, lastIndex15m, symbol, 14);
+    const pip = getPipSize(symbol);
+    let stopBufferPips = 1.0;
+    if (atr15m && atr15m > 0) {
+      stopBufferPips = Number(Math.max(1.0, Math.min(10.0, atr15m * 0.15)).toFixed(1));
+    } else {
+      const assetClass = detectAssetClass(symbol);
+      if (assetClass === 'FOREX_JPY') stopBufferPips = 1.5;
+      else if (assetClass === 'CRYPTO') stopBufferPips = 5.0;
+      else stopBufferPips = 1.0;
+    }
+    const bufferUnits = stopBufferPips * pip;
+    const obStop = tradeDirection === 'long' ? ob.low - bufferUnits : ob.high + bufferUnits;
+    const obRiskPips = Math.max(1.0, Math.abs(candles15mCast[lastIndex15m].close - obStop) / pip);
+    const minTargetPips = Number((obRiskPips * 2.0).toFixed(1));
+
     const liquidityMagnet = resolveDisplayLiquidityMagnet(
       swings15m,
       candles15mCast[lastIndex15m].close,
@@ -437,7 +453,8 @@ export function runPipeline(
       lastIndex15m,
       swings1H,
       candles1HCast,
-      lastIndex1H
+      lastIndex1H,
+      minTargetPips
     );
     const opposingObstacle = detectOpposingObstacle({
       symbol,
@@ -536,7 +553,13 @@ export function runPipeline(
         );
         continue;
       }
-      const atr15m = averageTrueRangePips(candles15mCast, lastIndex15m, symbol, 14);
+      let macroEvaluation: MacroGateEvaluation | undefined;
+      try {
+        macroEvaluation = MacroGateAdapter.getInstance().evaluateCandidate(symbol, tradeDirection, gradeResult.totalScore);
+      } catch {
+        // Fallback in isolated test environments
+      }
+
       const expectancyPlan = calculateTradeExpectancyPlan({
         symbol,
         direction: tradeDirection,
@@ -548,6 +571,13 @@ export function runPipeline(
         atr15mPips: atr15m,
         liquidityMagnet,
         opposingObstacle,
+        macroEvaluation,
+        swings15m,
+        candles15m: candles15mCast,
+        currentIndex15m: lastIndex15m,
+        swings1h: swings1H,
+        candles1h: candles1HCast,
+        currentIndex1h: lastIndex1H,
       });
 
       const enableExpectancyFilter = process.env.NODE_ENV !== 'test' || process.env.ENABLE_EXPECTANCY_FILTER === 'true';
@@ -603,7 +633,8 @@ export function runPipeline(
         setupAssessmentV2,
         setupAssessmentComparison,
         admissionProfile: admissionProfile(),
-        liquidityMagnet,
+        macroEvaluation,
+        liquidityMagnet: expectancyPlan.resolvedLiquidityMagnet ?? liquidityMagnet,
         opposingObstacle,
         allowTrendContinuationPD,
         triggerCandle: candles15mCast[lastIndex15m],
@@ -681,6 +712,22 @@ export function runPipeline(
     // Tests count
     const poiTestResult = countFVGTests(candles15mCast, fvg, lastIndex15m);
 
+    const atr15m = averageTrueRangePips(candles15mCast, lastIndex15m, symbol, 14);
+    const pip = getPipSize(symbol);
+    let stopBufferPips = 1.0;
+    if (atr15m && atr15m > 0) {
+      stopBufferPips = Number(Math.max(1.0, Math.min(10.0, atr15m * 0.15)).toFixed(1));
+    } else {
+      const assetClass = detectAssetClass(symbol);
+      if (assetClass === 'FOREX_JPY') stopBufferPips = 1.5;
+      else if (assetClass === 'CRYPTO') stopBufferPips = 5.0;
+      else stopBufferPips = 1.0;
+    }
+    const bufferUnits = stopBufferPips * pip;
+    const fvgStop = tradeDirection === 'long' ? fvg.gapLow - bufferUnits : fvg.gapHigh + bufferUnits;
+    const fvgRiskPips = Math.max(1.0, Math.abs(candles15mCast[lastIndex15m].close - fvgStop) / pip);
+    const minTargetPips = Number((fvgRiskPips * 2.0).toFixed(1));
+
     const liquidityMagnet = resolveDisplayLiquidityMagnet(
       swings15m,
       candles15mCast[lastIndex15m].close,
@@ -690,7 +737,8 @@ export function runPipeline(
       lastIndex15m,
       swings1H,
       candles1HCast,
-      lastIndex1H
+      lastIndex1H,
+      minTargetPips
     );
     const opposingObstacle = detectOpposingObstacle({
       symbol,
@@ -803,7 +851,13 @@ export function runPipeline(
         );
         continue;
       }
-      const atr15m = averageTrueRangePips(candles15mCast, lastIndex15m, symbol, 14);
+      let macroEvaluation: MacroGateEvaluation | undefined;
+      try {
+        macroEvaluation = MacroGateAdapter.getInstance().evaluateCandidate(symbol, tradeDirection, gradeResult.totalScore);
+      } catch {
+        // Fallback in isolated test environments
+      }
+
       const expectancyPlan = calculateTradeExpectancyPlan({
         symbol,
         direction: tradeDirection,
@@ -815,6 +869,13 @@ export function runPipeline(
         atr15mPips: atr15m,
         liquidityMagnet,
         opposingObstacle,
+        macroEvaluation,
+        swings15m,
+        candles15m: candles15mCast,
+        currentIndex15m: lastIndex15m,
+        swings1h: swings1H,
+        candles1h: candles1HCast,
+        currentIndex1h: lastIndex1H,
       });
 
       const enableExpectancyFilter = process.env.NODE_ENV !== 'test' || process.env.ENABLE_EXPECTANCY_FILTER === 'true';
@@ -870,7 +931,8 @@ export function runPipeline(
         setupAssessmentV2,
         setupAssessmentComparison,
         admissionProfile: admissionProfile(),
-        liquidityMagnet,
+        macroEvaluation,
+        liquidityMagnet: expectancyPlan.resolvedLiquidityMagnet ?? liquidityMagnet,
         opposingObstacle,
         allowTrendContinuationPD,
         triggerCandle: candles15mCast[lastIndex15m],

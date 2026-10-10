@@ -16,6 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 MACRO_DIR = BASE_DIR / "macro_engine"
 SMC_DIR = BASE_DIR / "smc_engine"
 CLT_DIR = BASE_DIR.parent / "swing-bos-core"
+CONVEXITY_DIR = BASE_DIR.parent / "begonya_convexity_engine"
 LOCK_FILE = BASE_DIR / "orchestrator" / "begonya_orchestrator.lock"
 
 def is_pid_running(pid: int, expected_image: str = "python") -> bool:
@@ -152,6 +153,15 @@ def spawn_clt_engine():
     cmd = ["node", node_script]
     return subprocess.Popen(cmd, cwd=str(CLT_DIR), env=env)
 
+def spawn_convexity_engine():
+    daemon_script = CONVEXITY_DIR / "execution" / "lifecycle_daemon.py"
+    if not daemon_script.exists():
+        print(f"[Begonya Orchestrator] ⚠️ Convexity Engine bulunamadı: {daemon_script}")
+        return None
+    print("[Begonya Orchestrator] 🤖 Matematiksel Bot (Convexity Engine - D1 Rotasyon) başlatılıyor...")
+    cmd = [sys.executable, "-u", str(daemon_script), "--live", "--daemon", "--run-now"]
+    return subprocess.Popen(cmd, cwd=str(CONVEXITY_DIR))
+
 def main():
     if not acquire_orchestrator_lock():
         sys.exit(0)
@@ -159,25 +169,27 @@ def main():
     print("=" * 70)
     print(" 🌺 BEGONYA & CHECKLISTTRIGGER: BİRLEŞİK OTONOM İŞLEM SİSTEMİ 🌺 ")
     print("=" * 70)
-    print("Mimari: Macro Multi-AGI Army + Begonya SMC + ChecklistTrigger SMC")
-    print(f"Konum: {BASE_DIR} & {CLT_DIR}")
+    print("Mimari: Macro Multi-AGI Army + Begonya SMC + ChecklistTrigger SMC + Matematiksel Bot")
+    print(f"Konum: {BASE_DIR} & {CLT_DIR} & {CONVEXITY_DIR}")
     print("-" * 70)
 
     p_daemon = None
     p_smc = None
     p_clt = None
+    p_convexity = None
 
     try:
-        # 1. Servisleri Anında Başlat (SMC motorları makro senkronizasyonu beklemeden hemen devreye girsin)
+        # 1. Servisleri Anında Başlat (SMC ve Matematiksel Bot makro senkronizasyonu beklemeden hemen devreye girsin)
         p_daemon = spawn_macro_daemon()
         p_smc = spawn_smc_engine()
         p_clt = spawn_clt_engine()
+        p_convexity = spawn_convexity_engine()
 
         # 2. Başlangıçta Makro Verisini Kontrol Et / Güncelle
         run_macro_sync()
 
         print("\n" + "=" * 70)
-        print(" 🟢 BEGONYA VE CHECKLISTTRIGGER AKTİF VE NÖBETTE. DURDURMAK İÇİN CTRL+C.")
+        print(" 🟢 BEGONYA, CHECKLIST VE MATEMATİKSEL BOT AKTİF VE NÖBETTE. DURDURMAK İÇİN CTRL+C.")
         print("=" * 70)
         prevent_system_sleep()
 
@@ -202,9 +214,15 @@ def main():
                 time.sleep(5)
                 p_clt = spawn_clt_engine()
 
+            # Matematiksel Bot (Convexity Engine) Süpervizör Kontrolü
+            if p_convexity is not None and p_convexity.poll() is not None:
+                print(f"\n[Begonya Orchestrator] ⚠️ Matematiksel Bot durdu (Kod: {p_convexity.returncode}). 5s içinde yeniden başlatılıyor...")
+                time.sleep(5)
+                p_convexity = spawn_convexity_engine()
+
     except KeyboardInterrupt:
         print("\n[Begonya Orchestrator] 🛑 Kapatma sinyali alındı...")
-        for name, proc in [("Macro Daemon", p_daemon), ("Begonya SMC Engine", p_smc), ("ChecklistTrigger", p_clt)]:
+        for name, proc in [("Macro Daemon", p_daemon), ("Begonya SMC Engine", p_smc), ("ChecklistTrigger", p_clt), ("Matematiksel Bot", p_convexity)]:
             if proc is not None and proc.poll() is None:
                 print(f"  -> {name} sonlandırılıyor...")
                 proc.terminate()
