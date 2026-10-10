@@ -200,4 +200,28 @@ describe('Displacement Quality Scorer', () => {
     expect(simRes).not.toBeNull();
     expect(simRes).toMatchObject(batchRes!);
   });
+
+  test('Kriter 5 (Volume Teyidi): should reward high relative volume and penalize hollow volume traps', () => {
+    const candles = createBaseCandles(15);
+    // Prior candles baseline volume = 1,000
+    for (let i = 0; i < 5; i++) {
+      candles[i] = { timestamp: i * 1000, open: 1.0500, high: 1.0510, low: 1.0490, close: 1.0500, volume: 1000 };
+    }
+
+    const leg: DisplacementLeg = { startIndex: 5, endIndex: 5, direction: 'bullish' };
+
+    // Case 1: High institutional volume surge (2,500 vs 1,000 = 2.5x)
+    candles[5] = { timestamp: 5000, open: 1.0492, high: 1.0510, low: 1.0490, close: 1.0508, volume: 2500 };
+    let res = scoreDisplacementQuality(candles, leg, 'EURUSD', '15m');
+    expect(res).not.toBeNull();
+    expect(res!.volumeRatio).toBe(2.5);
+    expect(res!.volumeScore).toBe(0.5);
+
+    // Case 2: Hollow volume trap (400 vs 1,000 = 0.4x)
+    candles[5] = { timestamp: 5000, open: 1.0492, high: 1.0510, low: 1.0490, close: 1.0508, volume: 400 };
+    res = scoreDisplacementQuality(candles, leg, 'EURUSD', '15m');
+    expect(res).not.toBeNull();
+    expect(res!.volumeRatio).toBe(0.4);
+    expect(res!.volumeScore).toBe(-0.5);
+  });
 });

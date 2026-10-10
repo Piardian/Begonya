@@ -115,6 +115,89 @@ export function detectLiquidityMagnet(
   return null;
 }
 
+export function detectInducementMagnet(
+  swings: readonly SwingPoint[],
+  zone: { low: number; high: number },
+  tradeDirection: 'long' | 'short',
+  symbol: string,
+  candles?: readonly { high: number; low: number; timestamp: number }[],
+  currentIndex?: number
+): LiquidityMagnet | null {
+  if (!swings || swings.length < 2) return null;
+
+  const pip = getPipSize(symbol);
+  const midPrice = (zone.low + zone.high) / 2;
+  const tolerance = getTolerance(symbol, midPrice);
+
+  if (tradeDirection === 'long') {
+    // For LONG: Invalidation stop is below zone.low.
+    // Inducement trap is an untaken EQL cluster situated below zone.low.
+    const lows = swings.filter(s => s.type === 'low' && s.price < zone.low);
+    if (lows.length < 2) return null;
+
+    const candidates: LiquidityMagnet[] = [];
+    for (let i = 0; i < lows.length; i++) {
+      const cluster = [lows[i]];
+      for (let j = i + 1; j < lows.length; j++) {
+        if (Math.abs(lows[i].price - lows[j].price) <= tolerance) {
+          cluster.push(lows[j]);
+        }
+      }
+
+      if (cluster.length >= 2) {
+        const avgPrice = cluster.reduce((sum, s) => sum + s.price, 0) / cluster.length;
+        const distancePips = Math.round(((zone.low - avgPrice) / pip) * 10) / 10;
+        const firstTakenAt = findTakenAt('EQL', avgPrice, cluster, candles, currentIndex);
+        candidates.push({
+          type: 'EQL',
+          priceLevel: avgPrice,
+          pointsCount: cluster.length,
+          distancePips,
+          isActive: firstTakenAt === null,
+          status: firstTakenAt === null ? 'ACTIVE' : 'TAKEN',
+          firstTakenAt,
+          sourceSwingTimestamps: cluster.map(point => point.timestamp),
+          description: `EQL Inducement Tuzagi: ${cluster.length} dip @ ${avgPrice.toFixed(4)} (${distancePips} pip stop altinda)`,
+        });
+      }
+    }
+    return selectBestMagnet(candidates);
+  } else {
+    // For SHORT: Invalidation stop is above zone.high.
+    // Inducement trap is an untaken EQH cluster situated above zone.high.
+    const highs = swings.filter(s => s.type === 'high' && s.price > zone.high);
+    if (highs.length < 2) return null;
+
+    const candidates: LiquidityMagnet[] = [];
+    for (let i = 0; i < highs.length; i++) {
+      const cluster = [highs[i]];
+      for (let j = i + 1; j < highs.length; j++) {
+        if (Math.abs(highs[i].price - highs[j].price) <= tolerance) {
+          cluster.push(highs[j]);
+        }
+      }
+
+      if (cluster.length >= 2) {
+        const avgPrice = cluster.reduce((sum, s) => sum + s.price, 0) / cluster.length;
+        const distancePips = Math.round(((avgPrice - zone.high) / pip) * 10) / 10;
+        const firstTakenAt = findTakenAt('EQH', avgPrice, cluster, candles, currentIndex);
+        candidates.push({
+          type: 'EQH',
+          priceLevel: avgPrice,
+          pointsCount: cluster.length,
+          distancePips,
+          isActive: firstTakenAt === null,
+          status: firstTakenAt === null ? 'ACTIVE' : 'TAKEN',
+          firstTakenAt,
+          sourceSwingTimestamps: cluster.map(point => point.timestamp),
+          description: `EQH Inducement Tuzagi: ${cluster.length} tepe @ ${avgPrice.toFixed(4)} (${distancePips} pip stop ustunde)`,
+        });
+      }
+    }
+    return selectBestMagnet(candidates);
+  }
+}
+
 export function resolveDisplayLiquidityMagnet(
   swings15m: readonly SwingPoint[],
   currentPrice: number,

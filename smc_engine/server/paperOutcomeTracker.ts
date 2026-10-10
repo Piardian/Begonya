@@ -43,6 +43,7 @@ export interface TrackedSignal {
   entryTriggeredAt: number | null;
   lastProcessedCandleTimestamp: number;
   beArmed: boolean;
+  partialTpTaken?: boolean;
   maximumFavorableExcursion: number;
   maximumAdverseExcursion: number;
   status: 'WAITING_ENTRY' | 'OPEN' | 'CLOSED';
@@ -70,6 +71,9 @@ export interface PaperOutcomeTrackerConfig {
   readonly riskReward: number;
   readonly breakEvenAtR: number;
   readonly stopBufferPips: number;
+  readonly partialTpAtR?: number;
+  readonly partialTpRatio?: number;
+  readonly enablePartialTp?: boolean;
 }
 
 const DEFAULT_CONFIG: PaperOutcomeTrackerConfig = Object.freeze({
@@ -78,6 +82,9 @@ const DEFAULT_CONFIG: PaperOutcomeTrackerConfig = Object.freeze({
   riskReward: 2,
   breakEvenAtR: 1,
   stopBufferPips: 2,
+  partialTpAtR: 1.2,
+  partialTpRatio: 0.5,
+  enablePartialTp: false,
 });
 
 export function calculateAssetCalibratedStopBuffer(symbol: string, zoneLow: number, zoneHigh: number): number {
@@ -123,6 +130,36 @@ export function isSliceThroughCandle(
     return candle.open > zoneLow && candle.close < zoneLow;
   } else {
     return candle.open < zoneHigh && candle.close > zoneHigh;
+  }
+}
+
+export function evaluateEntryCandleReaction(
+  direction: 'long' | 'short',
+  candle: StoredCandle,
+  zoneLow: number,
+  zoneHigh: number
+): boolean {
+  const range = candle.high - candle.low;
+  if (range <= 0) return true;
+
+  if (direction === 'long') {
+    const lowerWick = Math.min(candle.open, candle.close) - candle.low;
+    const lowerWickRatio = lowerWick / range;
+    const isBullClose = candle.close >= candle.open;
+    // Adverse knife drop: closed bearish with less than 15% lower wick deep in zone
+    if (!isBullClose && lowerWickRatio < 0.15 && candle.close <= zoneLow + (zoneHigh - zoneLow) * 0.4) {
+      return false;
+    }
+    return true;
+  } else {
+    const upperWick = candle.high - Math.max(candle.open, candle.close);
+    const upperWickRatio = upperWick / range;
+    const isBearClose = candle.close <= candle.open;
+    // Adverse spike: closed bullish with less than 15% upper wick deep in zone
+    if (!isBearClose && upperWickRatio < 0.15 && candle.close >= zoneHigh - (zoneHigh - zoneLow) * 0.4) {
+      return false;
+    }
+    return true;
   }
 }
 
@@ -236,6 +273,7 @@ export class PaperOutcomeTracker {
       entryTriggeredAt: null,
       lastProcessedCandleTimestamp: signalTimestamp,
       beArmed: false,
+      partialTpTaken: false,
       maximumFavorableExcursion: 0,
       maximumAdverseExcursion: 0,
       status: 'WAITING_ENTRY',
@@ -334,7 +372,18 @@ export class PaperOutcomeTracker {
         return { changed: true, closed: true };
       }
 
-      const entryPrice = resolveEntryPrice(signal.direction, signal.zoneLow, signal.zoneHigh, candle.open);
+      // Alt Zaman Dilimi Reaksiyon Şartı: Fitil veya absorpsiyon tepkisi olmadan kör limit emir tetiklenmez
+      const hasReaction = evaluateEntryCandleReaction(signal.direction, candle, signal.zoneLow, signal.zoneHigh);
+      if (!hasReaction) {
+        const breached = signal.direction === 'long' ? candle.close < signal.zoneLow : candle.close > signal.zoneHigh;
+        if (breached) {
+          this.close(signal, 'CANCELLED', candle.timestamp, 'Entry candle breached zone without rejection wick or absorption reaction.');
+          return { changed: true, closed: true };
+        }
+        return { changed: false, closed: false };
+      }
+
+      const entryPrice = resolveEntryPrice(signal.direction, signal.zoneLow, signal.zoneHigh, candle.open, signal.poiType);
       const buffer = calculateAssetCalibratedStopBuffer(signal.symbol, signal.zoneLow, signal.zoneHigh);
       const stopLoss = signal.direction === 'long' ? signal.zoneLow - buffer : signal.zoneHigh + buffer;
       const riskDistance = Math.abs(entryPrice - stopLoss);
@@ -407,6 +456,12 @@ export class PaperOutcomeTracker {
     signal.maximumFavorableExcursion = Math.max(signal.maximumFavorableExcursion, favorable / signal.riskDistance);
     signal.maximumAdverseExcursion = Math.max(signal.maximumAdverseExcursion, adverse / signal.riskDistance);
 
+    const isPartialTpActive = Boolean(this.config.enablePartialTp || signal.isShadowCounterfactual);
+    const partialTpTarget = this.config.partialTpAtR ?? 1.2;
+    if (isPartialTpActive && !signal.partialTpTaken && favorable >= signal.riskDistance * partialTpTarget) {
+      signal.partialTpTaken = true;
+    }
+
     if (!signal.beArmed && favorable >= signal.riskDistance * this.config.breakEvenAtR) {
       signal.beArmed = true;
     }
@@ -435,11 +490,27 @@ export class PaperOutcomeTracker {
     const isFilledTrade = signal.entryTriggeredAt !== null;
     const exitPrice = resolveSyntheticExitPrice(signal, outcome);
     const targetMultiplier = signal.targetR ?? this.config.riskReward;
+    const isPartialTpActive = Boolean(this.config.enablePartialTp || signal.isShadowCounterfactual);
+    const partialRatio = this.config.partialTpRatio ?? 0.5;
+    const partialR = this.config.partialTpAtR ?? 1.2;
 
-    // Realized R only exists for filled trades!
-    const rrAchieved = isFilledTrade
-      ? (outcome === 'TP' ? targetMultiplier : outcome === 'SL' ? -1 : outcome === 'BE' ? 0 : null)
-      : null;
+    // Realized R with Partial TP (TP1) support:
+    let rrAchieved: number | null = null;
+    if (isFilledTrade) {
+      if (outcome === 'TP') {
+        rrAchieved = (isPartialTpActive && signal.partialTpTaken)
+          ? Number((partialRatio * partialR + (1 - partialRatio) * targetMultiplier).toFixed(2))
+          : targetMultiplier;
+      } else if (outcome === 'BE') {
+        rrAchieved = (isPartialTpActive && signal.partialTpTaken)
+          ? Number((partialRatio * partialR).toFixed(2))
+          : 0;
+      } else if (outcome === 'SL') {
+        rrAchieved = (isPartialTpActive && signal.partialTpTaken)
+          ? Number((partialRatio * partialR - (1 - partialRatio) * 1.0).toFixed(2))
+          : -1;
+      }
+    }
 
     const holdingTimeMs = isFilledTrade ? Math.max(0, timestamp - signal.entryTriggeredAt!) : null;
 
@@ -610,7 +681,17 @@ export class PaperOutcomeTracker {
   }
 }
 
-function resolveEntryPrice(direction: Direction, zoneLow: number, zoneHigh: number, candleOpen: number): number {
+function resolveEntryPrice(
+  direction: Direction,
+  zoneLow: number,
+  zoneHigh: number,
+  candleOpen: number,
+  poiType?: 'OB' | 'FVG'
+): number {
+  if (poiType === 'FVG') {
+    // FVG optimal fill: enter at proximal gap boundary for faster fills and less expiry
+    return direction === 'long' ? zoneHigh : zoneLow;
+  }
   if (direction === 'long') {
     if (candleOpen > zoneHigh) return zoneHigh;
     if (candleOpen < zoneLow) return zoneLow;

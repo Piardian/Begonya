@@ -52,6 +52,11 @@ export interface MacroGatePayload {
     gold_short_allowed?: boolean;
     vix_complacent?: boolean;
     crypto_rotation?: CryptoRotationEvaluationReport;
+    t10yie_level?: number;
+    t10yie_delta_20d_bps?: number;
+    dxy_btc_corr_20d?: number;
+    dxy_gold_corr_20d?: number;
+    debasement_hedge_active?: boolean;
     [key: string]: any;
   };
   macro_rationale?: string;
@@ -469,6 +474,14 @@ export class MacroGateAdapter {
       const isBear = rawBias === 'Strong Bearish' || rawBias === 'Bearish';
 
       if (proxy === 'DXY_INVERSE') {
+        const isDecoupled = Boolean(
+          payload.regime_state?.debasement_hedge_active ||
+          (cleanSym.includes('BTC') && ((payload.regime_state as any)?.dxy_btc_corr_20d ?? -1) > -0.2) ||
+          (cleanSym.includes('XAU') && ((payload.regime_state as any)?.dxy_gold_corr_20d ?? -1) > -0.2)
+        );
+        if (isDecoupled && isBull) {
+          return { direction: 'NEUTRAL', reason: `DXY ${rawBias} fakat Korelasyon Kırılımı / Fiat Debasement Aktif (DXY veto gevşetildi)` };
+        }
         if (isBull) return { direction: 'SHORT', reason: `DXY ${rawBias} -> Ters Korelasyon SHORT` };
         if (isBear) return { direction: 'LONG', reason: `DXY ${rawBias} -> Ters Korelasyon LONG` };
       } else {
@@ -484,6 +497,14 @@ export class MacroGateAdapter {
       const dxyBear = dxyBias === 'Strong Bearish' || dxyBias === 'Bearish';
 
       if (proxy === 'DXY_INVERSE') {
+        const isDecoupled = Boolean(
+          payload.regime_state?.debasement_hedge_active ||
+          (cleanSym.includes('BTC') && ((payload.regime_state as any)?.dxy_btc_corr_20d ?? -1) > -0.2) ||
+          (cleanSym.includes('XAU') && ((payload.regime_state as any)?.dxy_gold_corr_20d ?? -1) > -0.2)
+        );
+        if (isDecoupled && dxyBull) {
+          return { direction: 'NEUTRAL', reason: `DXY ${dxyBias} fakat Korelasyon Kırılımı / Fiat Debasement Aktif (DXY veto gevşetildi)` };
+        }
         if (dxyBull) return { direction: 'SHORT', reason: `DXY ${dxyBias} -> Ters Korelasyon SHORT` };
         if (dxyBear) return { direction: 'LONG', reason: `DXY ${dxyBias} -> Ters Korelasyon LONG` };
       } else if (proxy === 'DXY_DIRECT') {

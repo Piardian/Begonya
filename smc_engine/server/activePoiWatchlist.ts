@@ -260,6 +260,9 @@ export class ActivePoiWatchlist {
   }
 
   public save(): void {
+    if (process.env.IS_BACKTEST === 'true') {
+      return;
+    }
     try {
       if (!fs.existsSync(this.dataDir)) {
         fs.mkdirSync(this.dataDir, { recursive: true });

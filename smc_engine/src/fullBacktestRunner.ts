@@ -7,6 +7,7 @@ import { MacroGateAdapter } from '../server/macroGateAdapter';
 import { Symbol } from '../server/universe';
 import { getPipSize } from '../src/assetMetrics';
 import { OrderBlock, FVG } from '../src/types';
+import { isSliceThroughCandle, evaluateEntryCandleReaction } from '../server/paperOutcomeTracker';
 
 export type BacktestOutcome = 'TP' | 'SL' | 'BE' | 'EXPIRED' | 'PENDING_END_OF_DATA';
 
@@ -161,9 +162,32 @@ export function runFullBacktest(options?: {
   readonly entryExpiryBars?: number;
   readonly maxHoldBars?: number;
   readonly warmupBars?: number;
+  readonly requireEntryReaction?: boolean;
 }): BacktestSummary {
-  const root = path.resolve(__dirname, '..');
-  const candlePath = options?.candleDataPath ?? path.join(root, 'data', 'backtest_candles.json');
+  const candidateRoots = [
+    path.resolve(__dirname, '..'),
+    path.resolve(__dirname, '../..'),
+    process.cwd(),
+    path.resolve(process.cwd(), 'smc_engine'),
+  ];
+  let root = candidateRoots[0];
+  for (const r of candidateRoots) {
+    if (
+      fs.existsSync(path.join(r, 'data', 'backtest_candles_3mo_noncrypto.json')) ||
+      fs.existsSync(path.join(r, 'data', 'backtest_candles_1mo.json')) ||
+      fs.existsSync(path.join(r, 'data', 'backtest_candles.json'))
+    ) {
+      root = r;
+      break;
+    }
+  }
+  const defaultPath = fs.existsSync(path.join(root, 'data', 'backtest_candles_3mo_noncrypto.json'))
+    ? path.join(root, 'data', 'backtest_candles_3mo_noncrypto.json')
+    : fs.existsSync(path.join(root, 'data', 'backtest_candles_1mo.json'))
+      ? path.join(root, 'data', 'backtest_candles_1mo.json')
+      : path.join(root, 'data', 'backtest_candles.json');
+  const cliPath = process.argv[2] ? path.resolve(process.argv[2]) : undefined;
+  const candlePath = options?.candleDataPath ?? cliPath ?? defaultPath;
 
   if (!fs.existsSync(candlePath)) {
     throw new Error(`Candle data file not found at ${candlePath}`);
@@ -180,16 +204,20 @@ export function runFullBacktest(options?: {
   const entryExpiryBars = options?.entryExpiryBars ?? 48; // 12 hours
   const maxHoldBars = options?.maxHoldBars ?? 96; // 24 hours
   const warmup = options?.warmupBars ?? 60;
+  const requireReaction = options?.requireEntryReaction ?? true;
 
+  process.env.IS_BACKTEST = 'true';
   const macroAdapter = MacroGateAdapter.getInstance();
   const allOrders: SimulatedOrder[] = [];
 
-  for (const symbol of symbols) {
+  for (let sIdx = 0; sIdx < symbols.length; sIdx++) {
+    const symbol = symbols[sIdx];
     const symCandles = rawData[symbol];
     if (!symCandles || !symCandles['15m'] || symCandles['15m'].length < warmup + 30) {
       continue;
     }
 
+    console.log(`⏳ [${sIdx + 1}/${symbols.length}] ${symbol} test ediliyor (${symCandles['15m'].length} mum)...`);
     const pipSize = getPipSize(symbol);
     const candleStore = new InMemoryCandleStore();
     const notifiedStore = new InMemoryNotifiedStore();
@@ -252,6 +280,30 @@ export function runFullBacktest(options?: {
             : (currentCandle.high >= order.entryPrice && currentCandle.open <= order.stopLoss);
 
           if (reachedEntry) {
+            // Reaksiyon & Yaklaşma Hızı Teyidi (Slice-Through / Absorption Filter)
+            if (requireReaction) {
+              const sliced = isSliceThroughCandle(order.direction, currentCandle, order.zoneLow, order.zoneHigh);
+              if (sliced) {
+                order.status = 'CLOSED';
+                order.outcome = 'EXPIRED';
+                order.exitTime = currentIso;
+                order.exitTimestamp = currentCandle.timestamp;
+                order.reason = 'Bölgeye yaklaşma hızı çok yüksek (Slice-Through); tepki fitili oluşmadan bölge delindi, limit emir iptal edildi.';
+                continue;
+              }
+
+              const hasReaction = evaluateEntryCandleReaction(order.direction, currentCandle, order.zoneLow, order.zoneHigh);
+              const breached = isLong ? currentCandle.close < order.zoneLow : currentCandle.close > order.zoneHigh;
+              if (!hasReaction && breached) {
+                order.status = 'CLOSED';
+                order.outcome = 'EXPIRED';
+                order.exitTime = currentIso;
+                order.exitTimestamp = currentCandle.timestamp;
+                order.reason = 'Giriş mumunda fitil tepkisi veya absorpsiyon oluşmadı; bölge savunulamadan kırıldı, limit emir iptal edildi.';
+                continue;
+              }
+            }
+
             order.status = 'OPEN';
             order.entryTime = currentIso;
             order.entryTimestamp = currentCandle.timestamp;

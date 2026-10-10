@@ -9,6 +9,8 @@ export interface SweepEvent {
   candleIndex: number;
   timestamp: number;
   wickPrice: number;
+  isExternalLiquidity?: boolean;
+  atrRatio?: number;
 }
 
 const MIN_SWEEP_PIPS: Record<string, Record<'15m' | '1h' | '4h', number>> = {
@@ -38,6 +40,47 @@ function getPipMultiplier(symbol: string): number {
   if (symbol.startsWith('BTC') || symbol.startsWith('ETH')) return 1.0;
   if (symbol.startsWith('LTC')) return 0.1;
   return 0.0001;
+}
+
+/**
+ * Calculates zero-lookahead True Range average (ATR) strictly on prior closed candles before currentIdx.
+ * Requires at least 10 completed bars to avoid small-sample distortion.
+ */
+function calculateHistoricalATR(candles: Candle[], priorToIdx: number, period = 14): number {
+  if (candles.length === 0 || priorToIdx < 10) return 0;
+  const start = Math.max(0, priorToIdx - period);
+  let trSum = 0;
+  let count = 0;
+  for (let i = start + 1; i <= priorToIdx; i++) {
+    const high = candles[i].high;
+    const low = candles[i].low;
+    const prevClose = candles[i - 1].close;
+    const tr = Math.max(high - low, Math.abs(high - prevClose), Math.abs(low - prevClose));
+    trSum += tr;
+    count++;
+  }
+  return count >= 10 ? trSum / count : 0;
+}
+
+/**
+ * Determines whether a swing level is External Range Liquidity (e.g. Session/Day extremes or multi-day highs/lows).
+ */
+function isExternalSwing(swing: SwingPoint, allSwings: SwingPoint[], lookbackBars = 96): boolean {
+  if (swing.type === 'low') {
+    return !allSwings.some(
+      s => s.type === 'low' &&
+           s.formedAtIndex !== swing.formedAtIndex &&
+           s.price < swing.price &&
+           Math.abs(s.formedAtIndex - swing.formedAtIndex) <= lookbackBars
+    );
+  } else {
+    return !allSwings.some(
+      s => s.type === 'high' &&
+           s.formedAtIndex !== swing.formedAtIndex &&
+           s.price > swing.price &&
+           Math.abs(s.formedAtIndex - swing.formedAtIndex) <= lookbackBars
+    );
+  }
 }
 
 /**
@@ -83,12 +126,15 @@ export function detectSweeps(
     }
 
     const candle = candles[idx];
+    const atr = calculateHistoricalATR(candles, idx - 1, 14);
+    const effectiveMinPenetrationPrice = minPenetrationPrice;
 
     // Check Sweep Low
-    if (candle.low < rangeState.rangeLow - minPenetrationPrice) {
+    if (candle.low < rangeState.rangeLow - effectiveMinPenetrationPrice) {
       // If we haven't swept this rangeLow level yet
       if (sweptLowLevel !== rangeState.rangeLow) {
         const penetrationDistance = (rangeState.rangeLow - candle.low) / pipMultiplier;
+        const atrRatio = atr > 0 ? Number(((penetrationDistance * pipMultiplier) / atr).toFixed(2)) : undefined;
         events.push({
           type: 'sweep_low',
           sweptLevel: rangeState.rangeLow,
@@ -96,16 +142,19 @@ export function detectSweeps(
           candleIndex: idx,
           timestamp: candle.timestamp,
           wickPrice: candle.low,
+          isExternalLiquidity: true,
+          atrRatio,
         });
         sweptLowLevel = rangeState.rangeLow;
       }
     }
 
     // Check Sweep High
-    if (candle.high > rangeState.rangeHigh + minPenetrationPrice) {
+    if (candle.high > rangeState.rangeHigh + effectiveMinPenetrationPrice) {
       // If we haven't swept this rangeHigh level yet
       if (sweptHighLevel !== rangeState.rangeHigh) {
         const penetrationDistance = (candle.high - rangeState.rangeHigh) / pipMultiplier;
+        const atrRatio = atr > 0 ? Number(((penetrationDistance * pipMultiplier) / atr).toFixed(2)) : undefined;
         events.push({
           type: 'sweep_high',
           sweptLevel: rangeState.rangeHigh,
@@ -113,6 +162,8 @@ export function detectSweeps(
           candleIndex: idx,
           timestamp: candle.timestamp,
           wickPrice: candle.high,
+          isExternalLiquidity: true,
+          atrRatio,
         });
         sweptHighLevel = rangeState.rangeHigh;
       }
@@ -142,6 +193,10 @@ export function detectSwingSweeps(
 
   for (let idx = 0; idx < candles.length; idx++) {
     const candle = candles[idx];
+    const atr = calculateHistoricalATR(candles, idx - 1, 14);
+    const atrThresholdPrice = atr > 0 ? atr * 0.15 : 0;
+    const effectiveMinPenetrationPrice = Math.max(minPenetrationPrice, atrThresholdPrice);
+
     const recentConfirmedLows = swings.filter(
       s =>
         s.type === 'low' &&
@@ -153,10 +208,12 @@ export function detectSwingSweeps(
     for (const swingLow of recentConfirmedLows) {
       const key = `low-${swingLow.formedAtIndex}`;
       if (sweptSwingKeys.has(key)) continue;
-      const penetratedByThreshold = candle.low < swingLow.price - minPenetrationPrice;
+      const penetratedByThreshold = candle.low < swingLow.price - effectiveMinPenetrationPrice;
       const wickedAndClosedAbove = candle.low < swingLow.price && candle.close >= swingLow.price;
       if (penetratedByThreshold || wickedAndClosedAbove) {
         const penetrationDistance = (swingLow.price - candle.low) / pipMultiplier;
+        const isExternal = isExternalSwing(swingLow, swings);
+        const atrRatio = atr > 0 ? Number(((penetrationDistance * pipMultiplier) / atr).toFixed(2)) : undefined;
         events.push({
           type: 'sweep_low',
           sweptLevel: swingLow.price,
@@ -164,6 +221,8 @@ export function detectSwingSweeps(
           candleIndex: idx,
           timestamp: candle.timestamp,
           wickPrice: candle.low,
+          isExternalLiquidity: isExternal,
+          atrRatio,
         });
         sweptSwingKeys.add(key);
         break;
@@ -181,10 +240,12 @@ export function detectSwingSweeps(
     for (const swingHigh of recentConfirmedHighs) {
       const key = `high-${swingHigh.formedAtIndex}`;
       if (sweptSwingKeys.has(key)) continue;
-      const penetratedByThreshold = candle.high > swingHigh.price + minPenetrationPrice;
+      const penetratedByThreshold = candle.high > swingHigh.price + effectiveMinPenetrationPrice;
       const wickedAndClosedBelow = candle.high > swingHigh.price && candle.close <= swingHigh.price;
       if (penetratedByThreshold || wickedAndClosedBelow) {
         const penetrationDistance = (candle.high - swingHigh.price) / pipMultiplier;
+        const isExternal = isExternalSwing(swingHigh, swings);
+        const atrRatio = atr > 0 ? Number(((penetrationDistance * pipMultiplier) / atr).toFixed(2)) : undefined;
         events.push({
           type: 'sweep_high',
           sweptLevel: swingHigh.price,
@@ -192,6 +253,8 @@ export function detectSwingSweeps(
           candleIndex: idx,
           timestamp: candle.timestamp,
           wickPrice: candle.high,
+          isExternalLiquidity: isExternal,
+          atrRatio,
         });
         sweptSwingKeys.add(key);
         break;

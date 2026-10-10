@@ -515,8 +515,12 @@ class MacroWorkflowEngine(_LegacyMacroWorkflowEngine):
             "economic_regime_snapshot": metrics.get("economic_regime_snapshot", {}),
             "policy_expectations": metrics.get("policy_expectations", {}),
             "data_quality": metrics.get("data_quality", {}),
-        }
         save_macro_gate_atomic(payload, BIAS_GATE_FILE)
+        try:
+            shared_gate = Path(__file__).resolve().parent.parent.parent / "shared" / "macro_bias_gate.json"
+            save_macro_gate_atomic(payload, shared_gate)
+        except Exception:
+            pass
         return {}
 
     def run_pipeline(

@@ -68,6 +68,95 @@ export function isWithinKillzone(now: Date = new Date()): { active: boolean; rea
   return { active: false, reason: 'outside_trading_hours' };
 }
 
+export type SessionWindowType =
+  | 'ASIA_ACCUMULATION'
+  | 'LONDON_KILLZONE'
+  | 'NY_KILLZONE'
+  | 'LONDON_CLOSE_RETRACE'
+  | 'OFF_HOURS';
+
+export interface SessionWindowInfo {
+  session: SessionWindowType;
+  isHighLiquidityKillzone: boolean;
+  liquidityScoreBonus: number;
+  reason: string;
+}
+
+export function detectSessionWindow(now: Date = new Date()): SessionWindowInfo {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Istanbul',
+    weekday: 'short',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: false,
+  });
+
+  const parts = formatter.formatToParts(now);
+  let weekday = '';
+  let hour = 0;
+  let minute = 0;
+
+  for (const part of parts) {
+    if (part.type === 'weekday') weekday = part.value;
+    if (part.type === 'hour') hour = parseInt(part.value, 10);
+    if (part.type === 'minute') minute = parseInt(part.value, 10);
+  }
+  if (hour === 24) hour = 0;
+  const currentMinutes = hour * 60 + minute;
+
+  if (weekday === 'Sat' || weekday === 'Sun') {
+    return {
+      session: 'OFF_HOURS',
+      isHighLiquidityKillzone: false,
+      liquidityScoreBonus: -1,
+      reason: 'Hafta sonu kapalı piyasa',
+    };
+  }
+
+  if (currentMinutes >= 10 * 60 && currentMinutes < 13 * 60) {
+    return {
+      session: 'LONDON_KILLZONE',
+      isHighLiquidityKillzone: true,
+      liquidityScoreBonus: 1,
+      reason: 'Londra Açılış Killzone (Yüksek Kurumsal Likidite)',
+    };
+  }
+
+  if (currentMinutes >= 15 * 60 + 30 && currentMinutes < 18 * 60 + 30) {
+    return {
+      session: 'NY_KILLZONE',
+      isHighLiquidityKillzone: true,
+      liquidityScoreBonus: 1,
+      reason: 'New York Açılış Killzone (Maksimum Hacim ve Dağıtım)',
+    };
+  }
+
+  if (currentMinutes >= 18 * 60 + 30 && currentMinutes < 20 * 60) {
+    return {
+      session: 'LONDON_CLOSE_RETRACE',
+      isHighLiquidityKillzone: false,
+      liquidityScoreBonus: 0,
+      reason: 'Londra Kapanış Kâr Realizasyonu',
+    };
+  }
+
+  if (currentMinutes >= 3 * 60 && currentMinutes < 10 * 60) {
+    return {
+      session: 'ASIA_ACCUMULATION',
+      isHighLiquidityKillzone: false,
+      liquidityScoreBonus: 0,
+      reason: 'Asya Likidite Birikim Seansı',
+    };
+  }
+
+  return {
+    session: 'OFF_HOURS',
+    isHighLiquidityKillzone: false,
+    liquidityScoreBonus: -1,
+    reason: 'Seans Dışı Sığ Piyasa',
+  };
+}
+
 export type KillzoneFilterMode = {
   active: boolean;
   reason: string;

@@ -124,14 +124,24 @@ function evaluateEntryValidation(candidate: NotificationCandidate, rejectionReas
     rejectionReason.push('setup invalidation risk is high');
   }
 
-  // 4. Over-tested / Depleted POI Guard: Max 1 prior test allowed (2+ touches is depleted)
   if ((quality?.metrics.poiTestCount ?? candidate.poiTestCount) >= 2) {
     rejectionReason.push('entry zone depleted; POI has already been tested multiple times');
     return 'FAIL';
   }
 
+  if (candidate.inducementMagnet?.isActive) {
+    rejectionReason.push('active inducement liquidity cluster exists behind the stop loss');
+    return 'FAIL';
+  }
+
   if (!candidate.gradeResult.entryAllowed) {
     rejectionReason.push('grade engine did not permit entry');
+    return 'FAIL';
+  }
+
+  // 5. Strict Macro Gate Alignment (Makro Karşıtı Yönde İşlem Kalkanı)
+  if (candidate.macroEvaluation && candidate.macroEvaluation.allowed === false) {
+    rejectionReason.push(`macro gate vetoed trade: ${candidate.macroEvaluation.gateStatusMessage || 'macro direction mismatch'}`);
     return 'FAIL';
   }
 
@@ -177,6 +187,22 @@ function evaluateHtfConsistency(candidate: NotificationCandidate, rejectionReaso
     (direction === 'short' && candidate.pd4H === 'discount');
   if (direct4HPdConflict && !candidate.allowTrendContinuationPD) {
     rejectionReason.push('4H premium/discount context conflicts with the trade');
+    return 'FAIL';
+  }
+
+  const direct1HPdConflict =
+    (direction === 'long' && candidate.pd1H === 'premium') ||
+    (direction === 'short' && candidate.pd1H === 'discount');
+  if (direct1HPdConflict && !candidate.allowTrendContinuationPD) {
+    rejectionReason.push('1H premium/discount context conflicts with the trade');
+    return 'FAIL';
+  }
+
+  const direct15MPdConflict =
+    (direction === 'long' && candidate.pd15M === 'premium' && candidate.pd1H !== 'discount') ||
+    (direction === 'short' && candidate.pd15M === 'discount' && candidate.pd1H !== 'premium');
+  if (direct15MPdConflict) {
+    rejectionReason.push('15M premium/discount context conflicts with the trade');
     return 'FAIL';
   }
 

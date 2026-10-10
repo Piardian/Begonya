@@ -124,9 +124,47 @@ export function scoreDisplacementQuality(
   }
 
   // ----------------------------------------------------
+  // Criterion 5 (Volume Confirmation if volume data available)
+  // ----------------------------------------------------
+  let volumeRatio: number | undefined;
+  let volumeScore = 0;
+
+  let legVolumeSum = 0;
+  let legVolumeCount = 0;
+  for (let i = leg.startIndex; i <= leg.endIndex; i++) {
+    if (typeof candles[i].volume === 'number' && candles[i].volume! > 0) {
+      legVolumeSum += candles[i].volume!;
+      legVolumeCount++;
+    }
+  }
+
+  let priorVolumeSum = 0;
+  let priorVolumeCount = 0;
+  for (let i = priorStart; i <= priorEnd; i++) {
+    if (typeof candles[i].volume === 'number' && candles[i].volume! > 0) {
+      priorVolumeSum += candles[i].volume!;
+      priorVolumeCount++;
+    }
+  }
+
+  if (legVolumeCount > 0 && priorVolumeCount > 0) {
+    const legAvgVolume = legVolumeSum / legVolumeCount;
+    const priorAvgVolume = priorVolumeSum / priorVolumeCount;
+    if (priorAvgVolume > 0) {
+      volumeRatio = Number((legAvgVolume / priorAvgVolume).toFixed(2));
+      if (volumeRatio >= 1.5) {
+        volumeScore = 0.5;
+      } else if (volumeRatio < 0.7) {
+        volumeScore = -0.5;
+      }
+    }
+  }
+
+  // ----------------------------------------------------
   // Total Score and Quality Grading
   // ----------------------------------------------------
-  const totalScore = bodyRatioScore + consecutiveScore + fvgScore + sizeScore;
+  const rawScore = bodyRatioScore + consecutiveScore + fvgScore + sizeScore + volumeScore;
+  const totalScore = Math.max(0, rawScore);
 
   let quality: 'güçlü' | 'orta' | 'zayıf' | 'yok';
   let gradePoints: 2 | 1 | 0 | -2;
@@ -151,6 +189,8 @@ export function scoreDisplacementQuality(
     consecutiveScore,
     fvgScore,
     sizeScore,
+    volumeRatio,
+    volumeScore: volumeScore !== 0 ? volumeScore : undefined,
     totalScore,
     quality,
     gradePoints,

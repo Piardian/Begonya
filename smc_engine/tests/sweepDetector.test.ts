@@ -1,6 +1,6 @@
 import { Candle } from '../src/types';
 import { RangeState } from '../src/rangeCalculator';
-import { detectSweeps } from '../src/sweepDetector';
+import { detectSweeps, detectSwingSweeps } from '../src/sweepDetector';
 
 // Helper to create basic candles
 function createBaseCandles(length: number): Candle[] {
@@ -123,5 +123,42 @@ describe('Sweep Detector', () => {
     for (let i = 0; i < batchEvents.length; i++) {
       expect(simEvents[i]).toMatchObject(batchEvents[i]);
     }
+  });
+
+  test('should detect external swing liquidity sweeps and calculate atrRatio when history is present', () => {
+    // 20 candles with natural volatility so ATR is computed
+    const candles: Candle[] = [];
+    for (let i = 0; i < 25; i++) {
+      candles.push({
+        timestamp: 1000 * 60 * 15 * i,
+        open: 1.0500,
+        high: 1.0520,
+        low: 1.0480,
+        close: 1.0500,
+      });
+    }
+
+    // Swing low formed at index 5 at price 1.0450
+    const swings = [
+      {
+        type: 'low' as const,
+        price: 1.0450,
+        formedAtIndex: 5,
+        confirmedAtIndex: 8,
+        timestamp: 1000 * 60 * 15 * 5,
+      },
+    ];
+
+    // Candle 15 sweeps below swing low (1.0450 - 6 pips = 1.0444)
+    candles[15].low = 1.0440;
+    candles[15].close = 1.0455; // closed back above
+
+    const swingSweeps = detectSwingSweeps(candles, swings, 'EURUSD', '15m');
+    expect(swingSweeps).toHaveLength(1);
+    expect(swingSweeps[0].type).toBe('sweep_low');
+    expect(swingSweeps[0].sweptLevel).toBe(1.0450);
+    expect(swingSweeps[0].isExternalLiquidity).toBe(true);
+    expect(swingSweeps[0].atrRatio).toBeDefined();
+    expect(swingSweeps[0].atrRatio).toBeGreaterThan(0);
   });
 });

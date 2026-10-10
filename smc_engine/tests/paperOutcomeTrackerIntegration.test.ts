@@ -68,7 +68,7 @@ describe('PaperOutcomeTracker Macro Integration Lifecycle', () => {
     };
 
     // 1. Register candidate
-    tracker.registerCandidate(candidate);
+    tracker.registerCandidate(candidate, undefined, { isShadowCounterfactual: false });
     const tracked = tracker.get('test_integration_btc_1');
     expect(tracked).toBeDefined();
     expect(tracked?.status).toBe('WAITING_ENTRY');

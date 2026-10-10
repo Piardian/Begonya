@@ -4,6 +4,7 @@ export interface Candle {
   high: number;
   low: number;
   close: number;
+  volume?: number;
 }
 
 export interface SwingPoint {
@@ -61,6 +62,23 @@ export interface FVG {
   relatedEvent: StructureEvent;
 }
 
+export interface BreakerBlock {
+  direction: 'bullish' | 'bearish'; // 'bullish' = broken high acting as support; 'bearish' = broken low acting as resistance
+  candleIndex: number;
+  high: number;
+  low: number;
+  formedAtIndex: number;
+  brokenAtIndex: number;
+  brokenTimestamp: number;
+  sweptSwingPrice: number;
+  sweptCandleIndex: number;
+  sweepDepth: number;
+  relatedEvent: StructureEvent;
+  testCount: number;
+  mitigated: boolean;
+  active: boolean;
+}
+
 export interface PremiumDiscountState {
   status: 'premium' | 'discount' | 'eq' | 'undefined';
   fibValue: number | null;
@@ -74,6 +92,8 @@ export interface DisplacementQuality {
   consecutiveScore: number;
   fvgScore: number;
   sizeScore: number;
+  volumeRatio?: number;
+  volumeScore?: number;
   totalScore: number;
   quality: 'güçlü' | 'orta' | 'zayıf' | 'yok';
   gradePoints: 2 | 1 | 0 | -2;

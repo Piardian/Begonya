@@ -37,7 +37,7 @@ export const SMC_ADMISSION_RULES = Object.freeze({
       minPercent: 0.15,
     }),
     fallbackMinUnits: 7.0,
-    dynamicAtrFraction: 0.25,
+    dynamicAtrFraction: 0.40,
   }),
 });
 
