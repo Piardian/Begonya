@@ -75,6 +75,10 @@ class DiagnosticEngine:
                 return [row for row in data if isinstance(row, dict)]
         return []
 
+    def load_notified_pois(self) -> list[dict[str, Any]]:
+        """Backward-compatible alias for the persisted POI watchlist loader."""
+        return self.load_pois()
+
     @staticmethod
     def _timestamp(record: dict[str, Any]) -> datetime | None:
         return _parse_datetime(
