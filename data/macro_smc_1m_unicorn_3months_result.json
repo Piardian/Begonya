@@ -1,0 +1,537 @@
+{
+  "ARCHITECTURE": "MAKRO MOTOR + SMC v2 15M POI + 1M UNICORN TETKİK (SFP + iFVG + Breaker)",
+  "STARTING_CAPITAL": "$10,000.00",
+  "RISK_PER_TRADE": "%2.0 ($200.00)",
+  "MONTH_1": {
+    "month": "1. AY (Temmuz - Ağustos 2026)",
+    "period": "2026-07-11 - 2026-08-11",
+    "total_trades": 1,
+    "tp2_hits": 0,
+    "be_hits": 1,
+    "sl_hits": 0,
+    "win_rate": "%100.0",
+    "net_r": "+0.50R",
+    "ending_balance_fixed": "$10,100.00",
+    "net_profit_fixed": "$+100.00",
+    "ending_balance_compounding": "$10,100.00",
+    "max_drawdown": "%0.00",
+    "pair_breakdown": {
+      "EURUSD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "GBPUSD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "USDJPY": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "USDCAD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "NZDUSD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "EURGBP": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "XAUUSD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "NAS100": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "BTCUSD": {
+        "trades": 1,
+        "wins": 1,
+        "win_rate": "%100.0",
+        "net_r": "+0.50R"
+      }
+    },
+    "trade_log": [
+      {
+        "symbol": "BTCUSD",
+        "direction": "LONG",
+        "grade": "AAA",
+        "15m_trigger_time": "2026-08-09 11:00",
+        "1m_filled_at": "2026-08-09 11:47",
+        "1m_closed_at": "2026-08-09 11:52",
+        "entry": 64770.175,
+        "sl": 64755.15,
+        "tp1": 64785.2,
+        "tp2": 64815.25,
+        "outcome": "BE",
+        "net_r": 0.5,
+        "reason": "🛡️ 1M Unicorn Koruması: TP1 sonrası BE seviyesinde kapandı (+0.5R Net)"
+      }
+    ]
+  },
+  "MONTH_2": {
+    "month": "2. AY (Ağustos - Eylül 2026)",
+    "period": "2026-08-11 - 2026-09-11",
+    "total_trades": 6,
+    "tp2_hits": 1,
+    "be_hits": 1,
+    "sl_hits": 4,
+    "win_rate": "%33.3",
+    "net_r": "-1.50R",
+    "ending_balance_fixed": "$9,700.00",
+    "net_profit_fixed": "$-300.00",
+    "ending_balance_compounding": "$9,688.56",
+    "max_drawdown": "%4.94",
+    "pair_breakdown": {
+      "EURUSD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "GBPUSD": {
+        "trades": 2,
+        "wins": 1,
+        "win_rate": "%50.0",
+        "net_r": "+1.00R"
+      },
+      "USDJPY": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "USDCAD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "NZDUSD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "EURGBP": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "XAUUSD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "NAS100": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "BTCUSD": {
+        "trades": 4,
+        "wins": 1,
+        "win_rate": "%25.0",
+        "net_r": "-2.50R"
+      }
+    },
+    "trade_log": [
+      {
+        "symbol": "GBPUSD",
+        "direction": "LONG",
+        "grade": "AAA",
+        "15m_trigger_time": "2026-08-25 10:00",
+        "1m_filled_at": "2026-08-25 10:50",
+        "1m_closed_at": "2026-08-25 11:04",
+        "entry": 1.36383,
+        "sl": 1.36353,
+        "tp1": 1.36413,
+        "tp2": 1.36473,
+        "outcome": "SL",
+        "net_r": -1.0,
+        "reason": "1M Stop Loss tetiklendi (-1.0R)"
+      },
+      {
+        "symbol": "GBPUSD",
+        "direction": "SHORT",
+        "grade": "AAA",
+        "15m_trigger_time": "2026-09-11 11:45",
+        "1m_filled_at": "2026-09-11 13:03",
+        "1m_closed_at": "2026-09-11 13:37",
+        "entry": 1.3513,
+        "sl": 1.35166,
+        "tp1": 1.35094,
+        "tp2": 1.35022,
+        "outcome": "TP2",
+        "net_r": 2.0,
+        "reason": "🎯 1M Unicorn Tam Hedef: TP2 Vuruldu (+2.0R Net)"
+      },
+      {
+        "symbol": "BTCUSD",
+        "direction": "LONG",
+        "grade": "AAA",
+        "15m_trigger_time": "2026-08-24 09:00",
+        "1m_filled_at": "2026-08-24 09:31",
+        "1m_closed_at": "2026-08-24 09:31",
+        "entry": 77337.82,
+        "sl": 77326.92,
+        "tp1": 77348.72,
+        "tp2": 77370.52,
+        "outcome": "SL",
+        "net_r": -1.0,
+        "reason": "1M Stop Loss tetiklendi (-1.0R)"
+      },
+      {
+        "symbol": "BTCUSD",
+        "direction": "LONG",
+        "grade": "AAA",
+        "15m_trigger_time": "2026-08-28 08:30",
+        "1m_filled_at": "2026-08-28 08:54",
+        "1m_closed_at": "2026-08-28 08:55",
+        "entry": 79771.525,
+        "sl": 79765.24,
+        "tp1": 79777.81,
+        "tp2": 79790.38,
+        "outcome": "BE",
+        "net_r": 0.5,
+        "reason": "🛡️ 1M Unicorn Koruması: TP1 sonrası BE seviyesinde kapandı (+0.5R Net)"
+      },
+      {
+        "symbol": "BTCUSD",
+        "direction": "LONG",
+        "grade": "AAA",
+        "15m_trigger_time": "2026-08-31 17:30",
+        "1m_filled_at": "2026-08-31 18:12",
+        "1m_closed_at": "2026-08-31 18:13",
+        "entry": 78369.91,
+        "sl": 78325.34,
+        "tp1": 78414.48,
+        "tp2": 78503.62,
+        "outcome": "SL",
+        "net_r": -1.0,
+        "reason": "1M Stop Loss tetiklendi (-1.0R)"
+      },
+      {
+        "symbol": "BTCUSD",
+        "direction": "LONG",
+        "grade": "AAA",
+        "15m_trigger_time": "2026-09-04 11:15",
+        "1m_filled_at": "2026-09-04 11:46",
+        "1m_closed_at": "2026-09-04 11:46",
+        "entry": 81032.675,
+        "sl": 80980.73,
+        "tp1": 81084.62,
+        "tp2": 81188.51,
+        "outcome": "SL",
+        "net_r": -1.0,
+        "reason": "1M Stop Loss tetiklendi (-1.0R)"
+      }
+    ]
+  },
+  "MONTH_3": {
+    "month": "3. AY (Eylül - Ekim 2026)",
+    "period": "2026-09-11 - 2026-10-11",
+    "total_trades": 3,
+    "tp2_hits": 2,
+    "be_hits": 1,
+    "sl_hits": 0,
+    "win_rate": "%100.0",
+    "net_r": "+4.50R",
+    "ending_balance_fixed": "$10,900.00",
+    "net_profit_fixed": "$+900.00",
+    "ending_balance_compounding": "$10,924.16",
+    "max_drawdown": "%0.00",
+    "pair_breakdown": {
+      "EURUSD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "GBPUSD": {
+        "trades": 1,
+        "wins": 1,
+        "win_rate": "%100.0",
+        "net_r": "+2.00R"
+      },
+      "USDJPY": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "USDCAD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "NZDUSD": {
+        "trades": 2,
+        "wins": 2,
+        "win_rate": "%100.0",
+        "net_r": "+2.50R"
+      },
+      "EURGBP": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "XAUUSD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "NAS100": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "BTCUSD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      }
+    },
+    "trade_log": [
+      {
+        "symbol": "GBPUSD",
+        "direction": "SHORT",
+        "grade": "AAA",
+        "15m_trigger_time": "2026-09-11 11:45",
+        "1m_filled_at": "2026-09-11 13:03",
+        "1m_closed_at": "2026-09-11 13:37",
+        "entry": 1.3513,
+        "sl": 1.35166,
+        "tp1": 1.35094,
+        "tp2": 1.35022,
+        "outcome": "TP2",
+        "net_r": 2.0,
+        "reason": "🎯 1M Unicorn Tam Hedef: TP2 Vuruldu (+2.0R Net)"
+      },
+      {
+        "symbol": "NZDUSD",
+        "direction": "SHORT",
+        "grade": "AAA",
+        "15m_trigger_time": "2026-09-25 10:15",
+        "1m_filled_at": "2026-09-25 10:33",
+        "1m_closed_at": "2026-09-25 10:35",
+        "entry": 0.56644,
+        "sl": 0.56669,
+        "tp1": 0.56619,
+        "tp2": 0.56569,
+        "outcome": "BE",
+        "net_r": 0.5,
+        "reason": "🛡️ 1M Unicorn Koruması: TP1 sonrası BE seviyesinde kapandı (+0.5R Net)"
+      },
+      {
+        "symbol": "NZDUSD",
+        "direction": "SHORT",
+        "grade": "AAA",
+        "15m_trigger_time": "2026-09-28 11:45",
+        "1m_filled_at": "2026-09-28 12:47",
+        "1m_closed_at": "2026-09-28 13:01",
+        "entry": 0.56635,
+        "sl": 0.56655,
+        "tp1": 0.56616,
+        "tp2": 0.56577,
+        "outcome": "TP2",
+        "net_r": 2.0,
+        "reason": "🎯 1M Unicorn Tam Hedef: TP2 Vuruldu (+2.0R Net)"
+      }
+    ]
+  },
+  "CUMULATIVE_3_MONTHS": {
+    "period": "2026-07-11 - 2026-10-11",
+    "total_trades": 10,
+    "tp2_hits": 3,
+    "be_hits": 3,
+    "sl_hits": 4,
+    "win_rate": "%60.0",
+    "net_r": "+3.50R",
+    "ending_balance_fixed": "$10,700.00",
+    "net_profit_fixed": "$+700.00",
+    "ending_balance_compounding": "$10,689.77",
+    "net_profit_compounding": "$+689.77",
+    "max_drawdown": "%4.94"
+  },
+  "ALL_TRADES": [
+    {
+      "symbol": "BTCUSD",
+      "direction": "LONG",
+      "grade": "AAA",
+      "15m_trigger_time": "2026-08-09 11:00",
+      "1m_filled_at": "2026-08-09 11:47",
+      "1m_closed_at": "2026-08-09 11:52",
+      "entry": 64770.175,
+      "sl": 64755.15,
+      "tp1": 64785.2,
+      "tp2": 64815.25,
+      "outcome": "BE",
+      "net_r": 0.5,
+      "reason": "🛡️ 1M Unicorn Koruması: TP1 sonrası BE seviyesinde kapandı (+0.5R Net)"
+    },
+    {
+      "symbol": "GBPUSD",
+      "direction": "LONG",
+      "grade": "AAA",
+      "15m_trigger_time": "2026-08-25 10:00",
+      "1m_filled_at": "2026-08-25 10:50",
+      "1m_closed_at": "2026-08-25 11:04",
+      "entry": 1.36383,
+      "sl": 1.36353,
+      "tp1": 1.36413,
+      "tp2": 1.36473,
+      "outcome": "SL",
+      "net_r": -1.0,
+      "reason": "1M Stop Loss tetiklendi (-1.0R)"
+    },
+    {
+      "symbol": "GBPUSD",
+      "direction": "SHORT",
+      "grade": "AAA",
+      "15m_trigger_time": "2026-09-11 11:45",
+      "1m_filled_at": "2026-09-11 13:03",
+      "1m_closed_at": "2026-09-11 13:37",
+      "entry": 1.3513,
+      "sl": 1.35166,
+      "tp1": 1.35094,
+      "tp2": 1.35022,
+      "outcome": "TP2",
+      "net_r": 2.0,
+      "reason": "🎯 1M Unicorn Tam Hedef: TP2 Vuruldu (+2.0R Net)"
+    },
+    {
+      "symbol": "BTCUSD",
+      "direction": "LONG",
+      "grade": "AAA",
+      "15m_trigger_time": "2026-08-24 09:00",
+      "1m_filled_at": "2026-08-24 09:31",
+      "1m_closed_at": "2026-08-24 09:31",
+      "entry": 77337.82,
+      "sl": 77326.92,
+      "tp1": 77348.72,
+      "tp2": 77370.52,
+      "outcome": "SL",
+      "net_r": -1.0,
+      "reason": "1M Stop Loss tetiklendi (-1.0R)"
+    },
+    {
+      "symbol": "BTCUSD",
+      "direction": "LONG",
+      "grade": "AAA",
+      "15m_trigger_time": "2026-08-28 08:30",
+      "1m_filled_at": "2026-08-28 08:54",
+      "1m_closed_at": "2026-08-28 08:55",
+      "entry": 79771.525,
+      "sl": 79765.24,
+      "tp1": 79777.81,
+      "tp2": 79790.38,
+      "outcome": "BE",
+      "net_r": 0.5,
+      "reason": "🛡️ 1M Unicorn Koruması: TP1 sonrası BE seviyesinde kapandı (+0.5R Net)"
+    },
+    {
+      "symbol": "BTCUSD",
+      "direction": "LONG",
+      "grade": "AAA",
+      "15m_trigger_time": "2026-08-31 17:30",
+      "1m_filled_at": "2026-08-31 18:12",
+      "1m_closed_at": "2026-08-31 18:13",
+      "entry": 78369.91,
+      "sl": 78325.34,
+      "tp1": 78414.48,
+      "tp2": 78503.62,
+      "outcome": "SL",
+      "net_r": -1.0,
+      "reason": "1M Stop Loss tetiklendi (-1.0R)"
+    },
+    {
+      "symbol": "BTCUSD",
+      "direction": "LONG",
+      "grade": "AAA",
+      "15m_trigger_time": "2026-09-04 11:15",
+      "1m_filled_at": "2026-09-04 11:46",
+      "1m_closed_at": "2026-09-04 11:46",
+      "entry": 81032.675,
+      "sl": 80980.73,
+      "tp1": 81084.62,
+      "tp2": 81188.51,
+      "outcome": "SL",
+      "net_r": -1.0,
+      "reason": "1M Stop Loss tetiklendi (-1.0R)"
+    },
+    {
+      "symbol": "GBPUSD",
+      "direction": "SHORT",
+      "grade": "AAA",
+      "15m_trigger_time": "2026-09-11 11:45",
+      "1m_filled_at": "2026-09-11 13:03",
+      "1m_closed_at": "2026-09-11 13:37",
+      "entry": 1.3513,
+      "sl": 1.35166,
+      "tp1": 1.35094,
+      "tp2": 1.35022,
+      "outcome": "TP2",
+      "net_r": 2.0,
+      "reason": "🎯 1M Unicorn Tam Hedef: TP2 Vuruldu (+2.0R Net)"
+    },
+    {
+      "symbol": "NZDUSD",
+      "direction": "SHORT",
+      "grade": "AAA",
+      "15m_trigger_time": "2026-09-25 10:15",
+      "1m_filled_at": "2026-09-25 10:33",
+      "1m_closed_at": "2026-09-25 10:35",
+      "entry": 0.56644,
+      "sl": 0.56669,
+      "tp1": 0.56619,
+      "tp2": 0.56569,
+      "outcome": "BE",
+      "net_r": 0.5,
+      "reason": "🛡️ 1M Unicorn Koruması: TP1 sonrası BE seviyesinde kapandı (+0.5R Net)"
+    },
+    {
+      "symbol": "NZDUSD",
+      "direction": "SHORT",
+      "grade": "AAA",
+      "15m_trigger_time": "2026-09-28 11:45",
+      "1m_filled_at": "2026-09-28 12:47",
+      "1m_closed_at": "2026-09-28 13:01",
+      "entry": 0.56635,
+      "sl": 0.56655,
+      "tp1": 0.56616,
+      "tp2": 0.56577,
+      "outcome": "TP2",
+      "net_r": 2.0,
+      "reason": "🎯 1M Unicorn Tam Hedef: TP2 Vuruldu (+2.0R Net)"
+    }
+  ]
+}

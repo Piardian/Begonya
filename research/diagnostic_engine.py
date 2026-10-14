@@ -52,7 +52,7 @@ class DiagnosticEngine:
     def generate_markdown_report(self, metrics: Dict[str, Any]) -> str:
         """Metrikleri Markdown formatında raporlar."""
         freq = metrics['frequency']
-        pnl = metrics['pnl'] = metrics.get('pnl_analysis', {})
+        pnl = metrics.get('pnl_analysis', {})
         
         report = f"""# Begonya Sinyal Teşhis Raporu
 Tarih: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}

@@ -1,0 +1,46 @@
+{
+  "CLOSE_MODEL": {
+    "STANDARD_FVG": {
+      "trades": 11,
+      "win_rate": "%36.4",
+      "tp2": 1,
+      "be": 3,
+      "sl": 7,
+      "net_r": "-3.5R",
+      "ending_balance": "$9,300.00",
+      "max_dd": "%12.32"
+    },
+    "INVERSION_FVG": {
+      "trades": 19,
+      "win_rate": "%31.6",
+      "tp2": 1,
+      "be": 5,
+      "sl": 13,
+      "net_r": "-8.5R",
+      "ending_balance": "$8,300.00",
+      "max_dd": "%21.55"
+    }
+  },
+  "MIDPOINT_MODEL": {
+    "STANDARD_FVG": {
+      "trades": 10,
+      "win_rate": "%0.0",
+      "tp2": 0,
+      "be": 0,
+      "sl": 10,
+      "net_r": "-10.0R",
+      "ending_balance": "$8,000.00",
+      "max_dd": "%18.29"
+    },
+    "INVERSION_FVG": {
+      "trades": 13,
+      "win_rate": "%30.8",
+      "tp2": 2,
+      "be": 2,
+      "sl": 9,
+      "net_r": "-4.0R",
+      "ending_balance": "$9,200.00",
+      "max_dd": "%13.29"
+    }
+  }
+}

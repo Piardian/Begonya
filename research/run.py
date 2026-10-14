@@ -1,73 +1,65 @@
 import os
+import sys
 import time
-import json
-import pandas as pd
-from tabulate import tabulate
+import argparse
 from datetime import datetime
+from loguru import logger
+from diagnostics_engine import DiagnosticsEngine
 
 # Yapılandırma
 DIAGNOSTICS_DIR = "diagnostics"
+RESEARCH_DIR = "research"
 REPORT_FILE = os.path.join(DIAGNOSTICS_DIR, "begonya_signal_diagnostic.md")
-BENCHMARK_PATH = "../benchmark/benchmark_records.json"
+
+# Loguru yapılandırması
+logger.remove()
+logger.add(sys.stdout, format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level:<=8}</level> | <cyan>{message}</cyan>", level="INFO")
+logger.add("diagnostics/execution.log", rotation="10 MB", level="DEBUG")
 
 def ensure_directories():
-    """Teşhis klasörünün varlığını kontrol et."""
-    if not os.path.exists(DIAGNOSTICS_DIR):
-        os.makedirs(DIAGNOSTICS_DIR)
-
-def run_diagnostic():
-    """Sistem verilerini oku ve analiz et."""
+    """Gerekli klasörlerin varlığını kontrol et."""
     try:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Teşhis süreci başlatılıyor...")
-        
-        # Veri okuma simülasyonu (Gerçek dosya yapısına göre güncellenebilir)
-        if not os.path.exists(BENCHMARK_PATH):
-            print(f"Uyarı: {BENCHMARK_PATH} bulunamadı. Boş veri ile devam ediliyor.")
-            data = []
-        else:
-            with open(BENCHMARK_PATH, 'r') as f:
-                data = json.load(f)
-
-        # DataFrame oluşturma
-        df = pd.DataFrame(data)
-        
-        # Basit analiz (Örnek)
-        summary = {
-            "Toplam Sinyal": len(df),
-            "Başarı Oranı": "N/A" if len(df) == 0 else f"{(df.get('success', 0).mean() * 100):.2f}%"
-        }
-
-        # Rapor oluşturma
-        with open(REPORT_FILE, "w", encoding="utf-8") as f:
-            f.write(f"# Begonya Teşhis Raporu - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-            f.write(f"## Özet\n")
-            f.write(f"- Toplam Kayıt: {summary['Toplam Sinyal']}\n")
-            f.write(f"- Başarı Oranı: {summary['Başarı Oranı']}\n")
-            f.write("\n---\n*Otomatik oluşturulmuştur.*")
-
-        # Terminal çıktısı
-        table = [[k, v] for k, v in summary.items()]
-        print("\n--- Teşhis Özeti ---")
-        print(tabulate(table, headers=["Metrik", "Değer"], tablefmt="grid"))
-        print(f"\nDetaylı rapor şuraya kaydedildi: {REPORT_FILE}")
-
+        if not os.path.exists(DIAGNOSTICS_DIR):
+            os.makedirs(DIAGNOSTICS_DIR)
+            logger.info(f"Dizin oluşturuldu: {DIAGNOSTICS_DIR}")
+        if not os.path.exists(RESEARCH_DIR):
+            os.makedirs(RESEARCH_DIR)
+            logger.info(f"Dizin oluşturuldu: {RESEARCH_DIR}")
     except Exception as e:
-        print(f"Hata oluştu: {e}")
+        logger.error(f"Dizinler oluşturulurken hata meydana geldi: {e}")
+        raise
+
+def run_diagnostic_once(engine):
+    """Tek seferlik teşhis analizi çalıştırır ve özeti terminale ve loglara yazdırır."""
+    logger.info("Teşhis süreci başlatılıyor...")
+    
+    try:
+        results = engine.analyze_signals()
+        
+        if isinstance(results, dict) and "error" in results:
+            logger.error(f"Analiz hatası tespit edildi: {results['error']}")
+            return False
+            
+        success = engine.generate_report(results, REPORT_FILE)
+        if success:
+            logger.success(f"Rapor başarıyla oluşturuldu: {REPORT_FILE}")
+            print("\n--- TEŞHİS ÖZETİ ---")
+            if isinstance(results, dict):
+                for key, value in results.items():
+                    print(f"{key.replace('_', ' ').title()}: {value}")
+            else:
+                print(f"Sonuçlar: {results}")
+            print("--------------------\n")
+            return True
+        else:
+            logger.error("Rapor oluşturulurken hata meydana geldi.")
+            return False
+    except Exception as e:
+        logger.exception(f"Teşhis yürütülürken beklenmeyen bir hata oluştu: {e}")
+        return False
 
 def main():
-    """Ana event loop."""
-    ensure_directories()
-    
-    print("Begonya Teşhis Modülü Aktif.")
-    try:
-        while True:
-            run_diagnostic()
-            # 60 saniyede bir çalıştır
-            time.sleep(60)
-    except KeyboardInterrupt:
-        print("\nTeşhis süreci kullanıcı tarafından durduruldu.")
-    except Exception as e:
-        print(f"Kritik hata: {e}")
-
-if __name__ == "__main__":
-    main()
+    """Ana çalıştırma işlevi (Event loop yapısı ve CLI parametreleri)."""
+    parser = argparse.ArgumentParser(description="Begonya Teşhis Modülü")
+    parser.add_argument("--loop", action="store_true", help="Sürekli döngü modunda çalıştır (60sn aralıkla)")
+    parser.add_argument("--interval", type=int, default=60, help="Döngü modunda bekleme süresi (saniye)")

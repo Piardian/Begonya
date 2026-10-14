@@ -1396,10 +1396,10 @@ Her yeni canlı Begonya sinyali incelenirken aşağıdaki standart 5+1 şablon �
 - **Prop Firm Kalkanı Entegrasyonu:** Bu kurulum, yeni kodlanan *Prop Firm Rollover ve Dar Kutu Kalkanı* ile canlıya çıkan ilk işlemdir.
 
 #### 📊 3. Post-Trade Audit & Bilanço
-- **Gerçekleşen Sonuç:** 🎯 **WIN_PARTIAL_TP_AND_BE**
-- **Gerçekleşen R:** **+0.50 R (Kısmi TP Alındı, Kalan BE)**
-- **Finansal Getiri:** **+300.00 $ NET KÂR**
-- **Kategori:** PROFIT_AND_RUNNER_ACTIVE
+- **Gerçekleşen Sonuç:** 🛡️ **NOT_RECEIVED_NO_ENTRY**
+- **Gerçekleşen R:** **0.00 R**
+- **Finansal Getiri:** **0.00 $**
+- **Kategori:** NOT_RECEIVED
 - **Hata / Zafiyet Atfı:** None (Kusursuz İcra)
 - **Kritik Ders:** 1R seviyesinde %50 kısmi kâr alıp stopu başabaşa (BE) çekmek, özellikle karşı engellerin (1.3184 Bullish OB) bulunduğu işlemlerde sermayeyi ve kârı %100 garanti altına alır.
 

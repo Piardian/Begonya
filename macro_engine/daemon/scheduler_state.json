@@ -1,8 +1,8 @@
 {
-  "last_morning_briefing_date": "2026-10-10",
-  "last_daily_close_date": "2026-10-09",
+  "last_morning_briefing_date": "2026-10-14",
+  "last_daily_close_date": "2026-10-13",
   "executed_news_events": [],
-  "last_cycle_timestamp": 1791646501.772989,
-  "last_ny_session_date": "2026-10-10",
-  "last_london_session_date": "2026-10-10"
+  "last_cycle_timestamp": 1791965864.975553,
+  "last_ny_session_date": "2026-10-13",
+  "last_london_session_date": "2026-10-14"
 }

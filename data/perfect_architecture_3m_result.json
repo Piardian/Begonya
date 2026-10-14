@@ -1,0 +1,198 @@
+{
+  "PERIOD": "2026-07-11 - 2026-10-11 (3 Ay - Altcoinler Çıkarıldı)",
+  "APPLIED_FIXES": [
+    "1. Düzeltme: Sadece Pro-Trend (4H EMA50 > EMA200 / EMA50 < EMA200, Grade AAA Zorunlu, Karşı-Trend A+ Yasak)",
+    "2. Düzeltme: Saf iFVG %50 CE Limit Giriş + Yapısal Breaker Kırılımı + Sweep Peak/Valley ATR SL + Slice-Through Kalkanı",
+    "3. Düzeltme: Altcoinlerin Tamamı (ETH, SOL, LTC, XRP, DOG) ve Gürültülü Çaprazlar/Endeksler (USDCHF, EURJPY, SP500, US30) Çıkarıldı"
+  ],
+  "A_SADECE_ALTCOINLER_CIKARILDI_12_PARITE": {
+    "total_trades": 15,
+    "tp2_hits": 4,
+    "be_hits": 4,
+    "sl_hits": 6,
+    "time_exits": 1,
+    "win_rate": "%53.3",
+    "net_r": "+3.61R",
+    "ending_balance_fixed": "$10,722.00",
+    "net_profit_fixed": "$+722.00",
+    "ending_balance_compounding": "$10,699.77",
+    "max_drawdown": "%3.96",
+    "pair_breakdown": {
+      "EURUSD": {
+        "trades": 2,
+        "wins": 2,
+        "win_rate": "%100.0",
+        "net_r": "+1.00R"
+      },
+      "GBPUSD": {
+        "trades": 2,
+        "wins": 1,
+        "win_rate": "%50.0",
+        "net_r": "+1.00R"
+      },
+      "USDJPY": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "USDCHF": {
+        "trades": 2,
+        "wins": 0,
+        "win_rate": "%0.0",
+        "net_r": "-2.00R"
+      },
+      "USDCAD": {
+        "trades": 1,
+        "wins": 1,
+        "win_rate": "%100.0",
+        "net_r": "+0.50R"
+      },
+      "NZDUSD": {
+        "trades": 1,
+        "wins": 1,
+        "win_rate": "%100.0",
+        "net_r": "+2.00R"
+      },
+      "EURJPY": {
+        "trades": 1,
+        "wins": 0,
+        "win_rate": "%0.0",
+        "net_r": "-1.00R"
+      },
+      "EURGBP": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "XAUUSD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "NAS100": {
+        "trades": 1,
+        "wins": 1,
+        "win_rate": "%100.0",
+        "net_r": "+0.50R"
+      },
+      "SP500": {
+        "trades": 2,
+        "wins": 1,
+        "win_rate": "%50.0",
+        "net_r": "+1.00R"
+      },
+      "US30": {
+        "trades": 1,
+        "wins": 0,
+        "win_rate": "%0.0",
+        "net_r": "-0.39R"
+      },
+      "BTCUSD": {
+        "trades": 2,
+        "wins": 1,
+        "win_rate": "%50.0",
+        "net_r": "+1.00R"
+      }
+    },
+    "trade_log": [
+      "EURUSD SHORT [AAA] (2026-09-24 11:45 -> 2026-09-25 09:15): BREAK_EVEN (+0.5R)",
+      "EURUSD SHORT [AAA] (2026-09-28 11:45 -> 2026-09-28 19:15): BREAK_EVEN (+0.5R)",
+      "GBPUSD LONG [AAA] (2026-08-25 10:00 -> 2026-08-25 15:30): STOP_LOSS (-1.0R)",
+      "GBPUSD SHORT [AAA] (2026-09-11 11:45 -> 2026-09-11 15:15): TP2_HIT (+2.0R)",
+      "USDCHF SHORT [AAA] (2026-08-21 11:30 -> 2026-08-21 17:30): STOP_LOSS (-1.0R)",
+      "USDCHF LONG [AAA] (2026-09-30 10:30 -> 2026-09-30 11:45): STOP_LOSS (-1.0R)",
+      "USDCAD SHORT [AAA] (2026-08-18 10:30 -> 2026-08-18 13:00): BREAK_EVEN (+0.5R)",
+      "NZDUSD SHORT [AAA] (2026-09-28 11:45 -> 2026-09-28 15:15): TP2_HIT (+2.0R)",
+      "EURJPY SHORT [AAA] (2026-09-15 09:00 -> 2026-09-15 09:45): STOP_LOSS (-1.0R)",
+      "NAS100 LONG [AAA] (2026-09-08 17:45 -> 2026-09-08 21:45): BREAK_EVEN (+0.5R)",
+      "SP500 LONG [AAA] (2026-07-13 11:00 -> 2026-07-13 17:15): TP2_HIT (+2.0R)",
+      "SP500 LONG [AAA] (2026-08-06 17:00 -> 2026-08-06 18:15): STOP_LOSS (-1.0R)",
+      "US30 LONG [AAA] (2026-08-07 17:15 -> 2026-08-11 19:15): TIME_EXIT (-0.4R)",
+      "BTCUSD LONG [AAA] (2026-08-24 09:00 -> 2026-08-24 14:30): TP2_HIT (+2.0R)",
+      "BTCUSD LONG [AAA] (2026-08-28 08:30 -> 2026-08-28 11:45): STOP_LOSS (-1.0R)"
+    ]
+  },
+  "B_1_2_3_DUZELTMELER_TAM_TIER1_KURUMSAL_EVREN": {
+    "total_trades": 9,
+    "tp2_hits": 3,
+    "be_hits": 4,
+    "sl_hits": 2,
+    "time_exits": 0,
+    "win_rate": "%77.8",
+    "net_r": "+6.00R",
+    "ending_balance_fixed": "$11,200.00",
+    "net_profit_fixed": "$+1,200.00",
+    "ending_balance_compounding": "$11,241.85",
+    "max_drawdown": "%2.00",
+    "pair_breakdown": {
+      "EURUSD": {
+        "trades": 2,
+        "wins": 2,
+        "win_rate": "%100.0",
+        "net_r": "+1.00R"
+      },
+      "GBPUSD": {
+        "trades": 2,
+        "wins": 1,
+        "win_rate": "%50.0",
+        "net_r": "+1.00R"
+      },
+      "USDJPY": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "USDCAD": {
+        "trades": 1,
+        "wins": 1,
+        "win_rate": "%100.0",
+        "net_r": "+0.50R"
+      },
+      "NZDUSD": {
+        "trades": 1,
+        "wins": 1,
+        "win_rate": "%100.0",
+        "net_r": "+2.00R"
+      },
+      "EURGBP": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "XAUUSD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "NAS100": {
+        "trades": 1,
+        "wins": 1,
+        "win_rate": "%100.0",
+        "net_r": "+0.50R"
+      },
+      "BTCUSD": {
+        "trades": 2,
+        "wins": 1,
+        "win_rate": "%50.0",
+        "net_r": "+1.00R"
+      }
+    },
+    "trade_log": [
+      "EURUSD SHORT [AAA] (2026-09-24 11:45 -> 2026-09-25 09:15): BREAK_EVEN (+0.5R)",
+      "EURUSD SHORT [AAA] (2026-09-28 11:45 -> 2026-09-28 19:15): BREAK_EVEN (+0.5R)",
+      "GBPUSD LONG [AAA] (2026-08-25 10:00 -> 2026-08-25 15:30): STOP_LOSS (-1.0R)",
+      "GBPUSD SHORT [AAA] (2026-09-11 11:45 -> 2026-09-11 15:15): TP2_HIT (+2.0R)",
+      "USDCAD SHORT [AAA] (2026-08-18 10:30 -> 2026-08-18 13:00): BREAK_EVEN (+0.5R)",
+      "NZDUSD SHORT [AAA] (2026-09-28 11:45 -> 2026-09-28 15:15): TP2_HIT (+2.0R)",
+      "NAS100 LONG [AAA] (2026-09-08 17:45 -> 2026-09-08 21:45): BREAK_EVEN (+0.5R)",
+      "BTCUSD LONG [AAA] (2026-08-24 09:00 -> 2026-08-24 14:30): TP2_HIT (+2.0R)",
+      "BTCUSD LONG [AAA] (2026-08-28 08:30 -> 2026-08-28 11:45): STOP_LOSS (-1.0R)"
+    ]
+  }
+}

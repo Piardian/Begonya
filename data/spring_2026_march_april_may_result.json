@@ -1,0 +1,248 @@
+{
+  "TITLE": "BEGONYA 00 - MART, NİSAN, MAYIS 2026 KURUMSAL PERFORMANS RAPORU",
+  "STARTING_CAPITAL": "$10,000.00",
+  "RISK_PER_TRADE": "%2.0 ($200.00)",
+  "MONTHS": [
+    {
+      "month": "1. AY (Mart 2026)",
+      "period": "2026-03-01 - 2026-04-01",
+      "total_trades": 1,
+      "tp2_hits": 0,
+      "be_hits": 0,
+      "sl_hits": 1,
+      "win_rate": "%0.0",
+      "net_r": "-1.00R",
+      "ending_balance_fixed": "$9,800.00",
+      "net_profit_fixed": "$-200.00",
+      "ending_balance_compounding": "$9,800.00",
+      "max_drawdown": "%2.00",
+      "pair_breakdown": {
+        "EURUSD": {
+          "trades": 0,
+          "wins": 0,
+          "win_rate": "0%",
+          "net_r": "+0.00R"
+        },
+        "GBPUSD": {
+          "trades": 0,
+          "wins": 0,
+          "win_rate": "0%",
+          "net_r": "+0.00R"
+        },
+        "USDJPY": {
+          "trades": 0,
+          "wins": 0,
+          "win_rate": "0%",
+          "net_r": "+0.00R"
+        },
+        "USDCAD": {
+          "trades": 1,
+          "wins": 0,
+          "win_rate": "%0.0",
+          "net_r": "-1.00R"
+        },
+        "NZDUSD": {
+          "trades": 0,
+          "wins": 0,
+          "win_rate": "0%",
+          "net_r": "+0.00R"
+        },
+        "EURGBP": {
+          "trades": 0,
+          "wins": 0,
+          "win_rate": "0%",
+          "net_r": "+0.00R"
+        },
+        "XAUUSD": {
+          "trades": 0,
+          "wins": 0,
+          "win_rate": "0%",
+          "net_r": "+0.00R"
+        },
+        "NAS100": {
+          "trades": 0,
+          "wins": 0,
+          "win_rate": "0%",
+          "net_r": "+0.00R"
+        },
+        "BTCUSD": {
+          "trades": 0,
+          "wins": 0,
+          "win_rate": "0%",
+          "net_r": "+0.00R"
+        }
+      },
+      "trade_log": [
+        "USDCAD SHORT [AAA] (2026-03-02 11:00 -> 2026-03-02 17:30): STOP_LOSS (-1.0R)"
+      ]
+    },
+    {
+      "month": "2. AY (Nisan 2026)",
+      "period": "2026-04-01 - 2026-05-01",
+      "total_trades": 2,
+      "tp2_hits": 0,
+      "be_hits": 0,
+      "sl_hits": 2,
+      "win_rate": "%0.0",
+      "net_r": "-2.00R",
+      "ending_balance_fixed": "$9,600.00",
+      "net_profit_fixed": "$-400.00",
+      "ending_balance_compounding": "$9,604.00",
+      "max_drawdown": "%3.96",
+      "pair_breakdown": {
+        "EURUSD": {
+          "trades": 1,
+          "wins": 0,
+          "win_rate": "%0.0",
+          "net_r": "-1.00R"
+        },
+        "GBPUSD": {
+          "trades": 0,
+          "wins": 0,
+          "win_rate": "0%",
+          "net_r": "+0.00R"
+        },
+        "USDJPY": {
+          "trades": 0,
+          "wins": 0,
+          "win_rate": "0%",
+          "net_r": "+0.00R"
+        },
+        "USDCAD": {
+          "trades": 0,
+          "wins": 0,
+          "win_rate": "0%",
+          "net_r": "+0.00R"
+        },
+        "NZDUSD": {
+          "trades": 0,
+          "wins": 0,
+          "win_rate": "0%",
+          "net_r": "+0.00R"
+        },
+        "EURGBP": {
+          "trades": 0,
+          "wins": 0,
+          "win_rate": "0%",
+          "net_r": "+0.00R"
+        },
+        "XAUUSD": {
+          "trades": 0,
+          "wins": 0,
+          "win_rate": "0%",
+          "net_r": "+0.00R"
+        },
+        "NAS100": {
+          "trades": 1,
+          "wins": 0,
+          "win_rate": "%0.0",
+          "net_r": "-1.00R"
+        },
+        "BTCUSD": {
+          "trades": 0,
+          "wins": 0,
+          "win_rate": "0%",
+          "net_r": "+0.00R"
+        }
+      },
+      "trade_log": [
+        "EURUSD LONG [AAA] (2026-04-16 09:45 -> 2026-04-16 10:45): STOP_LOSS (-1.0R)",
+        "NAS100 LONG [AAA] (2026-04-17 09:00 -> 2026-04-17 10:00): STOP_LOSS (-1.0R)"
+      ]
+    },
+    {
+      "month": "3. AY (Mayıs 2026)",
+      "period": "2026-05-01 - 2026-06-01",
+      "total_trades": 3,
+      "tp2_hits": 0,
+      "be_hits": 2,
+      "sl_hits": 1,
+      "win_rate": "%66.7",
+      "net_r": "+0.00R",
+      "ending_balance_fixed": "$10,000.00",
+      "net_profit_fixed": "$+0.00",
+      "ending_balance_compounding": "$9,996.98",
+      "max_drawdown": "%2.00",
+      "pair_breakdown": {
+        "EURUSD": {
+          "trades": 0,
+          "wins": 0,
+          "win_rate": "0%",
+          "net_r": "+0.00R"
+        },
+        "GBPUSD": {
+          "trades": 0,
+          "wins": 0,
+          "win_rate": "0%",
+          "net_r": "+0.00R"
+        },
+        "USDJPY": {
+          "trades": 1,
+          "wins": 1,
+          "win_rate": "%100.0",
+          "net_r": "+0.50R"
+        },
+        "USDCAD": {
+          "trades": 1,
+          "wins": 0,
+          "win_rate": "%0.0",
+          "net_r": "-1.00R"
+        },
+        "NZDUSD": {
+          "trades": 0,
+          "wins": 0,
+          "win_rate": "0%",
+          "net_r": "+0.00R"
+        },
+        "EURGBP": {
+          "trades": 0,
+          "wins": 0,
+          "win_rate": "0%",
+          "net_r": "+0.00R"
+        },
+        "XAUUSD": {
+          "trades": 0,
+          "wins": 0,
+          "win_rate": "0%",
+          "net_r": "+0.00R"
+        },
+        "NAS100": {
+          "trades": 1,
+          "wins": 1,
+          "win_rate": "%100.0",
+          "net_r": "+0.50R"
+        },
+        "BTCUSD": {
+          "trades": 0,
+          "wins": 0,
+          "win_rate": "0%",
+          "net_r": "+0.00R"
+        }
+      },
+      "trade_log": [
+        "USDJPY LONG [AAA] (2026-05-20 07:30 -> 2026-05-20 17:15): BREAK_EVEN (+0.5R)",
+        "USDCAD SHORT [AAA] (2026-05-05 16:00 -> 2026-05-05 18:00): STOP_LOSS (-1.0R)",
+        "NAS100 LONG [AAA] (2026-05-14 07:15 -> 2026-05-14 11:00): BREAK_EVEN (+0.5R)"
+      ]
+    }
+  ],
+  "CUMULATIVE_SPRING_QUARTER": {
+    "period": "2026-03-01 - 2026-05-31 (3 Ay)",
+    "total_trades": 6,
+    "tp2_hits": 0,
+    "be_hits": 2,
+    "sl_hits": 4,
+    "win_rate": "%33.3",
+    "net_r": "-3.00R",
+    "ending_balance_fixed": "$9,400.00",
+    "net_profit_fixed": "$-600.00"
+  },
+  "ALL_TRADES": [
+    "USDCAD SHORT [AAA] (2026-03-02 11:00 -> 2026-03-02 17:30): STOP_LOSS (-1.0R)",
+    "EURUSD LONG [AAA] (2026-04-16 09:45 -> 2026-04-16 10:45): STOP_LOSS (-1.0R)",
+    "NAS100 LONG [AAA] (2026-04-17 09:00 -> 2026-04-17 10:00): STOP_LOSS (-1.0R)",
+    "USDJPY LONG [AAA] (2026-05-20 07:30 -> 2026-05-20 17:15): BREAK_EVEN (+0.5R)",
+    "USDCAD SHORT [AAA] (2026-05-05 16:00 -> 2026-05-05 18:00): STOP_LOSS (-1.0R)",
+    "NAS100 LONG [AAA] (2026-05-14 07:15 -> 2026-05-14 11:00): BREAK_EVEN (+0.5R)"
+  ]
+}

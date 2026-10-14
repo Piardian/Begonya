@@ -158,8 +158,8 @@ def spawn_convexity_engine():
     if not daemon_script.exists():
         print(f"[Begonya Orchestrator] ⚠️ Convexity Engine bulunamadı: {daemon_script}")
         return None
-    print("[Begonya Orchestrator] 🤖 Matematiksel Bot (Convexity Engine - D1 Rotasyon) başlatılıyor...")
-    cmd = [sys.executable, "-u", str(daemon_script), "--live", "--daemon", "--run-now"]
+    print("[Begonya Orchestrator] 🤖 Matematiksel Bot (Convexity Engine - D1 Rotasyon) başlatılıyor (GÖLGE İŞLEM / SHADOW)...")
+    cmd = [sys.executable, "-u", str(daemon_script), "--shadow", "--daemon", "--run-now"]
     return subprocess.Popen(cmd, cwd=str(CONVEXITY_DIR))
 
 def main():

@@ -163,6 +163,8 @@ export function runFullBacktest(options?: {
   readonly maxHoldBars?: number;
   readonly warmupBars?: number;
   readonly requireEntryReaction?: boolean;
+  readonly entryModel?: 'edge' | 'midpoint';
+  readonly dynamicBuffer?: boolean;
 }): BacktestSummary {
   const candidateRoots = [
     path.resolve(__dirname, '..'),
@@ -205,6 +207,8 @@ export function runFullBacktest(options?: {
   const maxHoldBars = options?.maxHoldBars ?? 96; // 24 hours
   const warmup = options?.warmupBars ?? 60;
   const requireReaction = options?.requireEntryReaction ?? true;
+  const entryModel = options?.entryModel ?? 'midpoint';
+  const useDynamicBuffer = options?.dynamicBuffer ?? true;
 
   process.env.IS_BACKTEST = 'true';
   const macroAdapter = MacroGateAdapter.getInstance();
@@ -440,9 +444,18 @@ export function runFullBacktest(options?: {
           ? { low: (cand.poi as OrderBlock).low, high: (cand.poi as OrderBlock).high }
           : { low: (cand.poi as FVG).gapLow, high: (cand.poi as FVG).gapHigh };
 
-        const buffer = bufferPips * pipSize;
+        const zoneWidth = Math.abs(zone.high - zone.low);
+        const dynBufferPips = useDynamicBuffer
+          ? Math.min(3.0, Math.max(1.0, (zoneWidth / pipSize) * 0.10))
+          : bufferPips;
+        const buffer = dynBufferPips * pipSize;
+
         const isLong = cand.tradeDirection === 'long';
-        const entryPrice = isLong ? zone.high : zone.low;
+        // Model A: %50 Consequent Encroachment (Equilibrium / Midpoint) Girişi
+        const entryPrice = entryModel === 'midpoint'
+          ? zone.low + zoneWidth * 0.5
+          : (isLong ? zone.high : zone.low);
+
         const stopLoss = isLong ? zone.low - buffer : zone.high + buffer;
         const riskDist = Math.abs(entryPrice - stopLoss);
 

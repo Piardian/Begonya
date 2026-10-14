@@ -1,0 +1,378 @@
+{
+  "1. HAFTA (ŞUBAT 2026 - KIŞ)": {
+    "label": "1. HAFTA (ŞUBAT 2026 - KIŞ)",
+    "period": "2026-02-23 - 2026-03-02",
+    "total_trades": 2,
+    "tp2_hits": 1,
+    "be_hits": 0,
+    "sl_hits": 1,
+    "win_rate": "%50.0",
+    "net_r": "+1.00R",
+    "ending_balance_fixed": "$10,200.00",
+    "net_profit_fixed": "$+200.00",
+    "ending_balance_compounding": "$10,192.00",
+    "max_drawdown": "%2.00",
+    "pair_breakdown": {
+      "EURUSD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "GBPUSD": {
+        "trades": 1,
+        "wins": 1,
+        "win_rate": "%100.0",
+        "net_r": "+2.00R"
+      },
+      "USDJPY": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "USDCAD": {
+        "trades": 1,
+        "wins": 0,
+        "win_rate": "%0.0",
+        "net_r": "-1.00R"
+      },
+      "NZDUSD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "EURGBP": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "XAUUSD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "NAS100": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "BTCUSD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      }
+    },
+    "trades": [
+      {
+        "symbol": "GBPUSD",
+        "direction": "SHORT",
+        "grade": "AAA",
+        "opened_at": "2026-02-27 11:30",
+        "entry": 1.34868,
+        "original_sl": 1.349937,
+        "current_sl": 1.34868,
+        "tp1": 1.347423,
+        "tp2": 1.344909,
+        "risk_dist": 0.0012569999999998416,
+        "zone_low": 1.34855,
+        "zone_high": 1.34973,
+        "status": "TP1_HIT",
+        "bars_waiting": 1,
+        "bars_held": 16,
+        "closed_at": "2026-02-27 15:30",
+        "close_reason": "TP2_HIT",
+        "r_result": 2.0
+      },
+      {
+        "symbol": "USDCAD",
+        "direction": "SHORT",
+        "grade": "AAA",
+        "opened_at": "2026-03-02 11:00",
+        "entry": 1.36693,
+        "original_sl": 1.368942,
+        "current_sl": 1.368942,
+        "tp1": 1.364918,
+        "tp2": 1.360892,
+        "risk_dist": 0.002012000000000125,
+        "zone_low": 1.365,
+        "zone_high": 1.36868,
+        "status": "OPEN",
+        "bars_waiting": 16,
+        "bars_held": 11,
+        "closed_at": "2026-03-02 17:30",
+        "close_reason": "STOP_LOSS",
+        "r_result": -1.0
+      }
+    ]
+  },
+  "2. HAFTA (AĞUSTOS 2026 - YAZ)": {
+    "label": "2. HAFTA (AĞUSTOS 2026 - YAZ)",
+    "period": "2026-08-23 - 2026-08-30",
+    "total_trades": 3,
+    "tp2_hits": 1,
+    "be_hits": 0,
+    "sl_hits": 2,
+    "win_rate": "%33.3",
+    "net_r": "+0.00R",
+    "ending_balance_fixed": "$10,000.00",
+    "net_profit_fixed": "$+0.00",
+    "ending_balance_compounding": "$9,988.16",
+    "max_drawdown": "%2.00",
+    "pair_breakdown": {
+      "EURUSD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "GBPUSD": {
+        "trades": 1,
+        "wins": 0,
+        "win_rate": "%0.0",
+        "net_r": "-1.00R"
+      },
+      "USDJPY": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "USDCAD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "NZDUSD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "EURGBP": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "XAUUSD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "NAS100": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "BTCUSD": {
+        "trades": 2,
+        "wins": 1,
+        "win_rate": "%50.0",
+        "net_r": "+1.00R"
+      }
+    },
+    "trades": [
+      {
+        "symbol": "GBPUSD",
+        "direction": "LONG",
+        "grade": "AAA",
+        "opened_at": "2026-08-25 10:00",
+        "entry": 1.362585,
+        "original_sl": 1.362251,
+        "current_sl": 1.362585,
+        "tp1": 1.362919,
+        "tp2": 1.363586,
+        "risk_dist": 0.00033399999999983443,
+        "zone_low": 1.36233,
+        "zone_high": 1.36406,
+        "status": "TP1_HIT",
+        "bars_waiting": 22,
+        "bars_held": 1,
+        "closed_at": "2026-08-25 15:30",
+        "close_reason": "STOP_LOSS",
+        "r_result": -1.0
+      },
+      {
+        "symbol": "BTCUSD",
+        "direction": "LONG",
+        "grade": "AAA",
+        "opened_at": "2026-08-24 09:00",
+        "entry": 77173.7,
+        "original_sl": 76730.9375,
+        "current_sl": 77173.7,
+        "tp1": 77616.4625,
+        "tp2": 78501.9875,
+        "risk_dist": 442.7624999999971,
+        "zone_low": 76828.77,
+        "zone_high": 77382.25,
+        "status": "TP1_HIT",
+        "bars_waiting": 9,
+        "bars_held": 14,
+        "closed_at": "2026-08-24 14:30",
+        "close_reason": "TP2_HIT",
+        "r_result": 2.0
+      },
+      {
+        "symbol": "BTCUSD",
+        "direction": "LONG",
+        "grade": "AAA",
+        "opened_at": "2026-08-28 08:30",
+        "entry": 79749.42,
+        "original_sl": 79458.69725,
+        "current_sl": 79458.69725,
+        "tp1": 80040.14275,
+        "tp2": 80621.58825,
+        "risk_dist": 290.7227500000008,
+        "zone_low": 79535.35,
+        "zone_high": 79787.44,
+        "status": "OPEN",
+        "bars_waiting": 1,
+        "bars_held": 13,
+        "closed_at": "2026-08-28 11:45",
+        "close_reason": "STOP_LOSS",
+        "r_result": -1.0
+      }
+    ]
+  },
+  "3. HAFTA (EYLÜL 2026 - SONBAHAR)": {
+    "label": "3. HAFTA (EYLÜL 2026 - SONBAHAR)",
+    "period": "2026-09-22 - 2026-09-29",
+    "total_trades": 3,
+    "tp2_hits": 1,
+    "be_hits": 2,
+    "sl_hits": 0,
+    "win_rate": "%100.0",
+    "net_r": "+3.00R",
+    "ending_balance_fixed": "$10,600.00",
+    "net_profit_fixed": "$+600.00",
+    "ending_balance_compounding": "$10,609.04",
+    "max_drawdown": "%0.00",
+    "pair_breakdown": {
+      "EURUSD": {
+        "trades": 2,
+        "wins": 2,
+        "win_rate": "%100.0",
+        "net_r": "+1.00R"
+      },
+      "GBPUSD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "USDJPY": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "USDCAD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "NZDUSD": {
+        "trades": 1,
+        "wins": 1,
+        "win_rate": "%100.0",
+        "net_r": "+2.00R"
+      },
+      "EURGBP": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "XAUUSD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "NAS100": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      },
+      "BTCUSD": {
+        "trades": 0,
+        "wins": 0,
+        "win_rate": "0%",
+        "net_r": "+0.00R"
+      }
+    },
+    "trades": [
+      {
+        "symbol": "EURUSD",
+        "direction": "SHORT",
+        "grade": "AAA",
+        "opened_at": "2026-09-24 11:45",
+        "entry": 1.138275,
+        "original_sl": 1.139327,
+        "current_sl": 1.138275,
+        "tp1": 1.137223,
+        "tp2": 1.135118,
+        "risk_dist": 0.001052000000000053,
+        "zone_low": 1.13812,
+        "zone_high": 1.13919,
+        "status": "TP1_HIT",
+        "bars_waiting": 30,
+        "bars_held": 57,
+        "closed_at": "2026-09-25 09:15",
+        "close_reason": "BREAK_EVEN",
+        "r_result": 0.5
+      },
+      {
+        "symbol": "EURUSD",
+        "direction": "SHORT",
+        "grade": "AAA",
+        "opened_at": "2026-09-28 11:45",
+        "entry": 1.13793,
+        "original_sl": 1.139253,
+        "current_sl": 1.13793,
+        "tp1": 1.136607,
+        "tp2": 1.133962,
+        "risk_dist": 0.001322999999999963,
+        "zone_low": 1.13752,
+        "zone_high": 1.13908,
+        "status": "TP1_HIT",
+        "bars_waiting": 13,
+        "bars_held": 18,
+        "closed_at": "2026-09-28 19:15",
+        "close_reason": "BREAK_EVEN",
+        "r_result": 0.5
+      },
+      {
+        "symbol": "NZDUSD",
+        "direction": "SHORT",
+        "grade": "AAA",
+        "opened_at": "2026-09-28 11:45",
+        "entry": 0.56712,
+        "original_sl": 0.567202,
+        "current_sl": 0.56712,
+        "tp1": 0.567038,
+        "tp2": 0.566875,
+        "risk_dist": 8.20000000000265e-05,
+        "zone_low": 0.56602,
+        "zone_high": 0.56718,
+        "status": "TP1_HIT",
+        "bars_waiting": 14,
+        "bars_held": 1,
+        "closed_at": "2026-09-28 15:15",
+        "close_reason": "TP2_HIT",
+        "r_result": 2.0
+      }
+    ]
+  }
+}

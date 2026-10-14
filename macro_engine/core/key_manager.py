@@ -110,7 +110,7 @@ class DualCascadeRouter:
                     
                     client = genai.Client(
                         api_key=active_key,
-                        http_options=types.HttpOptions(timeout=25000)
+                        http_options=types.HttpOptions(timeout=45000)
                     )
                     thinking_cfg = None
                     if "lite" not in model_name.lower() and any(m in model_name for m in ["3.8", "3.7", "3.6"]):
@@ -138,7 +138,7 @@ class DualCascadeRouter:
                     err_str = str(e).lower()
                     is_rate_limit = any(term in err_str for term in [
                         "429", "resource_exhausted", "quota", "rate limit", "overloaded",
-                        "not found", "503", "unavailable", "demand"
+                        "not found", "503", "unavailable", "demand", "504", "deadline", "timeout"
                     ])
 
                     if is_rate_limit:

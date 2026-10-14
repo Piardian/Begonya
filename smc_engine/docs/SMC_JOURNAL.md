@@ -1576,25 +1576,25 @@ Bu bölüm, sistemin erken döneminde üretilen ve loglardan çıkarılan işlem
 
 - **Kaynak:** Telegram Sinyali (`signalId: SOLUSD_15m_OB_1791470700000_1791471600000`)
 - **Giriş Bölgesi:** 112.26 - 112.66 | **Midpoint:** 112.46 | **Stop:** 112.67 üstü (-1.0R / 21 pip risk) | **Hedef (2R):** 112.04 | **Mıknatıs:** 108.80 EQL (17.4R) | **Önerilen Risk:** Defansif Risk (%0.5R) | **İvme Uyarısı:** ⚠️ Yüksek Kinetik Enerji (3.12x ATR)
-- **Kullanıcı Sonucu:** ⏳ **GİRİLMEDİ / PAS (Kutuya Geri Çekilme Olmadı / Retest Gelmedi)**
-  - Operatör bildirimi: *"9 ekim bekliyoruz"*.
-  - Sinyal 15:02 TSİ'de fiyat 111.31 seviyesindeyken geldi. Giriş bölgesi 112.26 - 112.66 seviyesindeydi. Fiyat sinyal sonrası yukarı toparlanma gerçekleştiremedi (en yüksek 111.38 gördü) ve kutuya hiç ulaşamadan 109.17 seviyesine kadar düşüşünü sürdürdü. Kullanıcı "Kutuya dönmeden kesinlikle işlem yok" kuralına uyarak bekledi, kutuya retest gelmediği için işlem açılmadı (Pas).
-- **Botun Benchmark Takibi:** ⏳ **EXPIRED (0 R / Tetiklenmedi)**
-  - Bot mekanik olarak `112.46` orta noktasına limit satış emri kurmuştu. Fiyat kutuya hiç yaklaşmadığı için emir tetiklenmedi ve 16 bar sonunda zaman aşımına (`EXPIRED`) uğrayarak kapandı.
+- **Kullanıcı Sonucu:** 🛑 **STOP LOSS (-1.0 R)**
+  - Operatör bildirimi: *"sol stop yedik kutuya sert temas etti yavaşladı yavaşlayıp choch verince girdim lakin stop yedim"*.
+  - Sinyal 9 Ekim 15:02 TSİ'de iletildi. Hafta sonu 11 Ekim akşamı (19:30 - 20:30 TSİ) fiyat 110.00 seviyesinden sert bir toparlanmayla 112.26 - 112.66 OB bölgesine ulaştı (En yüksek 112.75 gördü). Fiyat kutu içinde ivmesini yavaşlatıp 1 dakikalık grafikte düşüş yönlü CHoCH kırılımı verince kullanıcı kurallara uygun olarak SAT işlemine dahil oldu. Ancak kripto piyasasındaki yukarı yönlü genel alım dalgası sebebiyle fiyat tutunamadı ve stop seviyesini (`112.67`) aşarak 113.40 seviyesine kadar çıktı; işlem -1.0R Stop ile kapandı.
+- **Botun Benchmark Takibi:** ⏳ **EXPIRED (0 R / Zaman Aşımı)**
+  - Bot mekanik kuralı gereği 16 barlık (4 saatlik) pencereye sahiptir. Sinyal sonrası Cuma günü fiyat kutuya ulaşmadığı için botun midpoint limit emri 9 Ekim 19:00 TSİ'de kural gereği zaman aşımına (`EXPIRED`) uğrayarak iptal edildi. Hafta sonundaki temasta botun açık emri bulunmadığı için bot zarar yazmadı (0 R).
 - **SMC Otopsisi & Çıkarılan Ders:**
-  - ⏳ **Trend Şiddeti ve Kaçan Retest:** 3.12x ATR gibi aşırı yüksek kinetik enerjiyle düşen piyasalarda fiyat bazen geride bıraktığı OB'ye hiç dönmeden hedefe (108.80 EQL mıknatısına) doğrudan akabilir. Kural gereği retest olmadan işleme girmemek disiplinli bir tercihtir ve her iki taraf da risksiz (0 R) kalmıştır.
+  - 🛑 **Hafta Sonu Likiditesi ve 1M Sahte Kırılım (Fake CHoCH):** Kripto varlıklarda hafta sonu düşük likidite ortamında oluşan 1M CHoCH kırılımları bazen ana trend dönüşü değil, sadece küçük bir likidite süpürmesi (Inducement) olarak kalabilmektedir. Kurallara tam uyulmasına rağmen piyasa kutuyu aşmıştır; risk yönetimi sınırları içinde normal bir stop'tur.
 
 ### 89. [2026-10-09 17:31 TSİ / 14:31 UTC] — ETHUSD (15M FVG - SAT)
 
 - **Kaynak:** Telegram Sinyali (`signalId: ETHUSD_15m_FVG_1791471600000_1791472500000`)
 - **Giriş Bölgesi:** 2513.33 - 2527.24 | **Midpoint:** 2520.28 | **Stop:** 2528.24 üstü (-1.0R / 8 pip risk) | **Hedef (2R):** 2504.38 | **Mıknatıs:** 2477.43 EQL (5.4R) | **Önerilen Risk:** Defansif Risk (%0.5R)
-- **Kullanıcı Sonucu:** ⏳ **GİRİLMEDİ / PAS (Kutuya Geri Çekilme Olmadı / Retest Gelmedi)**
-  - Operatör bildirimi: *"9 ekim bekliyoruz"*.
-  - Sinyal 17:31 TSİ'de fiyat 2494.50 seviyesindeyken geldi. Giriş bölgesi yukarıda (`2513.33 - 2527.24`) FVG olarak belirlendi. Fiyat sinyal sonrasında en fazla 2499.14 seviyesine kadar yükselebildi ve kutu tabanına (2513.33) 14.2 USD kala tekrar aşağı dönerek 2481.75 seviyesine kadar indi. Kullanıcı "Kutuya dönmeden kesinlikle işlem yok" kuralına harfiyen uyarak takipte kaldı ve pozisyona girmedi (Pas).
-- **Botun Benchmark Takibi:** ⏳ **EXPIRED (0 R / Tetiklenmedi)**
-  - Bot mekanik olarak `2520.28` orta noktasına limit satış emri kurmuştu. Fiyat kutu sınırına dahi yaklaşmadığı için limit emir tetiklenmedi ve 16 bar sonunda zaman aşımına (`EXPIRED`) uğrayarak kapandı.
+- **Kullanıcı Sonucu:** 🛡️ **GİRİLMEDİ / KORUNDU (1M Onay Vermedi / Deldi Geçti)**
+  - Operatör bildirimi: *"eth da ltf confirme vermedi kutuyu deldi geçti"*.
+  - Sinyal 9 Ekim 17:31 TSİ'de geldi. Hafta sonu 11 Ekim Pazar günü (18:30 TSİ) Ethereum çok sert bir yükseliş dalgası başlattı ve 2508 seviyesinden tek bir 15 dakikalık mumda 2535 seviyesine çıkarak 2513.33 - 2527.24 FVG kutusunu ve 2528.24 stop seviyesini yukarı doğru dikey delip geçti; yükseliş 2579 seviyesine kadar devam etti. Kullanıcı 1 dakikalık grafikte hiçbir satış teyidi görmediği için kural gereği işleme girmedi ve sermayesini doğrudan korudu (Averted Loss: +1.0R Kurtarıldı).
+- **Botun Benchmark Takibi:** ⏳ **EXPIRED (0 R / Zaman Aşımı)**
+  - Bot mekanik kuralı gereği 16 bar penceresi dolduktan sonra Cuma akşamı emri iptal etmişti (`EXPIRED`). Hafta sonu açık limit emir bulunmadığı için bot da zarar yazmadı (0 R).
 - **SMC Otopsisi & Çıkarılan Ders:**
-  - 🧘 **Disiplinli Bekleyiş:** Giriş bölgesine dönmeyen setup'larda pozisyona atlamamak (marketten kovalamamak) sermaye korunmasının en önemli kuralıdır. İşlem hem kullanıcı hem bot nezdinde 0 R ile kapatılmıştır.
+  - 🛡️ **1M Filtresinin Gücü Tekrar Kanıtlandı:** Tıpkı #79 (XAUUSD), #82 (BTCUSD), #85 (GBPJPY) ve #86 (EURJPY)'de olduğu gibi; fiyatın kutuyu dikey yeşil mumlarla delip geçtiği anlarda 1M teyit filtresi kullanıcıyı kesin bir -1.0R zarardan kurtarmıştır.
 
 ---
 
