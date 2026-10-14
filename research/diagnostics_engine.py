@@ -1,99 +1,33 @@
-import os
-import json
-import glob
-import subprocess
-import pandas as pd
-from datetime import datetime
+"""Compatibility facade for the canonical persisted-data diagnostic engine.
+
+Older callers may still import DiagnosticsEngine from this module. All calculations
+are delegated to research.diagnostic_engine; no synthetic signal/PnL values are used.
+"""
+from pathlib import Path
+from typing import Any
+
+from research.diagnostic_engine import DiagnosticEngine
+
 
 class DiagnosticsEngine:
-    def __init__(self, log_path="logs/trading.log", journal_path="data/trade_journal.json"):
-        self.log_path = log_path
-        self.journal_path = journal_path
+    def __init__(
+        self,
+        log_path: str | None = None,
+        journal_path: str | None = None,
+        data_root: str | Path | None = None,
+        project_root: str | Path | None = None,
+    ) -> None:
+        # log_path/journal_path remain accepted for backward compatibility, but
+        # benchmark_records.json is the canonical source for realized trade outcomes.
+        self.engine = DiagnosticEngine(data_root=data_root, project_root=project_root)
 
-    def _read_git_history(self):
-        """Git geçmişini salt okunur olarak analiz eder."""
-        if os.path.exists('.git'):
-            try:
-                result = subprocess.run(
-                    ["git", "log", "-n", "5", "--oneline"],
-                    capture_output=True,
-                    text=True,
-                    check=True
-                )
-                return result.stdout.strip().split("\n") if result.stdout else []
-            except Exception as e:
-                return [f"Git geçmişi okunamadı: {e}"]
-        return ["Git deposu bulunamadı."]
+    def analyze_signals(self) -> dict[str, Any]:
+        return self.engine.calculate_metrics()
 
-    def _calculate_smc_metrics(self):
-        """SMC (Smart Money Concepts) metriklerini log dosyasından okuyarak hesaplar."""
-        if os.path.exists(self.log_path):
-            try:
-                with open(self.log_path, 'r') as f:
-                    lines = f.readlines()
-                    # Basit bir analiz: Log dosyasındaki satır sayısı üzerinden bir metrik
-                    return f"{len(lines)} log girişi analiz edildi."
-            except Exception as e:
-                return f"Log okuma hatası: {e}"
-        return "Log dosyası bulunamadı."
-
-    def _calculate_fvg_metrics(self):
-        """FVG (Fair Value Gap) metriklerini log dosyasından analiz eder."""
-        if os.path.exists(self.log_path):
-            try:
-                with open(self.log_path, 'r') as f:
-                    content = f.read()
-                    # Basit bir analiz: 'FVG' kelimesinin geçiş sayısı
-                    count = content.lower().count("fvg")
-                    return f"{count} FVG sinyali tespit edildi."
-            except Exception as e:
-                return f"Log okuma hatası: {e}"
-        return "Log dosyası bulunamadı."
-
-    def _calculate_pnl(self):
-        """PnL (Profit and Loss) analizini ticaret günlüğünden yapar."""
-        if os.path.exists(self.journal_path):
-            try:
-                with open(self.journal_path, 'r') as f:
-                    data = json.load(f)
-                    # Basit bir PnL hesaplama (örnek veri yapısı varsayımı)
-                    total_trades = len(data) if isinstance(data, list) else 0
-                    return f"{total_trades} işlem analiz edildi."
-            except Exception as e:
-                return f"Günlük okuma hatası: {e}"
-        return "Günlük dosyası bulunamadı."
-
-    def analyze_signals(self):
-        """
-        Sinyal sıklığı, filtre başarıları ve PnL analizi yapar.
-        """
+    def generate_report(self, data: dict[str, Any], output_path: str | Path) -> bool:
         try:
-            return {
-                "signal_frequency": "15 signals/hour",
-                "filter_success_rate": "85%",
-                "smc_metrics": self._calculate_smc_metrics(),
-                "fvg_metrics": self._calculate_fvg_metrics(),
-                "pnl_analysis": self._calculate_pnl(),
-                "last_check": datetime.now().isoformat()
-            }
-        except Exception as e:
-            return {"error": str(e)}
-
-    def generate_report(self, data, output_path):
-        """Analiz sonuçlarını Markdown formatında raporlar."""
-        try:
-            with open(output_path, "w", encoding="utf-8") as f:
-                f.write("# Begonya Teşhis Raporu\n\n")
-                f.write(f"**Tarih:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-                f.write("## Metrikler\n")
-                for key, value in data.items():
-                    f.write(f"- **{key.replace('_', ' ').title()}:** {value}\n")
-                
-                f.write("\n## Git Durumu\n")
-                history = self._read_git_history()
-                for line in history:
-                    f.write(f"- {line}\n")
+            report = self.engine.generate_markdown_report(data)
+            Path(output_path).write_text(report, encoding="utf-8")
             return True
-        except Exception as e:
-            print(f"Rapor yazma hatası: {e}")
+        except (OSError, KeyError, TypeError, ValueError):
             return False
