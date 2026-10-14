@@ -12,6 +12,12 @@ from typing import Any
 
 
 def _parse_datetime(value: Any) -> datetime | None:
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        # POI watchlist timestamps are Unix epoch milliseconds.
+        try:
+            return datetime.fromtimestamp(float(value) / 1000.0, tz=timezone.utc)
+        except (OverflowError, OSError, ValueError):
+            return None
     if not isinstance(value, str) or not value.strip():
         return None
     try:
