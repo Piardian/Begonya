@@ -45,9 +45,9 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install macro dependencies
+      - name: Install macro dependencies and test runner
         working-directory: macro_engine
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt pytest
 
       - name: Run full macro engine and calibration test suite
         working-directory: macro_engine
@@ -70,9 +70,9 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install macro dependencies
+      - name: Install macro dependencies and test runner
         working-directory: macro_engine
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt pytest
 
       - name: Run historical replay and determinism tests
         working-directory: macro_engine
@@ -93,3 +93,22 @@ jobs:
 
       - name: Run Institutional Health & Integration Audit
         run: python orchestrator/health_check.py
+
+  benchmark-diagnostics-tests:
+    name: Persisted Benchmark Diagnostics
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compile diagnostic modules
+        run: python -m py_compile research/diagnostic_engine.py research/diagnostics_engine.py research/diagnostic_tool.py run.py
+
+      - name: Run diagnostic unit tests
+        run: python -m unittest discover -s tests -v

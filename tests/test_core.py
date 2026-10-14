@@ -1,55 +1,77 @@
-import unittest
 import json
-import os
 import tempfile
+import unittest
+from datetime import datetime, timezone
+from pathlib import Path
+
 from research.diagnostic_engine import DiagnosticEngine
+
 
 class TestDiagnosticEngine(unittest.TestCase):
     def setUp(self):
-        # Test için geçici bir dizin oluştur
         self.test_dir = tempfile.TemporaryDirectory()
-        # DiagnosticEngine'in beklediği data_root'u ayarla
-        self.engine = DiagnosticEngine(self.test_dir.name)
+        self.root = Path(self.test_dir.name)
+        (self.root / "benchmark").mkdir()
+        (self.root / "data").mkdir()
+        self.engine = DiagnosticEngine(
+            data_root=self.root / "data",
+            project_root=self.root,
+            report_path=self.root / "diagnostics" / "report.md",
+        )
 
     def tearDown(self):
         self.test_dir.cleanup()
 
     def test_load_notified_pois_empty(self):
-        """Veri dosyası yokken boş liste dönmeli."""
-        pois = self.engine.load_notified_pois()
-        self.assertEqual(pois, [])
+        self.assertEqual(self.engine.load_notified_pois(), [])
 
     def test_load_notified_pois_with_data(self):
-        """Veri dosyası varken verileri doğru okumalı."""
-        mock_data = [{"id": "test_1", "symbol": "BTCUSD", "timestamp": "2023-10-27T10:00:00"}]
-        file_path = os.path.join(self.test_dir.name, 'notified_pois.json')
-        
-        with open(file_path, 'w', encoding='utf-8') as f:
-            json.dump(mock_data, f)
-            
+        mock_data = [{"id": "test_1", "symbol": "BTCUSD"}]
+        with (self.root / "data" / "notified_pois.json").open("w", encoding="utf-8") as handle:
+            json.dump(mock_data, handle)
         pois = self.engine.load_notified_pois()
         self.assertEqual(len(pois), 1)
-        self.assertEqual(pois[0]['id'], "test_1")
+        self.assertEqual(pois[0]["id"], "test_1")
 
-    def test_calculate_metrics(self):
-        """Metrik hesaplama mantığını test et."""
-        mock_data = [{"id": "test_1", "timestamp": "2023-10-27T10:00:00"}]
-        metrics = self.engine.calculate_metrics(mock_data)
-        
-        self.assertIn("frequency", metrics)
-        self.assertEqual(metrics["total_processed"], 1)
+    def test_calculate_metrics_uses_ledger_and_date_windows(self):
+        ledger = [{
+            "record_id": "test-1",
+            "timestamp_utc": "2026-10-13T10:00:00Z",
+            "post_trade_audit": {
+                "actual_outcome": "WIN",
+                "realized_pnl_usd": 100,
+                "realized_r": 1.0,
+            },
+        }]
+        with (self.root / "benchmark" / "benchmark_records.json").open("w", encoding="utf-8") as handle:
+            json.dump(ledger, handle)
+        metrics = self.engine.calculate_metrics(
+            datetime(2026, 10, 14, 10, tzinfo=timezone.utc)
+        )
+        self.assertEqual(metrics["last_7_days"]["records"], 1)
+        self.assertEqual(metrics["last_7_days"]["realized_pnl_usd_sum"], 100)
+        self.assertEqual(metrics["filter_pass_reject_metrics"]["status"], "UNAVAILABLE")
 
     def test_generate_markdown_report(self):
-        """Rapor oluşturma fonksiyonunun çıktısını test et."""
-        metrics = {
-            "frequency": {"7_day_signal_count": 1, "14_day_signal_count": 1, "30_day_signal_count": 1, "60_day_signal_count": 1},
-            "total_processed": 1,
-            "filter_success_rate": 0.75,
-            "pnl_analysis": {"total_r": 10.0, "expectancy": 0.5}
-        }
+        ledger = [{
+            "record_id": "test-1",
+            "timestamp_utc": "2026-10-13T10:00:00Z",
+            "post_trade_audit": {
+                "actual_outcome": "WIN",
+                "realized_pnl_usd": 100,
+                "realized_r": 1.0,
+            },
+        }]
+        with (self.root / "benchmark" / "benchmark_records.json").open("w", encoding="utf-8") as handle:
+            json.dump(ledger, handle)
+        metrics = self.engine.calculate_metrics(
+            datetime(2026, 10, 14, 10, tzinfo=timezone.utc)
+        )
         report = self.engine.generate_markdown_report(metrics)
-        self.assertIn("# Begonya Sinyal Teşhis Raporu", report)
-        self.assertIn("Toplam İşlenen Sinyal: 1", report)
+        self.assertIn("# Begonya Signal Diagnostics", report)
+        self.assertIn("Realized PnL sum (USD): 100.0", report)
+        self.assertIn("UNAVAILABLE", report)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
