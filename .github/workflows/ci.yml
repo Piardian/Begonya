@@ -111,4 +111,4 @@ jobs:
         run: python -m py_compile research/diagnostic_engine.py research/diagnostics_engine.py research/diagnostic_tool.py run.py
 
       - name: Run diagnostic unit tests
-        run: python -m unittest discover -s tests -p 'test_diagnostic_engine.py' -v
+        run: python -m unittest discover -s tests -v
