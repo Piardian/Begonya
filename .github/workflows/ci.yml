@@ -70,9 +70,9 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install macro dependencies
+      - name: Install macro dependencies and test runner
         working-directory: macro_engine
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt pytest
 
       - name: Run historical replay and determinism tests
         working-directory: macro_engine
