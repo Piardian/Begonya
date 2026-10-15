@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import uuid
 from dataclasses import dataclass, asdict
@@ -48,6 +49,8 @@ class ReplaySession:
 
         self.data_adapter = data_adapter or HistoricalDataAdapter()
         self.manifest = self.data_adapter.prepare_dataset(self.symbol)
+        if "1m" not in self.manifest.timeframes:
+            raise ValueError(f"M1 historical data is required for manual order execution on {self.symbol}")
         self.clock = ReplayClock(self.data_adapter, self.symbol)
         self.cost_profile = cost_profile or get_cost_profile(self.symbol)
         self.engine = ExecutionEngine(self.symbol, initial_balance=initial_balance, cost_profile=self.cost_profile)
@@ -189,15 +192,24 @@ class ReplaySession:
 class SessionStore:
     """Manages active sessions in memory and persistent storage."""
 
-    def __init__(self, sessions_dir: Optional[Path] = None):
+    def __init__(
+        self,
+        sessions_dir: Optional[Path] = None,
+        data_adapter: Optional[HistoricalDataAdapter] = None,
+    ):
         self.sessions_dir = sessions_dir or DEFAULT_SESSION_DIR
         self.sessions_dir.mkdir(parents=True, exist_ok=True)
+        self.data_adapter = data_adapter
         self._active_sessions: Dict[str, ReplaySession] = {}
 
     def create_session(self, symbol: str, initial_balance: float = 10000.0) -> ReplaySession:
-        if not isinstance(initial_balance, (int, float)) or initial_balance <= 0:
-            raise ValueError("initial_balance must be greater than zero")
-        session = ReplaySession(symbol=symbol, initial_balance=float(initial_balance))
+        if not isinstance(initial_balance, (int, float)) or not math.isfinite(float(initial_balance)) or initial_balance <= 0:
+            raise ValueError("initial_balance must be a finite number greater than zero")
+        session = ReplaySession(
+            symbol=symbol,
+            initial_balance=float(initial_balance),
+            data_adapter=self.data_adapter,
+        )
         self._active_sessions[session.session_id] = session
         return session
 
@@ -224,6 +236,7 @@ class SessionStore:
             symbol=data["symbol"],
             initial_balance=float(data["initial_balance"]),
             session_id=data["session_id"],
+            data_adapter=self.data_adapter,
             cost_profile=CostProfile(**data["cost_profile"]),
         )
         saved_checksums = data.get("manifest", {}).get("checksum_sha256", {})
