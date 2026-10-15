@@ -105,21 +105,35 @@ class ExecutionEngine:
             "payload": payload,
         })
 
+    def _usd_conversion_factor(self, reference_price: float) -> float:
+        """Convert quote-currency PnL to USD for supported USD-base pairs."""
+        if self.symbol in {"USDJPY", "USDCAD"}:
+            if reference_price <= 0:
+                raise ValueError("A positive reference price is required for quote-currency conversion")
+            return 1.0 / reference_price
+        # The supported remaining instruments are quoted in USD.
+        return 1.0
+
     def calculate_lots_from_risk(self, direction: str, entry_price: float, stop_loss: float, risk_percent: float) -> float:
-        """Calculates volume in lots based on desired % risk of current balance."""
-        risk_capital = (self.balance * (risk_percent / 100.0))
+        """Size down to 0.01 lots using stop risk plus estimated execution costs."""
+        risk_capital = self.balance * (risk_percent / 100.0)
         price_risk = abs(entry_price - stop_loss)
         if price_risk <= 0:
-            return 0.01
-
-        # lot_size * price_risk = $ loss per lot
-        loss_per_lot = price_risk * self.cost_profile.lot_size
-        if loss_per_lot <= 0:
-            return 0.01
-
+            raise ValueError("Entry and stop loss must differ")
+        conversion = self._usd_conversion_factor(entry_price)
+        profile = self.cost_profile
+        price_risk_usd = price_risk * profile.lot_size * conversion
+        spread_usd = profile.spread_pips * profile.pip_size * profile.lot_size * conversion
+        slippage_usd = 2.0 * profile.slippage_pips * profile.pip_size * profile.lot_size * conversion
+        loss_per_lot = price_risk_usd + spread_usd + slippage_usd + profile.commission_per_lot_usd
+        if loss_per_lot <= 0 or not math.isfinite(loss_per_lot):
+            raise ValueError("Could not calculate a finite per-lot risk")
         raw_lots = risk_capital / loss_per_lot
-        # Standard step 0.01 lot
-        return max(0.01, round(raw_lots, 2))
+        # Floor to the broker's assumed 0.01 lot step; never round risk upward.
+        lots = math.floor(raw_lots * 100.0) / 100.0
+        if lots < 0.01:
+            raise ValueError("Risk budget is below the minimum 0.01-lot position after costs")
+        return round(lots, 2)
 
     def place_order(
         self,
@@ -273,12 +287,16 @@ class ExecutionEngine:
             mid_delta = mid_entry - exit_mid_price
 
         notional_multiplier = trade.volume_lots * self.cost_profile.lot_size
-        gross_pnl = mid_delta * notional_multiplier
+        entry_conversion = self._usd_conversion_factor(mid_entry)
+        exit_conversion = self._usd_conversion_factor(exit_mid_price)
+        gross_pnl = mid_delta * notional_multiplier * exit_conversion
         half_spread = (self.cost_profile.spread_pips * self.cost_profile.pip_size) / 2.0
         slippage = self.cost_profile.slippage_pips * self.cost_profile.pip_size
-        spread_cost = 2.0 * half_spread * notional_multiplier
-        slippage_sides = (1 if trade.entry_was_market else 0) + (1 if is_market else 0)
-        slippage_cost = slippage * slippage_sides * notional_multiplier
+        spread_cost = half_spread * notional_multiplier * (entry_conversion + exit_conversion)
+        slippage_cost = slippage * notional_multiplier * (
+            (entry_conversion if trade.entry_was_market else 0.0)
+            + (exit_conversion if is_market else 0.0)
+        )
         net_pnl = gross_pnl - spread_cost - slippage_cost - trade.commission_usd
 
         trade.spread_cost_usd = round(spread_cost, 2)
@@ -287,7 +305,7 @@ class ExecutionEngine:
         trade.net_pnl_usd = round(net_pnl, 2)
 
         # Realized R is net PnL divided by the original price risk in dollars.
-        risk_capital = trade.initial_risk_r * notional_multiplier
+        risk_capital = trade.initial_risk_r * notional_multiplier * exit_conversion
         trade.realized_r = round(net_pnl / risk_capital, 2) if risk_capital > 0 else 0.0
 
         # Update balance
