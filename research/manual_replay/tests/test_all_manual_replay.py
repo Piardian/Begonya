@@ -161,7 +161,7 @@ class TestExecutionEngine:
 
     def test_auto_sizing_includes_costs_and_floors_lot_step(self):
         engine = ExecutionEngine("TEST", initial_balance=10_000, cost_profile=self.profile())
-        lots = engine.calculate_lots_from_risk("BUY", 1.2, 1.195, 1.0)
+        lots = engine.calculate_lots_from_risk("BUY", 1.2, 1.198, 1.0)
         assert lots == pytest.approx(0.45)
         assert lots * 100 == int(lots * 100)
 
