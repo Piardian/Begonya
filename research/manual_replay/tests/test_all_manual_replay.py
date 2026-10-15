@@ -98,6 +98,14 @@ class TestHistoricalDataAdapter:
         assert audit["duplicates"] == 1
         assert audit["status"] == "CORRUPTED"
 
+    def test_loader_rejects_second_based_timestamps(self, tmp_path):
+        path = tmp_path / "seconds.json"
+        path.write_text(json.dumps([{
+            "timestamp": 1_700_000_000, "open": 1.1, "high": 1.2, "low": 1.0, "close": 1.15
+        }]), encoding="utf-8")
+        with pytest.raises(ValueError, match="Unix milliseconds"):
+            HistoricalDataAdapter(search_paths=[]).load_candles_from_file(path)
+
     def test_loader_rejects_invalid_ohlc(self, tmp_path):
         path = tmp_path / "bad.json"
         path.write_text(json.dumps([{
@@ -150,6 +158,20 @@ class TestExecutionEngine:
             engine.place_order("MARKET", "BUY", 1.2, 1.195, 1.19, 1_000, volume_lots=1.0)
         with pytest.raises(ValueError, match="direction"):
             engine.place_order("MARKET", "LONGISH", 1.2, 1.195, 1.21, 1_000, volume_lots=1.0)
+
+    def test_auto_sizing_includes_costs_and_floors_lot_step(self):
+        engine = ExecutionEngine("TEST", initial_balance=10_000, cost_profile=self.profile())
+        lots = engine.calculate_lots_from_risk("BUY", 1.2, 1.195, 1.0)
+        assert lots == pytest.approx(0.45)
+        assert lots * 100 == int(lots * 100)
+
+    def test_pending_order_can_be_cancelled_once(self):
+        engine = ExecutionEngine("TEST", cost_profile=self.profile())
+        order = engine.place_order("LIMIT", "BUY", 1.2, 1.195, 1.21, 1_000, volume_lots=1.0)
+        cancelled = engine.cancel_pending_order(order.order_id, 2_000)
+        assert cancelled.status == "CANCELLED"
+        with pytest.raises(ValueError, match="not pending"):
+            engine.cancel_pending_order(order.order_id, 3_000)
 
     def test_limit_fill_bar_cannot_also_trigger_tp_or_sl(self):
         engine = ExecutionEngine("TEST", cost_profile=self.profile())
