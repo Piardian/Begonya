@@ -26,7 +26,7 @@ BENCHMARK_MACRO_RECORDS = Path(os.environ.get("BEGONYA_MACRO_RECORDS_PATH", str(
 LIVE_MACRO_GATE = Path(os.environ.get("BEGONYA_LIVE_MACRO_GATE_PATH", str(_REPO_ROOT / "macro_engine" / "gateways" / "macro_bias_gate.json")))
 
 
-@dataclass
+@dataclass(frozen=True)
 class MacroSnapshot:
     status: str  # 'AVAILABLE' or 'UNAVAILABLE_HISTORICAL_DATA'
     as_of_iso: str
@@ -159,10 +159,10 @@ class PitMacroAdapter:
             status="AVAILABLE",
             as_of_iso=as_of_iso,
             symbol=sym_clean,
-            primary_regime=candidate.get("primary_regime", "Undefined"),
+            primary_regime=candidate.get("primary_regime") or "UNAVAILABLE",
             bias_gate=bias_gate,
             volatility_risk_score=candidate.get("volatility_risk_score"),
-            recommended_risk_multiplier=candidate.get("recommended_risk_multiplier", 1.0),
+            recommended_risk_multiplier=candidate.get("recommended_risk_multiplier"),
             currency_scores=candidate.get("currency_scores"),
             as_of_verified=True,
             source_record_id=candidate.get("macro_record_id"),
