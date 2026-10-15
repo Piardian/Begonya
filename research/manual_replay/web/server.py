@@ -113,7 +113,7 @@ def get_candles(
         raise HTTPException(status_code=404, detail="Session not found")
 
     try:
-        total_visible = len(session.clock.get_visible_candles(timeframe, include_forming=include_forming))
+        total_visible = session.clock.get_visible_candle_count(timeframe, include_forming=include_forming)
         candles = session.clock.get_visible_candles(timeframe, include_forming=include_forming, limit=limit)
         # Format for Lightweight Charts: { time: seconds, open, high, low, close }
         formatted = [
