@@ -61,9 +61,12 @@ class TradeRecord:
     take_profit: float
     initial_risk_r: float
     volume_lots: float
+    mid_entry_price: Optional[float] = None
+    entry_was_market: bool = True
     exit_ts: Optional[int] = None
     exit_time_iso: Optional[str] = None
     exit_price: Optional[float] = None
+    mid_exit_price: Optional[float] = None
     exit_reason: Optional[str] = None  # 'SL', 'TP', 'MANUAL_CLOSE'
     gross_pnl_usd: float = 0.0
     net_pnl_usd: float = 0.0
@@ -204,7 +207,7 @@ class ExecutionEngine:
         order.filled_at_ts = fill_time_ms
 
         commission = self.cost_profile.calculate_commission(order.volume_lots)
-        initial_risk = abs(exec_price - order.stop_loss)
+        initial_risk = abs(mid_fill_price - order.stop_loss)
 
         trade = TradeRecord(
             trade_id=f"trd_{uuid.uuid4().hex[:8]}",
@@ -218,6 +221,8 @@ class ExecutionEngine:
             take_profit=order.take_profit,
             initial_risk_r=initial_risk,
             volume_lots=order.volume_lots,
+            mid_entry_price=mid_fill_price,
+            entry_was_market=is_market,
             commission_usd=commission,
             macro_snapshot=macro_snapshot if macro_snapshot is not None else order.macro_snapshot,
             status="OPEN",
@@ -258,24 +263,32 @@ class ExecutionEngine:
         trade.conservative_ambiguity_applied = conservative_ambiguity
         trade.status = "CLOSED"
 
-        # Calculate PnL
+        # OHLC candles are treated as mid prices. Report mid-to-mid gross PnL
+        # separately from modeled spread, slippage, and commission costs.
+        mid_entry = trade.mid_entry_price if trade.mid_entry_price is not None else trade.entry_price
+        trade.mid_exit_price = exit_mid_price
         if trade.direction == "BUY":
-            price_delta = exec_exit_price - trade.entry_price
+            mid_delta = exit_mid_price - mid_entry
         else:
-            price_delta = trade.entry_price - exec_exit_price
+            mid_delta = mid_entry - exit_mid_price
 
-        gross_pnl = price_delta * trade.volume_lots * self.cost_profile.lot_size
-        net_pnl = gross_pnl - trade.commission_usd
+        notional_multiplier = trade.volume_lots * self.cost_profile.lot_size
+        gross_pnl = mid_delta * notional_multiplier
+        half_spread = (self.cost_profile.spread_pips * self.cost_profile.pip_size) / 2.0
+        slippage = self.cost_profile.slippage_pips * self.cost_profile.pip_size
+        spread_cost = 2.0 * half_spread * notional_multiplier
+        slippage_sides = (1 if trade.entry_was_market else 0) + (1 if is_market else 0)
+        slippage_cost = slippage * slippage_sides * notional_multiplier
+        net_pnl = gross_pnl - spread_cost - slippage_cost - trade.commission_usd
 
-        # Realized R
-        if trade.initial_risk_r > 0:
-            raw_r = price_delta / trade.initial_risk_r
-            trade.realized_r = round(raw_r, 2)
-        else:
-            trade.realized_r = 0.0
-
+        trade.spread_cost_usd = round(spread_cost, 2)
+        trade.slippage_cost_usd = round(slippage_cost, 2)
         trade.gross_pnl_usd = round(gross_pnl, 2)
         trade.net_pnl_usd = round(net_pnl, 2)
+
+        # Realized R is net PnL divided by the original price risk in dollars.
+        risk_capital = trade.initial_risk_r * notional_multiplier
+        trade.realized_r = round(net_pnl / risk_capital, 2) if risk_capital > 0 else 0.0
 
         # Update balance
         self.balance += trade.net_pnl_usd
