@@ -11,6 +11,7 @@
 
   let chart = null;
   let candleSeries = null;
+  let chartLogScaleEnabled = false;
   let entryPriceLine = null;
   let slPriceLine = null;
   let tpPriceLine = null;
@@ -115,6 +116,7 @@
       priceFormat: { type: 'price', precision: pricePrecision(), minMove: Math.pow(10, -pricePrecision()) },
     });
     initDraggableOrderLines(container);
+    initChartScaleControls();
 
     window.addEventListener("resize", () => {
       if (chart && container) {
@@ -126,6 +128,26 @@
     });
   }
 
+
+  function initChartScaleControls() {
+    const autoButton = document.getElementById("btn-chart-auto-scale");
+    const logButton = document.getElementById("btn-chart-log-scale");
+    if (!autoButton || !logButton || !chart) return;
+    autoButton.addEventListener("click", () => {
+      chart.priceScale("right").applyOptions({ autoScale: true });
+      autoButton.classList.add("active");
+      autoButton.setAttribute("aria-pressed", "true");
+    });
+    logButton.addEventListener("click", () => {
+      chartLogScaleEnabled = !chartLogScaleEnabled;
+      const mode = chartLogScaleEnabled ? LightweightCharts.PriceScaleMode.Logarithmic : LightweightCharts.PriceScaleMode.Normal;
+      chart.priceScale("right").applyOptions({ mode, autoScale: true });
+      logButton.classList.toggle("active", chartLogScaleEnabled);
+      logButton.setAttribute("aria-pressed", String(chartLogScaleEnabled));
+      autoButton.classList.add("active");
+      autoButton.setAttribute("aria-pressed", "true");
+    });
+  }
 
   function initDraggableOrderLines(container) {
     const specs = [

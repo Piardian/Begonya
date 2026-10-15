@@ -169,9 +169,14 @@ class HistoricalDataAdapter:
         duplicates = 0
         gaps = 0
         anomalies = 0
+        weekend_candles = 0
         prev_ts = candles[0].timestamp
 
         for i, c in enumerate(candles):
+            # Informational only: FX closes on weekends, while crypto can trade 24/7.
+            if datetime.fromtimestamp(c.timestamp / 1000, tz=timezone.utc).weekday() >= 5:
+                weekend_candles += 1
+
             # OHLC validity
             if c.low > c.high or c.open > c.high or c.close > c.high or c.open < c.low or c.close < c.low:
                 anomalies += 1
@@ -193,6 +198,7 @@ class HistoricalDataAdapter:
             "duplicates": duplicates,
             "gaps": gaps,
             "anomalies": anomalies,
+            "weekend_candles_utc": weekend_candles,
         }
 
     @staticmethod
