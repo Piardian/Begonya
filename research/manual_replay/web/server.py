@@ -195,6 +195,18 @@ def place_order(session_id: str, req: PlaceOrderRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@app.post("/api/session/{session_id}/order/{order_id}/cancel")
+def cancel_order(session_id: str, order_id: str):
+    session = session_store.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    try:
+        order = session.engine.cancel_pending_order(order_id, session.clock.current_time)
+        return {"order": order.to_dict(), "snapshot": session.get_snapshot()}
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 @app.post("/api/session/{session_id}/close")
 def close_position(session_id: str):
     session = session_store.get_session(session_id)
