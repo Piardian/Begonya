@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import uuid
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
@@ -26,8 +27,7 @@ from manual_replay.macro.pit_macro_adapter import PitMacroAdapter, MacroSnapshot
 
 logger = logging.getLogger("Begonya.ManualReplay.SessionStore")
 
-DEFAULT_SESSION_DIR = Path(r"c:\Users\piard\.gemini\antigravity\scratch\Begonya\research\manual_replay\saved_sessions")
-DEFAULT_SESSION_DIR.mkdir(parents=True, exist_ok=True)
+DEFAULT_SESSION_DIR = Path(os.environ.get("BEGONYA_REPLAY_SESSION_DIR", str(Path.home() / ".begonya" / "manual_replay" / "saved_sessions")))
 
 
 class ReplaySession:
@@ -54,26 +54,43 @@ class ReplaySession:
         self.macro_adapter = PitMacroAdapter()
 
     def advance_bar(self, timeframe: str = "1m", count: int = 1) -> Dict[str, Any]:
-        """Advances the clock and feeds any newly closed M1 bars to the execution engine."""
+        """Advances chronologically and processes every M1 bar that closes in the interval."""
+        timeframe = timeframe.lower()
+        if timeframe not in self.clock._candles:
+            raise ValueError(f"Timeframe '{timeframe}' is not available for {self.symbol}")
+        if not isinstance(count, int) or isinstance(count, bool) or count < 1:
+            raise ValueError("count must be a positive integer")
+        from manual_replay.timeline.replay_clock import TIMEFRAME_INTERVALS_MS
+        target_time = self.clock.current_time + TIMEFRAME_INTERVALS_MS[timeframe] * count
+        return self.advance_to(target_time, reason={"timeframe": timeframe, "count": count})
+
+    def advance_to(self, timestamp_ms: int, reason: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Moves to a timestamp while processing all intervening closed M1 bars in order."""
+        if not isinstance(timestamp_ms, int) or isinstance(timestamp_ms, bool):
+            raise ValueError("timestamp_ms must be an integer Unix timestamp in milliseconds")
         prev_time = self.clock.current_time
-        self.clock.step(timeframe, count)
-        new_time = self.clock.current_time
+        new_time = max(self.clock.min_time, min(self.clock.max_time, timestamp_ms))
+        if new_time < prev_time and (self.engine.orders or self.engine.trade_history or self.engine.open_position):
+            raise ValueError("Cannot rewind a session after any order/trade activity; start a new session instead")
 
-        # Feed newly completed 1m bars to engine
-        all_1m = self.data_adapter.get_candles(self.symbol, "1m")
-        # Find 1m candles strictly closed between prev_time and new_time
-        for c in all_1m:
-            bar_close = c.timestamp + 60000
-            if prev_time < bar_close <= new_time:
-                self.engine.process_candle(c)
+        if new_time > prev_time:
+            try:
+                all_1m = self.data_adapter.get_candles(self.symbol, "1m")
+            except KeyError as exc:
+                raise ValueError(f"M1 data is required for order execution on {self.symbol}") from exc
+            # Candle timestamps represent bar opens; process bars only once their
+            # close falls strictly after the old clock and at/before the target.
+            for candle in all_1m:
+                bar_close = candle.timestamp + 60_000
+                if prev_time < bar_close <= new_time:
+                    self.engine.process_candle(candle)
 
+        self.clock.set_time(new_time)
         self.engine.log_event("REPLAY_ADVANCED", new_time, {
-            "timeframe": timeframe,
-            "count": count,
+            "reason": reason or {"type": "jump"},
             "prev_time": prev_time,
             "new_time": new_time,
         })
-
         return self.get_snapshot()
 
     def place_manual_order(
@@ -139,6 +156,7 @@ class ReplaySession:
     def save_to_disk(self, save_dir: Optional[Path] = None) -> Path:
         """Serializes session state, trade logs, and event logs to a JSON artifact."""
         target_dir = save_dir or DEFAULT_SESSION_DIR
+        target_dir.mkdir(parents=True, exist_ok=True)
         out_file = target_dir / f"{self.session_id}.json"
 
         data = {
@@ -160,7 +178,7 @@ class ReplaySession:
         }
 
         with open(out_file, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
+            json.dump(data, f, indent=2, sort_keys=True)
 
         return out_file
 
@@ -174,12 +192,51 @@ class SessionStore:
         self._active_sessions: Dict[str, ReplaySession] = {}
 
     def create_session(self, symbol: str, initial_balance: float = 10000.0) -> ReplaySession:
-        session = ReplaySession(symbol=symbol, initial_balance=initial_balance)
+        if not isinstance(initial_balance, (int, float)) or initial_balance <= 0:
+            raise ValueError("initial_balance must be greater than zero")
+        session = ReplaySession(symbol=symbol, initial_balance=float(initial_balance))
         self._active_sessions[session.session_id] = session
         return session
 
     def get_session(self, session_id: str) -> Optional[ReplaySession]:
         return self._active_sessions.get(session_id)
+
+    def load_saved_session(self, session_id: str) -> ReplaySession:
+        """Restores a saved session only when its source dataset checksum still matches."""
+        if not session_id or Path(session_id).name != session_id or not session_id.endswith(".json") and "/" in session_id:
+            raise ValueError("Invalid session id")
+        filename = session_id if session_id.endswith(".json") else f"{session_id}.json"
+        saved_path = self.sessions_dir / filename
+        if not saved_path.is_file():
+            raise FileNotFoundError(f"Saved session '{session_id}' was not found")
+        with open(saved_path, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+
+        session = ReplaySession(
+            symbol=data["symbol"],
+            initial_balance=float(data["initial_balance"]),
+            session_id=data["session_id"],
+            cost_profile=CostProfile(**data["cost_profile"]),
+        )
+        saved_checksums = data.get("manifest", {}).get("checksum_sha256", {})
+        current_checksums = session.manifest.checksum_sha256
+        if saved_checksums != current_checksums:
+            raise ValueError("Saved session dataset checksum differs from current local data; refusing non-reproducible resume")
+
+        session.created_at_iso = data.get("created_at_iso", session.created_at_iso)
+        session.clock.set_time(int(data["current_clock_time"]))
+        session.engine.balance = float(data["current_balance"])
+        session.engine.orders = {
+            item["order_id"]: ManualOrder(**item) for item in data.get("orders", [])
+        }
+        session.engine.trade_history = [
+            TradeRecord(**item) for item in data.get("trades", [])
+        ]
+        open_position = data.get("open_position")
+        session.engine.open_position = TradeRecord(**open_position) if open_position else None
+        session.engine.event_log = data.get("events", [])
+        self._active_sessions[session.session_id] = session
+        return session
 
     def list_saved_sessions(self) -> List[Dict[str, Any]]:
         saved = []
