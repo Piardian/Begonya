@@ -163,16 +163,22 @@ class ExecutionEngine:
             raise ValueError("Price, SL, and TP must be greater than zero")
         if risk_percent <= 0:
             raise ValueError("risk_percent must be greater than zero")
-        if direction_upper == "BUY" and not (stop_loss < price < take_profit):
-            raise ValueError("BUY orders require SL < entry/limit price < TP")
-        if direction_upper == "SELL" and not (take_profit < price < stop_loss):
-            raise ValueError("SELL orders require TP < entry/limit price < SL")
+        half_spread = (self.cost_profile.spread_pips * self.cost_profile.pip_size) / 2.0
+        # User-entered LIMIT prices are executable bid/ask prices; OHLC is mid-price.
+        # Convert the limit to its equivalent mid-price before validating SL/TP/risk.
+        reference_price = price
+        if order_type_upper == "LIMIT":
+            reference_price = price - half_spread if direction_upper == "BUY" else price + half_spread
+        if direction_upper == "BUY" and not (stop_loss < reference_price < take_profit):
+            raise ValueError("BUY orders require SL < effective mid-entry < TP")
+        if direction_upper == "SELL" and not (take_profit < reference_price < stop_loss):
+            raise ValueError("SELL orders require TP < effective mid-entry < SL")
         if self.open_position is not None:
             raise RuntimeError("Cannot place an order while another position is open")
         if any(o.status == "PENDING" for o in self.orders.values()):
             raise RuntimeError("Only one pending order is supported; resolve it before placing another")
 
-        lots = volume_lots if volume_lots is not None else self.calculate_lots_from_risk(direction_upper, price, stop_loss, risk_percent)
+        lots = volume_lots if volume_lots is not None else self.calculate_lots_from_risk(direction_upper, reference_price, stop_loss, risk_percent)
         if not math.isfinite(float(lots)) or lots <= 0:
             raise ValueError("volume_lots must be a finite number greater than zero")
 
@@ -348,15 +354,19 @@ class ExecutionEngine:
             for order in list(self.orders.values()):
                 if order.status != "PENDING" or order.order_type != "LIMIT":
                     continue
-                touched = (
-                    order.direction == "BUY" and candle.low <= order.requested_price
-                ) or (
-                    order.direction == "SELL" and candle.high >= order.requested_price
-                )
+                half_spread = (self.cost_profile.spread_pips * self.cost_profile.pip_size) / 2.0
+                if order.direction == "BUY":
+                    # Ask <= BUY limit iff mid <= limit - half-spread.
+                    fill_mid = order.requested_price - half_spread
+                    touched = candle.low <= fill_mid
+                else:
+                    # Bid >= SELL limit iff mid >= limit + half-spread.
+                    fill_mid = order.requested_price + half_spread
+                    touched = candle.high >= fill_mid
                 if touched:
                     self._fill_order(
                         order,
-                        order.requested_price,
+                        fill_mid,
                         candle.timestamp + 60_000,
                         is_market=False,
                         macro_snapshot=order.macro_snapshot,
