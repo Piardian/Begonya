@@ -481,3 +481,8 @@ table.journal-table td {
 table.journal-table tr:hover {
   background-color: var(--bg-surface-elevated);
 }
+
+#chart-container { overflow: hidden; }
+.replay-order-line { position:absolute; left:0; right:0; z-index:20; border-top:2px dashed; cursor:ns-resize; touch-action:none; height:0; user-select:none; }
+.replay-order-line::before { content:""; position:absolute; top:-7px; left:0; right:0; height:14px; }
+.replay-order-line-label { position:absolute; top:-12px; left:8px; color:#fff; padding:2px 5px; border-radius:3px; font:11px/1.2 monospace; white-space:nowrap; pointer-events:none; }
