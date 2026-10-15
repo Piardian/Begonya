@@ -43,9 +43,13 @@ class ReplaySession:
         data_adapter: Optional[HistoricalDataAdapter] = None,
         cost_profile: Optional[CostProfile] = None,
     ):
-        self.session_id = session_id or f"session_{symbol}_{uuid.uuid4().hex[:8]}"
         self.symbol = symbol.replace("/", "").replace("-", "").upper()
-        self.initial_balance = initial_balance
+        if not self.symbol:
+            raise ValueError("symbol must not be empty")
+        if not isinstance(initial_balance, (int, float)) or not math.isfinite(float(initial_balance)) or initial_balance <= 0:
+            raise ValueError("initial_balance must be a finite number greater than zero")
+        self.session_id = session_id or f"session_{self.symbol}_{uuid.uuid4().hex[:8]}"
+        self.initial_balance = float(initial_balance)
         self.created_at_iso = datetime.now(timezone.utc).isoformat()
 
         self.data_adapter = data_adapter or HistoricalDataAdapter()
