@@ -13,6 +13,7 @@ Guarantees:
 from __future__ import annotations
 
 import logging
+import math
 import uuid
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
@@ -41,6 +42,7 @@ class ManualOrder:
     reason_tag: Optional[str] = None
     filled_price: Optional[float] = None
     filled_at_ts: Optional[int] = None
+    macro_snapshot: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -133,13 +135,29 @@ class ExecutionEngine:
         direction_upper = direction.upper()
         order_type_upper = order_type.upper()
 
-        # Sanity validation
-        if direction_upper == "BUY" and stop_loss >= price:
-            raise ValueError(f"Long Stop Loss ({stop_loss}) must be below Entry Price ({price})")
-        if direction_upper == "SELL" and stop_loss <= price:
-            raise ValueError(f"Short Stop Loss ({stop_loss}) must be above Entry Price ({price})")
+        # Validate all inputs before mutating the order book.
+        if direction_upper not in {"BUY", "SELL"}:
+            raise ValueError("direction must be BUY or SELL")
+        if order_type_upper not in {"MARKET", "LIMIT"}:
+            raise ValueError("order_type must be MARKET or LIMIT")
+        if any(not math.isfinite(float(v)) for v in (price, stop_loss, take_profit, risk_percent)):
+            raise ValueError("Price, SL, TP, and risk percent must be finite numbers")
+        if min(price, stop_loss, take_profit) <= 0:
+            raise ValueError("Price, SL, and TP must be greater than zero")
+        if risk_percent <= 0:
+            raise ValueError("risk_percent must be greater than zero")
+        if direction_upper == "BUY" and not (stop_loss < price < take_profit):
+            raise ValueError("BUY orders require SL < entry/limit price < TP")
+        if direction_upper == "SELL" and not (take_profit < price < stop_loss):
+            raise ValueError("SELL orders require TP < entry/limit price < SL")
+        if self.open_position is not None:
+            raise RuntimeError("Cannot place an order while another position is open")
+        if any(o.status == "PENDING" for o in self.orders.values()):
+            raise RuntimeError("Only one pending order is supported; resolve it before placing another")
 
-        lots = volume_lots or self.calculate_lots_from_risk(direction_upper, price, stop_loss, risk_percent)
+        lots = volume_lots if volume_lots is not None else self.calculate_lots_from_risk(direction_upper, price, stop_loss, risk_percent)
+        if not math.isfinite(float(lots)) or lots <= 0:
+            raise ValueError("volume_lots must be a finite number greater than zero")
 
         order_id = f"ord_{uuid.uuid4().hex[:8]}"
         order = ManualOrder(
@@ -156,6 +174,7 @@ class ExecutionEngine:
             placed_at_iso=datetime.fromtimestamp(current_time_ms / 1000, tz=timezone.utc).isoformat(),
             status="PENDING",
             reason_tag=reason_tag,
+            macro_snapshot=macro_snapshot,
         )
         self.orders[order_id] = order
 
@@ -200,7 +219,7 @@ class ExecutionEngine:
             initial_risk_r=initial_risk,
             volume_lots=order.volume_lots,
             commission_usd=commission,
-            macro_snapshot=macro_snapshot,
+            macro_snapshot=macro_snapshot if macro_snapshot is not None else order.macro_snapshot,
             status="OPEN",
         )
         self.open_position = trade
@@ -280,13 +299,27 @@ class ExecutionEngine:
         1. Checks pending LIMIT orders for fills.
         2. Checks OPEN position for SL / TP hits.
         """
-        # 1. Evaluate Pending Limit Orders
-        for order in list(self.orders.values()):
-            if order.status == "PENDING" and order.order_type == "LIMIT":
-                if order.direction == "BUY" and candle.low <= order.requested_price:
-                    self._fill_order(order, order.requested_price, candle.timestamp, is_market=False)
-                elif order.direction == "SELL" and candle.high >= order.requested_price:
-                    self._fill_order(order, order.requested_price, candle.timestamp, is_market=False)
+        # OHLC does not reveal the intrabar path. If a limit fills on this candle,
+        # its high/low may have occurred before entry, so do not evaluate SL/TP until
+        # the next candle. Record the fill at bar close, when it is first confirmed.
+        if self.open_position is None:
+            for order in list(self.orders.values()):
+                if order.status != "PENDING" or order.order_type != "LIMIT":
+                    continue
+                touched = (
+                    order.direction == "BUY" and candle.low <= order.requested_price
+                ) or (
+                    order.direction == "SELL" and candle.high >= order.requested_price
+                )
+                if touched:
+                    self._fill_order(
+                        order,
+                        order.requested_price,
+                        candle.timestamp + 60_000,
+                        is_market=False,
+                        macro_snapshot=order.macro_snapshot,
+                    )
+                    return
 
         # 2. Evaluate Open Position SL / TP
         pos = self.open_position
