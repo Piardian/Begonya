@@ -210,6 +210,7 @@ header {
 }
 
 .chart-area {
+  position: relative;
   flex: 1;
   position: relative;
   background-color: var(--bg-primary);
@@ -486,3 +487,9 @@ table.journal-table tr:hover {
 .replay-order-line { position:absolute; left:0; right:0; z-index:20; border-top:2px dashed; cursor:ns-resize; touch-action:none; height:0; user-select:none; }
 .replay-order-line::before { content:""; position:absolute; top:-7px; left:0; right:0; height:14px; }
 .replay-order-line-label { position:absolute; top:-12px; left:8px; color:#fff; padding:2px 5px; border-radius:3px; font:11px/1.2 monospace; white-space:nowrap; pointer-events:none; }
+
+/* TradingView-style price scale controls */
+#chart-scale-controls { position:absolute; right:44px; bottom:8px; z-index:30; display:flex; gap:3px; align-items:center; }
+.chart-scale-btn { min-width:24px; height:24px; padding:0 5px; border:1px solid transparent; border-radius:4px; background:rgba(30,34,45,.92); color:var(--text-muted); font:600 11px/1 sans-serif; cursor:pointer; }
+.chart-scale-btn:hover { color:var(--text-main); background:var(--bg-surface-elevated); }
+.chart-scale-btn.active { color:var(--text-main); border-color:var(--border-color); background:var(--bg-surface-elevated); }

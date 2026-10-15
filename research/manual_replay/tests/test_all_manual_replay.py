@@ -92,6 +92,13 @@ class TestHistoricalDataAdapter:
         assert m5[0].low == min(b.low for b in bars[:5])
         assert m5[0].close == bars[4].close
 
+    def test_weekend_candles_are_reported_without_assuming_all_symbols_are_fx(self):
+        # 2023-11-18 00:00 UTC is Saturday; this metric is diagnostic, not corruption.
+        saturday = 1_700_265_600_000
+        candle = Candle(saturday, 1.1, 1.2, 1.0, 1.15)
+        audit = HistoricalDataAdapter.audit_candle_stream([candle], 60_000)
+        assert audit["weekend_candles_utc"] == 1
+        assert audit["status"] == "VALID"
     def test_duplicate_timestamps_mark_stream_corrupted(self):
         bar = Candle(BASE_TS, 1.1, 1.2, 1.0, 1.15)
         audit = HistoricalDataAdapter.audit_candle_stream([bar, bar], 60_000)
