@@ -111,6 +111,22 @@ class ReplaySession:
         reason_tag: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Places a manual order, embedding an as-of PIT MacroSnapshot."""
+        normalized_type = order_type.upper()
+        normalized_direction = direction.upper()
+        if normalized_type == "LIMIT":
+            current_market = self.clock.get_latest_price()
+            if current_market is None:
+                raise ValueError("Cannot place a limit order: current market price is unavailable")
+            precision = 3 if self.symbol.endswith("JPY") else 5
+            if normalized_direction == "BUY" and price >= current_market:
+                raise ValueError(
+                    f"BUY LIMIT ({price:.{precision}f}) must be below current market price ({current_market:.{precision}f})"
+                )
+            if normalized_direction == "SELL" and price <= current_market:
+                raise ValueError(
+                    f"SELL LIMIT ({price:.{precision}f}) must be above current market price ({current_market:.{precision}f})"
+                )
+
         macro_snap = self.macro_adapter.get_macro_snapshot(self.symbol, self.clock.current_time)
 
         order = self.engine.place_order(

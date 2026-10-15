@@ -165,6 +165,33 @@ class TestExecutionEngine:
         assert lots == pytest.approx(0.45)
         assert lots * 100 == int(lots * 100)
 
+    @pytest.mark.parametrize("tf,span", [("15m", 15), ("1h", 60), ("4h", 240)])
+    def test_higher_timeframe_forming_candle_tracks_m1_clock(self, tf, span):
+        adapter = InMemoryAdapter(count=600)
+        clock = ReplayClock(adapter, "EURUSD")
+        clock.set_time(BASE_TS + (span + 5) * 60_000)
+        visible = clock.get_visible_candles(tf, include_forming=True)
+        forming = visible[-1]
+        assert forming.timestamp == ((clock.current_time // (span * 60_000)) * (span * 60_000))
+        expected_index = (clock.current_time - BASE_TS) // 60_000 - 1
+        assert forming.close == adapter.data["1m"][expected_index].close
+
+    def test_limit_order_must_be_on_correct_side_of_current_market(self):
+        session = ReplaySession("EURUSD", data_adapter=InMemoryAdapter())
+        current = session.clock.get_latest_price()
+        with pytest.raises(ValueError, match="BUY LIMIT.*below current market"):
+            session.place_manual_order("LIMIT", "BUY", current + 0.0001, current - 0.001, current + 0.001, volume_lots=0.01)
+        with pytest.raises(ValueError, match="SELL LIMIT.*above current market"):
+            session.place_manual_order("LIMIT", "SELL", current - 0.0001, current + 0.001, current - 0.001, volume_lots=0.01)
+
+    def test_limit_gap_fill_gets_price_improvement(self):
+        engine = ExecutionEngine("TEST", cost_profile=self.profile())
+        order = engine.place_order("LIMIT", "BUY", 1.1, 1.095, 1.11, 1_000, volume_lots=1.0)
+        engine.process_candle(Candle(BASE_TS, 1.098, 1.101, 1.097, 1.099))
+        assert engine.open_position is not None
+        assert engine.open_position.mid_entry_price == pytest.approx(1.098)
+        assert engine.open_position.mid_entry_price <= order.requested_price
+
     def test_pending_order_can_be_cancelled_once(self):
         engine = ExecutionEngine("TEST", cost_profile=self.profile())
         order = engine.place_order("LIMIT", "BUY", 1.2, 1.195, 1.21, 1_000, volume_lots=1.0)

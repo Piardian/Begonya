@@ -91,61 +91,64 @@ class ReplayClock:
         return self.set_time(self.current_time - TIMEFRAME_INTERVALS_MS[tf] * count)
 
     def get_visible_candles(self, timeframe: str, include_forming: bool = False, limit: Optional[int] = None) -> List[Candle]:
-        """
-        Returns candles visible strictly as-of `current_time`.
-        - include_forming=False: Only closed bars (bar_open + interval <= current_time).
-        - include_forming=True: Includes the currently open bar if its open <= current_time,
-          but will NOT reveal future price action.
+        """Returns candles visible as-of replay time, with consistent M1-derived HTF bars.
+
+        When forming bars are requested, aggregate the replay's M1 stream for every
+        timeframe. Completed aggregates require every expected M1 open; partial bars
+        use only M1 candles whose close time is at or before the replay clock.
         """
         tf = timeframe.lower()
         if tf not in self._candles:
             raise KeyError(f"Timeframe '{tf}' not loaded for symbol '{self.symbol}'")
 
         interval = TIMEFRAME_INTERVALS_MS.get(tf, 60 * 1000)
-        candles = self._candles[tf]
-        timestamps = self._timestamps[tf]
+        if not include_forming or "1m" not in self._candles:
+            candles = self._candles[tf]
+            timestamps = self._timestamps[tf]
+            closed_idx = bisect.bisect_right(timestamps, self.current_time - interval)
+            start_idx = max(0, closed_idx - limit) if limit is not None else 0
+            return candles[start_idx:closed_idx]
 
-        # Closed bars only: open timestamp + timeframe interval <= replay time.
-        closed_idx = bisect.bisect_right(timestamps, self.current_time - interval)
-        start_idx = max(0, closed_idx - limit) if limit is not None else 0
-        closed = candles[start_idx:closed_idx]
-        if not include_forming:
-            return closed
-
-        # Never return the historical OHLC of an unfinished candle: that would leak
-        # its future high/low/close. Build a partial candle from M1 bars already
-        # closed at the replay time. The HTF open is known at its opening timestamp.
-        forming_idx = bisect.bisect_right(timestamps, self.current_time) - 1
-        if forming_idx < 0:
-            return closed
-        forming = candles[forming_idx]
-        if forming.timestamp + interval <= self.current_time:
-            return closed
-        if "1m" not in self._candles:
-            return closed
         m1_bars = self._candles["1m"]
         m1_times = self._timestamps["1m"]
-        end_idx = bisect.bisect_right(m1_times, self.current_time - 60_000)
-        start_idx = bisect.bisect_left(m1_times, forming.timestamp)
-        known = m1_bars[start_idx:end_idx]
-        if not known:
-            # The open is known; no post-open M1 candle has closed yet.
-            partial = Candle(
-                timestamp=forming.timestamp,
-                open=forming.open,
-                high=forming.open,
-                low=forming.open,
-                close=forming.open,
-            )
-        else:
-            partial = Candle(
-                timestamp=forming.timestamp,
-                open=forming.open,
-                high=max(forming.open, *(bar.high for bar in known)),
-                low=min(forming.open, *(bar.low for bar in known)),
-                close=known[-1].close,
-            )
-        return closed + [partial]
+        closed_m1_end = bisect.bisect_right(m1_times, self.current_time - 60_000)
+        bars_per_bucket = interval // 60_000
+        m1_start = max(0, closed_m1_end - ((limit + 2) * bars_per_bucket if limit is not None else closed_m1_end))
+        known = m1_bars[m1_start:closed_m1_end]
+        buckets: Dict[int, List[Candle]] = {}
+        for bar in known:
+            bucket_ts = (bar.timestamp // interval) * interval
+            buckets.setdefault(bucket_ts, []).append(bar)
+
+        result: List[Candle] = []
+        for bucket_ts in sorted(buckets):
+            bars = buckets[bucket_ts]
+            expected = [bucket_ts + i * 60_000 for i in range(bars_per_bucket)]
+            actual = [bar.timestamp for bar in bars]
+            if actual == expected and bucket_ts + interval <= self.current_time:
+                result.append(Candle(
+                    timestamp=bucket_ts,
+                    open=bars[0].open,
+                    high=max(bar.high for bar in bars),
+                    low=min(bar.low for bar in bars),
+                    close=bars[-1].close,
+                ))
+
+        if self.current_time > self.min_time:
+            bucket_ts = (self.current_time // interval) * interval
+            forming_bars = [bar for bar in known if bucket_ts <= bar.timestamp < self.current_time]
+            if forming_bars and forming_bars[0].timestamp == bucket_ts:
+                result.append(Candle(
+                    timestamp=bucket_ts,
+                    open=forming_bars[0].open,
+                    high=max(bar.high for bar in forming_bars),
+                    low=min(bar.low for bar in forming_bars),
+                    close=forming_bars[-1].close,
+                ))
+
+        if limit is not None:
+            result = result[-limit:]
+        return result
 
     def get_visible_candle_count(self, timeframe: str, include_forming: bool = False) -> int:
         """Counts visible candles without allocating the candle list."""

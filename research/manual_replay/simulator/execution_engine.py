@@ -357,12 +357,15 @@ class ExecutionEngine:
                 half_spread = (self.cost_profile.spread_pips * self.cost_profile.pip_size) / 2.0
                 if order.direction == "BUY":
                     # Ask <= BUY limit iff mid <= limit - half-spread.
-                    fill_mid = order.requested_price - half_spread
-                    touched = candle.low <= fill_mid
+                    limit_mid = order.requested_price - half_spread
+                    touched = candle.low <= limit_mid
+                    # If the bar opens through the limit, give price improvement.
+                    fill_mid = min(candle.open, limit_mid)
                 else:
                     # Bid >= SELL limit iff mid >= limit + half-spread.
-                    fill_mid = order.requested_price + half_spread
-                    touched = candle.high >= fill_mid
+                    limit_mid = order.requested_price + half_spread
+                    touched = candle.high >= limit_mid
+                    fill_mid = max(candle.open, limit_mid)
                 if touched:
                     self._fill_order(
                         order,
