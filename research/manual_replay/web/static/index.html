@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Begonya — Manual Replay & Backtest Engine</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <h1>🌺 Begonya Manual Replay</h1>
+      <span class="badge-isolated">Isolated Research • LIVE_ORDERS=FALSE</span>
+    </div>
+    <div class="header-controls">
+      <div class="symbol-select-wrap">
+        <select id="symbol-select">
+          <option value="EURUSD" selected>EURUSD (Euro / Dollar)</option>
+          <option value="GBPUSD">GBPUSD (British Pound)</option>
+          <option value="XAUUSD">XAUUSD (Gold)</option>
+          <option value="BTCUSD">BTCUSD (Bitcoin)</option>
+          <option value="ETHUSD">ETHUSD (Ethereum)</option>
+          <option value="SOLUSD">SOLUSD (Solana)</option>
+          <option value="USDJPY">USDJPY (Yen)</option>
+          <option value="USDCAD">USDCAD (Loonie)</option>
+        </select>
+      </div>
+      <button id="btn-new-session" class="btn-secondary">New Session</button>
+      <button id="btn-save-session" class="btn-secondary">💾 Save Session</button>
+      <div class="clock-display">
+        <span class="clock-label">REPLAY TIME (UTC)</span>
+        <span id="clock-time-val" class="clock-val">--:--:--</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="main-container">
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="tf-group">
+        <button class="tf-btn" data-tf="1m">1M</button>
+        <button class="tf-btn" data-tf="5m">5M</button>
+        <button class="tf-btn active" data-tf="15m">15M</button>
+        <button class="tf-btn" data-tf="1h">1H</button>
+        <button class="tf-btn" data-tf="4h">4H</button>
+      </div>
+
+      <div class="replay-controls">
+        <button id="btn-step-back" class="ctrl-btn" title="Step Back 1 Bar">⏮ Step Back</button>
+        <button id="btn-play-pause" class="ctrl-btn play-btn">▶ Play</button>
+        <button id="btn-step-1" class="ctrl-btn">⏭ +1 Bar</button>
+        <button id="btn-step-5" class="ctrl-btn">⏭ +5 Bars</button>
+        <div style="display:flex; align-items:center; gap:4px; margin-left: 8px;">
+          <span style="font-size:11px; color:var(--text-muted);">Speed:</span>
+          <select id="speed-select" style="background:var(--bg-surface-elevated); color:#fff; border:1px solid var(--border-color); border-radius:4px; padding:3px 6px;">
+            <option value="1">1x</option>
+            <option value="2">2x</option>
+            <option value="5" selected>5x</option>
+            <option value="10">10x</option>
+            <option value="25">25x</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center Workspace -->
+    <div class="center-workspace">
+      <!-- Chart Area -->
+      <div class="chart-area">
+        <div id="chart-container"></div>
+      </div>
+
+      <!-- Right Sidebar (Macro HUD & Order Simulator) -->
+      <div class="sidebar">
+        <!-- Macro Panel -->
+        <div class="sidebar-panel">
+          <h2>
+            Macro State (PIT)
+            <span id="macro-verified-badge" style="font-size:10px; color:#4caf50;">● PIT Verified</span>
+          </h2>
+          <div class="macro-hud-card">
+            <div class="macro-row">
+              <span style="color:var(--text-muted)">Bias Gate:</span>
+              <span id="macro-gate-badge" class="gate-badge unavailable">LOADING</span>
+            </div>
+            <div class="macro-row">
+              <span style="color:var(--text-muted)">Primary Regime:</span>
+              <span id="macro-regime-val" style="font-weight:600;">--</span>
+            </div>
+            <div class="macro-row">
+              <span style="color:var(--text-muted)">Volatility Risk:</span>
+              <span id="macro-risk-val" style="font-weight:600;">--</span>
+            </div>
+            <div class="macro-row">
+              <span style="color:var(--text-muted)">Risk Multiplier:</span>
+              <span id="macro-mult-val" style="font-weight:600;">--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Order Simulator -->
+        <div class="sidebar-panel">
+          <h2>Manual Execution</h2>
+          
+          <div id="active-position-panel" style="display:none; margin-bottom:12px;">
+            <div class="active-pos-card">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span id="pos-dir-badge" class="gate-badge long">BUY</span>
+                <span id="pos-lots-val" style="font-weight:700;">1.00 Lot</span>
+              </div>
+              <div class="macro-row">
+                <span style="color:var(--text-muted)">Entry:</span>
+                <span id="pos-entry-val" style="font-family:monospace;">--</span>
+              </div>
+              <div class="macro-row">
+                <span style="color:var(--text-muted)">Current:</span>
+                <span id="pos-current-val" style="font-family:monospace;">--</span>
+              </div>
+              <div class="macro-row">
+                <span style="color:var(--text-muted)">Unrealized PnL:</span>
+                <span id="pos-pnl-val" style="font-weight:700;">--</span>
+              </div>
+              <button id="btn-close-position" class="btn-close-pos">Close Position</button>
+            </div>
+          </div>
+
+          <div class="order-form">
+            <div class="dir-toggle">
+              <button id="toggle-buy" class="toggle-btn buy active">BUY (Long)</button>
+              <button id="toggle-sell" class="toggle-btn sell">SELL (Short)</button>
+            </div>
+
+            <div class="type-toggle">
+              <button id="toggle-market" class="toggle-btn type active">MARKET</button>
+              <button id="toggle-limit" class="toggle-btn type">LIMIT</button>
+            </div>
+
+            <div class="form-group" id="limit-price-group" style="display:none;">
+              <label>Limit Price</label>
+              <input type="number" step="0.00001" id="input-limit-price" placeholder="Limit price">
+            </div>
+
+            <div class="form-group">
+              <label>Stop Loss (SL)</label>
+              <input type="number" step="0.00001" id="input-sl" placeholder="Stop Loss price">
+            </div>
+
+            <div class="form-group">
+              <label>Take Profit (TP)</label>
+              <input type="number" step="0.00001" id="input-tp" placeholder="Take Profit price">
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              <div class="form-group">
+                <label>Risk %</label>
+                <input type="number" step="0.5" id="input-risk-pct" value="1.0">
+              </div>
+              <div class="form-group">
+                <label>Volume (Lots)</label>
+                <input type="number" step="0.01" id="input-lots" placeholder="Auto / Lots">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Reason Tag (Optional)</label>
+              <input type="text" id="input-reason" placeholder="e.g. 15M OB + M1 Unicorn">
+            </div>
+
+            <button id="btn-place-order" class="btn-primary">Place Order</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Panel (Metrics & Journal) -->
+    <div class="bottom-panel">
+      <div class="panel-header">
+        <div class="metrics-row">
+          <div class="metric-item"><span class="label">Balance:</span><span id="metric-bal" class="val">$10,000.00</span></div>
+          <div class="metric-item"><span class="label">Net PnL:</span><span id="metric-pnl" class="val">$0.00</span></div>
+          <div class="metric-item"><span class="label">Total R:</span><span id="metric-r" class="val">0.0R</span></div>
+          <div class="metric-item"><span class="label">Win Rate:</span><span id="metric-wr" class="val">0.0%</span></div>
+          <div class="metric-item"><span class="label">Profit Factor:</span><span id="metric-pf" class="val">0.0</span></div>
+          <div class="metric-item"><span class="label">Expectancy:</span><span id="metric-exp" class="val">0.0R</span></div>
+          <div class="metric-item"><span class="label">Max DD:</span><span id="metric-dd" class="val">$0.00</span></div>
+          <div class="metric-item"><span class="label">Trades:</span><span id="metric-trades" class="val">0</span></div>
+        </div>
+        <span id="sample-size-badge" class="badge-alert">INSUFFICIENT SAMPLE SIZE (&lt;30)</span>
+      </div>
+
+      <div class="journal-table-wrap">
+        <table class="journal-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Entry Time (UTC)</th>
+              <th>Dir</th>
+              <th>Lots</th>
+              <th>Entry Price</th>
+              <th>Exit Price</th>
+              <th>Exit Reason</th>
+              <th>Net PnL ($)</th>
+              <th>Realized R</th>
+              <th>Macro Bias Gate</th>
+              <th>Reason Tag</th>
+            </tr>
+          </thead>
+          <tbody id="journal-tbody">
+            <!-- Dynamic rows -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
