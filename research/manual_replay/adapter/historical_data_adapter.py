@@ -14,6 +14,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import math
 import os
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
@@ -81,7 +82,7 @@ class HistoricalDataAdapter:
     """Discovers, validates, and serves historical market data across multiple timeframes."""
 
     def __init__(self, search_paths: Optional[List[Path]] = None):
-        self.search_paths = [p for p in (search_paths or DEFAULT_DATA_SEARCH_PATHS) if p.exists()]
+        self.search_paths = [p for p in (search_paths if search_paths is not None else DEFAULT_DATA_SEARCH_PATHS) if p.exists()]
         self._cache: Dict[str, Dict[str, List[Candle]]] = {}
         self._manifests: Dict[str, DatasetManifest] = {}
 
@@ -129,7 +130,7 @@ class HistoricalDataAdapter:
                 o, h, l, close = (float(item[k]) for k in ("open", "high", "low", "close"))
             except (KeyError, TypeError, ValueError) as exc:
                 raise ValueError(f"Invalid OHLC/timestamp at row {row_number} in {file_path}") from exc
-            if ts <= 0 or any(not __import__("math").isfinite(v) or v <= 0 for v in (o, h, l, close)):
+            if ts <= 0 or any(not math.isfinite(v) or v <= 0 for v in (o, h, l, close)):
                 raise ValueError(f"Non-positive or non-finite candle value at row {row_number} in {file_path}")
             if l > min(o, close) or h < max(o, close) or l > h:
                 raise ValueError(f"Invalid OHLC relationship at row {row_number} in {file_path}")
