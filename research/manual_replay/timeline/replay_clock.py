@@ -82,10 +82,13 @@ class ReplayClock:
         return self.set_time(self.current_time + interval * count)
 
     def step_backward(self, timeframe: str = "1m", count: int = 1) -> int:
-        """Steps backward by `count` bars of the specified timeframe."""
+        """Moves the clock backward; ReplaySession must guard against trade-state rewinds."""
         tf = timeframe.lower()
-        interval = TIMEFRAME_INTERVALS_MS.get(tf, 60 * 1000)
-        return self.set_time(self.current_time - (interval * count))
+        if tf not in TIMEFRAME_INTERVALS_MS or tf not in self._candles:
+            raise ValueError(f"Timeframe '{tf}' is not available for {self.symbol}")
+        if not isinstance(count, int) or isinstance(count, bool) or count < 1:
+            raise ValueError("count must be a positive integer")
+        return self.set_time(self.current_time - TIMEFRAME_INTERVALS_MS[tf] * count)
 
     def get_visible_candles(self, timeframe: str, include_forming: bool = False) -> List[Candle]:
         """
@@ -101,9 +104,6 @@ class ReplayClock:
         interval = TIMEFRAME_INTERVALS_MS.get(tf, 60 * 1000)
         candles = self._candles[tf]
         timestamps = self._timestamps[tf]
-
-        # Find the index of the last bar that opened <= current_time
-        idx = bisect.bisect_right(timestamps, self.current_time)
 
         # Closed bars only: open timestamp + timeframe interval <= replay time.
         closed_idx = bisect.bisect_right(timestamps, self.current_time - interval)
