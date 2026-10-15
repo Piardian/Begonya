@@ -227,8 +227,8 @@ class TestPitMacroAdapter:
     def test_verified_record_is_selected_only_after_availability_time(self, tmp_path):
         path = tmp_path / "macro.json"
         path.write_text(json.dumps([{
-            "available_at_utc": "2023-11-14T22:12:00+00:00",
-            "timestamp_utc": "2023-11-14T22:12:00+00:00",
+            "available_at_utc": "2023-11-14T20:00:00+00:00",
+            "timestamp_utc": "2023-11-14T20:00:00+00:00",
             "symbol": "EURUSD",
             "cross_pair_verdict": {"recommended_gate": "LONG_ONLY"},
             "primary_regime": "TREND",
