@@ -332,11 +332,11 @@ class ExecutionEngine:
 
             if hit_sl and hit_tp:
                 # Conservative rule: SL hit first
-                self._finalize_trade(pos, pos.stop_loss, candle.timestamp, exit_reason="SL", is_market=False, conservative_ambiguity=True)
+                self._finalize_trade(pos, pos.stop_loss, candle.timestamp + 60_000, exit_reason="SL", is_market=False, conservative_ambiguity=True)
             elif hit_sl:
-                self._finalize_trade(pos, pos.stop_loss, candle.timestamp, exit_reason="SL", is_market=False)
+                self._finalize_trade(pos, pos.stop_loss, candle.timestamp + 60_000, exit_reason="SL", is_market=False)
             elif hit_tp:
-                self._finalize_trade(pos, pos.take_profit, candle.timestamp, exit_reason="TP", is_market=False)
+                self._finalize_trade(pos, pos.take_profit, candle.timestamp + 60_000, exit_reason="TP", is_market=False)
 
         elif pos.direction == "SELL":
             hit_sl = candle.high >= pos.stop_loss
@@ -344,11 +344,11 @@ class ExecutionEngine:
 
             if hit_sl and hit_tp:
                 # Conservative rule: SL hit first
-                self._finalize_trade(pos, pos.stop_loss, candle.timestamp, exit_reason="SL", is_market=False, conservative_ambiguity=True)
+                self._finalize_trade(pos, pos.stop_loss, candle.timestamp + 60_000, exit_reason="SL", is_market=False, conservative_ambiguity=True)
             elif hit_sl:
-                self._finalize_trade(pos, pos.stop_loss, candle.timestamp, exit_reason="SL", is_market=False)
+                self._finalize_trade(pos, pos.stop_loss, candle.timestamp + 60_000, exit_reason="SL", is_market=False)
             elif hit_tp:
-                self._finalize_trade(pos, pos.take_profit, candle.timestamp, exit_reason="TP", is_market=False)
+                self._finalize_trade(pos, pos.take_profit, candle.timestamp + 60_000, exit_reason="TP", is_market=False)
 
     def get_summary_metrics(self) -> Dict[str, Any]:
         """Calculates performance statistics across all closed trades."""
