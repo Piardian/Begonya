@@ -163,7 +163,7 @@
       orderLineElements[spec.key] = { element: line, spec };
       spec.input.addEventListener("input", positionOrderLines);
     }
-    chart.subscribeVisibleLogicalRangeChange(positionOrderLines);
+    chart.timeScale().subscribeVisibleLogicalRangeChange(positionOrderLines);
     positionOrderLines();
   }
 
