@@ -192,7 +192,7 @@ class TestPitMacroAdapter:
     def test_timestamp_without_availability_metadata_is_not_pit_verified(self, tmp_path):
         path = tmp_path / "macro.json"
         path.write_text(json.dumps([{
-            "timestamp_utc": "2023-11-14T22:13:20+00:00",
+            "timestamp_utc": "2023-11-14T20:00:00+00:00",
             "symbol": "EURUSD",
             "cross_pair_verdict": {"recommended_gate": "LONG_ONLY"},
         }]), encoding="utf-8")
