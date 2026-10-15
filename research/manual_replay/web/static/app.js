@@ -274,7 +274,8 @@
       const estimatedExit = pos.direction === "BUY" ? latest - halfSpread : latest + halfSpread;
       const diff = pos.direction === "BUY" ? estimatedExit - pos.entry_price : pos.entry_price - estimatedExit;
       const lotSize = Number(cost.lot_size) || 100000;
-      const estPnl = diff * pos.volume_lots * lotSize - (Number(pos.commission_usd) || 0);
+      const usdConversion = ["USDJPY", "USDCAD"].includes(snapshot.symbol) && estimatedExit > 0 ? 1 / estimatedExit : 1;
+      const estPnl = diff * pos.volume_lots * lotSize * usdConversion - (Number(pos.commission_usd) || 0);
       posPnlVal.textContent = `${estPnl.toFixed(2)} est.`;
       posPnlVal.style.color = estPnl >= 0 ? "var(--accent-green)" : "var(--accent-red)";
     } else {
