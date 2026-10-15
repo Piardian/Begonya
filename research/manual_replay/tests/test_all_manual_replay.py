@@ -202,7 +202,7 @@ class TestExecutionEngine:
         assert amended["order"]["stop_loss"] == pytest.approx(market + 0.0025)
         assert amended["order"]["take_profit"] == pytest.approx(market - 0.0025)
         assert amended["snapshot"]["pending_orders"][0]["requested_price"] == pytest.approx(market + 0.0015)
-        assert session.engine.event_log[-1]["event_type"] == "ORDER_AMENDED"
+        assert session.engine.event_log[-1]["type"] == "ORDER_AMENDED"
 
     def test_invalid_pending_order_amendment_is_atomic(self):
         session = ReplaySession("EURUSD", data_adapter=InMemoryAdapter())
