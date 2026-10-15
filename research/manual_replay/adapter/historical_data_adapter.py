@@ -14,6 +14,8 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import math
+import os
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -21,12 +23,24 @@ from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger("Begonya.ManualReplay.DataAdapter")
 
-# Search directories in order of historical depth preference
-DEFAULT_DATA_SEARCH_PATHS = [
-    Path(r"c:\Users\piard\.gemini\antigravity\scratch\swing-bos-core\data\replay_1year"),
-    Path(r"c:\Users\piard\.gemini\antigravity\scratch\swing-bos-core\data"),
+# Data paths are configurable so the research tool is portable. Explicit paths
+# in BEGONYA_REPLAY_DATA_PATHS take precedence, followed by repository-local
+# Begonya data, then legacy local paths for backwards compatibility.
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+_ENV_DATA_PATHS = [
+    Path(p).expanduser()
+    for p in os.environ.get("BEGONYA_REPLAY_DATA_PATHS", "").split(os.pathsep)
+    if p.strip()
+]
+DEFAULT_DATA_SEARCH_PATHS = _ENV_DATA_PATHS + [
+    _REPO_ROOT / "smc_engine" / "data" / "1m_backtest",
+    _REPO_ROOT / "smc_engine" / "data",
+    Path.home() / "Begonya" / "smc_engine" / "data" / "1m_backtest",
+    Path.home() / "Begonya" / "smc_engine" / "data",
     Path(r"c:\Users\piard\.gemini\antigravity\scratch\Begonya\smc_engine\data\1m_backtest"),
     Path(r"c:\Users\piard\.gemini\antigravity\scratch\Begonya\smc_engine\data"),
+    Path(r"c:\Users\piard\.gemini\antigravity\scratch\swing-bos-core\data\replay_1year"),
+    Path(r"c:\Users\piard\.gemini\antigravity\scratch\swing-bos-core\data"),
 ]
 
 
@@ -68,7 +82,7 @@ class HistoricalDataAdapter:
     """Discovers, validates, and serves historical market data across multiple timeframes."""
 
     def __init__(self, search_paths: Optional[List[Path]] = None):
-        self.search_paths = [p for p in (search_paths or DEFAULT_DATA_SEARCH_PATHS) if p.exists()]
+        self.search_paths = [p for p in (search_paths if search_paths is not None else DEFAULT_DATA_SEARCH_PATHS) if p.exists()]
         self._cache: Dict[str, Dict[str, List[Candle]]] = {}
         self._manifests: Dict[str, DatasetManifest] = {}
 
@@ -82,17 +96,19 @@ class HistoricalDataAdapter:
 
         for base_path in self.search_paths:
             for tf in target_tfs:
+                # Do not let a large file from a lower-priority directory override
+                # the explicitly preferred data source. Choose depth only within
+                # the first directory that contains this timeframe.
+                if tf in found:
+                    continue
                 candidates = [
+                    base_path / f"{symbol_upper}_{tf}_1y.json",
                     base_path / f"{symbol_upper}_{tf}.json",
                     base_path / f"{symbol_upper}_{tf}_30d.json",
-                    base_path / f"{symbol_upper}_{tf}_1y.json",
                 ]
-                for cand in candidates:
-                    if cand.is_file():
-                        # Depth score: replay_1year > 95k standard > 30d backtest > short
-                        size = cand.stat().st_size
-                        if tf not in found or size > found[tf][0]:
-                            found[tf] = (size, cand)
+                chosen = next((candidate for candidate in candidates if candidate.is_file()), None)
+                if chosen is not None:
+                    found[tf] = (chosen.stat().st_size, chosen)
 
         return {tf: path for tf, (_, path) in found.items()}
 
@@ -105,18 +121,35 @@ class HistoricalDataAdapter:
             raise ValueError(f"Invalid candle file structure in {file_path}: expected JSON list")
 
         candles: List[Candle] = []
-        for item in raw_data:
+        for row_number, item in enumerate(raw_data, start=1):
             if not isinstance(item, dict):
-                continue
-            ts = int(item.get("timestamp", 0))
-            o = float(item.get("open", 0.0))
-            h = float(item.get("high", 0.0))
-            l = float(item.get("low", 0.0))
-            c = float(item.get("close", 0.0))
-            if ts > 0 and o > 0 and h > 0 and l > 0 and c > 0:
-                candles.append(Candle(timestamp=ts, open=o, high=h, low=l, close=c))
+                raise ValueError(f"Invalid candle row {row_number} in {file_path}: expected object")
+            try:
+                ts = int(item.get("timestamp", 0))
+                o, h, l, close = (float(item[k]) for k in ("open", "high", "low", "close"))
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ValueError(f"Invalid OHLC/timestamp at row {row_number} in {file_path}") from exc
+            if ts < 100_000_000_000:
+                raise ValueError(
+                    f"Timestamp at row {row_number} in {file_path} must be Unix milliseconds, not seconds"
+                )
+            if any(not math.isfinite(v) or v <= 0 for v in (o, h, l, close)):
+                raise ValueError(f"Non-positive or non-finite OHLC value at row {row_number} in {file_path}")
+            if l > min(o, close) or h < max(o, close) or l > h:
+                raise ValueError(f"Invalid OHLC relationship at row {row_number} in {file_path}")
+            candles.append(Candle(timestamp=ts, open=o, high=h, low=l, close=close))
 
-        candles.sort(key=lambda c: c.timestamp)
+        candles.sort(key=lambda candle: candle.timestamp)
+        duplicate_times = [
+            candles[i].timestamp for i in range(1, len(candles))
+            if candles[i].timestamp == candles[i - 1].timestamp
+        ]
+        if duplicate_times:
+            raise ValueError(
+                f"Duplicate candle timestamps in {file_path}: {len(duplicate_times)} duplicate row(s)"
+            )
+        if not candles:
+            raise ValueError(f"No valid candles found in {file_path}")
         return candles
 
     @staticmethod
@@ -155,7 +188,7 @@ class HistoricalDataAdapter:
                 prev_ts = c.timestamp
 
         return {
-            "status": "VALID" if anomalies == 0 else "CORRUPTED",
+            "status": "CORRUPTED" if anomalies > 0 or duplicates > 0 else "VALID_WITH_GAPS" if gaps > 0 else "VALID",
             "count": len(candles),
             "duplicates": duplicates,
             "gaps": gaps,
@@ -186,14 +219,18 @@ class HistoricalDataAdapter:
         sorted_bucket_keys = sorted(buckets.keys())
 
         for ts in sorted_bucket_keys:
-            bars = buckets[ts]
-            if not bars:
+            bars = sorted(buckets[ts], key=lambda candle: candle.timestamp)
+            # A completed M5 bar requires all five unique, consecutive M1 opens.
+            # Partial buckets would expose a forming/partially missing candle as final.
+            expected = [ts + i * 60_000 for i in range(5)]
+            actual = [bar.timestamp for bar in bars]
+            if actual != expected:
                 continue
             o = bars[0].open
             h = max(b.high for b in bars)
             l = min(b.low for b in bars)
-            c = bars[-1].close
-            m5_candles.append(Candle(timestamp=ts, open=o, high=h, low=l, close=c))
+            close = bars[-1].close
+            m5_candles.append(Candle(timestamp=ts, open=o, high=h, low=l, close=close))
 
         return m5_candles
 
@@ -233,7 +270,7 @@ class HistoricalDataAdapter:
         if "1m" in timeframe_data:
             m5_candles = self.resample_m1_to_m5(timeframe_data["1m"])
             timeframe_data["5m"] = m5_candles
-            checksums["5m"] = hashlib.sha256(json.dumps([c.to_dict() for c in m5_candles[:100]]).encode()).hexdigest()
+            checksums["5m"] = hashlib.sha256(json.dumps([c.to_dict() for c in m5_candles], separators=(",", ":"), sort_keys=True).encode()).hexdigest()
             audits["5m"] = self.audit_candle_stream(m5_candles, interval_map["5m"])
             sources["5m"] = "SYNTHESIZED_FROM_M1"
 

@@ -13,6 +13,7 @@ Guarantees:
 from __future__ import annotations
 
 import logging
+import math
 import uuid
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
@@ -41,6 +42,7 @@ class ManualOrder:
     reason_tag: Optional[str] = None
     filled_price: Optional[float] = None
     filled_at_ts: Optional[int] = None
+    macro_snapshot: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -59,9 +61,12 @@ class TradeRecord:
     take_profit: float
     initial_risk_r: float
     volume_lots: float
+    mid_entry_price: Optional[float] = None
+    entry_was_market: bool = True
     exit_ts: Optional[int] = None
     exit_time_iso: Optional[str] = None
     exit_price: Optional[float] = None
+    mid_exit_price: Optional[float] = None
     exit_reason: Optional[str] = None  # 'SL', 'TP', 'MANUAL_CLOSE'
     gross_pnl_usd: float = 0.0
     net_pnl_usd: float = 0.0
@@ -100,21 +105,35 @@ class ExecutionEngine:
             "payload": payload,
         })
 
+    def _usd_conversion_factor(self, reference_price: float) -> float:
+        """Convert quote-currency PnL to USD for supported USD-base pairs."""
+        if self.symbol in {"USDJPY", "USDCAD"}:
+            if reference_price <= 0:
+                raise ValueError("A positive reference price is required for quote-currency conversion")
+            return 1.0 / reference_price
+        # The supported remaining instruments are quoted in USD.
+        return 1.0
+
     def calculate_lots_from_risk(self, direction: str, entry_price: float, stop_loss: float, risk_percent: float) -> float:
-        """Calculates volume in lots based on desired % risk of current balance."""
-        risk_capital = (self.balance * (risk_percent / 100.0))
+        """Size down to 0.01 lots using stop risk plus estimated execution costs."""
+        risk_capital = self.balance * (risk_percent / 100.0)
         price_risk = abs(entry_price - stop_loss)
         if price_risk <= 0:
-            return 0.01
-
-        # lot_size * price_risk = $ loss per lot
-        loss_per_lot = price_risk * self.cost_profile.lot_size
-        if loss_per_lot <= 0:
-            return 0.01
-
+            raise ValueError("Entry and stop loss must differ")
+        conversion = self._usd_conversion_factor(entry_price)
+        profile = self.cost_profile
+        price_risk_usd = price_risk * profile.lot_size * conversion
+        spread_usd = profile.spread_pips * profile.pip_size * profile.lot_size * conversion
+        slippage_usd = 2.0 * profile.slippage_pips * profile.pip_size * profile.lot_size * conversion
+        loss_per_lot = price_risk_usd + spread_usd + slippage_usd + profile.commission_per_lot_usd
+        if loss_per_lot <= 0 or not math.isfinite(loss_per_lot):
+            raise ValueError("Could not calculate a finite per-lot risk")
         raw_lots = risk_capital / loss_per_lot
-        # Standard step 0.01 lot
-        return max(0.01, round(raw_lots, 2))
+        # Floor to the broker's assumed 0.01 lot step; never round risk upward.
+        lots = math.floor(raw_lots * 100.0) / 100.0
+        if lots < 0.01:
+            raise ValueError("Risk budget is below the minimum 0.01-lot position after costs")
+        return round(lots, 2)
 
     def place_order(
         self,
@@ -133,13 +152,35 @@ class ExecutionEngine:
         direction_upper = direction.upper()
         order_type_upper = order_type.upper()
 
-        # Sanity validation
-        if direction_upper == "BUY" and stop_loss >= price:
-            raise ValueError(f"Long Stop Loss ({stop_loss}) must be below Entry Price ({price})")
-        if direction_upper == "SELL" and stop_loss <= price:
-            raise ValueError(f"Short Stop Loss ({stop_loss}) must be above Entry Price ({price})")
+        # Validate all inputs before mutating the order book.
+        if direction_upper not in {"BUY", "SELL"}:
+            raise ValueError("direction must be BUY or SELL")
+        if order_type_upper not in {"MARKET", "LIMIT"}:
+            raise ValueError("order_type must be MARKET or LIMIT")
+        if any(not math.isfinite(float(v)) for v in (price, stop_loss, take_profit, risk_percent)):
+            raise ValueError("Price, SL, TP, and risk percent must be finite numbers")
+        if min(price, stop_loss, take_profit) <= 0:
+            raise ValueError("Price, SL, and TP must be greater than zero")
+        if risk_percent <= 0:
+            raise ValueError("risk_percent must be greater than zero")
+        half_spread = (self.cost_profile.spread_pips * self.cost_profile.pip_size) / 2.0
+        # User-entered LIMIT prices are executable bid/ask prices; OHLC is mid-price.
+        # Convert the limit to its equivalent mid-price before validating SL/TP/risk.
+        reference_price = price
+        if order_type_upper == "LIMIT":
+            reference_price = price - half_spread if direction_upper == "BUY" else price + half_spread
+        if direction_upper == "BUY" and not (stop_loss < reference_price < take_profit):
+            raise ValueError("BUY orders require SL < effective mid-entry < TP")
+        if direction_upper == "SELL" and not (take_profit < reference_price < stop_loss):
+            raise ValueError("SELL orders require TP < effective mid-entry < SL")
+        if self.open_position is not None:
+            raise RuntimeError("Cannot place an order while another position is open")
+        if any(o.status == "PENDING" for o in self.orders.values()):
+            raise RuntimeError("Only one pending order is supported; resolve it before placing another")
 
-        lots = volume_lots or self.calculate_lots_from_risk(direction_upper, price, stop_loss, risk_percent)
+        lots = volume_lots if volume_lots is not None else self.calculate_lots_from_risk(direction_upper, reference_price, stop_loss, risk_percent)
+        if not math.isfinite(float(lots)) or lots <= 0:
+            raise ValueError("volume_lots must be a finite number greater than zero")
 
         order_id = f"ord_{uuid.uuid4().hex[:8]}"
         order = ManualOrder(
@@ -156,6 +197,7 @@ class ExecutionEngine:
             placed_at_iso=datetime.fromtimestamp(current_time_ms / 1000, tz=timezone.utc).isoformat(),
             status="PENDING",
             reason_tag=reason_tag,
+            macro_snapshot=macro_snapshot,
         )
         self.orders[order_id] = order
 
@@ -185,7 +227,7 @@ class ExecutionEngine:
         order.filled_at_ts = fill_time_ms
 
         commission = self.cost_profile.calculate_commission(order.volume_lots)
-        initial_risk = abs(exec_price - order.stop_loss)
+        initial_risk = abs(mid_fill_price - order.stop_loss)
 
         trade = TradeRecord(
             trade_id=f"trd_{uuid.uuid4().hex[:8]}",
@@ -199,8 +241,10 @@ class ExecutionEngine:
             take_profit=order.take_profit,
             initial_risk_r=initial_risk,
             volume_lots=order.volume_lots,
+            mid_entry_price=mid_fill_price,
+            entry_was_market=is_market,
             commission_usd=commission,
-            macro_snapshot=macro_snapshot,
+            macro_snapshot=macro_snapshot if macro_snapshot is not None else order.macro_snapshot,
             status="OPEN",
         )
         self.open_position = trade
@@ -239,24 +283,36 @@ class ExecutionEngine:
         trade.conservative_ambiguity_applied = conservative_ambiguity
         trade.status = "CLOSED"
 
-        # Calculate PnL
+        # OHLC candles are treated as mid prices. Report mid-to-mid gross PnL
+        # separately from modeled spread, slippage, and commission costs.
+        mid_entry = trade.mid_entry_price if trade.mid_entry_price is not None else trade.entry_price
+        trade.mid_exit_price = exit_mid_price
         if trade.direction == "BUY":
-            price_delta = exec_exit_price - trade.entry_price
+            mid_delta = exit_mid_price - mid_entry
         else:
-            price_delta = trade.entry_price - exec_exit_price
+            mid_delta = mid_entry - exit_mid_price
 
-        gross_pnl = price_delta * trade.volume_lots * self.cost_profile.lot_size
-        net_pnl = gross_pnl - trade.commission_usd
+        notional_multiplier = trade.volume_lots * self.cost_profile.lot_size
+        entry_conversion = self._usd_conversion_factor(mid_entry)
+        exit_conversion = self._usd_conversion_factor(exit_mid_price)
+        gross_pnl = mid_delta * notional_multiplier * exit_conversion
+        half_spread = (self.cost_profile.spread_pips * self.cost_profile.pip_size) / 2.0
+        slippage = self.cost_profile.slippage_pips * self.cost_profile.pip_size
+        spread_cost = half_spread * notional_multiplier * (entry_conversion + exit_conversion)
+        slippage_cost = slippage * notional_multiplier * (
+            (entry_conversion if trade.entry_was_market else 0.0)
+            + (exit_conversion if is_market else 0.0)
+        )
+        net_pnl = gross_pnl - spread_cost - slippage_cost - trade.commission_usd
 
-        # Realized R
-        if trade.initial_risk_r > 0:
-            raw_r = price_delta / trade.initial_risk_r
-            trade.realized_r = round(raw_r, 2)
-        else:
-            trade.realized_r = 0.0
-
+        trade.spread_cost_usd = round(spread_cost, 2)
+        trade.slippage_cost_usd = round(slippage_cost, 2)
         trade.gross_pnl_usd = round(gross_pnl, 2)
         trade.net_pnl_usd = round(net_pnl, 2)
+
+        # Realized R is net PnL divided by the original price risk in dollars.
+        risk_capital = trade.initial_risk_r * notional_multiplier * exit_conversion
+        trade.realized_r = round(net_pnl / risk_capital, 2) if risk_capital > 0 else 0.0
 
         # Update balance
         self.balance += trade.net_pnl_usd
@@ -274,19 +330,48 @@ class ExecutionEngine:
         })
         return trade
 
+    def cancel_pending_order(self, order_id: str, current_time_ms: int) -> ManualOrder:
+        """Cancels an unfilled pending order without altering completed trade history."""
+        order = self.orders.get(order_id)
+        if order is None:
+            raise KeyError(f"Order '{order_id}' was not found")
+        if order.status != "PENDING":
+            raise ValueError(f"Order '{order_id}' is not pending (status={order.status})")
+        order.status = "CANCELLED"
+        self.log_event("ORDER_CANCELLED", current_time_ms, order.to_dict())
+        return order
+
     def process_candle(self, candle: Candle) -> None:
         """
         Processes a newly completed bar (typically M1):
         1. Checks pending LIMIT orders for fills.
         2. Checks OPEN position for SL / TP hits.
         """
-        # 1. Evaluate Pending Limit Orders
-        for order in list(self.orders.values()):
-            if order.status == "PENDING" and order.order_type == "LIMIT":
-                if order.direction == "BUY" and candle.low <= order.requested_price:
-                    self._fill_order(order, order.requested_price, candle.timestamp, is_market=False)
-                elif order.direction == "SELL" and candle.high >= order.requested_price:
-                    self._fill_order(order, order.requested_price, candle.timestamp, is_market=False)
+        # OHLC does not reveal the intrabar path. If a limit fills on this candle,
+        # its high/low may have occurred before entry, so do not evaluate SL/TP until
+        # the next candle. Record the fill at bar close, when it is first confirmed.
+        if self.open_position is None:
+            for order in list(self.orders.values()):
+                if order.status != "PENDING" or order.order_type != "LIMIT":
+                    continue
+                half_spread = (self.cost_profile.spread_pips * self.cost_profile.pip_size) / 2.0
+                if order.direction == "BUY":
+                    # Ask <= BUY limit iff mid <= limit - half-spread.
+                    fill_mid = order.requested_price - half_spread
+                    touched = candle.low <= fill_mid
+                else:
+                    # Bid >= SELL limit iff mid >= limit + half-spread.
+                    fill_mid = order.requested_price + half_spread
+                    touched = candle.high >= fill_mid
+                if touched:
+                    self._fill_order(
+                        order,
+                        fill_mid,
+                        candle.timestamp + 60_000,
+                        is_market=False,
+                        macro_snapshot=order.macro_snapshot,
+                    )
+                    return
 
         # 2. Evaluate Open Position SL / TP
         pos = self.open_position
@@ -299,11 +384,11 @@ class ExecutionEngine:
 
             if hit_sl and hit_tp:
                 # Conservative rule: SL hit first
-                self._finalize_trade(pos, pos.stop_loss, candle.timestamp, exit_reason="SL", is_market=False, conservative_ambiguity=True)
+                self._finalize_trade(pos, pos.stop_loss, candle.timestamp + 60_000, exit_reason="SL", is_market=False, conservative_ambiguity=True)
             elif hit_sl:
-                self._finalize_trade(pos, pos.stop_loss, candle.timestamp, exit_reason="SL", is_market=False)
+                self._finalize_trade(pos, pos.stop_loss, candle.timestamp + 60_000, exit_reason="SL", is_market=False)
             elif hit_tp:
-                self._finalize_trade(pos, pos.take_profit, candle.timestamp, exit_reason="TP", is_market=False)
+                self._finalize_trade(pos, pos.take_profit, candle.timestamp + 60_000, exit_reason="TP", is_market=False)
 
         elif pos.direction == "SELL":
             hit_sl = candle.high >= pos.stop_loss
@@ -311,11 +396,11 @@ class ExecutionEngine:
 
             if hit_sl and hit_tp:
                 # Conservative rule: SL hit first
-                self._finalize_trade(pos, pos.stop_loss, candle.timestamp, exit_reason="SL", is_market=False, conservative_ambiguity=True)
+                self._finalize_trade(pos, pos.stop_loss, candle.timestamp + 60_000, exit_reason="SL", is_market=False, conservative_ambiguity=True)
             elif hit_sl:
-                self._finalize_trade(pos, pos.stop_loss, candle.timestamp, exit_reason="SL", is_market=False)
+                self._finalize_trade(pos, pos.stop_loss, candle.timestamp + 60_000, exit_reason="SL", is_market=False)
             elif hit_tp:
-                self._finalize_trade(pos, pos.take_profit, candle.timestamp, exit_reason="TP", is_market=False)
+                self._finalize_trade(pos, pos.take_profit, candle.timestamp + 60_000, exit_reason="TP", is_market=False)
 
     def get_summary_metrics(self) -> Dict[str, Any]:
         """Calculates performance statistics across all closed trades."""
@@ -362,8 +447,8 @@ class ExecutionEngine:
             "winning_trades": len(wins),
             "losing_trades": len(losses),
             "win_rate_pct": round(win_rate, 1),
-            "gross_profit_usd": round(gross_profit, 2),
-            "gross_loss_usd": round(gross_loss, 2),
+            "net_profit_trades_usd": round(gross_profit, 2),
+            "net_loss_trades_usd": round(gross_loss, 2),
             "profit_factor": round(profit_factor, 2),
             "net_pnl_usd": round(total_net_pnl, 2),
             "total_r": round(total_r, 2),

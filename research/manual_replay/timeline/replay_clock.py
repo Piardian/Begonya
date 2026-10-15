@@ -58,7 +58,9 @@ class ReplayClock:
         return datetime.fromtimestamp(self.current_time / 1000, tz=timezone.utc).isoformat()
 
     def set_time(self, timestamp_ms: int) -> int:
-        """Sets the clock directly to a specific timestamp in ms, clamped to data bounds."""
+        """Sets the clock to an integer Unix timestamp in ms, clamped to data bounds."""
+        if not isinstance(timestamp_ms, int) or isinstance(timestamp_ms, bool):
+            raise ValueError("timestamp_ms must be an integer")
         clamped = max(self.min_time, min(self.max_time, timestamp_ms))
         self.current_time = clamped
         return self.current_time
@@ -70,18 +72,25 @@ class ReplayClock:
         return self.set_time(int(dt.timestamp() * 1000))
 
     def step(self, timeframe: str = "1m", count: int = 1) -> int:
-        """Steps forward by `count` bars of the specified timeframe."""
+        """Steps forward by a positive number of bars of an available timeframe."""
         tf = timeframe.lower()
-        interval = TIMEFRAME_INTERVALS_MS.get(tf, 60 * 1000)
-        return self.set_time(self.current_time + (interval * count))
+        if tf not in TIMEFRAME_INTERVALS_MS or tf not in self._candles:
+            raise ValueError(f"Timeframe '{tf}' is not available for {self.symbol}")
+        if not isinstance(count, int) or isinstance(count, bool) or count < 1:
+            raise ValueError("count must be a positive integer")
+        interval = TIMEFRAME_INTERVALS_MS[tf]
+        return self.set_time(self.current_time + interval * count)
 
     def step_backward(self, timeframe: str = "1m", count: int = 1) -> int:
-        """Steps backward by `count` bars of the specified timeframe."""
+        """Moves the clock backward; ReplaySession must guard against trade-state rewinds."""
         tf = timeframe.lower()
-        interval = TIMEFRAME_INTERVALS_MS.get(tf, 60 * 1000)
-        return self.set_time(self.current_time - (interval * count))
+        if tf not in TIMEFRAME_INTERVALS_MS or tf not in self._candles:
+            raise ValueError(f"Timeframe '{tf}' is not available for {self.symbol}")
+        if not isinstance(count, int) or isinstance(count, bool) or count < 1:
+            raise ValueError("count must be a positive integer")
+        return self.set_time(self.current_time - TIMEFRAME_INTERVALS_MS[tf] * count)
 
-    def get_visible_candles(self, timeframe: str, include_forming: bool = False) -> List[Candle]:
+    def get_visible_candles(self, timeframe: str, include_forming: bool = False, limit: Optional[int] = None) -> List[Candle]:
         """
         Returns candles visible strictly as-of `current_time`.
         - include_forming=False: Only closed bars (bar_open + interval <= current_time).
@@ -96,24 +105,71 @@ class ReplayClock:
         candles = self._candles[tf]
         timestamps = self._timestamps[tf]
 
-        # Find the index of the last bar that opened <= current_time
-        idx = bisect.bisect_right(timestamps, self.current_time)
-
+        # Closed bars only: open timestamp + timeframe interval <= replay time.
+        closed_idx = bisect.bisect_right(timestamps, self.current_time - interval)
+        start_idx = max(0, closed_idx - limit) if limit is not None else 0
+        closed = candles[start_idx:closed_idx]
         if not include_forming:
-            # Only include bars whose close (open + interval) <= current_time
-            # Bisect for open <= current_time - interval
-            closed_idx = bisect.bisect_right(timestamps, self.current_time - interval)
-            return candles[:closed_idx]
+            return closed
+
+        # Never return the historical OHLC of an unfinished candle: that would leak
+        # its future high/low/close. Build a partial candle from M1 bars already
+        # closed at the replay time. The HTF open is known at its opening timestamp.
+        forming_idx = bisect.bisect_right(timestamps, self.current_time) - 1
+        if forming_idx < 0:
+            return closed
+        forming = candles[forming_idx]
+        if forming.timestamp + interval <= self.current_time:
+            return closed
+        if "1m" not in self._candles:
+            return closed
+        m1_bars = self._candles["1m"]
+        m1_times = self._timestamps["1m"]
+        end_idx = bisect.bisect_right(m1_times, self.current_time - 60_000)
+        start_idx = bisect.bisect_left(m1_times, forming.timestamp)
+        known = m1_bars[start_idx:end_idx]
+        if not known:
+            # The open is known; no post-open M1 candle has closed yet.
+            partial = Candle(
+                timestamp=forming.timestamp,
+                open=forming.open,
+                high=forming.open,
+                low=forming.open,
+                close=forming.open,
+            )
         else:
-            return candles[:idx]
+            partial = Candle(
+                timestamp=forming.timestamp,
+                open=forming.open,
+                high=max(forming.open, *(bar.high for bar in known)),
+                low=min(forming.open, *(bar.low for bar in known)),
+                close=known[-1].close,
+            )
+        return closed + [partial]
+
+    def get_visible_candle_count(self, timeframe: str, include_forming: bool = False) -> int:
+        """Counts visible candles without allocating the candle list."""
+        tf = timeframe.lower()
+        if tf not in self._candles:
+            raise KeyError(f"Timeframe '{tf}' not loaded for symbol '{self.symbol}'")
+        interval = TIMEFRAME_INTERVALS_MS[tf]
+        closed_idx = bisect.bisect_right(self._timestamps[tf], self.current_time - interval)
+        if not include_forming or "1m" not in self._candles:
+            return closed_idx
+        forming_idx = bisect.bisect_right(self._timestamps[tf], self.current_time) - 1
+        if forming_idx >= 0 and self._timestamps[tf][forming_idx] + interval > self.current_time:
+            return closed_idx + 1
+        return closed_idx
 
     def get_latest_price(self) -> Optional[float]:
-        """Returns the most recent known close price at current_time from the fastest available timeframe."""
+        """Returns the most recent known close without materializing the full visible history."""
         for tf in ["1m", "5m", "15m", "1h", "4h"]:
-            if tf in self._candles:
-                visible = self.get_visible_candles(tf, include_forming=False)
-                if visible:
-                    return visible[-1].close
+            if tf not in self._candles:
+                continue
+            interval = TIMEFRAME_INTERVALS_MS[tf]
+            idx = bisect.bisect_right(self._timestamps[tf], self.current_time - interval) - 1
+            if idx >= 0:
+                return self._candles[tf][idx].close
         return None
 
     def get_state(self) -> Dict[str, Any]:

@@ -29,6 +29,8 @@
       </div>
       <button id="btn-new-session" class="btn-secondary">New Session</button>
       <button id="btn-save-session" class="btn-secondary">💾 Save Session</button>
+      <select id="saved-session-select" class="btn-secondary" aria-label="Saved replay sessions"><option value="">Saved sessions…</option></select>
+      <button id="btn-load-session" class="btn-secondary">Load Session</button>
       <div class="clock-display">
         <span class="clock-label">REPLAY TIME (UTC)</span>
         <span id="clock-time-val" class="clock-val">--:--:--</span>
@@ -79,7 +81,7 @@
         <div class="sidebar-panel">
           <h2>
             Macro State (PIT)
-            <span id="macro-verified-badge" style="font-size:10px; color:#4caf50;">● PIT Verified</span>
+            <span id="macro-verified-badge" style="font-size:10px; color:var(--text-muted);">● PIT status pending</span>
           </h2>
           <div class="macro-hud-card">
             <div class="macro-row">
@@ -120,10 +122,18 @@
                 <span id="pos-current-val" style="font-family:monospace;">--</span>
               </div>
               <div class="macro-row">
-                <span style="color:var(--text-muted)">Unrealized PnL:</span>
+                <span style="color:var(--text-muted)">Unrealized PnL (est.):</span>
                 <span id="pos-pnl-val" style="font-weight:700;">--</span>
               </div>
               <button id="btn-close-position" class="btn-close-pos">Close Position</button>
+            </div>
+          </div>
+
+          <div id="pending-order-panel" style="display:none; margin-bottom:12px;">
+            <div class="active-pos-card">
+              <div style="font-weight:700; margin-bottom:6px;">Pending Limit Order</div>
+              <div id="pending-order-info" class="macro-row">--</div>
+              <button id="btn-cancel-order" class="btn-close-pos">Cancel Pending Order</button>
             </div>
           </div>
 
