@@ -6,6 +6,7 @@
   let isPlaying = false;
   let playInterval = null;
   let stepInFlight = false;
+  let currentClockMs = null;
   let playbackSpeed = 5;
 
   let chart = null;
@@ -234,6 +235,7 @@
     if (!snapshot) return;
 
     // Clock
+    currentClockMs = snapshot.clock.current_time;
     clockTimeVal.textContent = snapshot.clock.current_time_iso.replace("T", " ").replace("+00:00", "");
 
     // Macro HUD
@@ -361,8 +363,20 @@
 
   btnStep1.addEventListener("click", () => step(1));
   btnStep5.addEventListener("click", () => step(5));
-  btnStepBack.addEventListener("click", () => {
-    alert("Stepping back in historical simulation is disabled to preserve chronological event determinism.");
+  btnStepBack.addEventListener("click", async () => {
+    if (!sessionId || currentClockMs == null) return;
+    const intervals = { "1m": 60_000, "5m": 300_000, "15m": 900_000, "1h": 3_600_000, "4h": 14_400_000 };
+    try {
+      pausePlay();
+      const snapshot = await api(`/api/session/${sessionId}/jump`, {
+        method: "POST",
+        body: JSON.stringify({ timestamp_ms: currentClockMs - intervals[activeTimeframe] }),
+      });
+      await refreshCandles();
+      updateUI(snapshot);
+    } catch (err) {
+      alert("Cannot step back: " + err.message);
+    }
   });
 
   btnPlayPause.addEventListener("click", () => {
