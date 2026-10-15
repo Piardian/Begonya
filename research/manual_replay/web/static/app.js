@@ -422,22 +422,26 @@
   // Place Order
   btnPlaceOrder.addEventListener("click", async () => {
     if (!sessionId) return;
-
-    const snap = await api(`/api/session/${sessionId}/snapshot`);
-    const currentPrice = snap.clock.latest_price;
-    const reqPrice = currentOrderType === "MARKET" ? currentPrice : parseFloat(inputLimitPrice.value);
-    const sl = parseFloat(inputSl.value);
-    const tp = parseFloat(inputTp.value);
-    const riskPct = parseFloat(inputRiskPct.value) || 1.0;
-    const lots = inputLots.value ? parseFloat(inputLots.value) : null;
-    const reason = inputReason.value || "Manual Replay Entry";
-
-    if (!reqPrice || !sl || !tp) {
-      alert("Please provide valid Price, Stop Loss, and Take Profit values.");
-      return;
-    }
-
+    pausePlay();
     try {
+      const snap = await api(`/api/session/${sessionId}/snapshot`);
+      const currentPrice = snap.clock.latest_price;
+      const reqPrice = currentOrderType === "MARKET" ? currentPrice : Number(inputLimitPrice.value);
+      const sl = Number(inputSl.value);
+      const tp = Number(inputTp.value);
+      const riskPct = Number(inputRiskPct.value);
+      const lots = inputLots.value.trim() ? Number(inputLots.value) : null;
+      const reason = inputReason.value || "Manual Replay Entry";
+
+      if (![reqPrice, sl, tp, riskPct].every(Number.isFinite) || reqPrice <= 0 || sl <= 0 || tp <= 0 || riskPct <= 0) {
+        alert("Enter finite positive entry, SL, TP, and risk values.");
+        return;
+      }
+      if (lots !== null && (!Number.isFinite(lots) || lots <= 0)) {
+        alert("Volume must be greater than zero or left empty for automatic sizing.");
+        return;
+      }
+
       const res = await api(`/api/session/${sessionId}/order`, {
         method: "POST",
         body: JSON.stringify({
