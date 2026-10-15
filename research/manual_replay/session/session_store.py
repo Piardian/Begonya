@@ -10,6 +10,7 @@ Guarantees:
 
 from __future__ import annotations
 
+import bisect
 import json
 import logging
 import math
@@ -52,6 +53,8 @@ class ReplaySession:
         if "1m" not in self.manifest.timeframes:
             raise ValueError(f"M1 historical data is required for manual order execution on {self.symbol}")
         self.clock = ReplayClock(self.data_adapter, self.symbol)
+        self._m1_candles = self.data_adapter.get_candles(self.symbol, "1m")
+        self._m1_close_times = [c.timestamp + 60_000 for c in self._m1_candles]
         self.cost_profile = cost_profile or get_cost_profile(self.symbol)
         self.engine = ExecutionEngine(self.symbol, initial_balance=initial_balance, cost_profile=self.cost_profile)
         self.macro_adapter = PitMacroAdapter()
@@ -77,16 +80,12 @@ class ReplaySession:
             raise ValueError("Cannot rewind a session after any order/trade activity; start a new session instead")
 
         if new_time > prev_time:
-            try:
-                all_1m = self.data_adapter.get_candles(self.symbol, "1m")
-            except KeyError as exc:
-                raise ValueError(f"M1 data is required for order execution on {self.symbol}") from exc
-            # Candle timestamps represent bar opens; process bars only once their
-            # close falls strictly after the old clock and at/before the target.
-            for candle in all_1m:
-                bar_close = candle.timestamp + 60_000
-                if prev_time < bar_close <= new_time:
-                    self.engine.process_candle(candle)
+            # Binary-search the closed-bar interval instead of rescanning the full
+            # historical M1 series on every replay tick.
+            start_idx = bisect.bisect_right(self._m1_close_times, prev_time)
+            end_idx = bisect.bisect_right(self._m1_close_times, new_time)
+            for candle in self._m1_candles[start_idx:end_idx]:
+                self.engine.process_candle(candle)
 
         self.clock.set_time(new_time)
         self.engine.log_event("REPLAY_ADVANCED", new_time, {
