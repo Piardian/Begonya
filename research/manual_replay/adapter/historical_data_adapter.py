@@ -106,9 +106,8 @@ class HistoricalDataAdapter:
                     base_path / f"{symbol_upper}_{tf}.json",
                     base_path / f"{symbol_upper}_{tf}_30d.json",
                 ]
-                available = [p for p in candidates if p.is_file()]
-                if available:
-                    chosen = max(available, key=lambda p: p.stat().st_size)
+                chosen = next((candidate for candidate in candidates if candidate.is_file()), None)
+                if chosen is not None:
                     found[tf] = (chosen.stat().st_size, chosen)
 
         return {tf: path for tf, (_, path) in found.items()}
@@ -189,7 +188,7 @@ class HistoricalDataAdapter:
                 prev_ts = c.timestamp
 
         return {
-            "status": "VALID" if anomalies == 0 and duplicates == 0 else "CORRUPTED",
+            "status": "CORRUPTED" if anomalies > 0 or duplicates > 0 else "VALID_WITH_GAPS" if gaps > 0 else "VALID",
             "count": len(candles),
             "duplicates": duplicates,
             "gaps": gaps,
