@@ -336,6 +336,7 @@
 
   btnSaveSession.addEventListener("click", async () => {
     if (!sessionId) return;
+    pausePlay();
     try {
       const res = await api(`/api/session/${sessionId}/save`, { method: "POST" });
       alert("Session saved successfully.");
@@ -478,6 +479,7 @@
 
   btnCancelOrder.addEventListener("click", async () => {
     if (!sessionId || !btnCancelOrder.dataset.orderId) return;
+    pausePlay();
     try {
       const orderId = btnCancelOrder.dataset.orderId;
       const res = await api(`/api/session/${sessionId}/order/${orderId}/cancel`, { method: "POST" });
@@ -490,6 +492,7 @@
   // Close Position
   btnClosePosition.addEventListener("click", async () => {
     if (!sessionId) return;
+    pausePlay();
     try {
       const res = await api(`/api/session/${sessionId}/close`, { method: "POST" });
       updateUI(res.snapshot);
