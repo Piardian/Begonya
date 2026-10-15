@@ -11,9 +11,8 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from manual_replay.session.session_store import SessionStore, ReplaySession
 
@@ -23,26 +22,22 @@ STATIC_DIR = Path(__file__).parent / "static"
 
 app = FastAPI(title="Begonya Manual Replay API", version="1.0.0")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 session_store = SessionStore()
 
 
 # --- Pydantic Request Models ---
 class CreateSessionRequest(BaseModel):
     symbol: str = "EURUSD"
-    initial_balance: float = 10000.0
+    initial_balance: float = Field(default=10000.0, gt=0, le=1_000_000_000)
+
+
+class LoadSessionRequest(BaseModel):
+    session_id: str
 
 
 class StepRequest(BaseModel):
     timeframe: str = "1m"
-    count: int = 1
+    count: int = Field(default=1, ge=1, le=100_000)
 
 
 class JumpRequest(BaseModel):
@@ -80,8 +75,22 @@ def get_supported_symbols():
 
 @app.post("/api/session/create")
 def create_session(req: CreateSessionRequest):
-    session = session_store.create_session(req.symbol, req.initial_balance)
-    return session.get_snapshot()
+    try:
+        session = session_store.create_session(req.symbol, req.initial_balance)
+        return session.get_snapshot()
+    except (ValueError, FileNotFoundError, KeyError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/session/load")
+def load_session(req: LoadSessionRequest):
+    try:
+        session = session_store.load_saved_session(req.session_id)
+        return session.get_snapshot()
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except (ValueError, KeyError, TypeError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/api/session/{session_id}/snapshot")
@@ -127,7 +136,10 @@ def step_session(session_id: str, req: StepRequest):
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    return session.advance_bar(req.timeframe, req.count)
+    try:
+        return session.advance_bar(req.timeframe, req.count)
+    except (ValueError, KeyError, RuntimeError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/api/session/{session_id}/jump")
@@ -136,14 +148,22 @@ def jump_session(session_id: str, req: JumpRequest):
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    if req.timestamp_ms is not None:
-        session.clock.set_time(req.timestamp_ms)
-    elif req.iso_time:
-        session.clock.set_time_iso(req.iso_time)
-    else:
-        raise HTTPException(status_code=400, detail="timestamp_ms or iso_time is required")
-
-    return session.get_snapshot()
+    try:
+        if req.timestamp_ms is not None:
+            target_time = req.timestamp_ms
+        elif req.iso_time:
+            from datetime import datetime, timezone
+            parsed = datetime.fromisoformat(req.iso_time.replace("Z", "+00:00"))
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+            target_time = int(parsed.timestamp() * 1000)
+        else:
+            raise HTTPException(status_code=400, detail="timestamp_ms or iso_time is required")
+        return session.advance_to(target_time, reason={"type": "jump"})
+    except HTTPException:
+        raise
+    except (ValueError, KeyError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/api/session/{session_id}/order")
