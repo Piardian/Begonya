@@ -324,6 +324,17 @@ class ExecutionEngine:
         })
         return trade
 
+    def cancel_pending_order(self, order_id: str, current_time_ms: int) -> ManualOrder:
+        """Cancels an unfilled pending order without altering completed trade history."""
+        order = self.orders.get(order_id)
+        if order is None:
+            raise KeyError(f"Order '{order_id}' was not found")
+        if order.status != "PENDING":
+            raise ValueError(f"Order '{order_id}' is not pending (status={order.status})")
+        order.status = "CANCELLED"
+        self.log_event("ORDER_CANCELLED", current_time_ms, order.to_dict())
+        return order
+
     def process_candle(self, candle: Candle) -> None:
         """
         Processes a newly completed bar (typically M1):
