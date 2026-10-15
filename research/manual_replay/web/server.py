@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -102,13 +102,19 @@ def get_snapshot(session_id: str):
 
 
 @app.get("/api/session/{session_id}/candles")
-def get_candles(session_id: str, timeframe: str = "15m", include_forming: bool = False):
+def get_candles(
+    session_id: str,
+    timeframe: str = "15m",
+    include_forming: bool = False,
+    limit: int = Query(default=5000, ge=1, le=20000),
+):
     session = session_store.get_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
     try:
-        candles = session.clock.get_visible_candles(timeframe, include_forming=include_forming)
+        total_visible = len(session.clock.get_visible_candles(timeframe, include_forming=include_forming))
+        candles = session.clock.get_visible_candles(timeframe, include_forming=include_forming, limit=limit)
         # Format for Lightweight Charts: { time: seconds, open, high, low, close }
         formatted = [
             {
@@ -124,6 +130,8 @@ def get_candles(session_id: str, timeframe: str = "15m", include_forming: bool =
             "symbol": session.symbol,
             "timeframe": timeframe,
             "count": len(formatted),
+            "total_visible_count": total_visible,
+            "truncated": total_visible > len(formatted),
             "candles": formatted,
         }
     except Exception as e:
