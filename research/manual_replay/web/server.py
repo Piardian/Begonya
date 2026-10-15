@@ -56,6 +56,11 @@ class PlaceOrderRequest(BaseModel):
     reason_tag: Optional[str] = None
 
 
+class AmendOrderRequest(BaseModel):
+    price: float = Field(gt=0)
+    stop_loss: float = Field(gt=0)
+    take_profit: float = Field(gt=0)
+
 # --- Endpoints ---
 @app.get("/api/symbols")
 def get_supported_symbols():
@@ -194,6 +199,18 @@ def place_order(session_id: str, req: PlaceOrderRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
+@app.patch("/api/session/{session_id}/order/{order_id}/amend")
+def amend_order(session_id: str, order_id: str, req: AmendOrderRequest):
+    session = session_store.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    try:
+        return session.amend_pending_order(order_id, req.price, req.stop_loss, req.take_profit)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 @app.post("/api/session/{session_id}/order/{order_id}/cancel")
 def cancel_order(session_id: str, order_id: str):
