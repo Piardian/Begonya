@@ -192,6 +192,28 @@ class TestExecutionEngine:
         assert engine.open_position.mid_entry_price == pytest.approx(1.098)
         assert engine.open_position.mid_entry_price <= order.requested_price
 
+    def test_pending_limit_order_can_be_amended_and_event_logged(self):
+        session = ReplaySession("EURUSD", data_adapter=InMemoryAdapter())
+        market = session.clock.get_latest_price()
+        placed = session.place_manual_order("LIMIT", "SELL", market + 0.0010, market + 0.0020, market - 0.0020, volume_lots=0.1)
+        order_id = placed["order"]["order_id"]
+        amended = session.amend_pending_order(order_id, market + 0.0015, market + 0.0025, market - 0.0025)
+        assert amended["order"]["requested_price"] == pytest.approx(market + 0.0015)
+        assert amended["order"]["stop_loss"] == pytest.approx(market + 0.0025)
+        assert amended["order"]["take_profit"] == pytest.approx(market - 0.0025)
+        assert amended["snapshot"]["pending_orders"][0]["requested_price"] == pytest.approx(market + 0.0015)
+        assert session.engine.event_log[-1]["event_type"] == "ORDER_AMENDED"
+
+    def test_invalid_pending_order_amendment_is_atomic(self):
+        session = ReplaySession("EURUSD", data_adapter=InMemoryAdapter())
+        market = session.clock.get_latest_price()
+        placed = session.place_manual_order("LIMIT", "SELL", market + 0.0010, market + 0.0020, market - 0.0020, volume_lots=0.1)
+        order_id = placed["order"]["order_id"]
+        before = dict(session.engine.orders[order_id].to_dict())
+        with pytest.raises(ValueError, match="SELL LIMIT.*above current market"):
+            session.amend_pending_order(order_id, market - 0.0010, market + 0.0025, market - 0.0025)
+        assert session.engine.orders[order_id].to_dict() == before
+
     def test_pending_order_can_be_cancelled_once(self):
         engine = ExecutionEngine("TEST", cost_profile=self.profile())
         order = engine.place_order("LIMIT", "BUY", 1.2, 1.195, 1.21, 1_000, volume_lots=1.0)

@@ -147,6 +147,38 @@ class ReplaySession:
             "snapshot": self.get_snapshot(),
         }
 
+    def amend_pending_order(self, order_id: str, price: float, stop_loss: float, take_profit: float) -> Dict[str, Any]:
+        """Atomically amend a pending LIMIT order after validating its new bracket."""
+        order = self.engine.orders.get(order_id)
+        if order is None:
+            raise KeyError(f"Order '{order_id}' was not found")
+        if order.status != "PENDING" or order.order_type != "LIMIT":
+            raise ValueError("Only an unfilled pending LIMIT order can be amended")
+        values = (price, stop_loss, take_profit)
+        if any(not math.isfinite(float(v)) or float(v) <= 0 for v in values):
+            raise ValueError("Limit price, SL and TP must be finite positive numbers")
+        market = self.clock.get_latest_price()
+        if market is None:
+            raise ValueError("Cannot amend order: current market price is unavailable")
+        precision = 3 if self.symbol.endswith("JPY") else 2 if self.symbol in {"XAUUSD", "BTCUSD", "ETHUSD", "SOLUSD"} else 5
+        if order.direction == "BUY" and price >= market:
+            raise ValueError(f"BUY LIMIT ({price:.{precision}f}) must be below current market ({market:.{precision}f}); move the limit below market or cancel it")
+        if order.direction == "SELL" and price <= market:
+            raise ValueError(f"SELL LIMIT ({price:.{precision}f}) must be above current market ({market:.{precision}f}); move the limit above market or cancel it")
+        half_spread = (self.cost_profile.spread_pips * self.cost_profile.pip_size) / 2.0
+        entry = price - half_spread if order.direction == "BUY" else price + half_spread
+        if order.direction == "BUY" and not (stop_loss < entry < take_profit):
+            raise ValueError("BUY LIMIT requires SL < effective entry < TP")
+        if order.direction == "SELL" and not (take_profit < entry < stop_loss):
+            raise ValueError("SELL LIMIT requires TP < effective entry < SL")
+        before = {"requested_price": order.requested_price, "stop_loss": order.stop_loss, "take_profit": order.take_profit}
+        order.requested_price, order.stop_loss, order.take_profit = float(price), float(stop_loss), float(take_profit)
+        self.engine.log_event("ORDER_AMENDED", self.clock.current_time, {
+            "order_id": order.order_id, "before": before,
+            "after": {"requested_price": order.requested_price, "stop_loss": order.stop_loss, "take_profit": order.take_profit},
+        })
+        return {"order": order.to_dict(), "snapshot": self.get_snapshot()}
+
     def close_open_position(self) -> Dict[str, Any]:
         """Closes the current position manually."""
         latest_price = self.clock.get_latest_price()
