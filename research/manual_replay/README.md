@@ -14,7 +14,7 @@ The server binds to `127.0.0.1:8000`. The Python environment must have FastAPI a
 
 ## Data configuration
 
-Set `BEGONYA_REPLAY_DATA_PATHS` to one or more directories containing historical candle JSON files. Separate multiple directories with the platform path separator (`; ` on Windows, `:` on Linux/macOS; do not include spaces around the separator).
+Set `BEGONYA_REPLAY_DATA_PATHS` to one or more directories containing historical candle JSON files. Separate multiple directories with the platform path separator (`;` on Windows, `:` on Linux/macOS; do not include spaces around the separator).
 
 Expected filenames are `SYMBOL_1m.json`, `SYMBOL_1m_1y.json`, `SYMBOL_1m_30d.json`, and similarly for `15m`, `1h`, and `4h`. M5 is resampled from five complete, consecutive M1 candles. Data timestamps must be Unix milliseconds representing candle-open time. Each row must contain positive finite `open`, `high`, `low`, and `close` values with valid OHLC relationships.
 
