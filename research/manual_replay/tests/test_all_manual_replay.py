@@ -175,10 +175,11 @@ class TestExecutionEngine:
 
     def test_limit_fill_bar_cannot_also_trigger_tp_or_sl(self):
         engine = ExecutionEngine("TEST", cost_profile=self.profile())
-        engine.place_order("LIMIT", "BUY", 1.1, 1.095, 1.11, 1_000, volume_lots=1.0)
+        order = engine.place_order("LIMIT", "BUY", 1.1, 1.095, 1.11, 1_000, volume_lots=1.0)
         extreme = Candle(BASE_TS, 1.1, 1.12, 1.09, 1.105)
         engine.process_candle(extreme)
         assert engine.open_position is not None
+        assert engine.open_position.entry_price == pytest.approx(order.requested_price)
         assert engine.open_position.entry_ts == BASE_TS + 60_000
         assert engine.trade_history == []
 
