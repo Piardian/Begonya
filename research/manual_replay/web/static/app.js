@@ -5,6 +5,7 @@
   let activeTimeframe = "15m";
   let isPlaying = false;
   let playInterval = null;
+  let stepInFlight = false;
   let playbackSpeed = 5;
 
   let chart = null;
@@ -21,6 +22,8 @@
   const clockTimeVal = document.getElementById("clock-time-val");
   const btnNewSession = document.getElementById("btn-new-session");
   const btnSaveSession = document.getElementById("btn-save-session");
+  const savedSessionSelect = document.getElementById("saved-session-select");
+  const btnLoadSession = document.getElementById("btn-load-session");
   const btnPlayPause = document.getElementById("btn-play-pause");
   const btnStep1 = document.getElementById("btn-step-1");
   const btnStep5 = document.getElementById("btn-step-5");
@@ -30,6 +33,7 @@
 
   // Macro HUD
   const macroGateBadge = document.getElementById("macro-gate-badge");
+  const macroVerifiedBadge = document.getElementById("macro-verified-badge");
   const macroRegimeVal = document.getElementById("macro-regime-val");
   const macroRiskVal = document.getElementById("macro-risk-val");
   const macroMultVal = document.getElementById("macro-mult-val");
@@ -123,6 +127,7 @@
   }
 
   async function createSession(symbol = activeSymbol) {
+    pausePlay();
     try {
       const data = await api("/api/session/create", {
         method: "POST",
@@ -151,16 +156,19 @@
   }
 
   async function step(count = 1) {
-    if (!sessionId) return;
+    if (!sessionId || stepInFlight) return;
+    stepInFlight = true;
     try {
       const snapshot = await api(`/api/session/${sessionId}/step`, {
         method: "POST",
-        body: JSON.stringify({ timeframe: "1m", count }),
+        body: JSON.stringify({ timeframe: activeTimeframe, count }),
       });
       await refreshCandles();
       updateUI(snapshot);
     } catch (err) {
       console.error("Error stepping clock:", err);
+    } finally {
+      stepInFlight = false;
     }
   }
 
@@ -231,8 +239,11 @@
     // Macro HUD
     const m = snapshot.macro || {};
     macroRegimeVal.textContent = m.primary_regime || "--";
-    macroRiskVal.textContent = m.volatility_risk_score !== null ? m.volatility_risk_score : "--";
-    macroMultVal.textContent = m.recommended_risk_multiplier !== null ? `${m.recommended_risk_multiplier}x` : "--";
+    macroRiskVal.textContent = m.volatility_risk_score ?? "--";
+    macroMultVal.textContent = m.recommended_risk_multiplier != null ? `${m.recommended_risk_multiplier}x` : "--";
+    const pitVerified = m.status === "AVAILABLE" && m.as_of_verified === true;
+    macroVerifiedBadge.textContent = pitVerified ? "● PIT Verified" : "● PIT Unverified / Unavailable";
+    macroVerifiedBadge.style.color = pitVerified ? "var(--accent-green)" : "var(--accent-yellow)";
 
     macroGateBadge.className = "gate-badge " + (
       m.bias_gate === "LONG_ONLY" ? "long" :
@@ -250,12 +261,16 @@
       posLotsVal.textContent = `${pos.volume_lots} Lot`;
       posEntryVal.textContent = pos.entry_price.toFixed(5);
 
-      const latest = snapshot.clock.latest_price || pos.entry_price;
+      const latest = snapshot.clock.latest_price ?? pos.entry_price;
       posCurrentVal.textContent = latest.toFixed(5);
 
-      const diff = pos.direction === "BUY" ? (latest - pos.entry_price) : (pos.entry_price - latest);
-      const estPnl = diff * pos.volume_lots * 100000;
-      posPnlVal.textContent = `$${estPnl.toFixed(2)}`;
+      const cost = snapshot.cost_profile || {};
+      const halfSpread = (Number(cost.spread_pips) || 0) * (Number(cost.pip_size) || 0) / 2;
+      const estimatedExit = pos.direction === "BUY" ? latest - halfSpread : latest + halfSpread;
+      const diff = pos.direction === "BUY" ? estimatedExit - pos.entry_price : pos.entry_price - estimatedExit;
+      const lotSize = Number(cost.lot_size) || 100000;
+      const estPnl = diff * pos.volume_lots * lotSize - (Number(pos.commission_usd) || 0);
+      posPnlVal.textContent = `${estPnl.toFixed(2)} est.`;
       posPnlVal.style.color = estPnl >= 0 ? "var(--accent-green)" : "var(--accent-red)";
     } else {
       activePosPanel.style.display = "none";
@@ -265,7 +280,7 @@
 
     // Metrics
     const metrics = snapshot.metrics || {};
-    metricBal.textContent = `$${(snapshot.balance || 10000).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    metricBal.textContent = `${Number(snapshot.balance ?? 10000).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
     metricPnl.textContent = `$${(metrics.net_pnl_usd || 0).toFixed(2)}`;
     metricPnl.style.color = (metrics.net_pnl_usd || 0) >= 0 ? "var(--accent-green)" : "var(--accent-red)";
     metricR.textContent = `${(metrics.total_r || 0).toFixed(1)}R`;
@@ -275,17 +290,20 @@
     metricDd.textContent = `$${(metrics.max_drawdown_usd || 0).toFixed(2)}`;
     metricTrades.textContent = metrics.total_trades || 0;
 
-    // Fill SL/TP presets if empty
+    // Instrument-aware starter values; these are convenience presets, not a strategy.
     const currentPrice = snapshot.clock.latest_price;
     if (currentPrice && !inputSl.value && !inputTp.value) {
+      const cost = snapshot.cost_profile || {};
+      const offset = Math.max(Math.abs(currentPrice) * 0.002, (Number(cost.pip_size) || 0.0001) * 20);
       if (currentDirection === "BUY") {
-        inputSl.value = (currentPrice - 0.0020).toFixed(5);
-        inputTp.value = (currentPrice + 0.0040).toFixed(5);
+        inputSl.value = (currentPrice - offset).toFixed(5);
+        inputTp.value = (currentPrice + offset * 2).toFixed(5);
       } else {
-        inputSl.value = (currentPrice + 0.0020).toFixed(5);
-        inputTp.value = (currentPrice - 0.0040).toFixed(5);
+        inputSl.value = (currentPrice + offset).toFixed(5);
+        inputTp.value = (currentPrice - offset * 2).toFixed(5);
       }
     }
+    renderJournal(snapshot);
   }
 
   // Event Listeners
@@ -303,9 +321,32 @@
     if (!sessionId) return;
     try {
       const res = await api(`/api/session/${sessionId}/save`, { method: "POST" });
-      alert(`Session saved successfully to:\n${res.file_path}`);
+      alert("Session saved successfully.");
+      await refreshSavedSessions();
     } catch (err) {
       alert("Failed to save session: " + err.message);
+    }
+  });
+
+  btnLoadSession.addEventListener("click", async () => {
+    const savedId = savedSessionSelect && savedSessionSelect.value;
+    if (!savedId) {
+      alert("Select a saved session first.");
+      return;
+    }
+    pausePlay();
+    try {
+      const snapshot = await api("/api/session/load", {
+        method: "POST",
+        body: JSON.stringify({ session_id: savedId }),
+      });
+      sessionId = snapshot.session_id;
+      activeSymbol = snapshot.symbol;
+      symbolSelect.value = activeSymbol;
+      await refreshCandles();
+      updateUI(snapshot);
+    } catch (err) {
+      alert("Could not load saved session: " + err.message);
     }
   });
 
@@ -397,7 +438,6 @@
         }),
       });
       updateUI(res.snapshot);
-      addJournalRow(res.order, res.macro_snapshot);
     } catch (err) {
       alert("Order placement failed: " + err.message);
     }
@@ -409,47 +449,88 @@
     try {
       const res = await api(`/api/session/${sessionId}/close`, { method: "POST" });
       updateUI(res.snapshot);
-      updateJournalClosedRow(res.closed_trade);
     } catch (err) {
       alert("Close position failed: " + err.message);
     }
   });
 
-  function addJournalRow(order, macro) {
-    const tr = document.createElement("tr");
-    tr.id = `tr-order-${order.order_id}`;
-    tr.innerHTML = `
-      <td>${order.order_id.replace("ord_", "")}</td>
-      <td>${order.placed_at_iso.replace("T", " ").replace("+00:00", "")}</td>
-      <td style="color:${order.direction === 'BUY' ? 'var(--accent-green)' : 'var(--accent-red)'}; font-weight:700;">${order.direction}</td>
-      <td>${order.volume_lots}L</td>
-      <td>${order.requested_price.toFixed(5)}</td>
-      <td class="exit-price-cell">--</td>
-      <td class="exit-reason-cell">OPEN</td>
-      <td class="pnl-cell">--</td>
-      <td class="r-cell">--</td>
-      <td><span class="gate-badge ${macro.bias_gate === 'LONG_ONLY' ? 'long' : macro.bias_gate === 'SHORT_ONLY' ? 'short' : 'unavailable'}">${macro.bias_gate}</span></td>
-      <td>${order.reason_tag || '--'}</td>
-    `;
-    journalTbody.insertBefore(tr, journalTbody.firstChild);
+  function renderJournal(snapshot) {
+    if (!journalTbody || !Array.isArray(snapshot.orders)) return;
+    journalTbody.replaceChildren();
+    const tradesByOrder = new Map((snapshot.trades || []).map(trade => [trade.order_id, trade]));
+    if (snapshot.open_position) tradesByOrder.set(snapshot.open_position.order_id, snapshot.open_position);
+    const orders = [...snapshot.orders].sort((a, b) => (b.placed_at_ts || 0) - (a.placed_at_ts || 0));
+
+    for (const order of orders) {
+      const trade = tradesByOrder.get(order.order_id);
+      const macro = (trade && trade.macro_snapshot) || order.macro_snapshot || {};
+      const row = document.createElement("tr");
+      row.id = `tr-order-${order.order_id}`;
+      const values = [
+        (order.order_id || "").replace("ord_", ""),
+        (order.placed_at_iso || "").replace("T", " ").replace("+00:00", ""),
+        order.direction || "--",
+        order.volume_lots != null ? `${order.volume_lots}L` : "--",
+        Number.isFinite(Number(order.requested_price)) ? Number(order.requested_price).toFixed(5) : "--",
+        trade && trade.status === "CLOSED" && trade.exit_price != null ? Number(trade.exit_price).toFixed(5) : "--",
+        trade ? (trade.status === "CLOSED" ? (trade.exit_reason || "CLOSED") : "OPEN") : (order.status || "--"),
+        trade && trade.status === "CLOSED" ? `$${Number(trade.net_pnl_usd || 0).toFixed(2)}` : "--",
+        trade && trade.status === "CLOSED" ? `${Number(trade.realized_r || 0).toFixed(2)}R` : "--"
+      ];
+      for (let i = 0; i < values.length; i++) {
+        const cell = document.createElement("td");
+        cell.textContent = String(values[i]);
+        if (i === 2) {
+          cell.style.color = order.direction === "BUY" ? "var(--accent-green)" : "var(--accent-red)";
+          cell.style.fontWeight = "700";
+        }
+        if (i === 7 && trade && trade.status === "CLOSED") {
+          cell.style.color = Number(trade.net_pnl_usd) >= 0 ? "var(--accent-green)" : "var(--accent-red)";
+          cell.style.fontWeight = "700";
+        }
+        row.appendChild(cell);
+      }
+      const macroCell = document.createElement("td");
+      const badge = document.createElement("span");
+      badge.className = "gate-badge " + (
+        macro.bias_gate === "LONG_ONLY" ? "long" :
+        macro.bias_gate === "SHORT_ONLY" ? "short" :
+        macro.bias_gate === "NEUTRAL_RANGE" ? "neutral" : "unavailable"
+      );
+      badge.textContent = macro.bias_gate || "UNAVAILABLE";
+      macroCell.appendChild(badge);
+      row.appendChild(macroCell);
+      const reasonCell = document.createElement("td");
+      reasonCell.textContent = order.reason_tag || "--";
+      row.appendChild(reasonCell);
+      journalTbody.appendChild(row);
+    }
   }
 
-  function updateJournalClosedRow(trade) {
-    const tr = document.getElementById(`tr-order-${trade.order_id}`);
-    if (tr) {
-      tr.querySelector(".exit-price-cell").textContent = trade.exit_price ? trade.exit_price.toFixed(5) : "--";
-      tr.querySelector(".exit-reason-cell").textContent = trade.exit_reason || "CLOSED";
-      const pnlCell = tr.querySelector(".pnl-cell");
-      pnlCell.textContent = `$${trade.net_pnl_usd.toFixed(2)}`;
-      pnlCell.style.color = trade.net_pnl_usd >= 0 ? "var(--accent-green)" : "var(--accent-red)";
-      pnlCell.style.fontWeight = "700";
-      const rCell = tr.querySelector(".r-cell");
-      rCell.textContent = `${trade.realized_r.toFixed(2)}R`;
-      rCell.style.fontWeight = "700";
+  async function refreshSavedSessions() {
+    if (!savedSessionSelect) return;
+    try {
+      const data = await api("/api/sessions/saved");
+      const previous = savedSessionSelect.value;
+      savedSessionSelect.replaceChildren();
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "Saved sessions…";
+      savedSessionSelect.appendChild(placeholder);
+      for (const item of (data.saved_sessions || [])) {
+        const option = document.createElement("option");
+        option.value = item.session_id || "";
+        option.textContent = `${item.symbol || "?"} · ${item.created_at || "unknown date"} · ${item.total_trades || 0} trades`;
+        savedSessionSelect.appendChild(option);
+      }
+      if (previous) savedSessionSelect.value = previous;
+    } catch (err) {
+      console.error("Could not list saved sessions:", err);
     }
   }
 
   // Bootstrap
   initChart();
+  refreshSavedSessions();
   createSession("EURUSD");
 })();
