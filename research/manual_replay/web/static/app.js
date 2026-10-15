@@ -61,6 +61,9 @@
   const posCurrentVal = document.getElementById("pos-current-val");
   const posPnlVal = document.getElementById("pos-pnl-val");
   const btnClosePosition = document.getElementById("btn-close-position");
+  const pendingOrderPanel = document.getElementById("pending-order-panel");
+  const pendingOrderInfo = document.getElementById("pending-order-info");
+  const btnCancelOrder = document.getElementById("btn-cancel-order");
 
   // Metrics
   const metricBal = document.getElementById("metric-bal");
@@ -278,7 +281,18 @@
       activePosPanel.style.display = "none";
     }
 
-    updatePriceLines(pos, snapshot.pending_orders);
+    const pendingOrders = snapshot.pending_orders || [];
+    if (pendingOrders.length > 0) {
+      const order = pendingOrders[0];
+      pendingOrderPanel.style.display = "block";
+      pendingOrderInfo.textContent = `${order.direction} LIMIT @ ${Number(order.requested_price).toFixed(5)} · SL ${Number(order.stop_loss).toFixed(5)} · TP ${Number(order.take_profit).toFixed(5)}`;
+      btnCancelOrder.dataset.orderId = order.order_id;
+    } else {
+      pendingOrderPanel.style.display = "none";
+      btnCancelOrder.dataset.orderId = "";
+    }
+
+    updatePriceLines(pos, pendingOrders);
 
     // Metrics
     const metrics = snapshot.metrics || {};
@@ -458,6 +472,17 @@
       updateUI(res.snapshot);
     } catch (err) {
       alert("Order placement failed: " + err.message);
+    }
+  });
+
+  btnCancelOrder.addEventListener("click", async () => {
+    if (!sessionId || !btnCancelOrder.dataset.orderId) return;
+    try {
+      const orderId = btnCancelOrder.dataset.orderId;
+      const res = await api(`/api/session/${sessionId}/order/${orderId}/cancel`, { method: "POST" });
+      updateUI(res.snapshot);
+    } catch (err) {
+      alert("Cancel order failed: " + err.message);
     }
   });
 
