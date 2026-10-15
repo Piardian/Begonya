@@ -146,8 +146,11 @@ class ReplaySession:
             "created_at_iso": self.created_at_iso,
             "clock": self.clock.get_state(),
             "balance": round(self.engine.balance, 2),
+            "cost_profile": asdict(self.cost_profile),
             "open_position": self.engine.open_position.to_dict() if self.engine.open_position else None,
             "pending_orders": [o.to_dict() for o in self.engine.orders.values() if o.status == "PENDING"],
+            "orders": [o.to_dict() for o in self.engine.orders.values()],
+            "trades": [t.to_dict() for t in self.engine.trade_history],
             "macro": macro_snap.to_dict(),
             "metrics": self.engine.get_summary_metrics(),
             "closed_trade_count": len(self.engine.trade_history),
@@ -203,7 +206,12 @@ class SessionStore:
 
     def load_saved_session(self, session_id: str) -> ReplaySession:
         """Restores a saved session only when its source dataset checksum still matches."""
-        if not session_id or Path(session_id).name != session_id or not session_id.endswith(".json") and "/" in session_id:
+        if (
+            not session_id
+            or session_id in {".", ".."}
+            or "/" in session_id
+            or "\\" in session_id
+        ):
             raise ValueError("Invalid session id")
         filename = session_id if session_id.endswith(".json") else f"{session_id}.json"
         saved_path = self.sessions_dir / filename
