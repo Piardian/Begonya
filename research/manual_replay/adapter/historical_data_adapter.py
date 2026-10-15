@@ -130,8 +130,12 @@ class HistoricalDataAdapter:
                 o, h, l, close = (float(item[k]) for k in ("open", "high", "low", "close"))
             except (KeyError, TypeError, ValueError) as exc:
                 raise ValueError(f"Invalid OHLC/timestamp at row {row_number} in {file_path}") from exc
-            if ts <= 0 or any(not math.isfinite(v) or v <= 0 for v in (o, h, l, close)):
-                raise ValueError(f"Non-positive or non-finite candle value at row {row_number} in {file_path}")
+            if ts < 100_000_000_000:
+                raise ValueError(
+                    f"Timestamp at row {row_number} in {file_path} must be Unix milliseconds, not seconds"
+                )
+            if any(not math.isfinite(v) or v <= 0 for v in (o, h, l, close)):
+                raise ValueError(f"Non-positive or non-finite OHLC value at row {row_number} in {file_path}")
             if l > min(o, close) or h < max(o, close) or l > h:
                 raise ValueError(f"Invalid OHLC relationship at row {row_number} in {file_path}")
             candles.append(Candle(timestamp=ts, open=o, high=h, low=l, close=close))
