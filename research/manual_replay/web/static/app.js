@@ -20,6 +20,7 @@
   let orderLineElements = {};
   let pendingOrderForEditing = null;
   let pendingOrderDraft = null;
+  let activePositionForChart = null;
   let orderLineDragChanged = false;
   function pricePrecision(symbol = activeSymbol) { if (symbol.endsWith("JPY")) return 3; if (["BTCUSD", "ETHUSD", "SOLUSD", "XAUUSD"].includes(symbol)) return 2; return 5; }
   function formatPrice(value) { return Number(value).toFixed(pricePrecision()); }
@@ -128,9 +129,9 @@
 
   function initDraggableOrderLines(container) {
     const specs = [
-      { key: "entry", label: "LIMIT", color: "#2962ff", input: inputLimitPrice, visible: () => currentOrderType === "LIMIT" || !!pendingOrderDraft, read: () => pendingOrderDraft ? pendingOrderDraft.requested_price : Number(inputLimitPrice.value), write: value => { if (pendingOrderDraft) pendingOrderDraft.requested_price = value; inputLimitPrice.value = formatPrice(value); } },
-      { key: "sl", label: "SL", color: "#ef5350", input: inputSl, visible: () => true, read: () => pendingOrderDraft ? pendingOrderDraft.stop_loss : Number(inputSl.value), write: value => { if (pendingOrderDraft) pendingOrderDraft.stop_loss = value; inputSl.value = formatPrice(value); } },
-      { key: "tp", label: "TP", color: "#26a69a", input: inputTp, visible: () => true, read: () => pendingOrderDraft ? pendingOrderDraft.take_profit : Number(inputTp.value), write: value => { if (pendingOrderDraft) pendingOrderDraft.take_profit = value; inputTp.value = formatPrice(value); } }
+      { key: "entry", label: "LIMIT", color: "#2962ff", input: inputLimitPrice, visible: () => !activePositionForChart && (currentOrderType === "LIMIT" || !!pendingOrderDraft), read: () => pendingOrderDraft ? pendingOrderDraft.requested_price : Number(inputLimitPrice.value), write: value => { if (pendingOrderDraft) pendingOrderDraft.requested_price = value; inputLimitPrice.value = formatPrice(value); } },
+      { key: "sl", label: "SL", color: "#ef5350", input: inputSl, visible: () => !activePositionForChart, read: () => pendingOrderDraft ? pendingOrderDraft.stop_loss : Number(inputSl.value), write: value => { if (pendingOrderDraft) pendingOrderDraft.stop_loss = value; inputSl.value = formatPrice(value); } },
+      { key: "tp", label: "TP", color: "#26a69a", input: inputTp, visible: () => !activePositionForChart, read: () => pendingOrderDraft ? pendingOrderDraft.take_profit : Number(inputTp.value), write: value => { if (pendingOrderDraft) pendingOrderDraft.take_profit = value; inputTp.value = formatPrice(value); } }
     ];
     container.style.position = "relative";
     for (const spec of specs) {
@@ -331,6 +332,7 @@
 
     // Active Position
     const pos = snapshot.open_position;
+    activePositionForChart = pos || null;
     if (pos) {
       activePosPanel.style.display = "block";
       posDirBadge.textContent = pos.direction;
@@ -602,7 +604,7 @@
         order.direction || "--",
         order.volume_lots != null ? `${order.volume_lots}L` : "--",
         Number.isFinite(Number(order.requested_price)) ? formatPrice(order.requested_price) : "--",
-        trade && trade.status === "CLOSED" && trade.exit_price != null ? Number(trade.exit_price).toFixed(5) : "--",
+        trade && trade.status === "CLOSED" && trade.exit_price != null ? formatPrice(trade.exit_price) : "--",
         trade ? (trade.status === "CLOSED" ? (trade.exit_reason || "CLOSED") : "OPEN") : (order.status || "--"),
         trade && trade.status === "CLOSED" ? `$${Number(trade.net_pnl_usd || 0).toFixed(2)}` : "--",
         trade && trade.status === "CLOSED" ? `${Number(trade.realized_r || 0).toFixed(2)}R` : "--"
