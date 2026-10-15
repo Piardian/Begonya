@@ -17,6 +17,9 @@
 
   let currentDirection = "BUY";
   let currentOrderType = "MARKET";
+  let orderLineElements = {};
+  function pricePrecision(symbol = activeSymbol) { if (symbol.endsWith("JPY")) return 3; if (["BTCUSD", "ETHUSD", "SOLUSD", "XAUUSD"].includes(symbol)) return 2; return 5; }
+  function formatPrice(value) { return Number(value).toFixed(pricePrecision()); }
 
   // Elements
   const symbolSelect = document.getElementById("symbol-select");
@@ -105,7 +108,9 @@
       borderVisible: false,
       wickUpColor: '#26a69a',
       wickDownColor: '#ef5350',
+      priceFormat: { type: 'price', precision: pricePrecision(), minMove: Math.pow(10, -pricePrecision()) },
     });
+    initDraggableOrderLines(container);
 
     window.addEventListener("resize", () => {
       if (chart && container) {
@@ -115,6 +120,63 @@
         });
       }
     });
+  }
+
+
+  function initDraggableOrderLines(container) {
+    const specs = [
+      { key: "entry", label: "LIMIT", color: "#2962ff", input: inputLimitPrice, visible: () => currentOrderType === "LIMIT" },
+      { key: "sl", label: "SL", color: "#ef5350", input: inputSl, visible: () => true },
+      { key: "tp", label: "TP", color: "#26a69a", input: inputTp, visible: () => true }
+    ];
+    container.style.position = "relative";
+    for (const spec of specs) {
+      const line = document.createElement("div");
+      line.className = "replay-order-line";
+      line.style.borderTopColor = spec.color;
+      const label = document.createElement("span");
+      label.className = "replay-order-line-label";
+      label.style.background = spec.color;
+      line.appendChild(label);
+      line.addEventListener("pointerdown", (event) => {
+        if (!spec.visible() || !spec.input.value) return;
+        event.preventDefault();
+        line.setPointerCapture(event.pointerId);
+        const move = (e) => {
+          const rect = container.getBoundingClientRect();
+          const price = candleSeries.coordinateToPrice(e.clientY - rect.top);
+          if (Number.isFinite(price) && price > 0) {
+            spec.input.value = formatPrice(price);
+            positionOrderLines();
+          }
+        };
+        const end = () => {
+          line.removeEventListener("pointermove", move);
+          line.removeEventListener("pointerup", end);
+          line.removeEventListener("pointercancel", end);
+        };
+        line.addEventListener("pointermove", move);
+        line.addEventListener("pointerup", end);
+        line.addEventListener("pointercancel", end);
+      });
+      container.appendChild(line);
+      orderLineElements[spec.key] = { element: line, spec };
+      spec.input.addEventListener("input", positionOrderLines);
+    }
+    chart.subscribeVisibleLogicalRangeChange(positionOrderLines);
+    positionOrderLines();
+  }
+
+  function positionOrderLines() {
+    if (!candleSeries) return;
+    for (const { element, spec } of Object.values(orderLineElements)) {
+      const price = Number(spec.input.value);
+      const valid = spec.visible() && spec.input.value.trim() !== "" && Number.isFinite(price) && price > 0;
+      const y = valid ? candleSeries.priceToCoordinate(price) : null;
+      element.style.display = valid && y !== null ? "block" : "none";
+      if (y !== null) element.style.top = y + "px";
+      element.querySelector(".replay-order-line-label").textContent = spec.label + (valid ? " " + formatPrice(price) : "");
+    }
   }
 
   // API Client Calls
@@ -140,6 +202,7 @@
       sessionId = data.session_id;
       activeSymbol = data.symbol;
       symbolSelect.value = activeSymbol;
+      candleSeries.applyOptions({ priceFormat: { type: "price", precision: pricePrecision(), minMove: Math.pow(10, -pricePrecision()) } });
       await refreshCandles();
       updateUI(data);
     } catch (err) {
@@ -150,7 +213,7 @@
   async function refreshCandles() {
     if (!sessionId) return;
     try {
-      const data = await api(`/api/session/${sessionId}/candles?timeframe=${activeTimeframe}`);
+      const data = await api(`/api/session/${sessionId}/candles?timeframe=${activeTimeframe}&include_forming=true`);
       if (candleSeries && data.candles) {
         candleSeries.setData(data.candles);
       }
@@ -169,6 +232,7 @@
       });
       await refreshCandles();
       updateUI(snapshot);
+      positionOrderLines();
     } catch (err) {
       console.error("Error stepping clock:", err);
     } finally {
@@ -264,10 +328,10 @@
       posDirBadge.textContent = pos.direction;
       posDirBadge.className = "gate-badge " + (pos.direction === "BUY" ? "long" : "short");
       posLotsVal.textContent = `${pos.volume_lots} Lot`;
-      posEntryVal.textContent = pos.entry_price.toFixed(5);
+      posEntryVal.textContent = formatPrice(pos.entry_price);
 
       const latest = snapshot.clock.latest_price ?? pos.entry_price;
-      posCurrentVal.textContent = latest.toFixed(5);
+      posCurrentVal.textContent = formatPrice(latest);
 
       const cost = snapshot.cost_profile || {};
       const halfSpread = (Number(cost.spread_pips) || 0) * (Number(cost.pip_size) || 0) / 2;
@@ -286,7 +350,7 @@
     if (pendingOrders.length > 0) {
       const order = pendingOrders[0];
       pendingOrderPanel.style.display = "block";
-      pendingOrderInfo.textContent = `${order.direction} LIMIT @ ${Number(order.requested_price).toFixed(5)} · SL ${Number(order.stop_loss).toFixed(5)} · TP ${Number(order.take_profit).toFixed(5)}`;
+      pendingOrderInfo.textContent = `${order.direction} LIMIT @ ${formatPrice(order.requested_price)} · SL ${formatPrice(order.stop_loss)} · TP ${formatPrice(order.take_profit)}`;
       btnCancelOrder.dataset.orderId = order.order_id;
     } else {
       pendingOrderPanel.style.display = "none";
@@ -294,6 +358,7 @@
     }
 
     updatePriceLines(pos, pendingOrders);
+    positionOrderLines();
 
     // Metrics
     const metrics = snapshot.metrics || {};
@@ -313,11 +378,11 @@
       const cost = snapshot.cost_profile || {};
       const offset = Math.max(Math.abs(currentPrice) * 0.002, (Number(cost.pip_size) || 0.0001) * 20);
       if (currentDirection === "BUY") {
-        inputSl.value = (currentPrice - offset).toFixed(5);
-        inputTp.value = (currentPrice + offset * 2).toFixed(5);
+        inputSl.value = formatPrice(currentPrice - offset);
+        inputTp.value = formatPrice(currentPrice + offset * 2);
       } else {
-        inputSl.value = (currentPrice + offset).toFixed(5);
-        inputTp.value = (currentPrice - offset * 2).toFixed(5);
+        inputSl.value = formatPrice(currentPrice + offset);
+        inputTp.value = formatPrice(currentPrice - offset * 2);
       }
     }
     renderJournal(snapshot);
@@ -518,7 +583,7 @@
         (order.placed_at_iso || "").replace("T", " ").replace("+00:00", ""),
         order.direction || "--",
         order.volume_lots != null ? `${order.volume_lots}L` : "--",
-        Number.isFinite(Number(order.requested_price)) ? Number(order.requested_price).toFixed(5) : "--",
+        Number.isFinite(Number(order.requested_price)) ? formatPrice(order.requested_price) : "--",
         trade && trade.status === "CLOSED" && trade.exit_price != null ? Number(trade.exit_price).toFixed(5) : "--",
         trade ? (trade.status === "CLOSED" ? (trade.exit_reason || "CLOSED") : "OPEN") : (order.status || "--"),
         trade && trade.status === "CLOSED" ? `$${Number(trade.net_pnl_usd || 0).toFixed(2)}` : "--",
