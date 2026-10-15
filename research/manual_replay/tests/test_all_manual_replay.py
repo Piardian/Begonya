@@ -1,141 +1,261 @@
-"""
-Begonya Manual Replay - Comprehensive Verification Test Suite
-=============================================================
-Covers:
-- Data Adapter & M5 Resampling Integrity
-- Replay Clock Lookahead Isolation (Anti-peeking)
-- Execution Engine (Market, Limit, SL/TP, Costs, Ambiguity Rule)
-- PIT Macro Adapter (As-of isolation, UNAVAILABLE handling)
-- End-to-End Session Determinism
-"""
+"""Deterministic, filesystem-isolated tests for Begonya Manual Replay."""
+
+import json
+from pathlib import Path
 
 import pytest
-from datetime import datetime, timezone
 
-from manual_replay.adapter.historical_data_adapter import Candle, HistoricalDataAdapter
+from manual_replay.adapter.historical_data_adapter import Candle, DatasetManifest, HistoricalDataAdapter
 from manual_replay.timeline.replay_clock import ReplayClock
-from manual_replay.simulator.cost_profile import CostProfile, get_cost_profile
+from manual_replay.simulator.cost_profile import CostProfile
 from manual_replay.simulator.execution_engine import ExecutionEngine
 from manual_replay.macro.pit_macro_adapter import PitMacroAdapter
-from manual_replay.session.session_store import SessionStore, ReplaySession
+from manual_replay.session.session_store import ReplaySession, SessionStore
+
+
+BASE_TS = 1_699_992_000_000  # aligned to 4h / 5m boundaries
+
+
+class InMemoryAdapter:
+    """Small deterministic OHLC fixture; tests never depend on a developer's local files."""
+
+    def __init__(self, count=300):
+        self.data = {"1m": []}
+        for i in range(count):
+            open_price = 1.10000 + i * 0.00001
+            close_price = open_price + 0.000005
+            self.data["1m"].append(Candle(
+                timestamp=BASE_TS + i * 60_000,
+                open=open_price,
+                high=close_price + 0.00001,
+                low=open_price - 0.00001,
+                close=close_price,
+            ))
+        for tf, span in (("5m", 5), ("15m", 15), ("1h", 60), ("4h", 240)):
+            rows = []
+            for start in range(0, len(self.data["1m"]) - span + 1, span):
+                group = self.data["1m"][start:start + span]
+                rows.append(Candle(
+                    timestamp=group[0].timestamp,
+                    open=group[0].open,
+                    high=max(c.high for c in group),
+                    low=min(c.low for c in group),
+                    close=group[-1].close,
+                ))
+            self.data[tf] = rows
+        self.manifest = DatasetManifest(
+            manifest_id="fixture",
+            symbol="EURUSD",
+            timeframes=["1m", "5m", "15m", "1h", "4h"],
+            start_time="fixture-start",
+            end_time="fixture-end",
+            bar_counts={tf: len(rows) for tf, rows in self.data.items()},
+            file_sources={tf: "IN_MEMORY_FIXTURE" for tf in self.data},
+            checksum_sha256={tf: f"checksum-{tf}" for tf in self.data},
+            quality_audit={tf: {"status": "VALID"} for tf in self.data},
+        )
+
+    def prepare_dataset(self, symbol):
+        if symbol != "EURUSD":
+            raise FileNotFoundError(f"No fixture data for {symbol}")
+        return self.manifest
+
+    def get_manifest(self, symbol):
+        return self.manifest if symbol == "EURUSD" else None
+
+    def get_candles(self, symbol, timeframe):
+        if symbol != "EURUSD" or timeframe not in self.data:
+            raise KeyError(f"No fixture candles for {symbol}/{timeframe}")
+        return self.data[timeframe]
 
 
 class TestHistoricalDataAdapter:
-    def test_m5_resampling_math(self):
-        # 10 1-minute bars spanning two 5-minute buckets (0-4 and 5-9)
-        m1_bars = [
-            Candle(timestamp=i * 60000, open=1.0 + i * 0.001, high=1.0 + i * 0.002, low=0.99, close=1.0 + i * 0.0015)
+    def test_m5_resampling_only_returns_complete_buckets(self):
+        bars = [
+            Candle(BASE_TS + i * 60_000, 1.0, 1.02, 0.99, 1.01)
+            for i in range(6)
+        ]
+        m5 = HistoricalDataAdapter.resample_m1_to_m5(bars)
+        assert len(m5) == 1
+        assert m5[0].timestamp == BASE_TS
+        assert m5[0].close == bars[4].close
+
+    def test_m5_resampling_aggregates_ohlc_correctly(self):
+        bars = [
+            Candle(BASE_TS + i * 60_000, 1.0 + i * .001, 1.02 + i * .001, .99 + i * .001, 1.01 + i * .001)
             for i in range(10)
         ]
-        m5_bars = HistoricalDataAdapter.resample_m1_to_m5(m1_bars)
-        assert len(m5_bars) == 2, "Expected exactly two 5-minute bars"
+        m5 = HistoricalDataAdapter.resample_m1_to_m5(bars)
+        assert len(m5) == 2
+        assert m5[0].open == bars[0].open
+        assert m5[0].high == max(b.high for b in bars[:5])
+        assert m5[0].low == min(b.low for b in bars[:5])
+        assert m5[0].close == bars[4].close
 
-        # First M5 bar
-        b0 = m5_bars[0]
-        assert b0.timestamp == 0
-        assert b0.open == m1_bars[0].open
-        assert b0.high == max(b.high for b in m1_bars[:5])
-        assert b0.low == min(b.low for b in m1_bars[:5])
-        assert b0.close == m1_bars[4].close
+    def test_duplicate_timestamps_mark_stream_corrupted(self):
+        bar = Candle(BASE_TS, 1.1, 1.2, 1.0, 1.15)
+        audit = HistoricalDataAdapter.audit_candle_stream([bar, bar], 60_000)
+        assert audit["duplicates"] == 1
+        assert audit["status"] == "CORRUPTED"
 
-        # Second M5 bar
-        b1 = m5_bars[1]
-        assert b1.timestamp == 300000
-        assert b1.open == m1_bars[5].open
-        assert b1.close == m1_bars[9].close
-
-    def test_stream_audit_validity(self):
-        valid_bars = [
-            Candle(timestamp=i * 60000, open=1.10, high=1.12, low=1.08, close=1.11)
-            for i in range(5)
-        ]
-        audit = HistoricalDataAdapter.audit_candle_stream(valid_bars, expected_interval_ms=60000)
-        assert audit["status"] == "VALID"
-        assert audit["anomalies"] == 0
-
-        # Anomaly bar (low > high)
-        bad_bars = [Candle(timestamp=0, open=1.10, high=1.05, low=1.12, close=1.08)]
-        bad_audit = HistoricalDataAdapter.audit_candle_stream(bad_bars, expected_interval_ms=60000)
-        assert bad_audit["status"] == "CORRUPTED"
-        assert bad_audit["anomalies"] == 1
+    def test_loader_rejects_invalid_ohlc(self, tmp_path):
+        path = tmp_path / "bad.json"
+        path.write_text(json.dumps([{
+            "timestamp": BASE_TS, "open": 1.1, "high": 1.0, "low": 1.2, "close": 1.15
+        }]), encoding="utf-8")
+        with pytest.raises(ValueError, match="Invalid OHLC"):
+            HistoricalDataAdapter(search_paths=[]).load_candles_from_file(path)
 
 
 class TestReplayClockLookaheadIsolation:
-    def test_future_bars_strictly_hidden(self):
-        adapter = HistoricalDataAdapter()
+    def test_future_closed_bars_are_hidden(self):
+        adapter = InMemoryAdapter()
         clock = ReplayClock(adapter, "EURUSD")
-
-        # Set clock to specific time
-        test_time = clock.min_time + (24 * 3600 * 1000)  # 24 hours into dataset
+        test_time = BASE_TS + 120 * 60_000
         clock.set_time(test_time)
+        for tf, interval in (("1m", 60_000), ("5m", 300_000), ("15m", 900_000), ("1h", 3_600_000), ("4h", 14_400_000)):
+            for candle in clock.get_visible_candles(tf, include_forming=False):
+                assert candle.timestamp + interval <= test_time
 
-        # Check all visible timeframes
-        for tf, interval_ms in [("1m", 60000), ("5m", 300000), ("15m", 900000), ("1h", 3600000), ("4h", 14400000)]:
-            visible = clock.get_visible_candles(tf, include_forming=False)
-            for c in visible:
-                close_time = c.timestamp + interval_ms
-                assert close_time <= test_time, f"Future {tf} bar leaked! Close {close_time} > clock {test_time}"
+    def test_forming_candle_does_not_reveal_future_high_low_close(self):
+        adapter = InMemoryAdapter()
+        clock = ReplayClock(adapter, "EURUSD")
+        clock.set_time(BASE_TS + 7 * 60_000)
+        visible = clock.get_visible_candles("15m", include_forming=True)
+        forming = visible[-1]
+        assert forming.timestamp == BASE_TS
+        known_m1 = adapter.data["1m"][:7]
+        assert forming.high == max(adapter.data["15m"][0].open, *(c.high for c in known_m1))
+        assert forming.close == known_m1[-1].close
+        assert forming.high < adapter.data["15m"][0].high or forming.high == max(c.high for c in known_m1)
 
 
 class TestExecutionEngine:
-    def test_market_buy_spread_and_slippage(self):
-        profile = CostProfile(symbol="TEST", spread_pips=1.0, pip_size=0.0001, commission_per_lot_usd=7.0, slippage_pips=0.2)
-        engine = ExecutionEngine("TEST", initial_balance=10000.0, cost_profile=profile)
+    @staticmethod
+    def profile():
+        return CostProfile(
+            symbol="TEST", spread_pips=1.0, pip_size=0.0001,
+            commission_per_lot_usd=7.0, slippage_pips=0.2, lot_size=100_000,
+        )
 
-        # Mid price 1.2000
-        # Expected Ask with spread (0.00005) + slippage (0.00002) = 1.20007
-        order = engine.place_order("MARKET", "BUY", price=1.2000, stop_loss=1.1950, take_profit=1.2100, current_time_ms=1000, volume_lots=1.0)
+    def test_market_fill_models_spread_and_slippage(self):
+        engine = ExecutionEngine("TEST", cost_profile=self.profile())
+        engine.place_order("MARKET", "BUY", 1.2, 1.195, 1.21, 1_000, volume_lots=1.0)
         assert engine.open_position is not None
-        assert abs(engine.open_position.entry_price - 1.20007) < 1e-6
+        assert engine.open_position.entry_price == pytest.approx(1.20007)
 
-    def test_conservative_ambiguity_rule(self):
-        """When both SL and TP are touched in the same bar, SL MUST trigger."""
-        engine = ExecutionEngine("EURUSD", initial_balance=10000.0)
-        engine.place_order("MARKET", "BUY", price=1.1000, stop_loss=1.0950, take_profit=1.1100, current_time_ms=1000, volume_lots=1.0)
+    def test_invalid_directional_levels_are_rejected(self):
+        engine = ExecutionEngine("TEST", cost_profile=self.profile())
+        with pytest.raises(ValueError, match="BUY orders"):
+            engine.place_order("MARKET", "BUY", 1.2, 1.195, 1.19, 1_000, volume_lots=1.0)
+        with pytest.raises(ValueError, match="direction"):
+            engine.place_order("MARKET", "LONGISH", 1.2, 1.195, 1.21, 1_000, volume_lots=1.0)
 
-        # Extreme bar that spans below SL and above TP
-        extreme_candle = Candle(timestamp=2000, open=1.1000, high=1.1200, low=1.0900, close=1.1050)
-        engine.process_candle(extreme_candle)
+    def test_limit_fill_bar_cannot_also_trigger_tp_or_sl(self):
+        engine = ExecutionEngine("TEST", cost_profile=self.profile())
+        engine.place_order("LIMIT", "BUY", 1.1, 1.095, 1.11, 1_000, volume_lots=1.0)
+        extreme = Candle(BASE_TS, 1.1, 1.12, 1.09, 1.105)
+        engine.process_candle(extreme)
+        assert engine.open_position is not None
+        assert engine.open_position.entry_ts == BASE_TS + 60_000
+        assert engine.trade_history == []
 
-        assert engine.open_position is None
-        assert len(engine.trade_history) == 1
+    def test_same_bar_sl_tp_conflict_is_conservatively_sl_first(self):
+        engine = ExecutionEngine("TEST", cost_profile=self.profile())
+        engine.place_order("MARKET", "BUY", 1.1, 1.095, 1.11, 1_000, volume_lots=1.0)
+        engine.process_candle(Candle(BASE_TS, 1.1, 1.12, 1.09, 1.105))
         trade = engine.trade_history[0]
         assert trade.exit_reason == "SL"
         assert trade.conservative_ambiguity_applied is True
         assert trade.net_pnl_usd < 0
 
+    def test_pnl_separates_gross_spread_slippage_and_commission(self):
+        engine = ExecutionEngine("TEST", cost_profile=self.profile())
+        engine.place_order("MARKET", "BUY", 1.2, 1.195, 1.21, 1_000, volume_lots=1.0)
+        trade = engine.close_position_manually(1.205, 2_000)
+        assert trade.gross_pnl_usd == pytest.approx(500.0)
+        assert trade.spread_cost_usd == pytest.approx(10.0)
+        assert trade.slippage_cost_usd == pytest.approx(4.0)
+        assert trade.commission_usd == pytest.approx(7.0)
+        assert trade.net_pnl_usd == pytest.approx(479.0)
+        assert trade.realized_r == pytest.approx(0.96)
+
 
 class TestPitMacroAdapter:
-    def test_missing_data_not_neutralized(self):
-        adapter = PitMacroAdapter()
-        # Historical date prior to dataset
-        snap = adapter.get_macro_snapshot("EURUSD", as_of_ms=1000000)
+    def test_missing_file_returns_unavailable(self, tmp_path):
+        adapter = PitMacroAdapter(records_path=tmp_path / "missing.json")
+        snap = adapter.get_macro_snapshot("EURUSD", as_of_ms=BASE_TS)
         assert snap.status == "UNAVAILABLE_HISTORICAL_DATA"
         assert snap.bias_gate == "UNAVAILABLE"
         assert snap.as_of_verified is False
-        assert snap.volatility_risk_score is None
+
+    def test_timestamp_without_availability_metadata_is_not_pit_verified(self, tmp_path):
+        path = tmp_path / "macro.json"
+        path.write_text(json.dumps([{
+            "timestamp_utc": "2023-11-14T22:13:20+00:00",
+            "symbol": "EURUSD",
+            "cross_pair_verdict": {"recommended_gate": "LONG_ONLY"},
+        }]), encoding="utf-8")
+        adapter = PitMacroAdapter(records_path=path)
+        snap = adapter.get_macro_snapshot("EURUSD", as_of_ms=BASE_TS + 60_000)
+        assert snap.status == "UNVERIFIED_HISTORICAL_DATA"
+        assert snap.bias_gate == "UNAVAILABLE"
+        assert snap.as_of_verified is False
+
+    def test_verified_record_is_selected_only_after_availability_time(self, tmp_path):
+        path = tmp_path / "macro.json"
+        path.write_text(json.dumps([{
+            "available_at_utc": "2023-11-14T22:12:00+00:00",
+            "timestamp_utc": "2023-11-14T22:12:00+00:00",
+            "symbol": "EURUSD",
+            "cross_pair_verdict": {"recommended_gate": "LONG_ONLY"},
+            "primary_regime": "TREND",
+            "volatility_risk_score": 2,
+            "recommended_risk_multiplier": 0.5,
+            "currency_scores": {"EUR": 3, "USD": 0},
+            "macro_record_id": "record-1",
+        }]), encoding="utf-8")
+        adapter = PitMacroAdapter(records_path=path)
+        too_early = adapter.get_macro_snapshot("EURUSD", as_of_ms=BASE_TS - 60_000)
+        valid = adapter.get_macro_snapshot("EURUSD", as_of_ms=BASE_TS + 60_000)
+        assert too_early.status == "UNAVAILABLE_HISTORICAL_DATA"
+        assert valid.status == "AVAILABLE"
+        assert valid.as_of_verified is True
+        assert valid.bias_gate == "LONG_ONLY"
 
 
-class TestSessionDeterminism:
-    def test_replay_determinism(self):
-        """Running the same series of actions produces identical metrics and balances."""
-        def run_simulation():
-            session = ReplaySession("EURUSD", initial_balance=10000.0)
-            session.advance_bar("1m", 15)
-            session.place_manual_order(
-                order_type="MARKET",
-                direction="BUY",
-                price=session.clock.get_latest_price(),
-                stop_loss=session.clock.get_latest_price() - 0.0020,
-                take_profit=session.clock.get_latest_price() + 0.0040,
-                volume_lots=1.0,
-            )
-            session.advance_bar("1m", 30)
-            session.close_open_position()
-            return session.engine.balance, session.engine.trade_history[0].net_pnl_usd
+class TestSessionState:
+    def test_jump_processes_intervening_m1_bars(self):
+        adapter = InMemoryAdapter()
+        session = ReplaySession("EURUSD", data_adapter=adapter)
+        current = session.clock.current_time
+        latest = session.clock.get_latest_price()
+        session.place_manual_order(
+            "MARKET", "BUY", latest, latest - 0.1, latest + 0.00005, volume_lots=0.01
+        )
+        session.advance_to(current + 10 * 60_000)
+        assert session.engine.trade_history, "Forward jump should process intervening candles and close the TP"
+        assert session.engine.trade_history[0].exit_reason == "TP"
 
-        bal1, pnl1 = run_simulation()
-        bal2, pnl2 = run_simulation()
+    def test_backward_jump_is_blocked_after_order_activity(self):
+        session = ReplaySession("EURUSD", data_adapter=InMemoryAdapter())
+        current = session.clock.current_time
+        latest = session.clock.get_latest_price()
+        session.place_manual_order("MARKET", "BUY", latest, latest - 0.1, latest + 1.0, volume_lots=0.01)
+        with pytest.raises(ValueError, match="Cannot rewind"):
+            session.advance_to(current - 60_000)
 
-        assert bal1 == bal2, f"Determinism failure: {bal1} != {bal2}"
-        assert pnl1 == pnl2, f"Trade PnL mismatch: {pnl1} != {pnl2}"
+    def test_save_and_restore_preserves_position_and_clock(self, tmp_path):
+        adapter = InMemoryAdapter()
+        session = ReplaySession("EURUSD", data_adapter=adapter)
+        session.advance_bar("1m", 5)
+        latest = session.clock.get_latest_price()
+        session.place_manual_order("MARKET", "BUY", latest, latest - 0.1, latest + 1.0, volume_lots=0.01)
+        session.save_to_disk(tmp_path)
+
+        store = SessionStore(sessions_dir=tmp_path, data_adapter=adapter)
+        restored = store.load_saved_session(session.session_id)
+        assert restored.clock.current_time == session.clock.current_time
+        assert restored.engine.balance == session.engine.balance
+        assert restored.engine.open_position is not None
+        assert restored.engine.open_position.order_id == session.engine.open_position.order_id
