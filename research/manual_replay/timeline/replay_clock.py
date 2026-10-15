@@ -90,7 +90,7 @@ class ReplayClock:
             raise ValueError("count must be a positive integer")
         return self.set_time(self.current_time - TIMEFRAME_INTERVALS_MS[tf] * count)
 
-    def get_visible_candles(self, timeframe: str, include_forming: bool = False) -> List[Candle]:
+    def get_visible_candles(self, timeframe: str, include_forming: bool = False, limit: Optional[int] = None) -> List[Candle]:
         """
         Returns candles visible strictly as-of `current_time`.
         - include_forming=False: Only closed bars (bar_open + interval <= current_time).
@@ -107,7 +107,8 @@ class ReplayClock:
 
         # Closed bars only: open timestamp + timeframe interval <= replay time.
         closed_idx = bisect.bisect_right(timestamps, self.current_time - interval)
-        closed = candles[:closed_idx]
+        start_idx = max(0, closed_idx - limit) if limit is not None else 0
+        closed = candles[start_idx:closed_idx]
         if not include_forming:
             return closed
 
@@ -147,12 +148,14 @@ class ReplayClock:
         return closed + [partial]
 
     def get_latest_price(self) -> Optional[float]:
-        """Returns the most recent known close price at current_time from the fastest available timeframe."""
+        """Returns the most recent known close without materializing the full visible history."""
         for tf in ["1m", "5m", "15m", "1h", "4h"]:
-            if tf in self._candles:
-                visible = self.get_visible_candles(tf, include_forming=False)
-                if visible:
-                    return visible[-1].close
+            if tf not in self._candles:
+                continue
+            interval = TIMEFRAME_INTERVALS_MS[tf]
+            idx = bisect.bisect_right(self._timestamps[tf], self.current_time - interval) - 1
+            if idx >= 0:
+                return self._candles[tf][idx].close
         return None
 
     def get_state(self) -> Dict[str, Any]:
