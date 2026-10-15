@@ -13,6 +13,7 @@ from __future__ import annotations
 import bisect
 import json
 import logging
+import os
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -20,8 +21,9 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger("Begonya.ManualReplay.PitMacroAdapter")
 
-BENCHMARK_MACRO_RECORDS = Path(r"c:\Users\piard\.gemini\antigravity\scratch\Begonya\benchmark\macro_records.json")
-LIVE_MACRO_GATE = Path(r"c:\Users\piard\.gemini\antigravity\scratch\Begonya\macro_engine\gateways\macro_bias_gate.json")
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+BENCHMARK_MACRO_RECORDS = Path(os.environ.get("BEGONYA_MACRO_RECORDS_PATH", str(_REPO_ROOT / "benchmark" / "macro_records.json")))
+LIVE_MACRO_GATE = Path(os.environ.get("BEGONYA_LIVE_MACRO_GATE_PATH", str(_REPO_ROOT / "macro_engine" / "gateways" / "macro_bias_gate.json")))
 
 
 @dataclass
@@ -45,30 +47,46 @@ class MacroSnapshot:
 class PitMacroAdapter:
     """Provides point-in-time macro state queries aligned with replay clock."""
 
-    def __init__(self):
+    def __init__(self, records_path: Optional[Path] = None):
+        self.records_path = Path(records_path) if records_path else BENCHMARK_MACRO_RECORDS
         self._historical_records: List[Dict[str, Any]] = []
         self._record_timestamps: List[int] = []
         self._load_historical_records()
 
     def _load_historical_records(self) -> None:
-        if not BENCHMARK_MACRO_RECORDS.exists():
-            logger.warning(f"Benchmark macro records file not found at {BENCHMARK_MACRO_RECORDS}")
+        if not self.records_path.exists():
+            logger.warning(f"Benchmark macro records file not found at {self.records_path}")
             return
 
         try:
-            with open(BENCHMARK_MACRO_RECORDS, "r", encoding="utf-8") as f:
+            with open(self.records_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             if isinstance(data, list):
                 # Sort records chronologically
                 valid_records = []
-                for rec in data:
-                    ts_str = rec.get("timestamp_utc")
-                    if ts_str:
-                        dt = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
-                        ts_ms = int(dt.timestamp() * 1000)
-                        rec["_ts_ms"] = ts_ms
+                for original in data:
+                    if not isinstance(original, dict):
+                        continue
+                    rec = dict(original)
+                    availability_key = next((
+                        key for key in (
+                            "available_at_utc", "published_at_utc",
+                            "release_timestamp_utc", "first_seen_at_utc"
+                        ) if rec.get(key)
+                    ), None)
+                    ts_str = rec.get(availability_key) if availability_key else rec.get("timestamp_utc")
+                    if not ts_str:
+                        continue
+                    try:
+                        dt = datetime.fromisoformat(str(ts_str).replace("Z", "+00:00"))
+                        if dt.tzinfo is None:
+                            logger.warning("Skipping macro record with timezone-naive timestamp")
+                            continue
+                        rec["_ts_ms"] = int(dt.timestamp() * 1000)
+                        rec["_availability_verified"] = availability_key is not None
                         valid_records.append(rec)
-
+                    except (TypeError, ValueError):
+                        logger.warning("Skipping macro record with invalid timestamp")
                 valid_records.sort(key=lambda r: r["_ts_ms"])
                 self._historical_records = valid_records
                 self._record_timestamps = [r["_ts_ms"] for r in valid_records]
@@ -98,32 +116,44 @@ class PitMacroAdapter:
         candidate = self._historical_records[idx - 1]
         rec_ts = candidate["_ts_ms"]
 
+        if not candidate.get("_availability_verified", False):
+            return self._build_unavailable(
+                sym_clean, as_of_iso, reason="UNVERIFIED_RECORD_AVAILABILITY",
+                status="UNVERIFIED_HISTORICAL_DATA",
+            )
+
         # 72 hours maximum validity window (72 * 3600 * 1000 ms)
         MAX_STALENESS_MS = 72 * 3600 * 1000
         if as_of_ms - rec_ts > MAX_STALENESS_MS:
             return self._build_unavailable(sym_clean, as_of_iso, reason="RECORD_EXPIRED_STALE")
 
-        # Determine bias gate for requested symbol
-        # 1. Direct cross_pair_verdict if symbol matches
-        bias_gate = "NEUTRAL_RANGE"
-        if candidate.get("symbol") == sym_clean:
-            bias_gate = candidate.get("cross_pair_verdict", {}).get("recommended_gate", "NEUTRAL_ALLOWED")
-        else:
-            # Check execution_bias_gates if available or synthesize from currency scores
-            c_scores = candidate.get("currency_scores", {})
-            # Example: EURUSD -> EUR score vs USD score
-            if len(sym_clean) == 6:
-                base = sym_clean[:3]
-                quote = sym_clean[3:]
-                base_score = c_scores.get(base, 0)
-                quote_score = c_scores.get(quote, 0)
-                diff = base_score - quote_score
-                if diff >= 2:
-                    bias_gate = "LONG_ONLY"
-                elif diff <= -2:
-                    bias_gate = "SHORT_ONLY"
-                else:
-                    bias_gate = "NEUTRAL_RANGE"
+        # Missing fields must never be silently converted to a neutral macro state.
+        bias_gate = None
+        record_symbol = str(candidate.get("symbol", "")).replace("/", "").replace("-", "").upper()
+        if record_symbol == sym_clean:
+            raw_gate = candidate.get("cross_pair_verdict", {}).get("recommended_gate")
+            gate_map = {
+                "LONG_ONLY": "LONG_ONLY",
+                "SHORT_ONLY": "SHORT_ONLY",
+                "NEUTRAL_RANGE": "NEUTRAL_RANGE",
+                "NEUTRAL_ALLOWED": "NEUTRAL_RANGE",
+            }
+            bias_gate = gate_map.get(str(raw_gate).upper()) if raw_gate is not None else None
+        elif len(sym_clean) == 6:
+            c_scores = candidate.get("currency_scores")
+            base, quote = sym_clean[:3], sym_clean[3:]
+            if isinstance(c_scores, dict) and base in c_scores and quote in c_scores:
+                try:
+                    diff = float(c_scores[base]) - float(c_scores[quote])
+                    bias_gate = "LONG_ONLY" if diff >= 2 else "SHORT_ONLY" if diff <= -2 else "NEUTRAL_RANGE"
+                except (TypeError, ValueError):
+                    bias_gate = None
+
+        if bias_gate is None:
+            return self._build_unavailable(
+                sym_clean, as_of_iso, reason="MISSING_OR_INVALID_SYMBOL_BIAS",
+                status="UNAVAILABLE_HISTORICAL_DATA",
+            )
 
         return MacroSnapshot(
             status="AVAILABLE",
@@ -140,9 +170,14 @@ class PitMacroAdapter:
         )
 
     @staticmethod
-    def _build_unavailable(symbol: str, as_of_iso: str, reason: str = "NO_HISTORICAL_OBSERVATION") -> MacroSnapshot:
+    def _build_unavailable(
+        symbol: str,
+        as_of_iso: str,
+        reason: str = "NO_HISTORICAL_OBSERVATION",
+        status: str = "UNAVAILABLE_HISTORICAL_DATA",
+    ) -> MacroSnapshot:
         return MacroSnapshot(
-            status="UNAVAILABLE_HISTORICAL_DATA",
+            status=status,
             as_of_iso=as_of_iso,
             symbol=symbol,
             primary_regime=f"UNAVAILABLE ({reason})",
