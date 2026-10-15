@@ -147,6 +147,20 @@ class ReplayClock:
             )
         return closed + [partial]
 
+    def get_visible_candle_count(self, timeframe: str, include_forming: bool = False) -> int:
+        """Counts visible candles without allocating the candle list."""
+        tf = timeframe.lower()
+        if tf not in self._candles:
+            raise KeyError(f"Timeframe '{tf}' not loaded for symbol '{self.symbol}'")
+        interval = TIMEFRAME_INTERVALS_MS[tf]
+        closed_idx = bisect.bisect_right(self._timestamps[tf], self.current_time - interval)
+        if not include_forming or "1m" not in self._candles:
+            return closed_idx
+        forming_idx = bisect.bisect_right(self._timestamps[tf], self.current_time) - 1
+        if forming_idx >= 0 and self._timestamps[tf][forming_idx] + interval > self.current_time:
+            return closed_idx + 1
+        return closed_idx
+
     def get_latest_price(self) -> Optional[float]:
         """Returns the most recent known close without materializing the full visible history."""
         for tf in ["1m", "5m", "15m", "1h", "4h"]:
