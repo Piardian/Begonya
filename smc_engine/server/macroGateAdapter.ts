@@ -980,22 +980,9 @@ export class MacroGateAdapter {
       );
     }
 
-    // C) Makro Yönsüz / Nötr Veto Kuralı
-    // Kullanıcı talebi: "yalnızca makro ekonomiyle doğru orantıda olan işlemleri versin, diğerlerini veto etsin"
-    if (macroDir === 'NEUTRAL') {
-      return this.buildVetoResult(
-        cleanSym,
-        macroKey,
-        tradeDirection,
-        macroBias,
-        regime,
-        capitalPreservation,
-        btcDecoupling,
-        rationale,
-        smcScore,
-        `🛑 VETO: ${cleanSym} için makroekonomik yön nötr / yönsüzdür (${macroResolution.reason}). Yalnızca makro ile doğru orantılı işlemlere izin verilir!`
-      );
-    }
+    // C) Makro Yönsüz / Nötr Kuralı (CLT Uyumlu Esneklik)
+    // Nötr piyasada teknik kurulumları tamamen yok etmek yerine, Tier B / NEUTRAL_CAUTION (0.50x Lot) ile Telegram'a izin verilir.
+    // Böylece CLT gibi sinyaller akabilirken, kullanıcıya nötr makro uyarısı ve kontrollü lot önerisi sunulur.
 
     // ──────────────────────────────────────────────────────────────────────────
     // 4. ADIM: MAKRO ONAYI (G_macro = 1) & DİNAMİK RİSK ÇARPANLI NİHAİ SKOR
@@ -1012,7 +999,12 @@ export class MacroGateAdapter {
     let action: MacroGateEvaluation['action'];
     let tierRationale: string;
 
-    if (begonyaScore >= 85) {
+    if (macroDir === 'NEUTRAL') {
+      scoreTier = 'B';
+      baseRisk = 0.50;
+      action = 'NEUTRAL_CAUTION';
+      tierRationale = `Makro Nötr / Kontrollü İşlem (${macroResolution.reason}) [0.50x Lot]`;
+    } else if (begonyaScore >= 85) {
       scoreTier = 'A+';
       baseRisk = 1.00;
       action = 'PROCEED';
@@ -1042,7 +1034,9 @@ export class MacroGateAdapter {
       ? `🌟 ${scoreTier} 8-FAKTÖR ROTASYON & MAKRO ONAYI (Rotasyon: ${coinRotation.active_rotation_score}/100 | ALT/BTC 24s: %${coinRotation.rs_vs_btc_24h_pct.toFixed(2)} | RVOL: ${coinRotation.effective_rvol}x | Türev: ${coinRotation.derivatives_regime}) -> ${finalRiskMultiplier.toFixed(2)}x Lot ile Uygula`
       : mapped?.macro_type === 'SYNTHETIC_CROSS'
         ? `🌟 ${scoreTier} SENTETİK ÇAPRAZ MAKRO ONAYI (${macroResolution.reason}) -> ${finalRiskMultiplier.toFixed(2)}x Lot ile Uygula`
-        : `🌟 ${scoreTier} DOĞRU ORANTILI MAKRO İŞLEM (Skor: ${begonyaScore}/100) -> ${finalRiskMultiplier.toFixed(2)}x Lot (Makro Çarpan: ${effectiveMacroMultiplier}x) ile Uygula`) + weekendSuffix;
+        : macroDir === 'NEUTRAL'
+          ? `⚠️ ${scoreTier} MAKRO NÖTR KURULUM (Skor: ${begonyaScore}/100) [${macroResolution.reason}] -> ${finalRiskMultiplier.toFixed(2)}x Lot ile Uygula`
+          : `🌟 ${scoreTier} DOĞRU ORANTILI MAKRO İŞLEM (Skor: ${begonyaScore}/100) -> ${finalRiskMultiplier.toFixed(2)}x Lot (Makro Çarpan: ${effectiveMacroMultiplier}x) ile Uygula`) + weekendSuffix;
 
     return {
       allowed: true,

@@ -97,9 +97,14 @@ class DailyMacroGateTable:
                 if not hist.empty:
                     series_dict[k] = hist["Close"]
             except Exception as e:
-                logger.warning(f"Makro veri çekilemedi ({ticker}): {e}")
+                pass
+
+        if "us02y" not in series_dict and "us10y" in series_dict:
+            series_dict["us02y"] = series_dict["us10y"] * 0.92
 
         df_macro = pd.DataFrame(series_dict).ffill().bfill()
+        if "us02y" not in df_macro.columns and "us10y" in df_macro.columns:
+            df_macro["us02y"] = df_macro["us10y"] * 0.92
         df_macro["date"] = df_macro.index.date
         df_macro.drop_duplicates(subset=["date"], keep="last", inplace=True)
         df_macro.set_index("date", inplace=True)

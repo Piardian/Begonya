@@ -246,7 +246,7 @@ describe('Begonya Asymmetric Short & Multiplicative Gating Tests', () => {
     expect(result.action).toBe('VETO');
   });
 
-  it('14. NÖTR VARLIK VETO KURALI: Makro yönü nötr olan varlıklar arkasında rüzgar olmadığı için VETO edilir', () => {
+  it('14. NÖTR VARLIK KURALI (CLT Uyumlu): Makro yönü nötr olan varlıklar VETO EDİLMEZ, Tier B (0.50x Risk) ile izin verilir', () => {
     writeMockGate({
       execution_bias_gates: { EURUSD: 'NEUTRAL_RANGE' },
       asset_biases: { EURUSD: 'Neutral' }
@@ -255,13 +255,17 @@ describe('Begonya Asymmetric Short & Multiplicative Gating Tests', () => {
     const resultLong = adapter.evaluateCandidate('EURUSD', 'long', 88);
     const resultShort = adapter.evaluateCandidate('EURUSD', 'short', 88);
 
-    expect(resultLong.allowed).toBe(false);
-    expect(resultLong.action).toBe('VETO');
-    expect(resultLong.gateStatusMessage).toContain('nötr / yönsüzdür');
+    expect(resultLong.allowed).toBe(true);
+    expect(resultLong.action).toBe('NEUTRAL_CAUTION');
+    expect(resultLong.scoreTier).toBe('B');
+    expect(resultLong.riskMultiplier).toBeLessThanOrEqual(0.50);
+    expect(resultLong.gateStatusMessage).toContain('MAKRO NÖTR');
 
-    expect(resultShort.allowed).toBe(false);
-    expect(resultShort.action).toBe('VETO');
-    expect(resultShort.gateStatusMessage).toContain('nötr / yönsüzdür');
+    expect(resultShort.allowed).toBe(true);
+    expect(resultShort.action).toBe('NEUTRAL_CAUTION');
+    expect(resultShort.scoreTier).toBe('B');
+    expect(resultShort.riskMultiplier).toBeLessThanOrEqual(0.50);
+    expect(resultShort.gateStatusMessage).toContain('MAKRO NÖTR');
   });
 
   it('15. AUDCAD SENTETİK ÇAPRAZ SHORT ONAYI: Petrol yüksek (CAD güçlü) ve Maden durgun (AUD zayıf) iken AUDCAD SHORT onaylanır, LONG veto edilir', () => {
@@ -292,7 +296,7 @@ describe('Begonya Asymmetric Short & Multiplicative Gating Tests', () => {
     expect(longRes.gateStatusMessage).toContain('SHORT_ONLY iken LONG Açılamaz');
   });
 
-  it('16. AUDCAD DENGELİ SENTETİK ÇAPRAZ NÖTR VETO: Emtialar dengeliyken yönsüz olduğu için işlem engellenir', () => {
+  it('16. AUDCAD DENGELİ SENTETİK ÇAPRAZ NÖTR: Emtialar dengeliyken VETO edilmez, Tier B (0.50x risk) ile izin verilir', () => {
     writeMockGate({
       regime_state: {
         brent_level: 78.0,
@@ -302,9 +306,11 @@ describe('Begonya Asymmetric Short & Multiplicative Gating Tests', () => {
     });
     const adapter = MacroGateAdapter.getInstance();
     const result = adapter.evaluateCandidate('AUDCAD', 'short', 80);
-    expect(result.allowed).toBe(false);
-    expect(result.action).toBe('VETO');
-    expect(result.gateStatusMessage).toContain('nötr / yönsüzdür');
+    expect(result.allowed).toBe(true);
+    expect(result.action).toBe('NEUTRAL_CAUTION');
+    expect(result.scoreTier).toBe('B');
+    expect(result.riskMultiplier).toBeLessThanOrEqual(0.50);
+    expect(result.gateStatusMessage).toContain('Net Skor: 0 (Nötr)');
   });
 
   it('17. SOL/BTC GÖRELİ GÜÇ VETO: BTC Long olsa bile SOL/BTC momentum negatifse SOL Long VETO edilir', () => {

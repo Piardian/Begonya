@@ -368,3 +368,26 @@ def calculate_surprise_momentum(
         "sample_count": count,
         "regime": regime,
     }
+
+
+def compute_net_macro_conviction(
+    bullish_count: int,
+    bearish_count: int,
+    resolved_gate: str,
+    base_risk_multiplier: float = 1.0,
+) -> float:
+    """Compute a deterministic risk/conviction multiplier for execution sizing.
+
+    - NO_TRADE / DEFENSIVE_HOLD / REDUCE_ONLY -> 0.0
+    - NEUTRAL_RANGE / NEUTRAL_ALL -> 0.50 * base_risk_multiplier (range regime half-risk)
+    - LONG_ONLY / SHORT_ONLY -> 1.00 * base_risk_multiplier (or 1.15x when net factor margin >= 2)
+    """
+    gate = str(resolved_gate).upper()
+    if gate in {"NO_TRADE", "DEFENSIVE_HOLD", "REDUCE_ONLY"}:
+        return 0.0
+    if gate in {"NEUTRAL_RANGE", "NEUTRAL_ALL"}:
+        return round(0.50 * float(base_risk_multiplier), 3)
+    net_margin = abs(int(bullish_count) - int(bearish_count))
+    boost = 1.15 if net_margin >= 2 else 1.00
+    return round(min(1.25, boost * float(base_risk_multiplier)), 3)
+

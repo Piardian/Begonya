@@ -92,3 +92,4 @@ class TestDiagnosticsEngine(unittest.TestCase):
         self.engine = DiagnosticsEngine(log_path=self.log_path, journal_path=self.journal_path)
 
     def tearDown(self):
+        self.temp_dir.cleanup()

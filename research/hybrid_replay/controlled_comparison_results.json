@@ -1,0 +1,1706 @@
+{
+  "timestamp": "2026-10-14T13:16:20.000357+00:00",
+  "summary": {
+    "total_candidates": 66,
+    "model_a_production": {
+      "invalidated_wick_veto": 27,
+      "no_displacement": 1,
+      "no_static_fill": 2,
+      "entry_filled": 35,
+      "target_hits": 2,
+      "stop_hits": 12,
+      "wick_out_to_target_count": 7,
+      "insufficient_target": 21
+    },
+    "model_b_intended_hybrid": {
+      "clock_aligned_invalidated": 32,
+      "entry_filled": 32,
+      "verified_structural_stop_sample": 25,
+      "target_hits": 2,
+      "stop_hits": 7,
+      "insufficient_target": 16,
+      "sum_gross_r": 10.9557
+    }
+  },
+  "records": [
+    {
+      "candidate_id": "USDJPY_15m_OB_1787289300000_1787290200000",
+      "symbol": "USDJPY",
+      "direction": "short",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 159.064,
+        "stop_price": 159.10299999999998,
+        "risk_pips": 3.8999999999987267,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null
+      },
+      "model_b": {
+        "status": "ENTRY_FILLED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": null
+      }
+    },
+    {
+      "candidate_id": "USDJPY_15m_FVG_1787290200000_1787290200000",
+      "symbol": "USDJPY",
+      "direction": "short",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 158.9375,
+        "stop_price": 158.964,
+        "risk_pips": 2.6499999999998636,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null
+      },
+      "model_b": {
+        "status": "ENTRY_FILLED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": null
+      }
+    },
+    {
+      "candidate_id": "USDCAD_15m_OB_1787314500000_1787315400000",
+      "symbol": "USDCAD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 1.374225,
+        "stop_price": 1.37394,
+        "risk_pips": 2.8500000000009074,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null
+      },
+      "model_b": {
+        "status": "ENTRY_FILLED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": null
+      }
+    },
+    {
+      "candidate_id": "USDCAD_15m_FVG_1787528700000_1787528700000",
+      "symbol": "USDCAD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 1.378515,
+        "stop_price": 1.37808,
+        "risk_pips": 4.349999999999632,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null
+      },
+      "model_b": {
+        "status": "ENTRY_FILLED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": null
+      }
+    },
+    {
+      "candidate_id": "ETHUSD_15m_OB_1787119200000_1787121900000",
+      "symbol": "ETHUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 1909.705,
+        "stop_price": 1909.0149999999999,
+        "risk_pips": 69.00000000000546,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null
+      },
+      "model_b": {
+        "trade_id": "ETHUSD_15m_OB_1787119200000_1787121900000",
+        "symbol": "ETHUSD",
+        "direction": "long",
+        "entry_price": 1910.595,
+        "stop_price": 1906.0,
+        "target_price": null,
+        "risk_distance": 4.595000000000027,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null,
+        "exit_price": null,
+        "exit_timestamp": null,
+        "exit_bar_index": null,
+        "holding_bars": null,
+        "rationale": "Target price was not verified or not known at signal timestamp; no arbitrary target assigned",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "ETHUSD_15m_OB_1787211000000_1787212800000",
+      "symbol": "ETHUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 2251.12,
+        "stop_price": 2248.545,
+        "risk_pips": 257.4999999999818,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null
+      },
+      "model_b": {
+        "trade_id": "ETHUSD_15m_OB_1787211000000_1787212800000",
+        "symbol": "ETHUSD",
+        "direction": "long",
+        "entry_price": 2252.01,
+        "stop_price": 2238.97,
+        "target_price": null,
+        "risk_distance": 13.040000000000418,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null,
+        "exit_price": null,
+        "exit_timestamp": null,
+        "exit_bar_index": null,
+        "holding_bars": null,
+        "rationale": "Target price was not verified or not known at signal timestamp; no arbitrary target assigned",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "ETHUSD_15m_OB_1787568300000_1787571000000",
+      "symbol": "ETHUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "gross_r": null,
+        "rationale": "1M wick pierced below zoneLow (2437.66 < 2461.73) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 2436.41
+      }
+    },
+    {
+      "candidate_id": "ETHUSD_15m_FVG_1787571000000_1787571000000",
+      "symbol": "ETHUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "gross_r": null,
+        "rationale": "1M wick pierced below zoneLow (2437.66 < 2473.31) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 2436.41
+      }
+    },
+    {
+      "candidate_id": "EURUSD_15m_OB_1787312700000_1787315400000",
+      "symbol": "EURUSD",
+      "direction": "short",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "rationale": "1M wick pierced above zoneHigh (1.17052 > 1.17009) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 1.17092
+      }
+    },
+    {
+      "candidate_id": "SOLUSD_15m_OB_1787140800000_1787142600000",
+      "symbol": "SOLUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "gross_r": null,
+        "rationale": "1M wick pierced below zoneLow (77.26 < 77.43) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 77.22
+      }
+    },
+    {
+      "candidate_id": "SOLUSD_15m_OB_1787148900000_1787150700000",
+      "symbol": "SOLUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "gross_r": null,
+        "rationale": "1M wick pierced below zoneLow (77.42 < 78.51) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 77.22
+      }
+    },
+    {
+      "candidate_id": "SOLUSD_15m_OB_1787314500000_1787397300000",
+      "symbol": "SOLUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "EXPIRED_NO_TOUCH",
+        "outcome": null
+      },
+      "model_b": {
+        "status": "EXPIRED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 91.34
+      }
+    },
+    {
+      "candidate_id": "SOLUSD_15m_FVG_1787142600000_1787142600000",
+      "symbol": "SOLUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "gross_r": null,
+        "rationale": "1M wick pierced below zoneLow (77.26 < 77.54) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 77.22
+      }
+    },
+    {
+      "candidate_id": "SOLUSD_15m_FVG_1787149800000_1787150700000",
+      "symbol": "SOLUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "gross_r": null,
+        "rationale": "1M wick pierced below zoneLow (77.42 < 78.81) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 77.22
+      }
+    },
+    {
+      "candidate_id": "SOLUSD_15m_FVG_1787150700000_1787150700000",
+      "symbol": "SOLUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "gross_r": null,
+        "rationale": "1M wick pierced below zoneLow (77.42 < 79.09) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 77.22
+      }
+    },
+    {
+      "candidate_id": "SOLUSD_15m_FVG_1787315400000_1787397300000",
+      "symbol": "SOLUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "NO_STATIC_FVG_FILL",
+        "outcome": null
+      },
+      "model_b": {
+        "status": "NO_ENTRY",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 91.34
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1787095800000_1787097600000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 4334.96,
+        "stop_price": 4332.72,
+        "risk_pips": 22.399999999997817,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null
+      },
+      "model_b": {
+        "trade_id": "XAUUSD_15m_OB_1787095800000_1787097600000",
+        "symbol": "XAUUSD",
+        "direction": "long",
+        "entry_price": 4334.39,
+        "stop_price": 4331.89673,
+        "target_price": null,
+        "risk_distance": 2.4932699999999386,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null,
+        "exit_price": null,
+        "exit_timestamp": null,
+        "exit_bar_index": null,
+        "holding_bars": null,
+        "rationale": "Target price was not verified or not known at signal timestamp; no arbitrary target assigned",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1787102100000_1787103000000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 4335.5599999999995,
+        "stop_price": 4334.6900000000005,
+        "risk_pips": 8.699999999989814,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null
+      },
+      "model_b": {
+        "trade_id": "XAUUSD_15m_OB_1787102100000_1787103000000",
+        "symbol": "XAUUSD",
+        "direction": "long",
+        "entry_price": 4334.39,
+        "stop_price": 4327.50563,
+        "target_price": null,
+        "risk_distance": 6.884370000000672,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null,
+        "exit_price": null,
+        "exit_timestamp": null,
+        "exit_bar_index": null,
+        "holding_bars": null,
+        "rationale": "Target price was not verified or not known at signal timestamp; no arbitrary target assigned",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1787130900000_1787133600000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "gross_r": null,
+        "rationale": "1M wick pierced below zoneLow (4348.26 < 4354.07324) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 4354.07324
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1787139000000_1787142600000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "gross_r": null,
+        "rationale": "1M wick pierced below zoneLow (4355.23 < 4363.38249) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 4354.07324
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1787228100000_1787238000000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 4458.25,
+        "stop_price": 4456.75,
+        "risk_pips": 15.0,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null
+      },
+      "model_b": {
+        "trade_id": "XAUUSD_15m_OB_1787228100000_1787238000000",
+        "symbol": "XAUUSD",
+        "direction": "long",
+        "entry_price": 4459.094999999999,
+        "stop_price": 4451.3688,
+        "target_price": null,
+        "risk_distance": 7.726199999999153,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null,
+        "exit_price": null,
+        "exit_timestamp": null,
+        "exit_bar_index": null,
+        "holding_bars": null,
+        "rationale": "Target price was not verified or not known at signal timestamp; no arbitrary target assigned",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1787272200000_1787274900000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 4518.764999999999,
+        "stop_price": 4517.75,
+        "risk_pips": 10.14999999999418,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null
+      },
+      "model_b": {
+        "trade_id": "XAUUSD_15m_OB_1787272200000_1787274900000",
+        "symbol": "XAUUSD",
+        "direction": "long",
+        "entry_price": 4519.719999999999,
+        "stop_price": 4517.52801,
+        "target_price": null,
+        "risk_distance": 2.1919899999993504,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null,
+        "exit_price": null,
+        "exit_timestamp": null,
+        "exit_bar_index": null,
+        "holding_bars": null,
+        "rationale": "Target price was not verified or not known at signal timestamp; no arbitrary target assigned",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1787283000000_1787285700000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "gross_r": null,
+        "rationale": "1M wick pierced below zoneLow (4519.94 < 4526.73034) - Production early veto"
+      },
+      "model_b": {
+        "status": "ENTRY_FILLED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 4526.73034
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1787289300000_1787291100000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 4539.97,
+        "stop_price": 4534.4800000000005,
+        "risk_pips": 54.89999999999782,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null
+      },
+      "model_b": {
+        "trade_id": "XAUUSD_15m_OB_1787289300000_1787291100000",
+        "symbol": "XAUUSD",
+        "direction": "long",
+        "entry_price": 4538.75,
+        "stop_price": 4526.73034,
+        "target_price": null,
+        "risk_distance": 12.01965999999993,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null,
+        "exit_price": null,
+        "exit_timestamp": null,
+        "exit_bar_index": null,
+        "holding_bars": null,
+        "rationale": "Target price was not verified or not known at signal timestamp; no arbitrary target assigned",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1787298300000_1787300100000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "gross_r": null,
+        "rationale": "1M wick pierced below zoneLow (4535.41 < 4561.62759) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 4531.03761
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1787670000000_1787671800000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 4634.395,
+        "stop_price": 4629.650000000001,
+        "risk_pips": 47.44999999999891,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null
+      },
+      "model_b": {
+        "trade_id": "XAUUSD_15m_OB_1787670000000_1787671800000",
+        "symbol": "XAUUSD",
+        "direction": "long",
+        "entry_price": 4637.035,
+        "stop_price": 4607.65793,
+        "target_price": null,
+        "risk_distance": 29.37706999999955,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null,
+        "exit_price": null,
+        "exit_timestamp": null,
+        "exit_bar_index": null,
+        "holding_bars": null,
+        "rationale": "Target price was not verified or not known at signal timestamp; no arbitrary target assigned",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_FVG_1787142600000_1787142600000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "gross_r": null,
+        "rationale": "1M wick pierced below zoneLow (4355.23 < 4373.64213) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 4354.07324
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_FVG_1787274000000_1787274900000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 4518.764999999999,
+        "stop_price": 4517.75,
+        "risk_pips": 10.14999999999418,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null
+      },
+      "model_b": {
+        "trade_id": "XAUUSD_15m_FVG_1787274000000_1787274900000",
+        "symbol": "XAUUSD",
+        "direction": "long",
+        "entry_price": 4519.719999999999,
+        "stop_price": 4517.52801,
+        "target_price": null,
+        "risk_distance": 2.1919899999993504,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null,
+        "exit_price": null,
+        "exit_timestamp": null,
+        "exit_bar_index": null,
+        "holding_bars": null,
+        "rationale": "Target price was not verified or not known at signal timestamp; no arbitrary target assigned",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_FVG_1787284800000_1787285700000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "gross_r": null,
+        "rationale": "1M wick pierced below zoneLow (4519.94 < 4535.57816) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 4526.73034
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_FVG_1787291100000_1787291100000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "gross_r": null,
+        "rationale": "1M wick pierced below zoneLow (4534.88 < 4541.32607) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 4526.73034
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_FVG_1787670900000_1787671800000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "gross_r": null,
+        "rationale": "1M wick pierced below zoneLow (4634.81 < 4636.28356) - Production early veto"
+      },
+      "model_b": {
+        "trade_id": "XAUUSD_15m_FVG_1787670900000_1787671800000",
+        "symbol": "XAUUSD",
+        "direction": "long",
+        "entry_price": 4637.035,
+        "stop_price": 4607.65793,
+        "target_price": null,
+        "risk_distance": 29.37706999999955,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null,
+        "exit_price": null,
+        "exit_timestamp": null,
+        "exit_bar_index": null,
+        "holding_bars": null,
+        "rationale": "Target price was not verified or not known at signal timestamp; no arbitrary target assigned",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1787680800000_1787683500000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 4644.385,
+        "stop_price": 4641.240000000001,
+        "risk_pips": 31.44999999999527,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 4634.99421
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_FVG_1787683500000_1787683500000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 4644.385,
+        "stop_price": 4641.240000000001,
+        "risk_pips": 31.44999999999527,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 4634.99421
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1787694300000_1787697000000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 4660.465,
+        "stop_price": 4657.820000000001,
+        "risk_pips": 26.44999999999527,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null
+      },
+      "model_b": {
+        "trade_id": "XAUUSD_15m_OB_1787694300000_1787697000000",
+        "symbol": "XAUUSD",
+        "direction": "long",
+        "entry_price": 4661.040000000001,
+        "stop_price": 4657.93971,
+        "target_price": null,
+        "risk_distance": 3.1002900000012232,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null,
+        "exit_price": null,
+        "exit_timestamp": null,
+        "exit_bar_index": null,
+        "holding_bars": null,
+        "rationale": "Target price was not verified or not known at signal timestamp; no arbitrary target assigned",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "ETHUSD_15m_OB_1787776200000_1787778000000",
+      "symbol": "ETHUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "gross_r": null,
+        "rationale": "1M wick pierced below zoneLow (2457.27 < 2464.29) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 2460.29
+      }
+    },
+    {
+      "candidate_id": "EURUSD_15m_OB_1787928300000_1787932800000",
+      "symbol": "EURUSD",
+      "direction": "short",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "rationale": "1M wick pierced above zoneHigh (1.16499 > 1.16226) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 1.16226
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1787930100000_1787931900000",
+      "symbol": "XAUUSD",
+      "direction": "short",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "rationale": "1M wick pierced above zoneHigh (4592.85 > 4568.08734) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 4581.48165
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1787697900000_1787701500000",
+      "symbol": "XAUUSD",
+      "direction": "short",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 4671.790000000001,
+        "stop_price": 4673.45,
+        "risk_pips": 16.59999999998945,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null
+      },
+      "model_b": {
+        "trade_id": "XAUUSD_15m_OB_1787697900000_1787701500000",
+        "symbol": "XAUUSD",
+        "direction": "short",
+        "entry_price": 4671.76,
+        "stop_price": 4673.71074,
+        "target_price": null,
+        "risk_distance": 1.9507400000002235,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null,
+        "exit_price": null,
+        "exit_timestamp": null,
+        "exit_bar_index": null,
+        "holding_bars": null,
+        "rationale": "Target price was not verified or not known at signal timestamp; no arbitrary target assigned",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "ETHUSD_15m_OB_1787930100000_1787932800000",
+      "symbol": "ETHUSD",
+      "direction": "short",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 2497.71,
+        "stop_price": 2499.085,
+        "risk_pips": 137.5,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null
+      },
+      "model_b": {
+        "trade_id": "ETHUSD_15m_OB_1787930100000_1787932800000",
+        "symbol": "ETHUSD",
+        "direction": "short",
+        "entry_price": 2497.4,
+        "stop_price": 2526.64,
+        "target_price": null,
+        "risk_distance": 29.23999999999978,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null,
+        "exit_price": null,
+        "exit_timestamp": null,
+        "exit_bar_index": null,
+        "holding_bars": null,
+        "rationale": "Target price was not verified or not known at signal timestamp; no arbitrary target assigned",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1788221700000_1788225300000",
+      "symbol": "XAUUSD",
+      "direction": "short",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 4454.045,
+        "stop_price": 4458.25,
+        "risk_pips": 42.04999999999927,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null
+      },
+      "model_b": {
+        "trade_id": "XAUUSD_15m_OB_1788221700000_1788225300000",
+        "symbol": "XAUUSD",
+        "direction": "short",
+        "entry_price": 4458.605,
+        "stop_price": 4462.05653,
+        "target_price": null,
+        "risk_distance": 3.4515300000002753,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null,
+        "exit_price": null,
+        "exit_timestamp": null,
+        "exit_bar_index": null,
+        "holding_bars": null,
+        "rationale": "Target price was not verified or not known at signal timestamp; no arbitrary target assigned",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "USDJPY_15m_OB_1788240600000_1788242400000",
+      "symbol": "USDJPY",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "gross_r": null,
+        "rationale": "1M wick pierced below zoneLow (159.786 < 159.8446) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": null
+      }
+    },
+    {
+      "candidate_id": "ETHUSD_15m_OB_1788248700000_1788249600000",
+      "symbol": "ETHUSD",
+      "direction": "short",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 2473.75,
+        "stop_price": 2475.9449999999997,
+        "risk_pips": 219.4999999999709,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null
+      },
+      "model_b": {
+        "trade_id": "ETHUSD_15m_OB_1788248700000_1788249600000",
+        "symbol": "ETHUSD",
+        "direction": "short",
+        "entry_price": 2472.5,
+        "stop_price": 2477.22,
+        "target_price": null,
+        "risk_distance": 4.7199999999998,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null,
+        "exit_price": null,
+        "exit_timestamp": null,
+        "exit_bar_index": null,
+        "holding_bars": null,
+        "rationale": "Target price was not verified or not known at signal timestamp; no arbitrary target assigned",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "SOLUSD_15m_OB_1788120000000_1788121800000",
+      "symbol": "SOLUSD",
+      "direction": "short",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "NO_DISPLACEMENT_CHOCH",
+        "outcome": null
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 106.86
+      }
+    },
+    {
+      "candidate_id": "ETHUSD_15m_OB_1788283800000_1788284700000",
+      "symbol": "ETHUSD",
+      "direction": "short",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "rationale": "1M wick pierced above zoneHigh (2454.45 > 2439.53) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 2454.68
+      }
+    },
+    {
+      "candidate_id": "EURUSD_15m_OB_1788352200000_1788354900000",
+      "symbol": "EURUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "gross_r": null,
+        "rationale": "1M wick pierced below zoneLow (1.1572 < 1.15759) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 1.15737
+      }
+    },
+    {
+      "candidate_id": "GBPUSD_15m_OB_1788524100000_1788525000000",
+      "symbol": "GBPUSD",
+      "direction": "short",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 1.3527550000000002,
+        "stop_price": 1.35304,
+        "risk_pips": 2.849999999998687,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null
+      },
+      "model_b": {
+        "trade_id": "GBPUSD_15m_OB_1788524100000_1788525000000",
+        "symbol": "GBPUSD",
+        "direction": "short",
+        "entry_price": 1.353305,
+        "stop_price": 1.35389,
+        "target_price": null,
+        "risk_distance": 0.0005850000000000577,
+        "outcome": "INSUFFICIENT_DATA_TARGET",
+        "gross_r": null,
+        "exit_price": null,
+        "exit_timestamp": null,
+        "exit_bar_index": null,
+        "holding_bars": null,
+        "rationale": "Target price was not verified or not known at signal timestamp; no arbitrary target assigned",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "USDJPY_15m_OB_1788411600000_1788414300000",
+      "symbol": "USDJPY",
+      "direction": "short",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "rationale": "1M wick pierced above zoneHigh (158.144 > 157.80596) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": null
+      }
+    },
+    {
+      "candidate_id": "USDJPY_15m_OB_1788875100000_1788905700000",
+      "symbol": "USDJPY",
+      "direction": "short",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 153.9,
+        "stop_price": 153.957,
+        "risk_pips": 5.699999999998795,
+        "outcome": "STOP_HIT",
+        "gross_r": -1.0,
+        "wick_out_to_target": false
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": null
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_FVG_1789023600000_1789024500000",
+      "symbol": "XAUUSD",
+      "direction": "short",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 4418.27,
+        "stop_price": 4419.53,
+        "risk_pips": 12.599999999993088,
+        "outcome": "STOP_HIT",
+        "gross_r": -1.0,
+        "wick_out_to_target": true
+      },
+      "model_b": {
+        "trade_id": "XAUUSD_15m_FVG_1789023600000_1789024500000",
+        "symbol": "XAUUSD",
+        "direction": "short",
+        "entry_price": 4418.075000000001,
+        "stop_price": 4430.46387,
+        "target_price": 4368.7246025,
+        "risk_distance": 12.38886999999886,
+        "outcome": "STOP_HIT",
+        "gross_r": -1.0,
+        "exit_price": 4430.46387,
+        "exit_timestamp": 1789030740000,
+        "exit_bar_index": 31,
+        "holding_bars": 31,
+        "rationale": "Stop loss triggered on M1 bar 31 (Price: 4430.46387)",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "ETHUSD_15m_OB_1789022700000_1789024500000",
+      "symbol": "ETHUSD",
+      "direction": "short",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 2477.925,
+        "stop_price": 2479.125,
+        "risk_pips": 119.99999999998181,
+        "outcome": "STOP_HIT",
+        "gross_r": -1.0,
+        "wick_out_to_target": false
+      },
+      "model_b": {
+        "trade_id": "ETHUSD_15m_OB_1789022700000_1789024500000",
+        "symbol": "ETHUSD",
+        "direction": "short",
+        "entry_price": 2476.265,
+        "stop_price": 2483.83,
+        "target_price": 2379.903333333333,
+        "risk_distance": 7.565000000000055,
+        "outcome": "STOP_HIT",
+        "gross_r": -1.0,
+        "exit_price": 2483.83,
+        "exit_timestamp": 1789141020000,
+        "exit_bar_index": 1894,
+        "holding_bars": 1894,
+        "rationale": "Stop loss triggered on M1 bar 1894 (Price: 2483.83)",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "SOLUSD_15m_FVG_1789350300000_1789350300000",
+      "symbol": "SOLUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 99.625,
+        "stop_price": 99.465,
+        "risk_pips": 15.999999999999659,
+        "outcome": "STOP_HIT",
+        "gross_r": -1.0,
+        "wick_out_to_target": false
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 99.0
+      }
+    },
+    {
+      "candidate_id": "SOLUSD_15m_OB_1789349400000_1789350300000",
+      "symbol": "SOLUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 99.625,
+        "stop_price": 99.465,
+        "risk_pips": 15.999999999999659,
+        "outcome": "STOP_HIT",
+        "gross_r": -1.0,
+        "wick_out_to_target": false
+      },
+      "model_b": {
+        "trade_id": "SOLUSD_15m_OB_1789349400000_1789350300000",
+        "symbol": "SOLUSD",
+        "direction": "long",
+        "entry_price": 99.78,
+        "stop_price": 99.0,
+        "target_price": 105.125,
+        "risk_distance": 0.7800000000000011,
+        "outcome": "STOP_HIT",
+        "gross_r": -1.0,
+        "exit_price": 99.0,
+        "exit_timestamp": 1789356480000,
+        "exit_bar_index": 84,
+        "holding_bars": 84,
+        "rationale": "Stop loss triggered on M1 bar 84 (Price: 99.0)",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "USDCAD_15m_FVG_1789581600000_1789581600000",
+      "symbol": "USDCAD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "gross_r": null,
+        "rationale": "1M wick pierced below zoneLow (1.39347 < 1.39465) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": null
+      }
+    },
+    {
+      "candidate_id": "GBPUSD_15m_OB_1789641900000_1789642800000",
+      "symbol": "GBPUSD",
+      "direction": "short",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 1.340325,
+        "stop_price": 1.34067,
+        "risk_pips": 3.450000000000397,
+        "outcome": "STOP_HIT",
+        "gross_r": -1.0,
+        "wick_out_to_target": true
+      },
+      "model_b": {
+        "status": "ENTRY_FILLED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 1.33993
+      }
+    },
+    {
+      "candidate_id": "USDCAD_15m_FVG_1789944300000_1789967700000",
+      "symbol": "USDCAD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "NO_STATIC_FVG_FILL",
+        "outcome": null
+      },
+      "model_b": {
+        "status": "ENTRY_FILLED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": null
+      }
+    },
+    {
+      "candidate_id": "USDJPY_15m_OB_1789996500000_1789998300000",
+      "symbol": "USDJPY",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "gross_r": null,
+        "rationale": "1M wick pierced below zoneLow (157.173 < 157.30417) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": null
+      }
+    },
+    {
+      "candidate_id": "SOLUSD_15m_OB_1790692200000_1790694900000",
+      "symbol": "SOLUSD",
+      "direction": "short",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 120.215,
+        "stop_price": 120.545,
+        "risk_pips": 32.99999999999983,
+        "outcome": "STOP_HIT",
+        "gross_r": -1.0,
+        "wick_out_to_target": true
+      },
+      "model_b": {
+        "trade_id": "SOLUSD_15m_OB_1790692200000_1790694900000",
+        "symbol": "SOLUSD",
+        "direction": "short",
+        "entry_price": 120.205,
+        "stop_price": 121.69,
+        "target_price": 119.19800000000001,
+        "risk_distance": 1.4849999999999994,
+        "outcome": "TARGET_HIT",
+        "gross_r": 0.6781,
+        "exit_price": 119.19800000000001,
+        "exit_timestamp": 1790705580000,
+        "exit_bar_index": 163,
+        "holding_bars": 163,
+        "rationale": "Target reached on M1 bar 163 (Target: 119.19800000000001, Gross R: 0.6781)",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "ETHUSD_15m_OB_1790848800000_1790851500000",
+      "symbol": "ETHUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 2680.88,
+        "stop_price": 2679.625,
+        "risk_pips": 125.50000000001091,
+        "outcome": "STOP_HIT",
+        "gross_r": -1.0,
+        "wick_out_to_target": true
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 2677.0
+      }
+    },
+    {
+      "candidate_id": "ETHUSD_15m_OB_1790873100000_1790874900000",
+      "symbol": "ETHUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 2691.805,
+        "stop_price": 2686.105,
+        "risk_pips": 569.9999999999818,
+        "outcome": "STOP_HIT",
+        "gross_r": -1.0,
+        "wick_out_to_target": true
+      },
+      "model_b": {
+        "trade_id": "ETHUSD_15m_OB_1790873100000_1790874900000",
+        "symbol": "ETHUSD",
+        "direction": "long",
+        "entry_price": 2696.09,
+        "stop_price": 2673.42,
+        "target_price": 2712.825,
+        "risk_distance": 22.670000000000073,
+        "outcome": "STOP_HIT",
+        "gross_r": -1.0,
+        "exit_price": 2673.42,
+        "exit_timestamp": 1790879460000,
+        "exit_bar_index": 63,
+        "holding_bars": 63,
+        "rationale": "Stop loss triggered on M1 bar 63 (Price: 2673.42)",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "GBPUSD_15m_FVG_1791174600000_1791174600000",
+      "symbol": "GBPUSD",
+      "direction": "short",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 1.32358,
+        "stop_price": 1.3238400000000001,
+        "risk_pips": 2.60000000000149,
+        "outcome": "TARGET_HIT",
+        "gross_r": 16.4923,
+        "wick_out_to_target": false
+      },
+      "model_b": {
+        "trade_id": "GBPUSD_15m_FVG_1791174600000_1791174600000",
+        "symbol": "GBPUSD",
+        "direction": "short",
+        "entry_price": 1.323525,
+        "stop_price": 1.32377,
+        "target_price": 1.319292,
+        "risk_distance": 0.0002449999999998287,
+        "outcome": "TARGET_HIT",
+        "gross_r": 17.2776,
+        "exit_price": 1.319292,
+        "exit_timestamp": 1791180360000,
+        "exit_bar_index": 62,
+        "holding_bars": 62,
+        "rationale": "Target reached on M1 bar 62 (Target: 1.319292, Gross R: 17.2776)",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1791219600000_1791222300000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 4135.525,
+        "stop_price": 4133.280000000001,
+        "risk_pips": 22.449999999989814,
+        "outcome": "STOP_HIT",
+        "gross_r": -1.0,
+        "wick_out_to_target": true
+      },
+      "model_b": {
+        "trade_id": "XAUUSD_15m_OB_1791219600000_1791222300000",
+        "symbol": "XAUUSD",
+        "direction": "long",
+        "entry_price": 4137.805,
+        "stop_price": 4126.47476,
+        "target_price": 4141.756016190477,
+        "risk_distance": 11.33024000000023,
+        "outcome": "STOP_HIT",
+        "gross_r": -1.0,
+        "exit_price": 4126.47476,
+        "exit_timestamp": 1791228420000,
+        "exit_bar_index": 30,
+        "holding_bars": 30,
+        "rationale": "Stop loss triggered on M1 bar 30 (Price: 4126.47476)",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1791246600000_1791247500000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 4143.635,
+        "stop_price": 4142.01,
+        "risk_pips": 16.25,
+        "outcome": "STOP_HIT",
+        "gross_r": -1.0,
+        "wick_out_to_target": false
+      },
+      "model_b": {
+        "trade_id": "XAUUSD_15m_OB_1791246600000_1791247500000",
+        "symbol": "XAUUSD",
+        "direction": "long",
+        "entry_price": 4143.745,
+        "stop_price": 4133.33687,
+        "target_price": 4152.86667,
+        "risk_distance": 10.408129999999801,
+        "outcome": "STOP_HIT",
+        "gross_r": -1.0,
+        "exit_price": 4133.33687,
+        "exit_timestamp": 1791255000000,
+        "exit_bar_index": 65,
+        "holding_bars": 65,
+        "rationale": "Stop loss triggered on M1 bar 65 (Price: 4133.33687)",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1791265500000_1791267300000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 4126.135,
+        "stop_price": 4125.34,
+        "risk_pips": 7.950000000000728,
+        "outcome": "STOP_HIT",
+        "gross_r": -1.0,
+        "wick_out_to_target": true
+      },
+      "model_b": {
+        "trade_id": "XAUUSD_15m_OB_1791265500000_1791267300000",
+        "symbol": "XAUUSD",
+        "direction": "long",
+        "entry_price": 4128.82,
+        "stop_price": 4124.56177,
+        "target_price": 4139.77328235294,
+        "risk_distance": 4.2582299999994575,
+        "outcome": "STOP_HIT",
+        "gross_r": -1.0,
+        "exit_price": 4124.56177,
+        "exit_timestamp": 1791272280000,
+        "exit_bar_index": 38,
+        "holding_bars": 38,
+        "rationale": "Stop loss triggered on M1 bar 38 (Price: 4124.56177)",
+        "model": "MAIN_STRUCTURAL_STOP",
+        "status": "ENTRY_FILLED"
+      }
+    },
+    {
+      "candidate_id": "GBPUSD_15m_OB_1791459900000_1791460800000",
+      "symbol": "GBPUSD",
+      "direction": "long",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "ENTRY_FILLED",
+        "entry_price": 1.3188900000000001,
+        "stop_price": 1.31836,
+        "risk_pips": 5.300000000001415,
+        "outcome": "TARGET_HIT",
+        "gross_r": 10.9308,
+        "wick_out_to_target": false
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 1.31894
+      }
+    },
+    {
+      "candidate_id": "SOLUSD_15m_OB_1791470700000_1791471600000",
+      "symbol": "SOLUSD",
+      "direction": "short",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "rationale": "1M wick pierced above zoneHigh (113.19 > 112.66) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 112.83
+      }
+    },
+    {
+      "candidate_id": "ETHUSD_15m_FVG_1791471600000_1791472500000",
+      "symbol": "ETHUSD",
+      "direction": "short",
+      "model_a": {
+        "model": "MODEL_A_PRODUCTION",
+        "status": "INVALIDATED_WICK_VETO",
+        "entry_price": null,
+        "stop_price": null,
+        "risk_pips": null,
+        "outcome": null,
+        "rationale": "1M wick pierced above zoneHigh (2537.0 > 2527.24) - Production early veto"
+      },
+      "model_b": {
+        "status": "INVALIDATED",
+        "outcome": "EXCLUDED_FROM_MAIN",
+        "gross_r": null,
+        "risk_distance": null,
+        "stop_price": 2536.56
+      }
+    }
+  ]
+}

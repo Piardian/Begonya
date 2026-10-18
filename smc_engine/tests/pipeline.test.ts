@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { CandleStore } from '../server/candleStore';
 import { NotifiedStore } from '../server/notifiedStore';
-import { runPipeline } from '../server/pipeline';
+import { runPipeline, validateCandleData } from '../server/pipeline';
 import { Candle, SwingPoint } from '../src/types';
 import * as scorerModule from '../src/displacementQualityScorer';
 
@@ -269,5 +269,37 @@ describe('Pipeline Orchestrator', () => {
     expect(res.length).toBeGreaterThan(0);
 
     mockDq.mockRestore();
+  });
+
+  test('validateCandleData should fail-closed and return INSUFFICIENT_DATA when candles are missing or corrupted', () => {
+    // 1. Empty candle store
+    const emptyResult = validateCandleData('EURUSD', candleStore);
+    expect(emptyResult.valid).toBe(false);
+    expect(emptyResult.status).toBe('INSUFFICIENT_DATA');
+    expect(emptyResult.reason).toBe('insufficient_4h_candles');
+
+    // 2. Add sufficient 4H and 1H, but leave 15m empty
+    for (let i = 0; i < 20; i++) {
+      candleStore.appendCandle('EURUSD', '4h', { timestamp: i * 1000, open: 1.1, high: 1.2, low: 1.0, close: 1.15 });
+      candleStore.appendCandle('EURUSD', '1h', { timestamp: i * 1000, open: 1.1, high: 1.2, low: 1.0, close: 1.15 });
+    }
+    const missing15mResult = validateCandleData('EURUSD', candleStore);
+    expect(missing15mResult.valid).toBe(false);
+    expect(missing15mResult.status).toBe('INSUFFICIENT_DATA');
+    expect(missing15mResult.reason).toBe('insufficient_15m_candles');
+
+    // 3. Add 15m candles with corrupted/negative price
+    for (let i = 0; i < 15; i++) {
+      candleStore.appendCandle('EURUSD', '15m', { timestamp: i * 1000, open: 1.1, high: 1.2, low: 1.0, close: 1.15 });
+    }
+    candleStore.appendCandle('EURUSD', '15m', { timestamp: 20000, open: -1.0, high: 1.2, low: 1.0, close: 1.15 });
+    const corruptResult = validateCandleData('EURUSD', candleStore);
+    expect(corruptResult.valid).toBe(false);
+    expect(corruptResult.status).toBe('INSUFFICIENT_DATA');
+    expect(corruptResult.reason).toBe('corrupted_price_values');
+
+    // Pipeline should reject without running
+    const pipelineRes = runPipeline('EURUSD', candleStore, notifiedStore);
+    expect(pipelineRes).toEqual([]);
   });
 });

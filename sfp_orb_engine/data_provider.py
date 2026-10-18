@@ -39,6 +39,24 @@ class MarketDataProvider:
     def _normalize_symbol(self, symbol: str) -> str:
         return symbol.replace("/", "").replace("-", "").upper()
 
+    def validate_candles(self, df: Optional[pd.DataFrame], min_bars: int = 25) -> tuple[bool, str]:
+        """
+        Mum verisi yeterliligini ve yapisal butunlugunu dogrular.
+        Eksik veya bozuk veri varsa False ve 'INSUFFICIENT_DATA: ...' dondurur.
+        """
+        if df is None or df.empty:
+            return False, "INSUFFICIENT_DATA: Veri kumesi bos veya saglayicidan alinamadi"
+        if len(df) < min_bars:
+            return False, f"INSUFFICIENT_DATA: Yetersiz bar sayisi ({len(df)} bar mevcut, min {min_bars} zorunlu)"
+        for col in ["open", "high", "low", "close"]:
+            if col not in df.columns:
+                return False, f"INSUFFICIENT_DATA: Eksik fiyat kolonu: {col}"
+            if df[col].isnull().any():
+                return False, f"INSUFFICIENT_DATA: {col} kolonunda NaN / kayip degerler tespit edildi"
+            if (df[col] <= 0).any():
+                return False, f"INSUFFICIENT_DATA: {col} kolonunda sifir veya negatif fiyat degeri tespit edildi"
+        return True, "OK"
+
     def fetch_candles(
         self,
         symbol: str,

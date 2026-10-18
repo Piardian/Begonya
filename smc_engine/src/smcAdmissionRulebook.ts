@@ -3,7 +3,7 @@ import type { AssetClass } from './assetMetrics';
 export const SMC_ADMISSION_RULEBOOK_VERSION = 'SmcAdmissionRulebook.v1' as const;
 
 export const SMC_ADMISSION_RULES = Object.freeze({
-  poiTtlHours: 48,
+  poiTtlHours: 72,
   minimumDisplacementGradePoints: 1,
   distance: Object.freeze({
     FOREX: Object.freeze({ maxUnits: 35 }),

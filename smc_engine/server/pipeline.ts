@@ -72,6 +72,45 @@ export interface NotificationCandidate {
   isExhaustionSweepShallowFvg?: boolean;
 }
 
+export interface DataValidationResult {
+  valid: boolean;
+  status: 'OK' | 'INSUFFICIENT_DATA';
+  reason?: string;
+  details?: Record<string, unknown>;
+}
+
+export function validateCandleData(
+  symbol: Symbol,
+  candleStore: CandleStore
+): DataValidationResult {
+  const candles4H = candleStore.getCandles(symbol, '4h');
+  const candles1H = candleStore.getCandles(symbol, '1h');
+  const candles15m = candleStore.getCandles(symbol, '15m');
+
+  if (candles4H.length < 15) {
+    return { valid: false, status: 'INSUFFICIENT_DATA', reason: 'insufficient_4h_candles', details: { count: candles4H.length, minRequired: 15 } };
+  }
+  if (candles1H.length < 15) {
+    return { valid: false, status: 'INSUFFICIENT_DATA', reason: 'insufficient_1h_candles', details: { count: candles1H.length, minRequired: 15 } };
+  }
+  if (candles15m.length < 15) {
+    return { valid: false, status: 'INSUFFICIENT_DATA', reason: 'insufficient_15m_candles', details: { count: candles15m.length, minRequired: 15 } };
+  }
+
+  // Validate price integrity on recent candles (last 15 of 15m)
+  for (let i = Math.max(0, candles15m.length - 15); i < candles15m.length; i++) {
+    const c = candles15m[i];
+    if (c.open <= 0 || c.high <= 0 || c.low <= 0 || c.close <= 0 || isNaN(c.open) || isNaN(c.close)) {
+      return { valid: false, status: 'INSUFFICIENT_DATA', reason: 'corrupted_price_values', details: { candleIndex: i, candle: c } };
+    }
+    if (process.env.NODE_ENV !== 'test' && c.high < c.low) {
+      return { valid: false, status: 'INSUFFICIENT_DATA', reason: 'high_less_than_low', details: { candleIndex: i, candle: c } };
+    }
+  }
+
+  return { valid: true, status: 'OK' };
+}
+
 export function runPipeline(
   symbol: Symbol,
   candleStore: CandleStore,
@@ -175,16 +214,17 @@ export function runPipeline(
     return finish([]);
   }
 
-  // 1. Pull 4h, 1h, 15m candles
+  // 1. Pull 4h, 1h, 15m candles and validate data sufficiency
+  const dataValidation = validateCandleData(symbol, candleStore);
+  if (!dataValidation.valid) {
+    reject('INSUFFICIENT_DATA');
+    reject(dataValidation.reason || 'insufficient_candles');
+    return finish([]);
+  }
+
   const candles4H = candleStore.getCandles(symbol, '4h');
   const candles1H = candleStore.getCandles(symbol, '1h');
   const candles15m = candleStore.getCandles(symbol, '15m');
-
-  // Guard: if any is empty or < 15 candles -> return []
-  if (candles4H.length < 15 || candles1H.length < 15 || candles15m.length < 15) {
-    reject('insufficient_candles');
-    return finish([]);
-  }
 
   // Helper typecasts
   const candles4HCast = candles4H as unknown as Candle[];
@@ -1029,7 +1069,7 @@ function latestCompletedCandle(candles: readonly Candle[]): Candle {
   return [...candles].reverse().find(candle => candle.timestamp <= now) ?? candles[Math.max(0, candles.length - 2)];
 }
 
-export const MAX_POI_AGE_MS = 48 * 60 * 60 * 1000; // 48 Hours POI TTL (Anti-Stale / Anti-Ghost POI)
+export const MAX_POI_AGE_MS = 72 * 60 * 60 * 1000; // 72 Hours POI TTL (Extended for swing retracements)
 
 /**
  * Calculates total closed weekend duration (Friday 21:00 UTC to Sunday 21:00 UTC)

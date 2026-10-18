@@ -80,7 +80,7 @@ const DEFAULT_CONFIG: PaperOutcomeTrackerConfig = Object.freeze({
   entryExpiryMs: 16 * 15 * 60 * 1000,
   maxHoldBars: 32,
   riskReward: 2,
-  breakEvenAtR: 1,
+  breakEvenAtR: 1.35,
   stopBufferPips: 2,
   partialTpAtR: 1.2,
   partialTpRatio: 0.5,
@@ -386,7 +386,9 @@ export class PaperOutcomeTracker {
       const entryPrice = resolveEntryPrice(signal.direction, signal.zoneLow, signal.zoneHigh, candle.open, signal.poiType);
       const buffer = calculateAssetCalibratedStopBuffer(signal.symbol, signal.zoneLow, signal.zoneHigh);
       const stopLoss = signal.direction === 'long' ? signal.zoneLow - buffer : signal.zoneHigh + buffer;
-      const riskDistance = Math.abs(entryPrice - stopLoss);
+      const rawRiskDistance = Math.abs(entryPrice - stopLoss);
+      // Ensure risk distance has a safe floor based on pip buffer to prevent microscopic stops from triggering instant whipsaw conflicts
+      const riskDistance = Math.max(rawRiskDistance, buffer * 1.5);
 
       if (!Number.isFinite(riskDistance) || riskDistance <= 0) {
         this.close(signal, 'UNKNOWN', candle.timestamp, 'Invalid synthetic risk distance prevented deterministic outcome calculation.');
@@ -450,11 +452,14 @@ export class PaperOutcomeTracker {
     const favorable = signal.direction === 'long'
       ? Math.max(0, candle.high - signal.entryPrice)
       : Math.max(0, signal.entryPrice - candle.low);
-    const adverse = signal.direction === 'long'
+    const rawAdverse = signal.direction === 'long'
       ? Math.max(0, signal.entryPrice - candle.low)
       : Math.max(0, candle.high - signal.entryPrice);
+    // Cap MAE at 1.05R to reflect true position risk without recording post-stop external market drift
+    const cappedAdverse = Math.min(rawAdverse, signal.riskDistance * 1.05);
+
     signal.maximumFavorableExcursion = Math.max(signal.maximumFavorableExcursion, favorable / signal.riskDistance);
-    signal.maximumAdverseExcursion = Math.max(signal.maximumAdverseExcursion, adverse / signal.riskDistance);
+    signal.maximumAdverseExcursion = Math.max(signal.maximumAdverseExcursion, cappedAdverse / signal.riskDistance);
 
     const isPartialTpActive = Boolean(this.config.enablePartialTp || signal.isShadowCounterfactual);
     const partialTpTarget = this.config.partialTpAtR ?? 1.2;
@@ -462,14 +467,16 @@ export class PaperOutcomeTracker {
       signal.partialTpTaken = true;
     }
 
-    if (!signal.beArmed && favorable >= signal.riskDistance * this.config.breakEvenAtR) {
-      signal.beArmed = true;
-    }
-
+    // Evaluate exit on candle first to prevent same-candle whipsaw from being marked as BE when hitting SL on the very same candle
     const exit = evaluateOpenCandle(signal, candle, false, this.config);
     if (exit) {
       this.close(signal, exit.type, candle.timestamp, exit.reason);
       return { changed: true, closed: true };
+    }
+
+    // Arm BE only if the candle closed or progressed favorably without hitting SL first
+    if (!signal.beArmed && favorable >= signal.riskDistance * this.config.breakEvenAtR) {
+      signal.beArmed = true;
     }
 
     const maxHoldMs = this.config.maxHoldBars * 15 * 60 * 1000;
@@ -693,11 +700,11 @@ function resolveEntryPrice(
     return direction === 'long' ? zoneHigh : zoneLow;
   }
   if (direction === 'long') {
-    if (candleOpen > zoneHigh) return zoneHigh;
-    if (candleOpen < zoneLow) return zoneLow;
+    if (candleOpen >= zoneHigh) return zoneHigh;
+    if (candleOpen <= zoneLow) return (zoneLow + zoneHigh) / 2;
   } else {
-    if (candleOpen < zoneLow) return zoneLow;
-    if (candleOpen > zoneHigh) return zoneHigh;
+    if (candleOpen <= zoneLow) return zoneLow;
+    if (candleOpen >= zoneHigh) return (zoneLow + zoneHigh) / 2;
   }
   return (zoneLow + zoneHigh) / 2;
 }

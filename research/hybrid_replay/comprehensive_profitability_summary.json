@@ -1,0 +1,790 @@
+{
+  "audit_timestamp": "2026-10-14T13:33:23.756844+00:00",
+  "opportunity_counts": {
+    "total_candidates": 66,
+    "model_a_production_fills": 35,
+    "model_a_production_vetos": 27,
+    "model_b_hybrid_fills": 32,
+    "model_b_verified_structural_stop_fills": 25,
+    "model_b_clock_aligned_vetos": 32,
+    "period_1_legacy_no_target_count": 16,
+    "period_2_systematic_magnet_count": 9
+  },
+  "performance_metrics": {
+    "model_b_raw_gross_all_9": {
+      "total_trades": 9,
+      "wins": 2,
+      "losses": 7,
+      "win_rate_percent": 22.22,
+      "avg_win_r": 8.9779,
+      "avg_loss_r": 1.0,
+      "expectancy_r": 1.2173,
+      "sum_r": 10.9557,
+      "max_drawdown_r": 3.3219
+    },
+    "model_b_raw_gross_without_outlier": {
+      "total_trades": 8,
+      "wins": 1,
+      "losses": 7,
+      "win_rate_percent": 12.5,
+      "avg_win_r": 0.6781,
+      "avg_loss_r": 1.0,
+      "expectancy_r": -0.7902,
+      "sum_r": -6.3219,
+      "max_drawdown_r": 6.3219
+    },
+    "model_b_standard_retail_broker": {
+      "total_trades": 9,
+      "wins": 0,
+      "losses": 9,
+      "win_rate_percent": 0.0,
+      "avg_win_r": 0.0,
+      "avg_loss_r": 1.0,
+      "expectancy_r": -1.0,
+      "sum_r": -9.0,
+      "max_drawdown_r": 9.0
+    },
+    "model_a_production_logic": {
+      "total_trades": 9,
+      "wins": 1,
+      "losses": 8,
+      "win_rate_percent": 11.11,
+      "avg_win_r": 16.4923,
+      "avg_loss_r": 1.0,
+      "expectancy_r": 0.9436,
+      "sum_r": 8.4923,
+      "max_drawdown_r": 5.0
+    }
+  },
+  "asset_class_performance": {
+    "FX": {
+      "total_trades": 1,
+      "wins": 1,
+      "losses": 0,
+      "win_rate_percent": 100.0,
+      "avg_win_r": 17.2776,
+      "avg_loss_r": 0.0,
+      "expectancy_r": 17.2776,
+      "sum_r": 17.2776,
+      "max_drawdown_r": 0.0
+    },
+    "Commodity": {
+      "total_trades": 4,
+      "wins": 0,
+      "losses": 4,
+      "win_rate_percent": 0.0,
+      "avg_win_r": 0.0,
+      "avg_loss_r": 1.0,
+      "expectancy_r": -1.0,
+      "sum_r": -4.0,
+      "max_drawdown_r": 4.0
+    },
+    "Crypto": {
+      "total_trades": 4,
+      "wins": 1,
+      "losses": 3,
+      "win_rate_percent": 25.0,
+      "avg_win_r": 0.6781,
+      "avg_loss_r": 1.0,
+      "expectancy_r": -0.5805,
+      "sum_r": -2.3219,
+      "max_drawdown_r": 2.3219
+    }
+  },
+  "wick_out_quantification": {
+    "total_stop_outs_in_model_a": 12,
+    "wick_out_to_target_count": 7,
+    "wick_out_percentage": 58.33
+  },
+  "cost_scenarios_summary": {
+    "Scenario_A_Raw_Gross": {
+      "resolved_count": 9,
+      "target_hits": 2,
+      "stop_hits": 7,
+      "win_rate_percent": 22.22,
+      "total_net_r": 10.9557,
+      "avg_net_r": 1.2173,
+      "trades": [
+        {
+          "trade_id": "XAUUSD_15m_FVG_1789023600000_1789024500000",
+          "symbol": "XAUUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0,
+          "gross_r": -1.0,
+          "exit_bar": 31
+        },
+        {
+          "trade_id": "ETHUSD_15m_OB_1789022700000_1789024500000",
+          "symbol": "ETHUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0,
+          "gross_r": -1.0,
+          "exit_bar": 1894
+        },
+        {
+          "trade_id": "SOLUSD_15m_OB_1789349400000_1789350300000",
+          "symbol": "SOLUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0,
+          "gross_r": -1.0,
+          "exit_bar": 84
+        },
+        {
+          "trade_id": "SOLUSD_15m_OB_1790692200000_1790694900000",
+          "symbol": "SOLUSD",
+          "outcome": "TARGET_HIT",
+          "net_r": 0.6781,
+          "gross_r": 0.6781,
+          "exit_bar": 163
+        },
+        {
+          "trade_id": "ETHUSD_15m_OB_1790873100000_1790874900000",
+          "symbol": "ETHUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0,
+          "gross_r": -1.0,
+          "exit_bar": 63
+        },
+        {
+          "trade_id": "GBPUSD_15m_FVG_1791174600000_1791174600000",
+          "symbol": "GBPUSD",
+          "outcome": "TARGET_HIT",
+          "net_r": 17.2776,
+          "gross_r": 17.2776,
+          "exit_bar": 62
+        },
+        {
+          "trade_id": "XAUUSD_15m_OB_1791219600000_1791222300000",
+          "symbol": "XAUUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0,
+          "gross_r": -1.0,
+          "exit_bar": 30
+        },
+        {
+          "trade_id": "XAUUSD_15m_OB_1791246600000_1791247500000",
+          "symbol": "XAUUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0,
+          "gross_r": -1.0,
+          "exit_bar": 65
+        },
+        {
+          "trade_id": "XAUUSD_15m_OB_1791265500000_1791267300000",
+          "symbol": "XAUUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0,
+          "gross_r": -1.0,
+          "exit_bar": 38
+        }
+      ]
+    },
+    "Scenario_B_Raw_ECN": {
+      "resolved_count": 9,
+      "target_hits": 2,
+      "stop_hits": 7,
+      "win_rate_percent": 22.22,
+      "total_net_r": 10.7453,
+      "avg_net_r": 1.1939,
+      "trades": [
+        {
+          "trade_id": "XAUUSD_15m_FVG_1789023600000_1789024500000",
+          "symbol": "XAUUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.004,
+          "gross_r": -1.0,
+          "exit_bar": 18
+        },
+        {
+          "trade_id": "ETHUSD_15m_OB_1789022700000_1789024500000",
+          "symbol": "ETHUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0026,
+          "gross_r": -1.0,
+          "exit_bar": 118
+        },
+        {
+          "trade_id": "SOLUSD_15m_OB_1789349400000_1789350300000",
+          "symbol": "SOLUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0256,
+          "gross_r": -1.0,
+          "exit_bar": 84
+        },
+        {
+          "trade_id": "SOLUSD_15m_OB_1790692200000_1790694900000",
+          "symbol": "SOLUSD",
+          "outcome": "TARGET_HIT",
+          "net_r": 0.6646,
+          "gross_r": 0.6781,
+          "exit_bar": 163
+        },
+        {
+          "trade_id": "ETHUSD_15m_OB_1790873100000_1790874900000",
+          "symbol": "ETHUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0009,
+          "gross_r": -1.0,
+          "exit_bar": 63
+        },
+        {
+          "trade_id": "GBPUSD_15m_FVG_1791174600000_1791174600000",
+          "symbol": "GBPUSD",
+          "outcome": "TARGET_HIT",
+          "net_r": 17.1347,
+          "gross_r": 17.2776,
+          "exit_bar": 62
+        },
+        {
+          "trade_id": "XAUUSD_15m_OB_1791219600000_1791222300000",
+          "symbol": "XAUUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0044,
+          "gross_r": -1.0,
+          "exit_bar": 30
+        },
+        {
+          "trade_id": "XAUUSD_15m_OB_1791246600000_1791247500000",
+          "symbol": "XAUUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0048,
+          "gross_r": -1.0,
+          "exit_bar": 65
+        },
+        {
+          "trade_id": "XAUUSD_15m_OB_1791265500000_1791267300000",
+          "symbol": "XAUUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0117,
+          "gross_r": -1.0,
+          "exit_bar": 38
+        }
+      ]
+    },
+    "Scenario_C_Standard": {
+      "resolved_count": 9,
+      "target_hits": 0,
+      "stop_hits": 9,
+      "win_rate_percent": 0.0,
+      "total_net_r": -9.0,
+      "avg_net_r": -1.0,
+      "trades": [
+        {
+          "trade_id": "XAUUSD_15m_FVG_1789023600000_1789024500000",
+          "symbol": "XAUUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0,
+          "gross_r": -1.0,
+          "exit_bar": 18
+        },
+        {
+          "trade_id": "ETHUSD_15m_OB_1789022700000_1789024500000",
+          "symbol": "ETHUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0,
+          "gross_r": -1.0,
+          "exit_bar": 118
+        },
+        {
+          "trade_id": "SOLUSD_15m_OB_1789349400000_1789350300000",
+          "symbol": "SOLUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0,
+          "gross_r": -1.0,
+          "exit_bar": 84
+        },
+        {
+          "trade_id": "SOLUSD_15m_OB_1790692200000_1790694900000",
+          "symbol": "SOLUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0,
+          "gross_r": -1.0,
+          "exit_bar": 84
+        },
+        {
+          "trade_id": "ETHUSD_15m_OB_1790873100000_1790874900000",
+          "symbol": "ETHUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0,
+          "gross_r": -1.0,
+          "exit_bar": 63
+        },
+        {
+          "trade_id": "GBPUSD_15m_FVG_1791174600000_1791174600000",
+          "symbol": "GBPUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0,
+          "gross_r": -1.0,
+          "exit_bar": 1
+        },
+        {
+          "trade_id": "XAUUSD_15m_OB_1791219600000_1791222300000",
+          "symbol": "XAUUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0,
+          "gross_r": -1.0,
+          "exit_bar": 30
+        },
+        {
+          "trade_id": "XAUUSD_15m_OB_1791246600000_1791247500000",
+          "symbol": "XAUUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0,
+          "gross_r": -1.0,
+          "exit_bar": 65
+        },
+        {
+          "trade_id": "XAUUSD_15m_OB_1791265500000_1791267300000",
+          "symbol": "XAUUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0,
+          "gross_r": -1.0,
+          "exit_bar": 38
+        }
+      ]
+    },
+    "Scenario_D_Stress": {
+      "resolved_count": 9,
+      "target_hits": 0,
+      "stop_hits": 9,
+      "win_rate_percent": 0.0,
+      "total_net_r": -9.3607,
+      "avg_net_r": -1.0401,
+      "trades": [
+        {
+          "trade_id": "XAUUSD_15m_FVG_1789023600000_1789024500000",
+          "symbol": "XAUUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0081,
+          "gross_r": -1.0,
+          "exit_bar": 18
+        },
+        {
+          "trade_id": "ETHUSD_15m_OB_1789022700000_1789024500000",
+          "symbol": "ETHUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0066,
+          "gross_r": -1.0,
+          "exit_bar": 118
+        },
+        {
+          "trade_id": "SOLUSD_15m_OB_1789349400000_1789350300000",
+          "symbol": "SOLUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0641,
+          "gross_r": -1.0,
+          "exit_bar": 84
+        },
+        {
+          "trade_id": "SOLUSD_15m_OB_1790692200000_1790694900000",
+          "symbol": "SOLUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0337,
+          "gross_r": -1.0,
+          "exit_bar": 83
+        },
+        {
+          "trade_id": "ETHUSD_15m_OB_1790873100000_1790874900000",
+          "symbol": "ETHUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0022,
+          "gross_r": -1.0,
+          "exit_bar": 63
+        },
+        {
+          "trade_id": "GBPUSD_15m_FVG_1791174600000_1791174600000",
+          "symbol": "GBPUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.2041,
+          "gross_r": -1.0,
+          "exit_bar": 1
+        },
+        {
+          "trade_id": "XAUUSD_15m_OB_1791219600000_1791222300000",
+          "symbol": "XAUUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0088,
+          "gross_r": -1.0,
+          "exit_bar": 30
+        },
+        {
+          "trade_id": "XAUUSD_15m_OB_1791246600000_1791247500000",
+          "symbol": "XAUUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0096,
+          "gross_r": -1.0,
+          "exit_bar": 65
+        },
+        {
+          "trade_id": "XAUUSD_15m_OB_1791265500000_1791267300000",
+          "symbol": "XAUUSD",
+          "outcome": "STOP_HIT",
+          "net_r": -1.0235,
+          "gross_r": -1.0,
+          "exit_bar": 38
+        }
+      ]
+    }
+  },
+  "micro_stop_sensitivity_summary": {
+    "FX_2p_XAU_1_ETH_5_SOL_0.5": {
+      "thresholds": {
+        "fx_pips": 2.0,
+        "xau_usd": 1.0,
+        "eth_usd": 5.0,
+        "sol_usd": 0.5
+      },
+      "total_tested": 25,
+      "included_trades": 23,
+      "excluded_trades": 2,
+      "resolved_included": 9,
+      "target_hits": 2,
+      "stop_hits": 7,
+      "win_rate_percent": 22.22,
+      "sum_gross_r": 10.9557,
+      "avg_gross_r": 1.2173,
+      "excluded_list": [
+        {
+          "trade_id": "ETHUSD_15m_OB_1787119200000_1787121900000",
+          "symbol": "ETHUSD",
+          "risk": 4.595000000000027,
+          "threshold": "5.0 $"
+        },
+        {
+          "trade_id": "ETHUSD_15m_OB_1788248700000_1788249600000",
+          "symbol": "ETHUSD",
+          "risk": 4.7199999999998,
+          "threshold": "5.0 $"
+        }
+      ]
+    },
+    "FX_4p_XAU_2_ETH_10_SOL_1.0": {
+      "thresholds": {
+        "fx_pips": 4.0,
+        "xau_usd": 2.0,
+        "eth_usd": 10.0,
+        "sol_usd": 1.0
+      },
+      "total_tested": 25,
+      "included_trades": 19,
+      "excluded_trades": 6,
+      "resolved_included": 6,
+      "target_hits": 1,
+      "stop_hits": 5,
+      "win_rate_percent": 16.67,
+      "sum_gross_r": -4.3219,
+      "avg_gross_r": -0.7203,
+      "excluded_list": [
+        {
+          "trade_id": "ETHUSD_15m_OB_1787119200000_1787121900000",
+          "symbol": "ETHUSD",
+          "risk": 4.595000000000027,
+          "threshold": "10.0 $"
+        },
+        {
+          "trade_id": "XAUUSD_15m_OB_1787697900000_1787701500000",
+          "symbol": "XAUUSD",
+          "risk": 1.9507400000002235,
+          "threshold": "2.0 $"
+        },
+        {
+          "trade_id": "ETHUSD_15m_OB_1788248700000_1788249600000",
+          "symbol": "ETHUSD",
+          "risk": 4.7199999999998,
+          "threshold": "10.0 $"
+        },
+        {
+          "trade_id": "ETHUSD_15m_OB_1789022700000_1789024500000",
+          "symbol": "ETHUSD",
+          "risk": 7.565000000000055,
+          "threshold": "10.0 $"
+        },
+        {
+          "trade_id": "SOLUSD_15m_OB_1789349400000_1789350300000",
+          "symbol": "SOLUSD",
+          "risk": 0.7800000000000011,
+          "threshold": "1.0 $"
+        },
+        {
+          "trade_id": "GBPUSD_15m_FVG_1791174600000_1791174600000",
+          "symbol": "GBPUSD",
+          "risk": 0.0002449999999998287,
+          "threshold": "4.0 pips"
+        }
+      ]
+    },
+    "FX_6p_XAU_3_ETH_15_SOL_1.5": {
+      "thresholds": {
+        "fx_pips": 6.0,
+        "xau_usd": 3.0,
+        "eth_usd": 15.0,
+        "sol_usd": 1.5
+      },
+      "total_tested": 25,
+      "included_trades": 13,
+      "excluded_trades": 12,
+      "resolved_included": 5,
+      "target_hits": 0,
+      "stop_hits": 5,
+      "win_rate_percent": 0.0,
+      "sum_gross_r": -5.0,
+      "avg_gross_r": -1.0,
+      "excluded_list": [
+        {
+          "trade_id": "ETHUSD_15m_OB_1787119200000_1787121900000",
+          "symbol": "ETHUSD",
+          "risk": 4.595000000000027,
+          "threshold": "15.0 $"
+        },
+        {
+          "trade_id": "ETHUSD_15m_OB_1787211000000_1787212800000",
+          "symbol": "ETHUSD",
+          "risk": 13.040000000000418,
+          "threshold": "15.0 $"
+        },
+        {
+          "trade_id": "XAUUSD_15m_OB_1787095800000_1787097600000",
+          "symbol": "XAUUSD",
+          "risk": 2.4932699999999386,
+          "threshold": "3.0 $"
+        },
+        {
+          "trade_id": "XAUUSD_15m_OB_1787272200000_1787274900000",
+          "symbol": "XAUUSD",
+          "risk": 2.1919899999993504,
+          "threshold": "3.0 $"
+        },
+        {
+          "trade_id": "XAUUSD_15m_FVG_1787274000000_1787274900000",
+          "symbol": "XAUUSD",
+          "risk": 2.1919899999993504,
+          "threshold": "3.0 $"
+        },
+        {
+          "trade_id": "XAUUSD_15m_OB_1787697900000_1787701500000",
+          "symbol": "XAUUSD",
+          "risk": 1.9507400000002235,
+          "threshold": "3.0 $"
+        },
+        {
+          "trade_id": "ETHUSD_15m_OB_1788248700000_1788249600000",
+          "symbol": "ETHUSD",
+          "risk": 4.7199999999998,
+          "threshold": "15.0 $"
+        },
+        {
+          "trade_id": "GBPUSD_15m_OB_1788524100000_1788525000000",
+          "symbol": "GBPUSD",
+          "risk": 0.0005850000000000577,
+          "threshold": "6.0 pips"
+        },
+        {
+          "trade_id": "ETHUSD_15m_OB_1789022700000_1789024500000",
+          "symbol": "ETHUSD",
+          "risk": 7.565000000000055,
+          "threshold": "15.0 $"
+        },
+        {
+          "trade_id": "SOLUSD_15m_OB_1789349400000_1789350300000",
+          "symbol": "SOLUSD",
+          "risk": 0.7800000000000011,
+          "threshold": "1.5 $"
+        },
+        {
+          "trade_id": "SOLUSD_15m_OB_1790692200000_1790694900000",
+          "symbol": "SOLUSD",
+          "risk": 1.4849999999999994,
+          "threshold": "1.5 $"
+        },
+        {
+          "trade_id": "GBPUSD_15m_FVG_1791174600000_1791174600000",
+          "symbol": "GBPUSD",
+          "risk": 0.0002449999999998287,
+          "threshold": "6.0 pips"
+        }
+      ]
+    },
+    "FX_8p_XAU_3_ETH_15_SOL_1.5": {
+      "thresholds": {
+        "fx_pips": 8.0,
+        "xau_usd": 3.0,
+        "eth_usd": 15.0,
+        "sol_usd": 1.5
+      },
+      "total_tested": 25,
+      "included_trades": 13,
+      "excluded_trades": 12,
+      "resolved_included": 5,
+      "target_hits": 0,
+      "stop_hits": 5,
+      "win_rate_percent": 0.0,
+      "sum_gross_r": -5.0,
+      "avg_gross_r": -1.0,
+      "excluded_list": [
+        {
+          "trade_id": "ETHUSD_15m_OB_1787119200000_1787121900000",
+          "symbol": "ETHUSD",
+          "risk": 4.595000000000027,
+          "threshold": "15.0 $"
+        },
+        {
+          "trade_id": "ETHUSD_15m_OB_1787211000000_1787212800000",
+          "symbol": "ETHUSD",
+          "risk": 13.040000000000418,
+          "threshold": "15.0 $"
+        },
+        {
+          "trade_id": "XAUUSD_15m_OB_1787095800000_1787097600000",
+          "symbol": "XAUUSD",
+          "risk": 2.4932699999999386,
+          "threshold": "3.0 $"
+        },
+        {
+          "trade_id": "XAUUSD_15m_OB_1787272200000_1787274900000",
+          "symbol": "XAUUSD",
+          "risk": 2.1919899999993504,
+          "threshold": "3.0 $"
+        },
+        {
+          "trade_id": "XAUUSD_15m_FVG_1787274000000_1787274900000",
+          "symbol": "XAUUSD",
+          "risk": 2.1919899999993504,
+          "threshold": "3.0 $"
+        },
+        {
+          "trade_id": "XAUUSD_15m_OB_1787697900000_1787701500000",
+          "symbol": "XAUUSD",
+          "risk": 1.9507400000002235,
+          "threshold": "3.0 $"
+        },
+        {
+          "trade_id": "ETHUSD_15m_OB_1788248700000_1788249600000",
+          "symbol": "ETHUSD",
+          "risk": 4.7199999999998,
+          "threshold": "15.0 $"
+        },
+        {
+          "trade_id": "GBPUSD_15m_OB_1788524100000_1788525000000",
+          "symbol": "GBPUSD",
+          "risk": 0.0005850000000000577,
+          "threshold": "8.0 pips"
+        },
+        {
+          "trade_id": "ETHUSD_15m_OB_1789022700000_1789024500000",
+          "symbol": "ETHUSD",
+          "risk": 7.565000000000055,
+          "threshold": "15.0 $"
+        },
+        {
+          "trade_id": "SOLUSD_15m_OB_1789349400000_1789350300000",
+          "symbol": "SOLUSD",
+          "risk": 0.7800000000000011,
+          "threshold": "1.5 $"
+        },
+        {
+          "trade_id": "SOLUSD_15m_OB_1790692200000_1790694900000",
+          "symbol": "SOLUSD",
+          "risk": 1.4849999999999994,
+          "threshold": "1.5 $"
+        },
+        {
+          "trade_id": "GBPUSD_15m_FVG_1791174600000_1791174600000",
+          "symbol": "GBPUSD",
+          "risk": 0.0002449999999998287,
+          "threshold": "8.0 pips"
+        }
+      ]
+    },
+    "FX_10p_XAU_3_ETH_15_SOL_1.5": {
+      "thresholds": {
+        "fx_pips": 10.0,
+        "xau_usd": 3.0,
+        "eth_usd": 15.0,
+        "sol_usd": 1.5
+      },
+      "total_tested": 25,
+      "included_trades": 13,
+      "excluded_trades": 12,
+      "resolved_included": 5,
+      "target_hits": 0,
+      "stop_hits": 5,
+      "win_rate_percent": 0.0,
+      "sum_gross_r": -5.0,
+      "avg_gross_r": -1.0,
+      "excluded_list": [
+        {
+          "trade_id": "ETHUSD_15m_OB_1787119200000_1787121900000",
+          "symbol": "ETHUSD",
+          "risk": 4.595000000000027,
+          "threshold": "15.0 $"
+        },
+        {
+          "trade_id": "ETHUSD_15m_OB_1787211000000_1787212800000",
+          "symbol": "ETHUSD",
+          "risk": 13.040000000000418,
+          "threshold": "15.0 $"
+        },
+        {
+          "trade_id": "XAUUSD_15m_OB_1787095800000_1787097600000",
+          "symbol": "XAUUSD",
+          "risk": 2.4932699999999386,
+          "threshold": "3.0 $"
+        },
+        {
+          "trade_id": "XAUUSD_15m_OB_1787272200000_1787274900000",
+          "symbol": "XAUUSD",
+          "risk": 2.1919899999993504,
+          "threshold": "3.0 $"
+        },
+        {
+          "trade_id": "XAUUSD_15m_FVG_1787274000000_1787274900000",
+          "symbol": "XAUUSD",
+          "risk": 2.1919899999993504,
+          "threshold": "3.0 $"
+        },
+        {
+          "trade_id": "XAUUSD_15m_OB_1787697900000_1787701500000",
+          "symbol": "XAUUSD",
+          "risk": 1.9507400000002235,
+          "threshold": "3.0 $"
+        },
+        {
+          "trade_id": "ETHUSD_15m_OB_1788248700000_1788249600000",
+          "symbol": "ETHUSD",
+          "risk": 4.7199999999998,
+          "threshold": "15.0 $"
+        },
+        {
+          "trade_id": "GBPUSD_15m_OB_1788524100000_1788525000000",
+          "symbol": "GBPUSD",
+          "risk": 0.0005850000000000577,
+          "threshold": "10.0 pips"
+        },
+        {
+          "trade_id": "ETHUSD_15m_OB_1789022700000_1789024500000",
+          "symbol": "ETHUSD",
+          "risk": 7.565000000000055,
+          "threshold": "15.0 $"
+        },
+        {
+          "trade_id": "SOLUSD_15m_OB_1789349400000_1789350300000",
+          "symbol": "SOLUSD",
+          "risk": 0.7800000000000011,
+          "threshold": "1.5 $"
+        },
+        {
+          "trade_id": "SOLUSD_15m_OB_1790692200000_1790694900000",
+          "symbol": "SOLUSD",
+          "risk": 1.4849999999999994,
+          "threshold": "1.5 $"
+        },
+        {
+          "trade_id": "GBPUSD_15m_FVG_1791174600000_1791174600000",
+          "symbol": "GBPUSD",
+          "risk": 0.0002449999999998287,
+          "threshold": "10.0 pips"
+        }
+      ]
+    }
+  }
+}

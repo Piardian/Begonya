@@ -1,0 +1,993 @@
+{
+  "experiment_timestamp": "2026-10-14T13:51:58.632135+00:00",
+  "total_evaluated_trades": 25,
+  "in_sample_trades_count": 3,
+  "out_of_sample_trades_count": 22,
+  "macro_gate_veto_rate_percent": 12.0,
+  "results_by_variant": {
+    "VAR_0_PURE_BASELINE": {
+      "IN_SAMPLE": {
+        "ZERO_COST": {
+          "total_trades": 3,
+          "wins": 0,
+          "losses": 3,
+          "time_expired": 0,
+          "win_rate_percent": 0.0,
+          "sum_r": -3.0,
+          "expectancy_r": -1.0,
+          "profit_factor": 0.0,
+          "max_drawdown_r": 3.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 3,
+          "wins": 0,
+          "losses": 3,
+          "time_expired": 0,
+          "win_rate_percent": 0.0,
+          "sum_r": -3.15,
+          "expectancy_r": -1.05,
+          "profit_factor": 0.0,
+          "max_drawdown_r": 3.15
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 3,
+          "wins": 0,
+          "losses": 3,
+          "time_expired": 0,
+          "win_rate_percent": 0.0,
+          "sum_r": -3.0,
+          "expectancy_r": -1.0,
+          "profit_factor": 0.0,
+          "max_drawdown_r": 3.0
+        }
+      },
+      "OUT_OF_SAMPLE": {
+        "ZERO_COST": {
+          "total_trades": 22,
+          "wins": 11,
+          "losses": 11,
+          "time_expired": 3,
+          "win_rate_percent": 50.0,
+          "sum_r": 500.0741,
+          "expectancy_r": 22.7306,
+          "profit_factor": 46.46,
+          "max_drawdown_r": 8.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 22,
+          "wins": 11,
+          "losses": 11,
+          "time_expired": 3,
+          "win_rate_percent": 50.0,
+          "sum_r": 498.7682,
+          "expectancy_r": 22.6713,
+          "profit_factor": 44.18,
+          "max_drawdown_r": 8.4
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 22,
+          "wins": 11,
+          "losses": 11,
+          "time_expired": 3,
+          "win_rate_percent": 50.0,
+          "sum_r": 499.577,
+          "expectancy_r": 22.708,
+          "profit_factor": 46.42,
+          "max_drawdown_r": 8.0
+        }
+      },
+      "OVERALL": {
+        "ZERO_COST": {
+          "total_trades": 25,
+          "wins": 11,
+          "losses": 14,
+          "time_expired": 3,
+          "win_rate_percent": 44.0,
+          "sum_r": 497.0741,
+          "expectancy_r": 19.883,
+          "profit_factor": 36.51,
+          "max_drawdown_r": 11.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 25,
+          "wins": 11,
+          "losses": 14,
+          "time_expired": 3,
+          "win_rate_percent": 44.0,
+          "sum_r": 495.6182,
+          "expectancy_r": 19.8247,
+          "profit_factor": 34.72,
+          "max_drawdown_r": 11.55
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 25,
+          "wins": 11,
+          "losses": 14,
+          "time_expired": 3,
+          "win_rate_percent": 44.0,
+          "sum_r": 496.577,
+          "expectancy_r": 19.8631,
+          "profit_factor": 36.47,
+          "max_drawdown_r": 11.0
+        }
+      }
+    },
+    "VAR_1_MACRO_GATE_ONLY": {
+      "IN_SAMPLE": {
+        "ZERO_COST": {
+          "total_trades": 3,
+          "wins": 0,
+          "losses": 3,
+          "time_expired": 0,
+          "win_rate_percent": 0.0,
+          "sum_r": -3.0,
+          "expectancy_r": -1.0,
+          "profit_factor": 0.0,
+          "max_drawdown_r": 3.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 3,
+          "wins": 0,
+          "losses": 3,
+          "time_expired": 0,
+          "win_rate_percent": 0.0,
+          "sum_r": -3.15,
+          "expectancy_r": -1.05,
+          "profit_factor": 0.0,
+          "max_drawdown_r": 3.15
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 3,
+          "wins": 0,
+          "losses": 3,
+          "time_expired": 0,
+          "win_rate_percent": 0.0,
+          "sum_r": -3.0,
+          "expectancy_r": -1.0,
+          "profit_factor": 0.0,
+          "max_drawdown_r": 3.0
+        }
+      },
+      "OUT_OF_SAMPLE": {
+        "ZERO_COST": {
+          "total_trades": 19,
+          "wins": 9,
+          "losses": 10,
+          "time_expired": 2,
+          "win_rate_percent": 47.37,
+          "sum_r": 182.4103,
+          "expectancy_r": 9.6005,
+          "profit_factor": 19.24,
+          "max_drawdown_r": 8.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 19,
+          "wins": 9,
+          "losses": 10,
+          "time_expired": 2,
+          "win_rate_percent": 47.37,
+          "sum_r": 181.3313,
+          "expectancy_r": 9.5438,
+          "profit_factor": 18.27,
+          "max_drawdown_r": 8.4
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 19,
+          "wins": 9,
+          "losses": 10,
+          "time_expired": 2,
+          "win_rate_percent": 47.37,
+          "sum_r": 182.067,
+          "expectancy_r": 9.5825,
+          "profit_factor": 19.21,
+          "max_drawdown_r": 8.0
+        }
+      },
+      "OVERALL": {
+        "ZERO_COST": {
+          "total_trades": 22,
+          "wins": 9,
+          "losses": 13,
+          "time_expired": 2,
+          "win_rate_percent": 40.91,
+          "sum_r": 179.4103,
+          "expectancy_r": 8.155,
+          "profit_factor": 14.8,
+          "max_drawdown_r": 11.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 22,
+          "wins": 9,
+          "losses": 13,
+          "time_expired": 2,
+          "win_rate_percent": 40.91,
+          "sum_r": 178.1813,
+          "expectancy_r": 8.0992,
+          "profit_factor": 14.05,
+          "max_drawdown_r": 11.55
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 22,
+          "wins": 9,
+          "losses": 13,
+          "time_expired": 2,
+          "win_rate_percent": 40.91,
+          "sum_r": 179.067,
+          "expectancy_r": 8.1394,
+          "profit_factor": 14.77,
+          "max_drawdown_r": 11.0
+        }
+      }
+    },
+    "VAR_2A_FIXED_2R": {
+      "IN_SAMPLE": {
+        "ZERO_COST": {
+          "total_trades": 3,
+          "wins": 1,
+          "losses": 2,
+          "time_expired": 0,
+          "win_rate_percent": 33.33,
+          "sum_r": 0.0,
+          "expectancy_r": 0.0,
+          "profit_factor": 1.0,
+          "max_drawdown_r": 2.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 3,
+          "wins": 1,
+          "losses": 2,
+          "time_expired": 0,
+          "win_rate_percent": 33.33,
+          "sum_r": -0.15,
+          "expectancy_r": -0.05,
+          "profit_factor": 0.93,
+          "max_drawdown_r": 2.1
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 3,
+          "wins": 1,
+          "losses": 2,
+          "time_expired": 0,
+          "win_rate_percent": 33.33,
+          "sum_r": 0.0,
+          "expectancy_r": 0.0,
+          "profit_factor": 1.0,
+          "max_drawdown_r": 2.0
+        }
+      },
+      "OUT_OF_SAMPLE": {
+        "ZERO_COST": {
+          "total_trades": 22,
+          "wins": 9,
+          "losses": 13,
+          "time_expired": 0,
+          "win_rate_percent": 40.91,
+          "sum_r": 5.0,
+          "expectancy_r": 0.2273,
+          "profit_factor": 1.38,
+          "max_drawdown_r": 8.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 22,
+          "wins": 9,
+          "losses": 13,
+          "time_expired": 0,
+          "win_rate_percent": 40.91,
+          "sum_r": 3.9,
+          "expectancy_r": 0.1773,
+          "profit_factor": 1.29,
+          "max_drawdown_r": 8.4
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 22,
+          "wins": 9,
+          "losses": 13,
+          "time_expired": 0,
+          "win_rate_percent": 40.91,
+          "sum_r": 5.0,
+          "expectancy_r": 0.2273,
+          "profit_factor": 1.38,
+          "max_drawdown_r": 8.0
+        }
+      },
+      "OVERALL": {
+        "ZERO_COST": {
+          "total_trades": 25,
+          "wins": 10,
+          "losses": 15,
+          "time_expired": 0,
+          "win_rate_percent": 40.0,
+          "sum_r": 5.0,
+          "expectancy_r": 0.2,
+          "profit_factor": 1.33,
+          "max_drawdown_r": 10.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 25,
+          "wins": 10,
+          "losses": 15,
+          "time_expired": 0,
+          "win_rate_percent": 40.0,
+          "sum_r": 3.75,
+          "expectancy_r": 0.15,
+          "profit_factor": 1.24,
+          "max_drawdown_r": 10.5
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 25,
+          "wins": 10,
+          "losses": 15,
+          "time_expired": 0,
+          "win_rate_percent": 40.0,
+          "sum_r": 5.0,
+          "expectancy_r": 0.2,
+          "profit_factor": 1.33,
+          "max_drawdown_r": 10.0
+        }
+      }
+    },
+    "VAR_2B_FIXED_3R": {
+      "IN_SAMPLE": {
+        "ZERO_COST": {
+          "total_trades": 3,
+          "wins": 1,
+          "losses": 2,
+          "time_expired": 0,
+          "win_rate_percent": 33.33,
+          "sum_r": 1.0,
+          "expectancy_r": 0.3333,
+          "profit_factor": 1.5,
+          "max_drawdown_r": 2.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 3,
+          "wins": 1,
+          "losses": 2,
+          "time_expired": 0,
+          "win_rate_percent": 33.33,
+          "sum_r": 0.85,
+          "expectancy_r": 0.2833,
+          "profit_factor": 1.4,
+          "max_drawdown_r": 2.1
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 3,
+          "wins": 1,
+          "losses": 2,
+          "time_expired": 0,
+          "win_rate_percent": 33.33,
+          "sum_r": 1.0,
+          "expectancy_r": 0.3333,
+          "profit_factor": 1.5,
+          "max_drawdown_r": 2.0
+        }
+      },
+      "OUT_OF_SAMPLE": {
+        "ZERO_COST": {
+          "total_trades": 22,
+          "wins": 9,
+          "losses": 13,
+          "time_expired": 0,
+          "win_rate_percent": 40.91,
+          "sum_r": 14.0,
+          "expectancy_r": 0.6364,
+          "profit_factor": 2.08,
+          "max_drawdown_r": 8.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 22,
+          "wins": 9,
+          "losses": 13,
+          "time_expired": 0,
+          "win_rate_percent": 40.91,
+          "sum_r": 12.9,
+          "expectancy_r": 0.5864,
+          "profit_factor": 1.95,
+          "max_drawdown_r": 8.4
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 22,
+          "wins": 9,
+          "losses": 13,
+          "time_expired": 0,
+          "win_rate_percent": 40.91,
+          "sum_r": 14.0,
+          "expectancy_r": 0.6364,
+          "profit_factor": 2.08,
+          "max_drawdown_r": 8.0
+        }
+      },
+      "OVERALL": {
+        "ZERO_COST": {
+          "total_trades": 25,
+          "wins": 10,
+          "losses": 15,
+          "time_expired": 0,
+          "win_rate_percent": 40.0,
+          "sum_r": 15.0,
+          "expectancy_r": 0.6,
+          "profit_factor": 2.0,
+          "max_drawdown_r": 10.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 25,
+          "wins": 10,
+          "losses": 15,
+          "time_expired": 0,
+          "win_rate_percent": 40.0,
+          "sum_r": 13.75,
+          "expectancy_r": 0.55,
+          "profit_factor": 1.87,
+          "max_drawdown_r": 10.5
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 25,
+          "wins": 10,
+          "losses": 15,
+          "time_expired": 0,
+          "win_rate_percent": 40.0,
+          "sum_r": 15.0,
+          "expectancy_r": 0.6,
+          "profit_factor": 2.0,
+          "max_drawdown_r": 10.0
+        }
+      }
+    },
+    "VAR_2C_FIXED_5R": {
+      "IN_SAMPLE": {
+        "ZERO_COST": {
+          "total_trades": 3,
+          "wins": 1,
+          "losses": 2,
+          "time_expired": 0,
+          "win_rate_percent": 33.33,
+          "sum_r": 3.0,
+          "expectancy_r": 1.0,
+          "profit_factor": 2.5,
+          "max_drawdown_r": 2.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 3,
+          "wins": 1,
+          "losses": 2,
+          "time_expired": 0,
+          "win_rate_percent": 33.33,
+          "sum_r": 2.85,
+          "expectancy_r": 0.95,
+          "profit_factor": 2.36,
+          "max_drawdown_r": 2.1
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 3,
+          "wins": 1,
+          "losses": 2,
+          "time_expired": 0,
+          "win_rate_percent": 33.33,
+          "sum_r": 3.0,
+          "expectancy_r": 1.0,
+          "profit_factor": 2.5,
+          "max_drawdown_r": 2.0
+        }
+      },
+      "OUT_OF_SAMPLE": {
+        "ZERO_COST": {
+          "total_trades": 22,
+          "wins": 9,
+          "losses": 13,
+          "time_expired": 0,
+          "win_rate_percent": 40.91,
+          "sum_r": 32.0,
+          "expectancy_r": 1.4545,
+          "profit_factor": 3.46,
+          "max_drawdown_r": 8.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 22,
+          "wins": 9,
+          "losses": 13,
+          "time_expired": 0,
+          "win_rate_percent": 40.91,
+          "sum_r": 30.9,
+          "expectancy_r": 1.4045,
+          "profit_factor": 3.26,
+          "max_drawdown_r": 8.4
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 22,
+          "wins": 9,
+          "losses": 13,
+          "time_expired": 0,
+          "win_rate_percent": 40.91,
+          "sum_r": 32.0,
+          "expectancy_r": 1.4545,
+          "profit_factor": 3.46,
+          "max_drawdown_r": 8.0
+        }
+      },
+      "OVERALL": {
+        "ZERO_COST": {
+          "total_trades": 25,
+          "wins": 10,
+          "losses": 15,
+          "time_expired": 0,
+          "win_rate_percent": 40.0,
+          "sum_r": 35.0,
+          "expectancy_r": 1.4,
+          "profit_factor": 3.33,
+          "max_drawdown_r": 10.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 25,
+          "wins": 10,
+          "losses": 15,
+          "time_expired": 0,
+          "win_rate_percent": 40.0,
+          "sum_r": 33.75,
+          "expectancy_r": 1.35,
+          "profit_factor": 3.14,
+          "max_drawdown_r": 10.5
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 25,
+          "wins": 10,
+          "losses": 15,
+          "time_expired": 0,
+          "win_rate_percent": 40.0,
+          "sum_r": 35.0,
+          "expectancy_r": 1.4,
+          "profit_factor": 3.33,
+          "max_drawdown_r": 10.0
+        }
+      }
+    },
+    "VAR_2D_SESSION_TARGET": {
+      "IN_SAMPLE": {
+        "ZERO_COST": {
+          "total_trades": 3,
+          "wins": 1,
+          "losses": 2,
+          "time_expired": 0,
+          "win_rate_percent": 33.33,
+          "sum_r": 0.0,
+          "expectancy_r": 0.0,
+          "profit_factor": 1.0,
+          "max_drawdown_r": 2.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 3,
+          "wins": 1,
+          "losses": 2,
+          "time_expired": 0,
+          "win_rate_percent": 33.33,
+          "sum_r": -0.15,
+          "expectancy_r": -0.05,
+          "profit_factor": 0.93,
+          "max_drawdown_r": 2.1
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 3,
+          "wins": 1,
+          "losses": 2,
+          "time_expired": 0,
+          "win_rate_percent": 33.33,
+          "sum_r": 0.0,
+          "expectancy_r": 0.0,
+          "profit_factor": 1.0,
+          "max_drawdown_r": 2.0
+        }
+      },
+      "OUT_OF_SAMPLE": {
+        "ZERO_COST": {
+          "total_trades": 22,
+          "wins": 9,
+          "losses": 13,
+          "time_expired": 0,
+          "win_rate_percent": 40.91,
+          "sum_r": 32.0,
+          "expectancy_r": 1.4545,
+          "profit_factor": 3.46,
+          "max_drawdown_r": 8.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 22,
+          "wins": 9,
+          "losses": 13,
+          "time_expired": 0,
+          "win_rate_percent": 40.91,
+          "sum_r": 30.9,
+          "expectancy_r": 1.4045,
+          "profit_factor": 3.26,
+          "max_drawdown_r": 8.4
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 22,
+          "wins": 9,
+          "losses": 13,
+          "time_expired": 0,
+          "win_rate_percent": 40.91,
+          "sum_r": 32.0,
+          "expectancy_r": 1.4545,
+          "profit_factor": 3.46,
+          "max_drawdown_r": 8.0
+        }
+      },
+      "OVERALL": {
+        "ZERO_COST": {
+          "total_trades": 25,
+          "wins": 10,
+          "losses": 15,
+          "time_expired": 0,
+          "win_rate_percent": 40.0,
+          "sum_r": 32.0,
+          "expectancy_r": 1.28,
+          "profit_factor": 3.13,
+          "max_drawdown_r": 10.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 25,
+          "wins": 10,
+          "losses": 15,
+          "time_expired": 0,
+          "win_rate_percent": 40.0,
+          "sum_r": 30.75,
+          "expectancy_r": 1.23,
+          "profit_factor": 2.95,
+          "max_drawdown_r": 10.5
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 25,
+          "wins": 10,
+          "losses": 15,
+          "time_expired": 0,
+          "win_rate_percent": 40.0,
+          "sum_r": 32.0,
+          "expectancy_r": 1.28,
+          "profit_factor": 3.13,
+          "max_drawdown_r": 10.0
+        }
+      }
+    },
+    "VAR_3_COMBINED_MACRO_AND_3R": {
+      "IN_SAMPLE": {
+        "ZERO_COST": {
+          "total_trades": 3,
+          "wins": 1,
+          "losses": 2,
+          "time_expired": 0,
+          "win_rate_percent": 33.33,
+          "sum_r": 1.0,
+          "expectancy_r": 0.3333,
+          "profit_factor": 1.5,
+          "max_drawdown_r": 2.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 3,
+          "wins": 1,
+          "losses": 2,
+          "time_expired": 0,
+          "win_rate_percent": 33.33,
+          "sum_r": 0.85,
+          "expectancy_r": 0.2833,
+          "profit_factor": 1.4,
+          "max_drawdown_r": 2.1
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 3,
+          "wins": 1,
+          "losses": 2,
+          "time_expired": 0,
+          "win_rate_percent": 33.33,
+          "sum_r": 1.0,
+          "expectancy_r": 0.3333,
+          "profit_factor": 1.5,
+          "max_drawdown_r": 2.0
+        }
+      },
+      "OUT_OF_SAMPLE": {
+        "ZERO_COST": {
+          "total_trades": 19,
+          "wins": 8,
+          "losses": 11,
+          "time_expired": 0,
+          "win_rate_percent": 42.11,
+          "sum_r": 13.0,
+          "expectancy_r": 0.6842,
+          "profit_factor": 2.18,
+          "max_drawdown_r": 8.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 19,
+          "wins": 8,
+          "losses": 11,
+          "time_expired": 0,
+          "win_rate_percent": 42.11,
+          "sum_r": 12.05,
+          "expectancy_r": 0.6342,
+          "profit_factor": 2.04,
+          "max_drawdown_r": 8.4
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 19,
+          "wins": 8,
+          "losses": 11,
+          "time_expired": 0,
+          "win_rate_percent": 42.11,
+          "sum_r": 13.0,
+          "expectancy_r": 0.6842,
+          "profit_factor": 2.18,
+          "max_drawdown_r": 8.0
+        }
+      },
+      "OVERALL": {
+        "ZERO_COST": {
+          "total_trades": 22,
+          "wins": 9,
+          "losses": 13,
+          "time_expired": 0,
+          "win_rate_percent": 40.91,
+          "sum_r": 14.0,
+          "expectancy_r": 0.6364,
+          "profit_factor": 2.08,
+          "max_drawdown_r": 10.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 22,
+          "wins": 9,
+          "losses": 13,
+          "time_expired": 0,
+          "win_rate_percent": 40.91,
+          "sum_r": 12.9,
+          "expectancy_r": 0.5864,
+          "profit_factor": 1.95,
+          "max_drawdown_r": 10.5
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 22,
+          "wins": 9,
+          "losses": 13,
+          "time_expired": 0,
+          "win_rate_percent": 40.91,
+          "sum_r": 14.0,
+          "expectancy_r": 0.6364,
+          "profit_factor": 2.08,
+          "max_drawdown_r": 10.0
+        }
+      }
+    },
+    "VAR_4_COMBINED_MACRO_AND_SESSION": {
+      "IN_SAMPLE": {
+        "ZERO_COST": {
+          "total_trades": 3,
+          "wins": 1,
+          "losses": 2,
+          "time_expired": 0,
+          "win_rate_percent": 33.33,
+          "sum_r": 0.0,
+          "expectancy_r": 0.0,
+          "profit_factor": 1.0,
+          "max_drawdown_r": 2.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 3,
+          "wins": 1,
+          "losses": 2,
+          "time_expired": 0,
+          "win_rate_percent": 33.33,
+          "sum_r": -0.15,
+          "expectancy_r": -0.05,
+          "profit_factor": 0.93,
+          "max_drawdown_r": 2.1
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 3,
+          "wins": 1,
+          "losses": 2,
+          "time_expired": 0,
+          "win_rate_percent": 33.33,
+          "sum_r": 0.0,
+          "expectancy_r": 0.0,
+          "profit_factor": 1.0,
+          "max_drawdown_r": 2.0
+        }
+      },
+      "OUT_OF_SAMPLE": {
+        "ZERO_COST": {
+          "total_trades": 19,
+          "wins": 8,
+          "losses": 11,
+          "time_expired": 0,
+          "win_rate_percent": 42.11,
+          "sum_r": 29.0,
+          "expectancy_r": 1.5263,
+          "profit_factor": 3.64,
+          "max_drawdown_r": 8.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 19,
+          "wins": 8,
+          "losses": 11,
+          "time_expired": 0,
+          "win_rate_percent": 42.11,
+          "sum_r": 28.05,
+          "expectancy_r": 1.4763,
+          "profit_factor": 3.43,
+          "max_drawdown_r": 8.4
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 19,
+          "wins": 8,
+          "losses": 11,
+          "time_expired": 0,
+          "win_rate_percent": 42.11,
+          "sum_r": 29.0,
+          "expectancy_r": 1.5263,
+          "profit_factor": 3.64,
+          "max_drawdown_r": 8.0
+        }
+      },
+      "OVERALL": {
+        "ZERO_COST": {
+          "total_trades": 22,
+          "wins": 9,
+          "losses": 13,
+          "time_expired": 0,
+          "win_rate_percent": 40.91,
+          "sum_r": 29.0,
+          "expectancy_r": 1.3182,
+          "profit_factor": 3.23,
+          "max_drawdown_r": 10.0
+        },
+        "ECN_INSTITUTIONAL": {
+          "total_trades": 22,
+          "wins": 9,
+          "losses": 13,
+          "time_expired": 0,
+          "win_rate_percent": 40.91,
+          "sum_r": 27.9,
+          "expectancy_r": 1.2682,
+          "profit_factor": 3.04,
+          "max_drawdown_r": 10.5
+        },
+        "STANDARD_RETAIL": {
+          "total_trades": 22,
+          "wins": 9,
+          "losses": 13,
+          "time_expired": 0,
+          "win_rate_percent": 40.91,
+          "sum_r": 29.0,
+          "expectancy_r": 1.3182,
+          "profit_factor": 3.23,
+          "max_drawdown_r": 10.0
+        }
+      }
+    }
+  },
+  "granular_breakdowns_master_variant": {
+    "by_symbol": {
+      "ETHUSD": {
+        "total_trades": 6,
+        "wins": 4,
+        "losses": 2,
+        "time_expired": 0,
+        "win_rate_percent": 66.67,
+        "sum_r": 15.0,
+        "expectancy_r": 2.5,
+        "profit_factor": 8.5,
+        "max_drawdown_r": 1.0
+      },
+      "XAUUSD": {
+        "total_trades": 13,
+        "wins": 3,
+        "losses": 10,
+        "time_expired": 0,
+        "win_rate_percent": 23.08,
+        "sum_r": 5.0,
+        "expectancy_r": 0.3846,
+        "profit_factor": 1.5,
+        "max_drawdown_r": 9.0
+      },
+      "GBPUSD": {
+        "total_trades": 2,
+        "wins": 1,
+        "losses": 1,
+        "time_expired": 0,
+        "win_rate_percent": 50.0,
+        "sum_r": 4.0,
+        "expectancy_r": 2.0,
+        "profit_factor": 5.0,
+        "max_drawdown_r": 1.0
+      },
+      "SOLUSD": {
+        "total_trades": 1,
+        "wins": 1,
+        "losses": 0,
+        "time_expired": 0,
+        "win_rate_percent": 100.0,
+        "sum_r": 5.0,
+        "expectancy_r": 5.0,
+        "profit_factor": 999.0,
+        "max_drawdown_r": 0.0
+      }
+    },
+    "by_direction": {
+      "LONG": {
+        "total_trades": 14,
+        "wins": 2,
+        "losses": 12,
+        "time_expired": 0,
+        "win_rate_percent": 14.29,
+        "sum_r": -5.0,
+        "expectancy_r": -0.3571,
+        "profit_factor": 0.58,
+        "max_drawdown_r": 12.0
+      },
+      "SHORT": {
+        "total_trades": 8,
+        "wins": 7,
+        "losses": 1,
+        "time_expired": 0,
+        "win_rate_percent": 87.5,
+        "sum_r": 34.0,
+        "expectancy_r": 4.25,
+        "profit_factor": 35.0,
+        "max_drawdown_r": 1.0
+      }
+    },
+    "by_session": {
+      "ASIA": {
+        "total_trades": 11,
+        "wins": 3,
+        "losses": 8,
+        "time_expired": 0,
+        "win_rate_percent": 27.27,
+        "sum_r": 4.0,
+        "expectancy_r": 0.3636,
+        "profit_factor": 1.5,
+        "max_drawdown_r": 6.0
+      },
+      "LONDON": {
+        "total_trades": 5,
+        "wins": 4,
+        "losses": 1,
+        "time_expired": 0,
+        "win_rate_percent": 80.0,
+        "sum_r": 19.0,
+        "expectancy_r": 3.8,
+        "profit_factor": 20.0,
+        "max_drawdown_r": 1.0
+      },
+      "NEW_YORK": {
+        "total_trades": 6,
+        "wins": 2,
+        "losses": 4,
+        "time_expired": 0,
+        "win_rate_percent": 33.33,
+        "sum_r": 6.0,
+        "expectancy_r": 1.0,
+        "profit_factor": 2.5,
+        "max_drawdown_r": 3.0
+      }
+    }
+  },
+  "decision_evaluation": {
+    "target_thresholds": {
+      "min_oos_expectancy_r": 0.25,
+      "min_oos_profit_factor": 1.4,
+      "max_oos_drawdown_r": 12.0,
+      "min_sample_size": 20
+    },
+    "achieved_oos_metrics": {
+      "total_trades": 19,
+      "wins": 8,
+      "losses": 11,
+      "time_expired": 0,
+      "win_rate_percent": 42.11,
+      "sum_r": 29.0,
+      "expectancy_r": 1.5263,
+      "profit_factor": 3.64,
+      "max_drawdown_r": 8.0
+    },
+    "verdict": "GO",
+    "verdict_reason": "All 3 OOS research criteria met: Expectancy=1.53R >= 0.25R, PF=3.64 >= 1.40, DD=8.00R <= 12R."
+  }
+}

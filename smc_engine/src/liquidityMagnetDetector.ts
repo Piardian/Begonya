@@ -237,6 +237,64 @@ export function resolveDisplayLiquidityMagnet(
     }
   }
 
+  // 5. Evaluate Institutional Session Liquidity Pools (PDH / PDL / Asia High / Asia Low)
+  if (candles15m && candles15m.length > 0) {
+    try {
+      const { extractSessionLiquidityPools } = require('./sessionLiquidityDetector');
+      const poolsMap = extractSessionLiquidityPools(candles15m as any);
+      const evalIndex = currentIndex15m !== undefined ? currentIndex15m : candles15m.length - 1;
+      const pools = poolsMap.get(evalIndex);
+      if (pools) {
+        const pip = getPipSize(symbol);
+        if (tradeDirection === 'long') {
+          // Look for PDH or Asia High above current price
+          const sessionHighs: { level: number; label: string }[] = [];
+          if (pools.pdh !== null && pools.pdh > currentPrice) sessionHighs.push({ level: pools.pdh, label: 'PDH' });
+          if (pools.asiaHigh !== null && pools.asiaHigh > currentPrice) sessionHighs.push({ level: pools.asiaHigh, label: 'Asia High' });
+          sessionHighs.sort((a, b) => a.level - b.level);
+          for (const sh of sessionHighs) {
+            const distPips = Math.round(((sh.level - currentPrice) / pip) * 10) / 10;
+            if (minDistancePips === undefined || distPips >= minDistancePips) {
+              return {
+                type: 'EQH',
+                priceLevel: sh.level,
+                pointsCount: 1,
+                distancePips: distPips,
+                isActive: true,
+                status: 'ACTIVE',
+                firstTakenAt: null,
+                description: `Kurumsal Seans Likidite Miknatisi (${sh.label}): @ ${sh.level.toFixed(4)} (${distPips} pip yukarida)`,
+              };
+            }
+          }
+        } else {
+          // Look for PDL or Asia Low below current price
+          const sessionLows: { level: number; label: string }[] = [];
+          if (pools.pdl !== null && pools.pdl < currentPrice) sessionLows.push({ level: pools.pdl, label: 'PDL' });
+          if (pools.asiaLow !== null && pools.asiaLow < currentPrice) sessionLows.push({ level: pools.asiaLow, label: 'Asia Low' });
+          sessionLows.sort((a, b) => b.level - a.level);
+          for (const sl of sessionLows) {
+            const distPips = Math.round(((currentPrice - sl.level) / pip) * 10) / 10;
+            if (minDistancePips === undefined || distPips >= minDistancePips) {
+              return {
+                type: 'EQL',
+                priceLevel: sl.level,
+                pointsCount: 1,
+                distancePips: distPips,
+                isActive: true,
+                status: 'ACTIVE',
+                firstTakenAt: null,
+                description: `Kurumsal Seans Likidite Miknatisi (${sl.label}): @ ${sl.level.toFixed(4)} (${distPips} pip asagida)`,
+              };
+            }
+          }
+        }
+      }
+    } catch {
+      // Fallback safely if sessionLiquidityDetector is not reachable
+    }
+  }
+
   return magnet15m;
 }
 

@@ -148,10 +148,21 @@ class BegonyaEngine:
             logger.warning(f"🛡️ Haber Kalkanı Devrede: {symbol} - {news_check['reason']}")
             return None
 
-        # 2. Canlı Bar Verisini Çek
+        # 2. Canlı Bar Verisini Çek ve Doğrula
         df = self.data_provider.fetch_candles(symbol, interval=PRIMARY_TIMEFRAME, outputsize=70)
-        if df is None or len(df) < 25:
-            return None
+        is_valid, val_reason = self.data_provider.validate_candles(df, min_bars=25)
+        if not is_valid:
+            bar_count = len(df) if df is not None else 0
+            logger.warning(f"⚠️ [{symbol}] {val_reason}. Sinyal üretilmedi.")
+            self._log_telemetry("INSUFFICIENT_DATA", {
+                "symbol": symbol,
+                "interval": PRIMARY_TIMEFRAME,
+                "bars_count": bar_count,
+                "min_required": 25,
+                "status": "INSUFFICIENT_DATA",
+                "reason": val_reason
+            })
+            return {"status": "INSUFFICIENT_DATA", "symbol": symbol, "bars": bar_count, "reason": val_reason}
 
         # 3. Açık İşlemlerin TP1 / TP2 / SL Takibi (Outcome Tracker)
         last_bar_dict = df.iloc[-1].to_dict()
@@ -286,7 +297,7 @@ class BegonyaEngine:
         for symbol in self.symbols:
             try:
                 res = self.scan_symbol(symbol)
-                if res:
+                if res and res.get("status") != "INSUFFICIENT_DATA":
                     findings.append(res)
             except Exception as e:
                 logger.error(f"Sembol tarama hatası ({symbol}): {e}")

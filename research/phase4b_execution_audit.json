@@ -1,0 +1,3840 @@
+[
+  {
+    "tradeIndex": 1,
+    "signalId": "GBPUSD_15m_OB_1774966500000_1774968300000",
+    "symbol": "GBPUSD",
+    "direction": "short",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1775001600000,
+      "signalDt": "2026-04-01 00:00",
+      "orderActiveTs": 1775001600000,
+      "orderActiveDt": "2026-04-01 00:00",
+      "entryTs": 1775002500000,
+      "entryDt": "2026-04-01 00:15",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "high (1.32534) >= entryP (1.3251249999999999)"
+    },
+    "levels": {
+      "entryP": 1.3251249999999999,
+      "15M": {
+        "sl": 1.32563,
+        "risk": 0.0005050000000001997,
+        "tp": 1.3241149999999995,
+        "be10": 1.3246199999999997,
+        "be15": 1.3243674999999997,
+        "costR": 0.36633663366322144
+      },
+      "1H": {
+        "sl": 1.32646,
+        "risk": 0.0013350000000000861,
+        "tp": 1.3224549999999997,
+        "be10": 1.3237899999999998,
+        "be15": 1.3231224999999998,
+        "costR": 0.1385767790262083
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 1.3246,
+      "high": 1.32534,
+      "low": 1.32457,
+      "close": 1.32522,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": false,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "BE",
+        "leakFreeGrossR": 0,
+        "leakFreeNetR": -0.36633663366322144,
+        "exitBar": 2
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "TP",
+        "naiveGrossR": 2,
+        "leakFreeOutcome": "TP",
+        "leakFreeGrossR": 2,
+        "leakFreeNetR": 1.6336633663367786,
+        "exitBar": 3
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "TP",
+        "naiveGrossR": 2,
+        "leakFreeOutcome": "TP",
+        "leakFreeGrossR": 2,
+        "leakFreeNetR": 1.6336633663367786,
+        "exitBar": 3
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.8614232209737918
+      },
+      "scenarioB_No_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.8614232209737918
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.8614232209737918
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": false
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone"
+    }
+  },
+  {
+    "tradeIndex": 2,
+    "signalId": "BTCUSD_15m_OB_1774971900000_1774974600000",
+    "symbol": "BTCUSD",
+    "direction": "long",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1775094300000,
+      "signalDt": "2026-04-02 01:45",
+      "orderActiveTs": 1775094300000,
+      "orderActiveDt": "2026-04-02 01:45",
+      "entryTs": 1775095200000,
+      "entryDt": "2026-04-02 02:00",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "low (66854.5) <= entryP (66878.43)"
+    },
+    "levels": {
+      "entryP": 66878.43,
+      "15M": {
+        "sl": 66702.3,
+        "risk": 176.1299999999901,
+        "tp": 67230.68999999997,
+        "be10": 67054.55999999998,
+        "be15": 67142.62499999997,
+        "costR": 0.2468118974621157
+      },
+      "1H": {
+        "sl": 66417.53,
+        "risk": 460.8999999999942,
+        "tp": 67800.22999999998,
+        "be10": 67339.32999999999,
+        "be15": 67569.77999999998,
+        "costR": 0.09431759492297798
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 67359.27,
+      "high": 67359.27,
+      "low": 66854.5,
+      "close": 66860.88,
+      "openBeyondTp15m": true,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": true,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.2468118974621156,
+        "exitBar": 2
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "TP",
+        "naiveGrossR": 2,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.2468118974621156,
+        "exitBar": 2
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.2468118974621156,
+        "exitBar": 2
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.094317594922978
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.094317594922978
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.094317594922978
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": true,
+      "hadPreEntryBeLeakInNaive": true
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 3,
+    "signalId": "XAUUSD_15m_OB_1775018700000_1775021400000",
+    "symbol": "XAUUSD",
+    "direction": "long",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1775094300000,
+      "signalDt": "2026-04-02 01:45",
+      "orderActiveTs": 1775094300000,
+      "orderActiveDt": "2026-04-02 01:45",
+      "entryTs": 1775095200000,
+      "entryDt": "2026-04-02 02:00",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "low (4676.94987) <= entryP (4677.785835000001)"
+    },
+    "levels": {
+      "entryP": 4677.785835000001,
+      "15M": {
+        "sl": 4673.5425,
+        "risk": 4.243335000001025,
+        "tp": 4686.272505000003,
+        "be10": 4682.029170000002,
+        "be15": 4684.150837500002,
+        "costR": 0.10604866219610076
+      },
+      "1H": {
+        "sl": 4668.21444,
+        "risk": 9.571395000000848,
+        "tp": 4696.928625000002,
+        "be10": 4687.357230000001,
+        "be15": 4692.142927500002,
+        "costR": 0.04701509027680501
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 4695.84266,
+      "high": 4704.40221,
+      "low": 4676.94987,
+      "close": 4689.43335,
+      "openBeyondTp15m": true,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": true,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "TP",
+        "leakFreeGrossR": 2,
+        "leakFreeNetR": 1.8939513378038992,
+        "exitBar": 1
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "TP",
+        "naiveGrossR": 2,
+        "leakFreeOutcome": "TP",
+        "leakFreeGrossR": 2,
+        "leakFreeNetR": 1.8939513378038992,
+        "exitBar": 1
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "TP",
+        "leakFreeGrossR": 2,
+        "leakFreeNetR": 1.8939513378038992,
+        "exitBar": 1
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.952984909723195
+      },
+      "scenarioB_No_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.952984909723195
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.952984909723195
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": true
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 4,
+    "signalId": "ETHUSD_15m_OB_1775313000000_1775314800000",
+    "symbol": "ETHUSD",
+    "direction": "long",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1775358900000,
+      "signalDt": "2026-04-05 03:15",
+      "orderActiveTs": 1775358900000,
+      "orderActiveDt": "2026-04-05 03:15",
+      "entryTs": 1775367900000,
+      "entryDt": "2026-04-05 05:45",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "low (2047.21) <= entryP (2048.3500000000004)"
+    },
+    "levels": {
+      "entryP": 2048.3500000000004,
+      "15M": {
+        "sl": 2044.5300000000002,
+        "risk": 3.8200000000001637,
+        "tp": 2055.9900000000007,
+        "be10": 2052.1700000000005,
+        "be15": 2054.080000000001,
+        "costR": 0.4021629581151661
+      },
+      "1H": {
+        "sl": 2043.63,
+        "risk": 4.720000000000255,
+        "tp": 2057.790000000001,
+        "be10": 2053.0700000000006,
+        "be15": 2055.4300000000007,
+        "costR": 0.3254793432203215
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 2052.9,
+      "high": 2053.44,
+      "low": 2047.21,
+      "close": 2048.6,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": false,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.402162958115166,
+        "exitBar": 1
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.402162958115166,
+        "exitBar": 1
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.402162958115166,
+        "exitBar": 1
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.3254793432203216
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.3254793432203216
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.3254793432203216
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": true
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 5,
+    "signalId": "XAUUSD_15m_OB_1775429100000_1775430900000",
+    "symbol": "XAUUSD",
+    "direction": "short",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1775437200000,
+      "signalDt": "2026-04-06 01:00",
+      "orderActiveTs": 1775437200000,
+      "orderActiveDt": "2026-04-06 01:00",
+      "entryTs": 1775437200000,
+      "entryDt": "2026-04-06 01:00",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "high (4642.01102) >= entryP (4639.681155)"
+    },
+    "levels": {
+      "entryP": 4639.681155,
+      "15M": {
+        "sl": 4653.09512,
+        "risk": 13.413964999999735,
+        "tp": 4612.853225000001,
+        "be10": 4626.2671900000005,
+        "be15": 4619.560207500001,
+        "costR": 0.033547127937191494
+      },
+      "1H": {
+        "sl": 4678.00691,
+        "risk": 38.325754999999845,
+        "tp": 4563.0296450000005,
+        "be10": 4601.3554,
+        "be15": 4582.1925225,
+        "costR": 0.011741451668727773
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 4622.45254,
+      "high": 4642.01102,
+      "low": 4622.45254,
+      "close": 4641.60155,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": false,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "BE",
+        "leakFreeGrossR": 0,
+        "leakFreeNetR": -0.033547127937191494,
+        "exitBar": 1
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.0335471279371915,
+        "exitBar": 5
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.0335471279371915,
+        "exitBar": 5
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0117414516687278
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0117414516687278
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0117414516687278
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": false
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone"
+    }
+  },
+  {
+    "tradeIndex": 6,
+    "signalId": "BTCUSD_15m_OB_1775827800000_1775829600000",
+    "symbol": "BTCUSD",
+    "direction": "long",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1775948400000,
+      "signalDt": "2026-04-11 23:00",
+      "orderActiveTs": 1775948400000,
+      "orderActiveDt": "2026-04-11 23:00",
+      "entryTs": 1775957400000,
+      "entryDt": "2026-04-12 01:30",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "low (71555) <= entryP (72154.45999999999)"
+    },
+    "levels": {
+      "entryP": 72154.45999999999,
+      "15M": {
+        "sl": 71898.51,
+        "risk": 255.9499999999971,
+        "tp": 72666.35999999999,
+        "be10": 72410.40999999999,
+        "be15": 72538.38499999998,
+        "costR": 0.18324047274858576
+      },
+      "1H": {
+        "sl": 71889.51,
+        "risk": 264.9499999999971,
+        "tp": 72684.35999999999,
+        "be10": 72419.40999999999,
+        "be15": 72551.88499999998,
+        "costR": 0.17701603698811288
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 73017.62,
+      "high": 73017.62,
+      "low": 71555,
+      "close": 71735.99,
+      "openBeyondTp15m": true,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": true,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.1832404727485857,
+        "exitBar": 0
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.1832404727485857,
+        "exitBar": 0
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.1832404727485857,
+        "exitBar": 0
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.1770160369881129
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.1770160369881129
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.1770160369881129
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": true
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 7,
+    "signalId": "ETHUSD_15m_OB_1776366000000_1776367800000",
+    "symbol": "ETHUSD",
+    "direction": "long",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1776374100000,
+      "signalDt": "2026-04-16 21:15",
+      "orderActiveTs": 1776374100000,
+      "orderActiveDt": "2026-04-16 21:15",
+      "entryTs": 1776374100000,
+      "entryDt": "2026-04-16 21:15",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "low (2336.25) <= entryP (2340.245)"
+    },
+    "levels": {
+      "entryP": 2340.245,
+      "15M": {
+        "sl": 2334.56,
+        "risk": 5.684999999999945,
+        "tp": 2351.615,
+        "be10": 2345.93,
+        "be15": 2348.7725,
+        "costR": 0.3087394459102932
+      },
+      "1H": {
+        "sl": 2284.1,
+        "risk": 56.14499999999998,
+        "tp": 2452.535,
+        "be10": 2396.39,
+        "be15": 2424.4624999999996,
+        "costR": 0.031261621693828484
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 2351.04,
+      "high": 2352,
+      "low": 2336.25,
+      "close": 2340.8,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": true,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "BE",
+        "leakFreeGrossR": 0,
+        "leakFreeNetR": -0.3087394459102932,
+        "exitBar": 4
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "TP",
+        "naiveGrossR": 2,
+        "leakFreeOutcome": "TP",
+        "leakFreeGrossR": 2,
+        "leakFreeNetR": 1.6912605540897068,
+        "exitBar": 8
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "BE",
+        "leakFreeGrossR": 0,
+        "leakFreeNetR": -0.3087394459102932,
+        "exitBar": 4
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.9687383783061716
+      },
+      "scenarioB_No_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.9687383783061716
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.9687383783061716
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": false
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone"
+    }
+  },
+  {
+    "tradeIndex": 8,
+    "signalId": "GBPUSD_15m_OB_1776902400000_1776905100000",
+    "symbol": "GBPUSD",
+    "direction": "long",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1776909600000,
+      "signalDt": "2026-04-23 02:00",
+      "orderActiveTs": 1776909600000,
+      "orderActiveDt": "2026-04-23 02:00",
+      "entryTs": 1776910500000,
+      "entryDt": "2026-04-23 02:15",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "low (1.34945) <= entryP (1.3495400000000002)"
+    },
+    "levels": {
+      "entryP": 1.3495400000000002,
+      "15M": {
+        "sl": 1.34868,
+        "risk": 0.0008600000000000829,
+        "tp": 1.3512600000000003,
+        "be10": 1.3504000000000003,
+        "be15": 1.3508300000000002,
+        "costR": 0.2151162790697467
+      },
+      "1H": {
+        "sl": 1.34918,
+        "risk": 0.000360000000000138,
+        "tp": 1.3502600000000005,
+        "be10": 1.3499000000000003,
+        "be15": 1.3500800000000004,
+        "costR": 0.5138888888886919
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 1.34973,
+      "high": 1.34994,
+      "low": 1.34945,
+      "close": 1.34979,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": false,
+      "openBeyondBe15_15m": false,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.2151162790697467,
+        "exitBar": 2
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.2151162790697467,
+        "exitBar": 2
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.2151162790697467,
+        "exitBar": 2
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "BE",
+        "grossR": 0,
+        "netR": -0.5138888888886919
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.5138888888886919
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.5138888888886919
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": false
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone"
+    }
+  },
+  {
+    "tradeIndex": 9,
+    "signalId": "BTCUSD_15m_OB_1777026600000_1777028400000",
+    "symbol": "BTCUSD",
+    "direction": "long",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1777037400000,
+      "signalDt": "2026-04-24 13:30",
+      "orderActiveTs": 1777037400000,
+      "orderActiveDt": "2026-04-24 13:30",
+      "entryTs": 1777042800000,
+      "entryDt": "2026-04-24 15:00",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "low (77577.22) <= entryP (77665.29)"
+    },
+    "levels": {
+      "entryP": 77665.29,
+      "15M": {
+        "sl": 77624.15,
+        "risk": 41.13999999999942,
+        "tp": 77747.56999999999,
+        "be10": 77706.43,
+        "be15": 77727,
+        "costR": 1.2270889280505763
+      },
+      "1H": {
+        "sl": 77392.01,
+        "risk": 273.27999999999884,
+        "tp": 78211.84999999999,
+        "be10": 77938.56999999999,
+        "be15": 78075.20999999999,
+        "costR": 0.1847278926375886
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 78037.65,
+      "high": 78037.65,
+      "low": 77577.22,
+      "close": 77727.71,
+      "openBeyondTp15m": true,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": true,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -2.227088928050576,
+        "exitBar": 0
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -2.227088928050576,
+        "exitBar": 0
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -2.227088928050576,
+        "exitBar": 0
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.8152721073624114
+      },
+      "scenarioB_No_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.8152721073624114
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.8152721073624114
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": true
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 10,
+    "signalId": "SOLUSD_15m_OB_1777857300000_1777860000000",
+    "symbol": "SOLUSD",
+    "direction": "long",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1777876200000,
+      "signalDt": "2026-05-04 06:30",
+      "orderActiveTs": 1777876200000,
+      "orderActiveDt": "2026-05-04 06:30",
+      "entryTs": 1777889700000,
+      "entryDt": "2026-05-04 10:15",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "low (83.23) <= entryP (83.595)"
+    },
+    "levels": {
+      "entryP": 83.595,
+      "15M": {
+        "sl": 83.42,
+        "risk": 0.17499999999999716,
+        "tp": 83.945,
+        "be10": 83.77,
+        "be15": 83.85749999999999,
+        "costR": 0.5493385714285803
+      },
+      "1H": {
+        "sl": 83.25,
+        "risk": 0.34499999999999886,
+        "tp": 84.285,
+        "be10": 83.94,
+        "be15": 84.1125,
+        "costR": 0.2786500000000009
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 83.84,
+      "high": 83.84,
+      "low": 83.23,
+      "close": 83.55,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": false,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.5493385714285803,
+        "exitBar": 0
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.5493385714285803,
+        "exitBar": 0
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.5493385714285803,
+        "exitBar": 0
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.278650000000001
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.278650000000001
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.278650000000001
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": true
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 11,
+    "signalId": "XAUUSD_15m_OB_1778663700000_1778666400000",
+    "symbol": "XAUUSD",
+    "direction": "long",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1778667300000,
+      "signalDt": "2026-05-13 10:15",
+      "orderActiveTs": 1778667300000,
+      "orderActiveDt": "2026-05-13 10:15",
+      "entryTs": 1778670000000,
+      "entryDt": "2026-05-13 11:00",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "low (4691.46344) <= entryP (4691.9779849999995)"
+    },
+    "levels": {
+      "entryP": 4691.9779849999995,
+      "15M": {
+        "sl": 4686.59447,
+        "risk": 5.383514999999534,
+        "tp": 4702.745014999999,
+        "be10": 4697.361499999999,
+        "be15": 4700.053257499999,
+        "costR": 0.0835885104806133
+      },
+      "1H": {
+        "sl": 4688.4640899999995,
+        "risk": 3.5138950000000477,
+        "tp": 4699.005775,
+        "be10": 4695.49188,
+        "be15": 4697.2488275,
+        "costR": 0.12806301838842477
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 4695.32218,
+      "high": 4697.80851,
+      "low": 4691.46344,
+      "close": 4695.73266,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": false,
+      "openBeyondBe15_15m": false,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "TP",
+        "leakFreeGrossR": 2,
+        "leakFreeNetR": 1.9164114895193867,
+        "exitBar": 2
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "TP",
+        "naiveGrossR": 2,
+        "leakFreeOutcome": "TP",
+        "leakFreeGrossR": 2,
+        "leakFreeNetR": 1.9164114895193867,
+        "exitBar": 2
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "TP",
+        "naiveGrossR": 2,
+        "leakFreeOutcome": "TP",
+        "leakFreeGrossR": 2,
+        "leakFreeNetR": 1.9164114895193867,
+        "exitBar": 2
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.8719369816115752
+      },
+      "scenarioB_No_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.8719369816115752
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.8719369816115752
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": true
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 12,
+    "signalId": "SOLUSD_15m_OB_1779381000000_1779383700000",
+    "symbol": "SOLUSD",
+    "direction": "long",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1779459300000,
+      "signalDt": "2026-05-22 14:15",
+      "orderActiveTs": 1779459300000,
+      "orderActiveDt": "2026-05-22 14:15",
+      "entryTs": 1779462900000,
+      "entryDt": "2026-05-22 15:15",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "low (86.27) <= entryP (86.31)"
+    },
+    "levels": {
+      "entryP": 86.31,
+      "15M": {
+        "sl": 86.08999999999999,
+        "risk": 0.22000000000001307,
+        "tp": 86.75000000000003,
+        "be10": 86.53000000000002,
+        "be15": 86.64000000000001,
+        "costR": 0.4511659090908823
+      },
+      "1H": {
+        "sl": 85.22,
+        "risk": 1.0900000000000034,
+        "tp": 88.49000000000001,
+        "be10": 87.4,
+        "be15": 87.94500000000001,
+        "costR": 0.09106100917431163
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 86.56,
+      "high": 86.74,
+      "low": 86.27,
+      "close": 86.74,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": false,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "TP",
+        "leakFreeGrossR": 2,
+        "leakFreeNetR": 1.5488340909091178,
+        "exitBar": 1
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "TP",
+        "naiveGrossR": 2,
+        "leakFreeOutcome": "TP",
+        "leakFreeGrossR": 2,
+        "leakFreeNetR": 1.5488340909091178,
+        "exitBar": 1
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "TP",
+        "leakFreeGrossR": 2,
+        "leakFreeNetR": 1.5488340909091178,
+        "exitBar": 1
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0910610091743116
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0910610091743116
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0910610091743116
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": true
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 13,
+    "signalId": "XAUUSD_15m_FVG_1779876900000_1779877800000",
+    "symbol": "XAUUSD",
+    "direction": "short",
+    "poiType": "FVG",
+    "timing": {
+      "signalTs": 1779977700000,
+      "signalDt": "2026-05-28 14:15",
+      "orderActiveTs": 1779977700000,
+      "orderActiveDt": "2026-05-28 14:15",
+      "entryTs": 1779979500000,
+      "entryDt": "2026-05-28 14:45",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "high (4479.08268) >= entryP (4478.17909)"
+    },
+    "levels": {
+      "entryP": 4478.17909,
+      "15M": {
+        "sl": 4485.1745900000005,
+        "risk": 6.995500000000902,
+        "tp": 4464.188089999998,
+        "be10": 4471.183589999999,
+        "be15": 4467.685839999998,
+        "costR": 0.06432706740046343
+      },
+      "1H": {
+        "sl": 4516.780720000001,
+        "risk": 38.60163000000102,
+        "tp": 4400.975829999998,
+        "be10": 4439.577459999999,
+        "be15": 4420.276644999998,
+        "costR": 0.01165753881377517
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 4467.38369,
+      "high": 4479.08268,
+      "low": 4463.88715,
+      "close": 4464.1492,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": true,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "BE",
+        "leakFreeGrossR": 0,
+        "leakFreeNetR": -0.06432706740046343,
+        "exitBar": 1
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "TP",
+        "naiveGrossR": 2,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.0643270674004635,
+        "exitBar": 6
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "BE",
+        "leakFreeGrossR": 0,
+        "leakFreeNetR": -0.06432706740046343,
+        "exitBar": 1
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0116575388137752
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0116575388137752
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0116575388137752
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": true,
+      "hadPreEntryBeLeakInNaive": false
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 14,
+    "signalId": "XAUUSD_15m_FVG_1780065900000_1780066800000",
+    "symbol": "XAUUSD",
+    "direction": "long",
+    "poiType": "FVG",
+    "timing": {
+      "signalTs": 1780190100000,
+      "signalDt": "2026-05-31 01:15",
+      "orderActiveTs": 1780190100000,
+      "orderActiveDt": "2026-05-31 01:15",
+      "entryTs": 1780190100000,
+      "entryDt": "2026-05-31 01:15",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "low (4542.40467) <= entryP (4566.45969)"
+    },
+    "levels": {
+      "entryP": 4566.45969,
+      "15M": {
+        "sl": 4539.2589499999995,
+        "risk": 27.200740000000224,
+        "tp": 4620.86117,
+        "be10": 4593.66043,
+        "be15": 4607.2608,
+        "costR": 0.016543667561985307
+      },
+      "1H": {
+        "sl": 4542.29667,
+        "risk": 24.16301999999996,
+        "tp": 4614.78573,
+        "be10": 4590.62271,
+        "be15": 4602.70422,
+        "costR": 0.01862349987708493
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 4542.4689,
+      "high": 4542.67299,
+      "low": 4542.40467,
+      "close": 4542.43486,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": false,
+      "openBeyondBe15_15m": false,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.0165436675619852,
+        "exitBar": 81
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.0165436675619852,
+        "exitBar": 81
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.0165436675619852,
+        "exitBar": 81
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.018623499877085
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.018623499877085
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.018623499877085
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": false
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone"
+    }
+  },
+  {
+    "tradeIndex": 15,
+    "signalId": "ETHUSD_15m_OB_1780737300000_1780740900000",
+    "symbol": "ETHUSD",
+    "direction": "short",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1780780500000,
+      "signalDt": "2026-06-06 21:15",
+      "orderActiveTs": 1780780500000,
+      "orderActiveDt": "2026-06-06 21:15",
+      "entryTs": 1780794000000,
+      "entryDt": "2026-06-07 01:00",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "high (1587.68) >= entryP (1582.1750000000002)"
+    },
+    "levels": {
+      "entryP": 1582.1750000000002,
+      "15M": {
+        "sl": 1587.74,
+        "risk": 5.564999999999827,
+        "tp": 1571.0450000000005,
+        "be10": 1576.6100000000004,
+        "be15": 1573.8275000000003,
+        "costR": 0.21323113207547836
+      },
+      "1H": {
+        "sl": 1594.04,
+        "risk": 11.864999999999782,
+        "tp": 1558.4450000000006,
+        "be10": 1570.3100000000004,
+        "be15": 1564.3775000000005,
+        "costR": 0.10001106194690451
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 1565.03,
+      "high": 1587.68,
+      "low": 1564.16,
+      "close": 1586.63,
+      "openBeyondTp15m": true,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": true,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.2132311320754783,
+        "exitBar": 1
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "TP",
+        "naiveGrossR": 2,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.2132311320754783,
+        "exitBar": 1
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.2132311320754783,
+        "exitBar": 1
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.1000110619469046
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.1000110619469046
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.1000110619469046
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": true,
+      "hadPreEntryBeLeakInNaive": true
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 16,
+    "signalId": "BTCUSD_15m_OB_1780831800000_1780833600000",
+    "symbol": "BTCUSD",
+    "direction": "short",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1780868700000,
+      "signalDt": "2026-06-07 21:45",
+      "orderActiveTs": 1780868700000,
+      "orderActiveDt": "2026-06-07 21:45",
+      "entryTs": 1780869600000,
+      "entryDt": "2026-06-07 22:00",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "high (63737.99) >= entryP (62564)"
+    },
+    "levels": {
+      "entryP": 62564,
+      "15M": {
+        "sl": 62681,
+        "risk": 117,
+        "tp": 62330,
+        "be10": 62447,
+        "be15": 62388.5,
+        "costR": 0.3475777777777778
+      },
+      "1H": {
+        "sl": 62970,
+        "risk": 406,
+        "tp": 61752,
+        "be10": 62158,
+        "be15": 61955,
+        "costR": 0.100164039408867
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 61778.42,
+      "high": 63737.99,
+      "low": 61728.11,
+      "close": 63586.98,
+      "openBeyondTp15m": true,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": true,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.3475777777777778,
+        "exitBar": 0
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.3475777777777778,
+        "exitBar": 0
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.3475777777777778,
+        "exitBar": 0
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.100164039408867
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.100164039408867
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.100164039408867
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": true
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 17,
+    "signalId": "XAUUSD_15m_OB_1780925400000_1780927200000",
+    "symbol": "XAUUSD",
+    "direction": "short",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1780930800000,
+      "signalDt": "2026-06-08 15:00",
+      "orderActiveTs": 1780930800000,
+      "orderActiveDt": "2026-06-08 15:00",
+      "entryTs": 1780932600000,
+      "entryDt": "2026-06-08 15:30",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "high (4338.60936) >= entryP (4338.083404999999)"
+    },
+    "levels": {
+      "entryP": 4338.083404999999,
+      "15M": {
+        "sl": 4345.47001,
+        "risk": 7.3866050000006,
+        "tp": 4323.310194999998,
+        "be10": 4330.696799999999,
+        "be15": 4327.003497499998,
+        "costR": 0.060921086209424144
+      },
+      "1H": {
+        "sl": 4353.03606,
+        "risk": 14.95265500000096,
+        "tp": 4308.1780949999975,
+        "be10": 4323.130749999998,
+        "be15": 4315.654422499998,
+        "costR": 0.03009498981953179
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 4331.33563,
+      "high": 4338.60936,
+      "low": 4329.94913,
+      "close": 4336.85943,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": false,
+      "openBeyondBe15_15m": false,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.060921086209424,
+        "exitBar": 4
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.060921086209424,
+        "exitBar": 4
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.060921086209424,
+        "exitBar": 4
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "BE",
+        "grossR": 0,
+        "netR": -0.03009498981953179
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0300949898195317
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "BE",
+        "grossR": 0,
+        "netR": -0.03009498981953179
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": true
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 18,
+    "signalId": "ETHUSD_15m_OB_1781178300000_1781180100000",
+    "symbol": "ETHUSD",
+    "direction": "short",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1781194500000,
+      "signalDt": "2026-06-11 16:15",
+      "orderActiveTs": 1781194500000,
+      "orderActiveDt": "2026-06-11 16:15",
+      "entryTs": 1781199000000,
+      "entryDt": "2026-06-11 17:30",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "high (1682.27) >= entryP (1667.97)"
+    },
+    "levels": {
+      "entryP": 1667.97,
+      "15M": {
+        "sl": 1673.6,
+        "risk": 5.629999999999882,
+        "tp": 1656.7100000000003,
+        "be10": 1662.3400000000001,
+        "be15": 1659.525,
+        "costR": 0.2221984902309105
+      },
+      "1H": {
+        "sl": 1674.5,
+        "risk": 6.529999999999973,
+        "tp": 1654.91,
+        "be10": 1661.44,
+        "be15": 1658.1750000000002,
+        "costR": 0.19157388973966388
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 1654.22,
+      "high": 1682.27,
+      "low": 1654.15,
+      "close": 1677.44,
+      "openBeyondTp15m": true,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": true,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.2221984902309104,
+        "exitBar": 0
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.2221984902309104,
+        "exitBar": 0
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.2221984902309104,
+        "exitBar": 0
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.191573889739664
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.191573889739664
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.191573889739664
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": true
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 19,
+    "signalId": "XAUUSD_15m_OB_1781099100000_1781102700000",
+    "symbol": "XAUUSD",
+    "direction": "short",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1781199900000,
+      "signalDt": "2026-06-11 17:45",
+      "orderActiveTs": 1781199900000,
+      "orderActiveDt": "2026-06-11 17:45",
+      "entryTs": 1781204400000,
+      "entryDt": "2026-06-11 19:00",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "high (4187.2797) >= entryP (4178.2411950000005)"
+    },
+    "levels": {
+      "entryP": 4178.2411950000005,
+      "15M": {
+        "sl": 4184.9008,
+        "risk": 6.659604999999829,
+        "tp": 4164.921985000001,
+        "be10": 4171.581590000001,
+        "be15": 4168.251787500001,
+        "costR": 0.06757157519102282
+      },
+      "1H": {
+        "sl": 4184.9008,
+        "risk": 6.659604999999829,
+        "tp": 4164.921985000001,
+        "be10": 4171.581590000001,
+        "be15": 4168.251787500001,
+        "costR": 0.06757157519102282
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 4163.09599,
+      "high": 4187.2797,
+      "low": 4160.90257,
+      "close": 4182.87401,
+      "openBeyondTp15m": true,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": true,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.0675715751910229,
+        "exitBar": 0
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.0675715751910229,
+        "exitBar": 0
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.0675715751910229,
+        "exitBar": 0
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0675715751910229
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0675715751910229
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0675715751910229
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": true
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 20,
+    "signalId": "BTCUSD_15m_OB_1781658900000_1781660700000",
+    "symbol": "BTCUSD",
+    "direction": "long",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1781666100000,
+      "signalDt": "2026-06-17 03:15",
+      "orderActiveTs": 1781666100000,
+      "orderActiveDt": "2026-06-17 03:15",
+      "entryTs": 1781677800000,
+      "entryDt": "2026-06-17 06:30",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "low (65582.63) <= entryP (65641.39499999999)"
+    },
+    "levels": {
+      "entryP": 65641.39499999999,
+      "15M": {
+        "sl": 65476.5,
+        "risk": 164.89499999998952,
+        "tp": 65971.18499999997,
+        "be10": 65806.28999999998,
+        "be15": 65888.73749999997,
+        "costR": 0.25875197398346045
+      },
+      "1H": {
+        "sl": 65550,
+        "risk": 91.39499999998952,
+        "tp": 65824.18499999997,
+        "be10": 65732.78999999998,
+        "be15": 65778.48749999997,
+        "costR": 0.46684071065162086
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 65650,
+      "high": 65739.62,
+      "low": 65582.63,
+      "close": 65639.25,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": false,
+      "openBeyondBe15_15m": false,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.2587519739834605,
+        "exitBar": 5
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.2587519739834605,
+        "exitBar": 5
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.2587519739834605,
+        "exitBar": 5
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.4668407106516208
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.4668407106516208
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.4668407106516208
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": false
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone"
+    }
+  },
+  {
+    "tradeIndex": 21,
+    "signalId": "XAUUSD_15m_FVG_1781719200000_1781719200000",
+    "symbol": "XAUUSD",
+    "direction": "short",
+    "poiType": "FVG",
+    "timing": {
+      "signalTs": 1781741700000,
+      "signalDt": "2026-06-18 00:15",
+      "orderActiveTs": 1781741700000,
+      "orderActiveDt": "2026-06-18 00:15",
+      "entryTs": 1781742600000,
+      "entryDt": "2026-06-18 00:30",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "high (4309.25753) >= entryP (4306.2613)"
+    },
+    "levels": {
+      "entryP": 4306.2613,
+      "15M": {
+        "sl": 4374.3618400000005,
+        "risk": 68.10054000000036,
+        "tp": 4170.060219999999,
+        "be10": 4238.16076,
+        "be15": 4204.110489999999,
+        "costR": 0.006607877118154974
+      },
+      "1H": {
+        "sl": 4383.7180100000005,
+        "risk": 77.45671000000038,
+        "tp": 4151.347879999999,
+        "be10": 4228.80459,
+        "be15": 4190.0762349999995,
+        "costR": 0.0058096967970883056
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 4297.58261,
+      "high": 4309.25753,
+      "low": 4297.58261,
+      "close": 4305.56864,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": false,
+      "openBeyondBe15_15m": false,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "TP",
+        "naiveGrossR": 2,
+        "leakFreeOutcome": "TP",
+        "leakFreeGrossR": 2,
+        "leakFreeNetR": 1.993392122881845,
+        "exitBar": 106
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "TP",
+        "naiveGrossR": 2,
+        "leakFreeOutcome": "TP",
+        "leakFreeGrossR": 2,
+        "leakFreeNetR": 1.993392122881845,
+        "exitBar": 106
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "TP",
+        "naiveGrossR": 2,
+        "leakFreeOutcome": "TP",
+        "leakFreeGrossR": 2,
+        "leakFreeNetR": 1.993392122881845,
+        "exitBar": 106
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.9941903032029118
+      },
+      "scenarioB_No_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.9941903032029118
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.9941903032029118
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": false
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone"
+    }
+  },
+  {
+    "tradeIndex": 22,
+    "signalId": "ETHUSD_15m_OB_1781964000000_1781966700000",
+    "symbol": "ETHUSD",
+    "direction": "long",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1782074700000,
+      "signalDt": "2026-06-21 20:45",
+      "orderActiveTs": 1782074700000,
+      "orderActiveDt": "2026-06-21 20:45",
+      "entryTs": 1782075600000,
+      "entryDt": "2026-06-21 21:00",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "low (1702) <= entryP (1712.835)"
+    },
+    "levels": {
+      "entryP": 1712.835,
+      "15M": {
+        "sl": 1708.01,
+        "risk": 4.8250000000000455,
+        "tp": 1722.4850000000001,
+        "be10": 1717.66,
+        "be15": 1720.0725000000002,
+        "costR": 0.26624378238341717
+      },
+      "1H": {
+        "sl": 1707.11,
+        "risk": 5.725000000000136,
+        "tp": 1724.2850000000003,
+        "be10": 1718.5600000000002,
+        "be15": 1721.4225000000001,
+        "costR": 0.22438886462881563
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 1721.32,
+      "high": 1722.38,
+      "low": 1702,
+      "close": 1710.31,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": true,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.2662437823834172,
+        "exitBar": 0
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.2662437823834172,
+        "exitBar": 0
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.2662437823834172,
+        "exitBar": 0
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.2243888646288157
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.2243888646288157
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.2243888646288157
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": true
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 23,
+    "signalId": "XAUUSD_15m_OB_1782082800000_1782085500000",
+    "symbol": "XAUUSD",
+    "direction": "short",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1782087300000,
+      "signalDt": "2026-06-22 00:15",
+      "orderActiveTs": 1782087300000,
+      "orderActiveDt": "2026-06-22 00:15",
+      "entryTs": 1782087300000,
+      "entryDt": "2026-06-22 00:15",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "high (4169.62015) >= entryP (4160.257439999999)"
+    },
+    "levels": {
+      "entryP": 4160.257439999999,
+      "15M": {
+        "sl": 4164.68437,
+        "risk": 4.426930000000539,
+        "tp": 4151.403579999998,
+        "be10": 4155.830509999999,
+        "be15": 4153.617044999999,
+        "costR": 0.10165057952123598
+      },
+      "1H": {
+        "sl": 4160.574640000001,
+        "risk": 0.3172000000013213,
+        "tp": 4159.623039999997,
+        "be10": 4159.940239999998,
+        "be15": 4159.781639999997,
+        "costR": 1.4186633039032959
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 4158.49284,
+      "high": 4169.62015,
+      "low": 4158.49284,
+      "close": 4164.22887,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": false,
+      "openBeyondBe15_15m": false,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.101650579521236,
+        "exitBar": 0
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.101650579521236,
+        "exitBar": 0
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.101650579521236,
+        "exitBar": 0
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -2.418663303903296
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -2.418663303903296
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -2.418663303903296
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": false
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone"
+    }
+  },
+  {
+    "tradeIndex": 24,
+    "signalId": "XAUUSD_15m_OB_1782114300000_1782120600000",
+    "symbol": "XAUUSD",
+    "direction": "long",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1782135900000,
+      "signalDt": "2026-06-22 13:45",
+      "orderActiveTs": 1782135900000,
+      "orderActiveDt": "2026-06-22 13:45",
+      "entryTs": 1782135900000,
+      "entryDt": "2026-06-22 13:45",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "low (4191.11484) <= entryP (4192.96312)"
+    },
+    "levels": {
+      "entryP": 4192.96312,
+      "15M": {
+        "sl": 4189.259029999999,
+        "risk": 3.704090000001088,
+        "tp": 4200.3713000000025,
+        "be10": 4196.667210000001,
+        "be15": 4198.519255000002,
+        "costR": 0.121487328871563
+      },
+      "1H": {
+        "sl": 4187.62624,
+        "risk": 5.336880000000747,
+        "tp": 4203.636880000002,
+        "be10": 4198.300000000001,
+        "be15": 4200.9684400000015,
+        "costR": 0.08431892791292608
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 4192.17987,
+      "high": 4204.86082,
+      "low": 4191.11484,
+      "close": 4200.68293,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": false,
+      "openBeyondBe15_15m": false,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "TP",
+        "leakFreeGrossR": 2,
+        "leakFreeNetR": 1.878512671128437,
+        "exitBar": 1
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "TP",
+        "naiveGrossR": 2,
+        "leakFreeOutcome": "TP",
+        "leakFreeGrossR": 2,
+        "leakFreeNetR": 1.878512671128437,
+        "exitBar": 1
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "TP",
+        "leakFreeGrossR": 2,
+        "leakFreeNetR": 1.878512671128437,
+        "exitBar": 1
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.9156810720870738
+      },
+      "scenarioB_No_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.9156810720870738
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.9156810720870738
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": true
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 25,
+    "signalId": "SOLUSD_15m_OB_1782392400000_1782394200000",
+    "symbol": "SOLUSD",
+    "direction": "short",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1782424800000,
+      "signalDt": "2026-06-25 22:00",
+      "orderActiveTs": 1782424800000,
+      "orderActiveDt": "2026-06-25 22:00",
+      "entryTs": 1782429300000,
+      "entryDt": "2026-06-25 23:15",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "high (68.5) >= entryP (68.28)"
+    },
+    "levels": {
+      "entryP": 68.28,
+      "15M": {
+        "sl": 68.46000000000001,
+        "risk": 0.18000000000000682,
+        "tp": 67.91999999999999,
+        "be10": 68.1,
+        "be15": 68.00999999999999,
+        "costR": 0.4362333333333169
+      },
+      "1H": {
+        "sl": 69.02,
+        "risk": 0.7399999999999949,
+        "tp": 66.80000000000001,
+        "be10": 67.54,
+        "be15": 67.17000000000002,
+        "costR": 0.10611081081081156
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 67.19,
+      "high": 68.5,
+      "low": 67.18,
+      "close": 68.34,
+      "openBeyondTp15m": true,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": true,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.4362333333333168,
+        "exitBar": 0
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.4362333333333168,
+        "exitBar": 0
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.4362333333333168,
+        "exitBar": 0
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.8938891891891885
+      },
+      "scenarioB_No_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.8938891891891885
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.8938891891891885
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": true
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 26,
+    "signalId": "BTCUSD_15m_OB_1782738000000_1782739800000",
+    "symbol": "BTCUSD",
+    "direction": "short",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1782747000000,
+      "signalDt": "2026-06-29 15:30",
+      "orderActiveTs": 1782747000000,
+      "orderActiveDt": "2026-06-29 15:30",
+      "entryTs": 1782752400000,
+      "entryDt": "2026-06-29 17:00",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "high (60483.49) >= entryP (60144.395000000004)"
+    },
+    "levels": {
+      "entryP": 60144.395000000004,
+      "15M": {
+        "sl": 60341,
+        "risk": 196.60499999999593,
+        "tp": 59751.18500000001,
+        "be10": 59947.79000000001,
+        "be15": 59849.48750000001,
+        "costR": 0.19884467205819187
+      },
+      "1H": {
+        "sl": 60790.57,
+        "risk": 646.1749999999956,
+        "tp": 58852.04500000001,
+        "be10": 59498.22000000001,
+        "be15": 59175.13250000001,
+        "costR": 0.06050041668278758
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 59892.87,
+      "high": 60483.49,
+      "low": 59892,
+      "close": 60458.81,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": false,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.1988446720581918,
+        "exitBar": 0
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.1988446720581918,
+        "exitBar": 0
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.1988446720581918,
+        "exitBar": 0
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.9394995833172124
+      },
+      "scenarioB_No_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.9394995833172124
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.9394995833172124
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": true
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 27,
+    "signalId": "XAUUSD_15m_OB_1784547000000_1784548800000",
+    "symbol": "XAUUSD",
+    "direction": "short",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1784591100000,
+      "signalDt": "2026-07-20 23:45",
+      "orderActiveTs": 1784591100000,
+      "orderActiveDt": "2026-07-20 23:45",
+      "entryTs": 1784596500000,
+      "entryDt": "2026-07-21 01:15",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "high (4034.8612) >= entryP (4030.491735)"
+    },
+    "levels": {
+      "entryP": 4030.491735,
+      "15M": {
+        "sl": 4039.52479,
+        "risk": 9.033054999999877,
+        "tp": 4012.4256250000003,
+        "be10": 4021.45868,
+        "be15": 4016.9421525000002,
+        "costR": 0.04981703310784736
+      },
+      "1H": {
+        "sl": 4039.52479,
+        "risk": 9.033054999999877,
+        "tp": 4012.4256250000003,
+        "be10": 4021.45868,
+        "be15": 4016.9421525000002,
+        "costR": 0.04981703310784736
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 4027.57668,
+      "high": 4034.8612,
+      "low": 4027.38623,
+      "close": 4029.6043,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": false,
+      "openBeyondBe15_15m": false,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": true,
+      "status": "AVAILABLE"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.0498170331078474,
+        "exitBar": 5
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.0498170331078474,
+        "exitBar": 5
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.0498170331078474,
+        "exitBar": 5
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0498170331078474
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0498170331078474
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0498170331078474
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": false
+    },
+    "parityAudit": {
+      "status": "PASS",
+      "reason": "Clean execution"
+    }
+  },
+  {
+    "tradeIndex": 28,
+    "signalId": "XAUUSD_15m_OB_1785753900000_1785757500000",
+    "symbol": "XAUUSD",
+    "direction": "long",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1785762000000,
+      "signalDt": "2026-08-03 13:00",
+      "orderActiveTs": 1785762000000,
+      "orderActiveDt": "2026-08-03 13:00",
+      "entryTs": 1785762000000,
+      "entryDt": "2026-08-03 13:00",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "low (4040.09758) <= entryP (4048.1349600000003)"
+    },
+    "levels": {
+      "entryP": 4048.1349600000003,
+      "15M": {
+        "sl": 4045.94716,
+        "risk": 2.187800000000152,
+        "tp": 4052.5105600000006,
+        "be10": 4050.3227600000005,
+        "be15": 4051.416660000001,
+        "costR": 0.20568607733795077
+      },
+      "1H": {
+        "sl": 4045.4646700000003,
+        "risk": 2.6702900000000227,
+        "tp": 4053.4755400000004,
+        "be10": 4050.8052500000003,
+        "be15": 4052.1403950000004,
+        "costR": 0.16852102206127278
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 4048.27683,
+      "high": 4051.53553,
+      "low": 4040.09758,
+      "close": 4040.75361,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": false,
+      "openBeyondBe15_15m": false,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": true,
+      "status": "AVAILABLE"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.2056860773379507,
+        "exitBar": 0
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.2056860773379507,
+        "exitBar": 0
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.2056860773379507,
+        "exitBar": 0
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.1685210220612727
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.1685210220612727
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.1685210220612727
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": true
+    },
+    "parityAudit": {
+      "status": "PASS",
+      "reason": "Clean execution (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 29,
+    "signalId": "BTCUSD_15m_OB_1786541400000_1786544100000",
+    "symbol": "BTCUSD",
+    "direction": "short",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1786584600000,
+      "signalDt": "2026-08-13 01:30",
+      "orderActiveTs": 1786584600000,
+      "orderActiveDt": "2026-08-13 01:30",
+      "entryTs": 1786598100000,
+      "entryDt": "2026-08-13 05:15",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "high (64010) >= entryP (63941.479999999996)"
+    },
+    "levels": {
+      "entryP": 63941.479999999996,
+      "15M": {
+        "sl": 64015.96,
+        "risk": 74.4800000000032,
+        "tp": 63792.51999999999,
+        "be10": 63866.99999999999,
+        "be15": 63829.759999999995,
+        "costR": 0.5580284908700082
+      },
+      "1H": {
+        "sl": 64510,
+        "risk": 568.5200000000041,
+        "tp": 62804.43999999999,
+        "be10": 63372.95999999999,
+        "be15": 63088.69999999999,
+        "costR": 0.07310554070217354
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 63881.19,
+      "high": 64010,
+      "low": 63881.19,
+      "close": 63942.66,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": false,
+      "openBeyondBe15_15m": false,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "TP",
+        "naiveGrossR": 2,
+        "leakFreeOutcome": "TP",
+        "leakFreeGrossR": 2,
+        "leakFreeNetR": 1.4419715091299918,
+        "exitBar": 5
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "TP",
+        "naiveGrossR": 2,
+        "leakFreeOutcome": "TP",
+        "leakFreeGrossR": 2,
+        "leakFreeNetR": 1.4419715091299918,
+        "exitBar": 5
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "TP",
+        "naiveGrossR": 2,
+        "leakFreeOutcome": "TP",
+        "leakFreeGrossR": 2,
+        "leakFreeNetR": 1.4419715091299918,
+        "exitBar": 5
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "BE",
+        "grossR": 0,
+        "netR": -0.07310554070217354
+      },
+      "scenarioB_No_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.9268944592978265
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "TP",
+        "grossR": 2,
+        "netR": 1.9268944592978265
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": false
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone"
+    }
+  },
+  {
+    "tradeIndex": 30,
+    "signalId": "XAUUSD_15m_OB_1786920300000_1786923000000",
+    "symbol": "XAUUSD",
+    "direction": "short",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1786925700000,
+      "signalDt": "2026-08-17 00:15",
+      "orderActiveTs": 1786925700000,
+      "orderActiveDt": "2026-08-17 00:15",
+      "entryTs": 1786925700000,
+      "entryDt": "2026-08-17 00:15",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "high (4390.30339) >= entryP (4381.556640000001)"
+    },
+    "levels": {
+      "entryP": 4381.556640000001,
+      "15M": {
+        "sl": 4385.887830000001,
+        "risk": 4.331189999999879,
+        "tp": 4372.894260000001,
+        "be10": 4377.225450000001,
+        "be15": 4375.059855000001,
+        "costR": 0.10389754316943209
+      },
+      "1H": {
+        "sl": 4395.55613,
+        "risk": 13.999489999999241,
+        "tp": 4353.557660000002,
+        "be10": 4367.5571500000015,
+        "be15": 4360.557405000001,
+        "costR": 0.032144028103882664
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 4378.68237,
+      "high": 4390.30339,
+      "low": 4377.58467,
+      "close": 4389.95349,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": false,
+      "openBeyondBe15_15m": false,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": true,
+      "status": "AVAILABLE"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.103897543169432,
+        "exitBar": 0
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.103897543169432,
+        "exitBar": 0
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.103897543169432,
+        "exitBar": 0
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0321440281038827
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0321440281038827
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0321440281038827
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": false
+    },
+    "parityAudit": {
+      "status": "PASS",
+      "reason": "Clean execution"
+    }
+  },
+  {
+    "tradeIndex": 31,
+    "signalId": "XAUUSD_15m_OB_1787062500000_1787063400000",
+    "symbol": "XAUUSD",
+    "direction": "short",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1787135400000,
+      "signalDt": "2026-08-19 10:30",
+      "orderActiveTs": 1787135400000,
+      "orderActiveDt": "2026-08-19 10:30",
+      "entryTs": 1787142600000,
+      "entryDt": "2026-08-19 12:30",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "high (4418.70861) >= entryP (4398.997405)"
+    },
+    "levels": {
+      "entryP": 4398.997405,
+      "15M": {
+        "sl": 4404.80422,
+        "risk": 5.806814999999915,
+        "tp": 4387.383775,
+        "be10": 4393.19059,
+        "be15": 4390.2871825,
+        "costR": 0.077495150095191
+      },
+      "1H": {
+        "sl": 4404.80422,
+        "risk": 5.806814999999915,
+        "tp": 4387.383775,
+        "be10": 4393.19059,
+        "be15": 4390.2871825,
+        "costR": 0.077495150095191
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 4369.72442,
+      "high": 4418.70861,
+      "low": 4368.91083,
+      "close": 4407.89135,
+      "openBeyondTp15m": true,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": true,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": true,
+      "status": "AVAILABLE"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.077495150095191,
+        "exitBar": 0
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.077495150095191,
+        "exitBar": 0
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.077495150095191,
+        "exitBar": 0
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.077495150095191
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.077495150095191
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.077495150095191
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": true
+    },
+    "parityAudit": {
+      "status": "PASS",
+      "reason": "Clean execution (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 32,
+    "signalId": "BTCUSD_15m_OB_1787709600000_1787710500000",
+    "symbol": "BTCUSD",
+    "direction": "long",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1787717700000,
+      "signalDt": "2026-08-26 04:15",
+      "orderActiveTs": 1787717700000,
+      "orderActiveDt": "2026-08-26 04:15",
+      "entryTs": 1787719500000,
+      "entryDt": "2026-08-26 04:45",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "low (78790.68) <= entryP (78813.82)"
+    },
+    "levels": {
+      "entryP": 78813.82,
+      "15M": {
+        "sl": 78747.56,
+        "risk": 66.26000000000931,
+        "tp": 78946.34000000003,
+        "be10": 78880.08000000002,
+        "be15": 78913.21000000002,
+        "costR": 0.7731509658918322
+      },
+      "1H": {
+        "sl": 78302,
+        "risk": 511.820000000007,
+        "tp": 79837.46000000002,
+        "be10": 79325.64000000001,
+        "be15": 79581.55000000002,
+        "costR": 0.10009179594388516
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 78965.1,
+      "high": 78965.11,
+      "low": 78790.68,
+      "close": 78826,
+      "openBeyondTp15m": true,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": true,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "BE",
+        "leakFreeGrossR": 0,
+        "leakFreeNetR": -0.7731509658918322,
+        "exitBar": 1
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "TP",
+        "naiveGrossR": 2,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.773150965891832,
+        "exitBar": 1
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "BE",
+        "leakFreeGrossR": 0,
+        "leakFreeNetR": -0.7731509658918322,
+        "exitBar": 1
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.1000917959438852
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.1000917959438852
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.1000917959438852
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": true,
+      "hadPreEntryBeLeakInNaive": false
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 33,
+    "signalId": "BTCUSD_15m_OB_1789334100000_1789336800000",
+    "symbol": "BTCUSD",
+    "direction": "short",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1789347600000,
+      "signalDt": "2026-09-14 01:00",
+      "orderActiveTs": 1789347600000,
+      "orderActiveDt": "2026-09-14 01:00",
+      "entryTs": 1789352100000,
+      "entryDt": "2026-09-14 02:15",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "high (77666.66) >= entryP (77406.4)"
+    },
+    "levels": {
+      "entryP": 77406.4,
+      "15M": {
+        "sl": 77451,
+        "risk": 44.60000000000582,
+        "tp": 77317.19999999998,
+        "be10": 77361.79999999999,
+        "be15": 77339.49999999999,
+        "costR": 1.1281201793720501
+      },
+      "1H": {
+        "sl": 77460,
+        "risk": 53.60000000000582,
+        "tp": 77299.19999999998,
+        "be10": 77352.79999999999,
+        "be15": 77325.99999999999,
+        "costR": 0.9386970149252712
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 77381.47,
+      "high": 77666.66,
+      "low": 77279.89,
+      "close": 77533.99,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": false,
+      "openBeyondBe15_15m": false,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": false,
+      "status": "INSUFFICIENT DATA"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -2.12812017937205,
+        "exitBar": 0
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -2.12812017937205,
+        "exitBar": 0
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -2.12812017937205,
+        "exitBar": 0
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.9386970149252711
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.9386970149252711
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.9386970149252711
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": true
+    },
+    "parityAudit": {
+      "status": "INSUFFICIENT DATA",
+      "reason": "1M intra-bar tick data missing; Bar 0 sequence unresolvable with 15M OHLC alone (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 34,
+    "signalId": "XAUUSD_15m_OB_1789523100000_1789524900000",
+    "symbol": "XAUUSD",
+    "direction": "long",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1789584300000,
+      "signalDt": "2026-09-16 18:45",
+      "orderActiveTs": 1789584300000,
+      "orderActiveDt": "2026-09-16 18:45",
+      "entryTs": 1789584300000,
+      "entryDt": "2026-09-16 18:45",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "low (4261.84794) <= entryP (4285.3548)"
+    },
+    "levels": {
+      "entryP": 4285.3548,
+      "15M": {
+        "sl": 4280.90518,
+        "risk": 4.449620000000323,
+        "tp": 4294.254040000001,
+        "be10": 4289.80442,
+        "be15": 4292.02923,
+        "costR": 0.10113223151639181
+      },
+      "1H": {
+        "sl": 4275.779759999999,
+        "risk": 9.575040000000627,
+        "tp": 4304.504880000001,
+        "be10": 4294.929840000001,
+        "be15": 4299.717360000001,
+        "costR": 0.046997192701019576
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 4303.60369,
+      "high": 4310.15904,
+      "low": 4261.84794,
+      "close": 4268.29191,
+      "openBeyondTp15m": true,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": true,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": true,
+      "status": "AVAILABLE"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.1011322315163918,
+        "exitBar": 0
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.1011322315163918,
+        "exitBar": 0
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.1011322315163918,
+        "exitBar": 0
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0469971927010195
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0469971927010195
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0469971927010195
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": true
+    },
+    "parityAudit": {
+      "status": "PASS",
+      "reason": "Clean execution (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 35,
+    "signalId": "SOLUSD_15m_OB_1790170200000_1790172000000",
+    "symbol": "SOLUSD",
+    "direction": "short",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1790260200000,
+      "signalDt": "2026-09-24 14:30",
+      "orderActiveTs": 1790260200000,
+      "orderActiveDt": "2026-09-24 14:30",
+      "entryTs": 1790266500000,
+      "entryDt": "2026-09-24 16:15",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "high (117.52) >= entryP (116.86)"
+    },
+    "levels": {
+      "entryP": 116.86,
+      "15M": {
+        "sl": 117.2,
+        "risk": 0.3400000000000034,
+        "tp": 116.17999999999999,
+        "be10": 116.52,
+        "be15": 116.35,
+        "costR": 0.3952617647058784
+      },
+      "1H": {
+        "sl": 119.86999999999999,
+        "risk": 3.009999999999991,
+        "tp": 110.84000000000002,
+        "be10": 113.85000000000001,
+        "be15": 112.34500000000001,
+        "costR": 0.04464750830564798
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 116.42,
+      "high": 117.52,
+      "low": 116.42,
+      "close": 117.3,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": false,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": true,
+      "status": "AVAILABLE"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.3952617647058785,
+        "exitBar": 0
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.3952617647058785,
+        "exitBar": 0
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.3952617647058785,
+        "exitBar": 0
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.044647508305648
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.044647508305648
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.044647508305648
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": true
+    },
+    "parityAudit": {
+      "status": "PASS",
+      "reason": "Clean execution (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 36,
+    "signalId": "XAUUSD_15m_OB_1790226000000_1790228700000",
+    "symbol": "XAUUSD",
+    "direction": "short",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1790323200000,
+      "signalDt": "2026-09-25 08:00",
+      "orderActiveTs": 1790323200000,
+      "orderActiveDt": "2026-09-25 08:00",
+      "entryTs": 1790325900000,
+      "entryDt": "2026-09-25 08:45",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "high (4296.08627) >= entryP (4293.142365)"
+    },
+    "levels": {
+      "entryP": 4293.142365,
+      "15M": {
+        "sl": 4297.13483,
+        "risk": 3.9924650000002657,
+        "tp": 4285.157434999999,
+        "be10": 4289.149899999999,
+        "be15": 4287.153667499999,
+        "costR": 0.11271232183625154
+      },
+      "1H": {
+        "sl": 4295.6326500000005,
+        "risk": 2.4902850000007675,
+        "tp": 4288.161794999998,
+        "be10": 4290.652079999999,
+        "be15": 4289.406937499998,
+        "costR": 0.1807022087832763
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 4289.2518,
+      "high": 4296.08627,
+      "low": 4289.2518,
+      "close": 4294.519,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": false,
+      "openBeyondBe15_15m": false,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": true,
+      "status": "AVAILABLE"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.1127123218362516,
+        "exitBar": 1
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.1127123218362516,
+        "exitBar": 1
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "SL",
+        "naiveGrossR": -1,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.1127123218362516,
+        "exitBar": 1
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.1807022087832764
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.1807022087832764
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.1807022087832764
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": false
+    },
+    "parityAudit": {
+      "status": "PASS",
+      "reason": "Clean execution"
+    }
+  },
+  {
+    "tradeIndex": 37,
+    "signalId": "SOLUSD_15m_OB_1790358300000_1790359200000",
+    "symbol": "SOLUSD",
+    "direction": "long",
+    "poiType": "OB",
+    "timing": {
+      "signalTs": 1790385300000,
+      "signalDt": "2026-09-26 01:15",
+      "orderActiveTs": 1790385300000,
+      "orderActiveDt": "2026-09-26 01:15",
+      "entryTs": 1790391600000,
+      "entryDt": "2026-09-26 03:00",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "low (120.63) <= entryP (120.83500000000001)"
+    },
+    "levels": {
+      "entryP": 120.83500000000001,
+      "15M": {
+        "sl": 120.61,
+        "risk": 0.22500000000000853,
+        "tp": 121.28500000000003,
+        "be10": 121.06000000000002,
+        "be15": 121.17250000000001,
+        "costR": 0.6176011111110877
+      },
+      "1H": {
+        "sl": 120.72,
+        "risk": 0.1150000000000091,
+        "tp": 121.06500000000003,
+        "be10": 120.95000000000002,
+        "be15": 121.00750000000002,
+        "costR": 1.2083499999999046
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 121.59,
+      "high": 121.61,
+      "low": 120.63,
+      "close": 120.75,
+      "openBeyondTp15m": true,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": true,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": true,
+      "status": "AVAILABLE"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.6176011111110877,
+        "exitBar": 1
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "TP",
+        "naiveGrossR": 2,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.6176011111110877,
+        "exitBar": 1
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "SL",
+        "leakFreeGrossR": -1,
+        "leakFreeNetR": -1.6176011111110877,
+        "exitBar": 1
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -2.2083499999999043
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -2.2083499999999043
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -2.2083499999999043
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": true,
+      "hadPreEntryBeLeakInNaive": true
+    },
+    "parityAudit": {
+      "status": "PASS",
+      "reason": "Clean execution (Previous naive simulation had Bar 0 lookahead leakage)"
+    }
+  },
+  {
+    "tradeIndex": 38,
+    "signalId": "SOLUSD_15m_FVG_1790694000000_1790694900000",
+    "symbol": "SOLUSD",
+    "direction": "short",
+    "poiType": "FVG",
+    "timing": {
+      "signalTs": 1790705700000,
+      "signalDt": "2026-09-29 18:15",
+      "orderActiveTs": 1790705700000,
+      "orderActiveDt": "2026-09-29 18:15",
+      "entryTs": 1790719200000,
+      "entryDt": "2026-09-29 22:00",
+      "candleTimestampType": "OPEN_TIME",
+      "fillCondition": "high (119.6) >= entryP (119.59)"
+    },
+    "levels": {
+      "entryP": 119.59,
+      "15M": {
+        "sl": 120.17,
+        "risk": 0.5799999999999983,
+        "tp": 118.43,
+        "be10": 119.01,
+        "be15": 118.72,
+        "costR": 0.23711810344827655
+      },
+      "1H": {
+        "sl": 121.78999999999999,
+        "risk": 2.1999999999999886,
+        "tp": 115.19000000000003,
+        "be10": 117.39000000000001,
+        "be15": 116.29000000000002,
+        "costR": 0.06251295454545487
+      }
+    },
+    "entryCandleAnatomy": {
+      "open": 118.94,
+      "high": 119.6,
+      "low": 118.86,
+      "close": 119.41,
+      "openBeyondTp15m": false,
+      "openBeyondBe10_15m": true,
+      "openBeyondBe15_15m": false,
+      "openBeyondSl15m": false
+    },
+    "intrabarData": {
+      "has1mCoverage": true,
+      "status": "AVAILABLE"
+    },
+    "naiveVsLeakFree15M": {
+      "scenarioA_1_0R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "BE",
+        "leakFreeGrossR": 0,
+        "leakFreeNetR": -0.23711810344827655,
+        "exitBar": 4
+      },
+      "scenarioB_No_BE": {
+        "naiveOutcome": "TP",
+        "naiveGrossR": 2,
+        "leakFreeOutcome": "TP",
+        "leakFreeGrossR": 2,
+        "leakFreeNetR": 1.7628818965517234,
+        "exitBar": 33
+      },
+      "scenarioC_1_5R_BE": {
+        "naiveOutcome": "BE",
+        "naiveGrossR": 0,
+        "leakFreeOutcome": "BE",
+        "leakFreeGrossR": 0,
+        "leakFreeNetR": -0.23711810344827655,
+        "exitBar": 13
+      }
+    },
+    "leakFree1H": {
+      "scenarioA_1_0R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0625129545454548
+      },
+      "scenarioB_No_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0625129545454548
+      },
+      "scenarioC_1_5R_BE": {
+        "outcome": "SL",
+        "grossR": -1,
+        "netR": -1.0625129545454548
+      }
+    },
+    "diagnosticFlags": {
+      "hadPreEntryTpLeakInNaive": false,
+      "hadPreEntryBeLeakInNaive": false
+    },
+    "parityAudit": {
+      "status": "PASS",
+      "reason": "Clean execution"
+    }
+  }
+]

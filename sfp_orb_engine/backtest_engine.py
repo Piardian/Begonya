@@ -518,7 +518,19 @@ class BacktestEngine:
         for sym in self.symbols:
             logger.info(f"📊 {sym} M15 verisi işleniyor...")
             df = self.fetch_historical_m15(sym)
-            if df is None:
+            if df is None or len(df) < 200:
+                logger.warning(f"⚠️ [{sym}] INSUFFICIENT_DATA: Yetersiz veya eksik MT5 bar verisi.")
+                sym_reports[sym] = {
+                    "status": "INSUFFICIENT_DATA",
+                    "total_trades": 0,
+                    "wins": 0,
+                    "losses": 0,
+                    "break_evens": 0,
+                    "win_rate": 0.0,
+                    "net_r": 0.0,
+                    "expectancy": 0.0,
+                    "reason": "Eksik veya yetersiz MT5 verisi (min 200 bar zorunlu)"
+                }
                 continue
 
             trades = self.run_backtest_symbol(sym, df)

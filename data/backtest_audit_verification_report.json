@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-10-14T13:23:38.559491",
+  "total_trades": 2531,
+  "optimistic_net_r": -523.0,
+  "conservative_net_r": -418.0,
+  "ground_truth_1m_net_r": -418.0,
+  "broker_costs_net_r": -544.55,
+  "optimism_bias_r": -105.0,
+  "friction_drag_r": 126.55,
+  "stop_loss_root_causes": {
+    "counter_trend_pct": 61.3,
+    "macro_veto_pct": 71.9,
+    "asian_pool_pct": 58.0
+  }
+}

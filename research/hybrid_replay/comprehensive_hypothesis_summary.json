@@ -1,0 +1,530 @@
+{
+  "timestamp": "2026-10-14T13:43:12.495027+00:00",
+  "trade_pool_size": 25,
+  "trades_with_deterministic_or_systematic_targets": 25,
+  "legacy_trades_resolved_with_m15_swings": 16,
+  "systematic_targets_count": 9,
+  "data_sourcing_feasibility": {
+    "dukascopy": {
+      "suitability": "EXCELLENT_FOR_FX_AND_GOLD",
+      "quote_types": "BID_AND_ASK_TICK_LEVEL",
+      "historical_depth": "10+_YEARS",
+      "cost": "FREE_PUBLIC_ACCESS",
+      "resolution": "TICK_AND_1_MINUTE",
+      "implementation_tool": "python dukascopy-node / tick-data-downloader"
+    },
+    "mt5_history_center": {
+      "suitability": "EXCELLENT_FOR_ALL_ASSETS",
+      "quote_types": "BID_AND_ASK_M1_AND_TICKS",
+      "historical_depth": "DEPENDS_ON_BROKER_1_TO_5_YEARS",
+      "cost": "FREE_VIA_TERMINAL_EXPORT",
+      "resolution": "M1_AND_TICKS",
+      "implementation_tool": "MT5 Python API / direct export"
+    },
+    "binance_vision": {
+      "suitability": "EXCELLENT_FOR_CRYPTO",
+      "quote_types": "TRADE_AND_ORDERBOOK_TICKS",
+      "historical_depth": "5+_YEARS",
+      "cost": "FREE_PUBLIC_ARCHIVE",
+      "resolution": "1_SECOND_AND_1_MINUTE_AND_TICKS",
+      "implementation_tool": "data.binance.vision batch download"
+    },
+    "twelve_data_current": {
+      "suitability": "INSUFFICIENT_FOR_RELIABLE_BACKTEST",
+      "quote_types": "MID_OHLC_ONLY_NO_ASK_BID",
+      "historical_depth": "LIMITED_ON_FREE_TIER_5000_BARS",
+      "cost": "FREE_WITH_HEAVY_RATE_LIMITS",
+      "resolution": "1M_MID_ONLY",
+      "verdict": "NOT_RECOMMENDED_FOR_EXECUTION_LEVEL_RESEARCH"
+    }
+  },
+  "results_by_stop_model": {
+    "MODEL_A_1M_WICK": {
+      "ZERO_COST": {
+        "total_trades": 25,
+        "wins": 10,
+        "losses": 15,
+        "win_rate_percent": 40.0,
+        "sum_r": 777.6347,
+        "expectancy_r": 31.1054,
+        "profit_factor": 52.84,
+        "max_drawdown_r": 11.0
+      },
+      "ECN_INSTITUTIONAL": {
+        "total_trades": 25,
+        "wins": 10,
+        "losses": 15,
+        "win_rate_percent": 40.0,
+        "sum_r": 776.3847,
+        "expectancy_r": 31.0554,
+        "profit_factor": 50.29,
+        "max_drawdown_r": 11.55
+      },
+      "STANDARD_RETAIL": {
+        "total_trades": 25,
+        "wins": 10,
+        "losses": 15,
+        "win_rate_percent": 40.0,
+        "sum_r": 777.6347,
+        "expectancy_r": 31.1054,
+        "profit_factor": 52.84,
+        "max_drawdown_r": 11.0
+      },
+      "STRESS_HIGH_SPREAD": {
+        "total_trades": 25,
+        "wins": 10,
+        "losses": 15,
+        "win_rate_percent": 40.0,
+        "sum_r": 777.6347,
+        "expectancy_r": 31.1054,
+        "profit_factor": 52.84,
+        "max_drawdown_r": 11.0
+      }
+    },
+    "MODEL_B_15M_STRUCTURAL": {
+      "ZERO_COST": {
+        "total_trades": 25,
+        "wins": 10,
+        "losses": 15,
+        "win_rate_percent": 40.0,
+        "sum_r": 530.735,
+        "expectancy_r": 21.2294,
+        "profit_factor": 36.38,
+        "max_drawdown_r": 11.0
+      },
+      "ECN_INSTITUTIONAL": {
+        "total_trades": 25,
+        "wins": 10,
+        "losses": 15,
+        "win_rate_percent": 40.0,
+        "sum_r": 529.485,
+        "expectancy_r": 21.1794,
+        "profit_factor": 34.62,
+        "max_drawdown_r": 11.55
+      },
+      "STANDARD_RETAIL": {
+        "total_trades": 25,
+        "wins": 10,
+        "losses": 15,
+        "win_rate_percent": 40.0,
+        "sum_r": 530.735,
+        "expectancy_r": 21.2294,
+        "profit_factor": 36.38,
+        "max_drawdown_r": 11.0
+      },
+      "STRESS_HIGH_SPREAD": {
+        "total_trades": 25,
+        "wins": 10,
+        "losses": 15,
+        "win_rate_percent": 40.0,
+        "sum_r": 530.735,
+        "expectancy_r": 21.2294,
+        "profit_factor": 36.38,
+        "max_drawdown_r": 11.0
+      }
+    },
+    "MODEL_C_POI_BOUNDARY": {
+      "ZERO_COST": {
+        "total_trades": 24,
+        "wins": 10,
+        "losses": 14,
+        "win_rate_percent": 41.67,
+        "sum_r": 620.9087,
+        "expectancy_r": 25.8712,
+        "profit_factor": 45.35,
+        "max_drawdown_r": 11.0
+      },
+      "ECN_INSTITUTIONAL": {
+        "total_trades": 24,
+        "wins": 10,
+        "losses": 14,
+        "win_rate_percent": 41.67,
+        "sum_r": 619.7087,
+        "expectancy_r": 25.8212,
+        "profit_factor": 43.16,
+        "max_drawdown_r": 11.55
+      },
+      "STANDARD_RETAIL": {
+        "total_trades": 24,
+        "wins": 10,
+        "losses": 14,
+        "win_rate_percent": 41.67,
+        "sum_r": 620.9087,
+        "expectancy_r": 25.8712,
+        "profit_factor": 45.35,
+        "max_drawdown_r": 11.0
+      },
+      "STRESS_HIGH_SPREAD": {
+        "total_trades": 24,
+        "wins": 10,
+        "losses": 14,
+        "win_rate_percent": 41.67,
+        "sum_r": 620.9087,
+        "expectancy_r": 25.8712,
+        "profit_factor": 45.35,
+        "max_drawdown_r": 11.0
+      }
+    }
+  },
+  "parametric_fx_buffer_scan": {
+    "MIN_STOP_0.0_PIPS": {
+      "total_trades": 2,
+      "wins": 0,
+      "losses": 2,
+      "win_rate_percent": 0.0,
+      "sum_r": -2.0,
+      "expectancy_r": -1.0,
+      "profit_factor": 0.0,
+      "max_drawdown_r": 2.0
+    },
+    "MIN_STOP_2.0_PIPS": {
+      "total_trades": 2,
+      "wins": 0,
+      "losses": 2,
+      "win_rate_percent": 0.0,
+      "sum_r": -2.0,
+      "expectancy_r": -1.0,
+      "profit_factor": 0.0,
+      "max_drawdown_r": 2.0
+    },
+    "MIN_STOP_4.0_PIPS": {
+      "total_trades": 1,
+      "wins": 0,
+      "losses": 1,
+      "win_rate_percent": 0.0,
+      "sum_r": -1.0,
+      "expectancy_r": -1.0,
+      "profit_factor": 0.0,
+      "max_drawdown_r": 1.0
+    },
+    "MIN_STOP_6.0_PIPS": {
+      "total_trades": 0,
+      "wins": 0,
+      "losses": 0,
+      "win_rate_percent": 0.0,
+      "sum_r": 0.0,
+      "expectancy_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "profit_factor": 0.0
+    },
+    "MIN_STOP_8.0_PIPS": {
+      "total_trades": 0,
+      "wins": 0,
+      "losses": 0,
+      "win_rate_percent": 0.0,
+      "sum_r": 0.0,
+      "expectancy_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "profit_factor": 0.0
+    },
+    "MIN_STOP_10.0_PIPS": {
+      "total_trades": 0,
+      "wins": 0,
+      "losses": 0,
+      "win_rate_percent": 0.0,
+      "sum_r": 0.0,
+      "expectancy_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "profit_factor": 0.0
+    }
+  },
+  "parametric_gold_buffer_scan": {
+    "MIN_STOP_$0.0": {
+      "total_trades": 15,
+      "wins": 6,
+      "losses": 9,
+      "win_rate_percent": 40.0,
+      "sum_r": 496.9685,
+      "expectancy_r": 33.1312,
+      "profit_factor": 56.22,
+      "max_drawdown_r": 9.0
+    },
+    "MIN_STOP_$1.0": {
+      "total_trades": 15,
+      "wins": 6,
+      "losses": 9,
+      "win_rate_percent": 40.0,
+      "sum_r": 496.9685,
+      "expectancy_r": 33.1312,
+      "profit_factor": 56.22,
+      "max_drawdown_r": 9.0
+    },
+    "MIN_STOP_$1.5": {
+      "total_trades": 15,
+      "wins": 6,
+      "losses": 9,
+      "win_rate_percent": 40.0,
+      "sum_r": 496.9685,
+      "expectancy_r": 33.1312,
+      "profit_factor": 56.22,
+      "max_drawdown_r": 9.0
+    },
+    "MIN_STOP_$2.0": {
+      "total_trades": 14,
+      "wins": 5,
+      "losses": 9,
+      "win_rate_percent": 35.71,
+      "sum_r": 139.1559,
+      "expectancy_r": 9.9397,
+      "profit_factor": 16.46,
+      "max_drawdown_r": 9.0
+    },
+    "MIN_STOP_$2.5": {
+      "total_trades": 11,
+      "wins": 5,
+      "losses": 6,
+      "win_rate_percent": 45.45,
+      "sum_r": 142.1559,
+      "expectancy_r": 12.9233,
+      "profit_factor": 24.69,
+      "max_drawdown_r": 6.0
+    },
+    "MIN_STOP_$3.5": {
+      "total_trades": 9,
+      "wins": 4,
+      "losses": 5,
+      "win_rate_percent": 44.44,
+      "sum_r": 2.7808,
+      "expectancy_r": 0.309,
+      "profit_factor": 1.56,
+      "max_drawdown_r": 5.0
+    },
+    "MIN_STOP_$5.0": {
+      "total_trades": 8,
+      "wins": 3,
+      "losses": 5,
+      "win_rate_percent": 37.5,
+      "sum_r": 0.2086,
+      "expectancy_r": 0.0261,
+      "profit_factor": 1.04,
+      "max_drawdown_r": 5.0
+    }
+  },
+  "trade_details": [
+    {
+      "candidate_id": "ETHUSD_15m_OB_1787119200000_1787121900000",
+      "symbol": "ETHUSD",
+      "direction": "long",
+      "entry_price": 1910.595,
+      "structural_stop_price": 1906.0,
+      "target_price": 4378.57,
+      "target_source": "DETERMINISTIC_HISTORICAL_SWING_EQH_CLUSTER_2_POINTS"
+    },
+    {
+      "candidate_id": "ETHUSD_15m_OB_1787211000000_1787212800000",
+      "symbol": "ETHUSD",
+      "direction": "long",
+      "entry_price": 2252.01,
+      "structural_stop_price": 2238.97,
+      "target_price": 4378.57,
+      "target_source": "DETERMINISTIC_HISTORICAL_SWING_EQH_CLUSTER_2_POINTS"
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1787095800000_1787097600000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "entry_price": 4334.39,
+      "structural_stop_price": 4331.89673,
+      "target_price": 4377.439040277777,
+      "target_source": "DETERMINISTIC_HISTORICAL_SWING_EQH_CLUSTER_72_POINTS"
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1787102100000_1787103000000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "entry_price": 4334.39,
+      "structural_stop_price": 4327.50563,
+      "target_price": 4377.439040277777,
+      "target_source": "DETERMINISTIC_HISTORICAL_SWING_EQH_CLUSTER_72_POINTS"
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1787228100000_1787238000000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "entry_price": 4459.094999999999,
+      "structural_stop_price": 4451.3688,
+      "target_price": 4473.942803536585,
+      "target_source": "DETERMINISTIC_HISTORICAL_SWING_EQH_CLUSTER_82_POINTS"
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1787272200000_1787274900000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "entry_price": 4519.719999999999,
+      "structural_stop_price": 4517.52801,
+      "target_price": 4533.347896396396,
+      "target_source": "DETERMINISTIC_HISTORICAL_SWING_EQH_CLUSTER_111_POINTS"
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1787289300000_1787291100000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "entry_price": 4538.75,
+      "structural_stop_price": 4526.73034,
+      "target_price": 4546.946687386364,
+      "target_source": "DETERMINISTIC_HISTORICAL_SWING_EQH_CLUSTER_88_POINTS"
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1787670000000_1787671800000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "entry_price": 4637.035,
+      "structural_stop_price": 4607.65793,
+      "target_price": 4642.335577586207,
+      "target_source": "DETERMINISTIC_HISTORICAL_SWING_EQH_CLUSTER_29_POINTS"
+    },
+    {
+      "candidate_id": "XAUUSD_15m_FVG_1787274000000_1787274900000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "entry_price": 4519.719999999999,
+      "structural_stop_price": 4517.52801,
+      "target_price": 4533.347896396396,
+      "target_source": "DETERMINISTIC_HISTORICAL_SWING_EQH_CLUSTER_111_POINTS"
+    },
+    {
+      "candidate_id": "XAUUSD_15m_FVG_1787670900000_1787671800000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "entry_price": 4637.035,
+      "structural_stop_price": 4607.65793,
+      "target_price": 4642.335577586207,
+      "target_source": "DETERMINISTIC_HISTORICAL_SWING_EQH_CLUSTER_29_POINTS"
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1787694300000_1787697000000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "entry_price": 4661.040000000001,
+      "structural_stop_price": 4657.93971,
+      "target_price": 4684.164041666667,
+      "target_source": "DETERMINISTIC_HISTORICAL_SWING_EQH_CLUSTER_48_POINTS"
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1787697900000_1787701500000",
+      "symbol": "XAUUSD",
+      "direction": "short",
+      "entry_price": 4671.76,
+      "structural_stop_price": 4673.71074,
+      "target_price": 3973.7606612068967,
+      "target_source": "DETERMINISTIC_HISTORICAL_SWING_EQL_CLUSTER_58_POINTS"
+    },
+    {
+      "candidate_id": "ETHUSD_15m_OB_1787930100000_1787932800000",
+      "symbol": "ETHUSD",
+      "direction": "short",
+      "entry_price": 2497.4,
+      "structural_stop_price": 2526.64,
+      "target_price": 2368.8725,
+      "target_source": "DETERMINISTIC_HISTORICAL_SWING_EQL_CLUSTER_16_POINTS"
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1788221700000_1788225300000",
+      "symbol": "XAUUSD",
+      "direction": "short",
+      "entry_price": 4458.605,
+      "structural_stop_price": 4462.05653,
+      "target_price": 3974.096330357143,
+      "target_source": "DETERMINISTIC_HISTORICAL_SWING_EQL_CLUSTER_56_POINTS"
+    },
+    {
+      "candidate_id": "ETHUSD_15m_OB_1788248700000_1788249600000",
+      "symbol": "ETHUSD",
+      "direction": "short",
+      "entry_price": 2472.5,
+      "structural_stop_price": 2477.22,
+      "target_price": 2368.8725,
+      "target_source": "DETERMINISTIC_HISTORICAL_SWING_EQL_CLUSTER_16_POINTS"
+    },
+    {
+      "candidate_id": "GBPUSD_15m_OB_1788524100000_1788525000000",
+      "symbol": "GBPUSD",
+      "direction": "short",
+      "entry_price": 1.353305,
+      "structural_stop_price": 1.35389,
+      "target_price": 1.32811125,
+      "target_source": "DETERMINISTIC_HISTORICAL_SWING_EQL_CLUSTER_16_POINTS"
+    },
+    {
+      "candidate_id": "XAUUSD_15m_FVG_1789023600000_1789024500000",
+      "symbol": "XAUUSD",
+      "direction": "short",
+      "entry_price": 4418.075000000001,
+      "structural_stop_price": 4430.46387,
+      "target_price": 4368.7246025,
+      "target_source": "SYSTEMATIC_SIGNAL_TARGET"
+    },
+    {
+      "candidate_id": "ETHUSD_15m_OB_1789022700000_1789024500000",
+      "symbol": "ETHUSD",
+      "direction": "short",
+      "entry_price": 2476.265,
+      "structural_stop_price": 2483.83,
+      "target_price": 2379.903333333333,
+      "target_source": "SYSTEMATIC_SIGNAL_TARGET"
+    },
+    {
+      "candidate_id": "SOLUSD_15m_OB_1789349400000_1789350300000",
+      "symbol": "SOLUSD",
+      "direction": "long",
+      "entry_price": 99.78,
+      "structural_stop_price": 99.0,
+      "target_price": 105.125,
+      "target_source": "SYSTEMATIC_SIGNAL_TARGET"
+    },
+    {
+      "candidate_id": "SOLUSD_15m_OB_1790692200000_1790694900000",
+      "symbol": "SOLUSD",
+      "direction": "short",
+      "entry_price": 120.205,
+      "structural_stop_price": 121.69,
+      "target_price": 119.19800000000001,
+      "target_source": "SYSTEMATIC_SIGNAL_TARGET"
+    },
+    {
+      "candidate_id": "ETHUSD_15m_OB_1790873100000_1790874900000",
+      "symbol": "ETHUSD",
+      "direction": "long",
+      "entry_price": 2696.09,
+      "structural_stop_price": 2673.42,
+      "target_price": 2712.825,
+      "target_source": "SYSTEMATIC_SIGNAL_TARGET"
+    },
+    {
+      "candidate_id": "GBPUSD_15m_FVG_1791174600000_1791174600000",
+      "symbol": "GBPUSD",
+      "direction": "short",
+      "entry_price": 1.323525,
+      "structural_stop_price": 1.32377,
+      "target_price": 1.319292,
+      "target_source": "SYSTEMATIC_SIGNAL_TARGET"
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1791219600000_1791222300000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "entry_price": 4137.805,
+      "structural_stop_price": 4126.47476,
+      "target_price": 4141.756016190477,
+      "target_source": "SYSTEMATIC_SIGNAL_TARGET"
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1791246600000_1791247500000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "entry_price": 4143.745,
+      "structural_stop_price": 4133.33687,
+      "target_price": 4152.86667,
+      "target_source": "SYSTEMATIC_SIGNAL_TARGET"
+    },
+    {
+      "candidate_id": "XAUUSD_15m_OB_1791265500000_1791267300000",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "entry_price": 4128.82,
+      "structural_stop_price": 4124.56177,
+      "target_price": 4139.77328235294,
+      "target_source": "SYSTEMATIC_SIGNAL_TARGET"
+    }
+  ]
+}

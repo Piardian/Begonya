@@ -1,0 +1,481 @@
+{
+  "oldTradeCount": 23,
+  "newTradeCount": 38,
+  "matchedCount": 10,
+  "timingShiftedCount": 4,
+  "eliminatedCount": 9,
+  "newlyDiscoveredCount": 24,
+  "oldTradesDelta": [
+    {
+      "oldIndex": 1,
+      "symbol": "XAUUSD",
+      "direction": "short",
+      "oldDt": "2026-04-06 01:00",
+      "newDt": "2026-04-06 01:00",
+      "status": "MATCHED_TIME_PARITY",
+      "oldNetB": -1.0113276638795161,
+      "newNetStruct": -1.0117414516687278,
+      "newNetProd": -0.033547127937191494
+    },
+    {
+      "oldIndex": 2,
+      "symbol": "ETHUSD",
+      "direction": "long",
+      "oldDt": "2026-04-09 22:45",
+      "newDt": "NONE",
+      "status": "ELIMINATED_BY_DEDUP_OR_CLOSE_TIMING",
+      "oldNetB": 1.951566150442478,
+      "newNetStruct": null,
+      "newNetProd": null
+    },
+    {
+      "oldIndex": 3,
+      "symbol": "BTCUSD",
+      "direction": "long",
+      "oldDt": "2026-04-11 23:00",
+      "newDt": "2026-04-11 23:00",
+      "status": "MATCHED_TIME_PARITY",
+      "oldNetB": -0.1705779196217512,
+      "newNetStruct": -0.17701603698811288,
+      "newNetProd": -0.18324047274858576
+    },
+    {
+      "oldIndex": 4,
+      "symbol": "ETHUSD",
+      "direction": "long",
+      "oldDt": "2026-04-16 21:15",
+      "newDt": "2026-04-16 21:15",
+      "status": "MATCHED_TIME_PARITY",
+      "oldNetB": 1.9692854361711436,
+      "newNetStruct": 1.9687383783061716,
+      "newNetProd": -0.3087394459102932
+    },
+    {
+      "oldIndex": 5,
+      "symbol": "BTCUSD",
+      "direction": "long",
+      "oldDt": "2026-04-23 17:30",
+      "newDt": "NONE",
+      "status": "ELIMINATED_BY_DEDUP_OR_CLOSE_TIMING",
+      "oldNetB": -1.1333608589801267,
+      "newNetStruct": null,
+      "newNetProd": null
+    },
+    {
+      "oldIndex": 6,
+      "symbol": "SOLUSD",
+      "direction": "long",
+      "oldDt": "2026-05-22 14:15",
+      "newDt": "2026-05-22 14:15",
+      "status": "MATCHED_TIME_PARITY",
+      "oldNetB": -1.0800455645161284,
+      "newNetStruct": -1.0910610091743116,
+      "newNetProd": -0.4511659090908823
+    },
+    {
+      "oldIndex": 7,
+      "symbol": "ETHUSD",
+      "direction": "short",
+      "oldDt": "2026-06-06 23:30",
+      "newDt": "2026-06-06 21:15",
+      "status": "TIMING_SHIFTED_BAR_CLOSE",
+      "oldNetB": -0.09223717450447108,
+      "newNetStruct": -0.10001106194690451,
+      "newNetProd": -0.21323113207547836
+    },
+    {
+      "oldIndex": 8,
+      "symbol": "BTCUSD",
+      "direction": "short",
+      "oldDt": "2026-06-07 22:00",
+      "newDt": "2026-06-07 21:45",
+      "status": "MATCHED_TIME_PARITY",
+      "oldNetB": -0.09775625,
+      "newNetStruct": -0.100164039408867,
+      "newNetProd": -0.3475777777777778
+    },
+    {
+      "oldIndex": 9,
+      "symbol": "ETHUSD",
+      "direction": "long",
+      "oldDt": "2026-06-21 20:45",
+      "newDt": "2026-06-21 20:45",
+      "status": "MATCHED_TIME_PARITY",
+      "oldNetB": -0.19102249070631583,
+      "newNetStruct": -0.22438886462881563,
+      "newNetProd": -0.26624378238341717
+    },
+    {
+      "oldIndex": 10,
+      "symbol": "ETHUSD",
+      "direction": "short",
+      "oldDt": "2026-06-25 04:45",
+      "newDt": "NONE",
+      "status": "ELIMINATED_BY_DEDUP_OR_CLOSE_TIMING",
+      "oldNetB": 1.9756883683121491,
+      "newNetStruct": null,
+      "newNetProd": null
+    },
+    {
+      "oldIndex": 11,
+      "symbol": "SOLUSD",
+      "direction": "short",
+      "oldDt": "2026-06-25 23:15",
+      "newDt": "2026-06-25 22:00",
+      "status": "TIMING_SHIFTED_BAR_CLOSE",
+      "oldNetB": -0.08822696629213478,
+      "newNetStruct": -0.10611081081081156,
+      "newNetProd": -0.4362333333333169
+    },
+    {
+      "oldIndex": 12,
+      "symbol": "BTCUSD",
+      "direction": "short",
+      "oldDt": "2026-06-29 15:30",
+      "newDt": "2026-06-29 15:30",
+      "status": "MATCHED_TIME_PARITY",
+      "oldNetB": 1.9404215998018817,
+      "newNetStruct": 1.9394995833172124,
+      "newNetProd": -0.19884467205819187
+    },
+    {
+      "oldIndex": 13,
+      "symbol": "BTCUSD",
+      "direction": "long",
+      "oldDt": "2026-07-08 00:30",
+      "newDt": "NONE",
+      "status": "ELIMINATED_BY_DEDUP_OR_CLOSE_TIMING",
+      "oldNetB": -0.13463721272640633,
+      "newNetStruct": null,
+      "newNetProd": null
+    },
+    {
+      "oldIndex": 14,
+      "symbol": "XAUUSD",
+      "direction": "short",
+      "oldDt": "2026-07-21 00:15",
+      "newDt": "NONE",
+      "status": "ELIMINATED_BY_DEDUP_OR_CLOSE_TIMING",
+      "oldNetB": -1.0431321410651053,
+      "newNetStruct": null,
+      "newNetProd": null
+    },
+    {
+      "oldIndex": 15,
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "oldDt": "2026-07-27 10:30",
+      "newDt": "NONE",
+      "status": "ELIMINATED_BY_DEDUP_OR_CLOSE_TIMING",
+      "oldNetB": -1.00614307298899,
+      "newNetStruct": null,
+      "newNetProd": null
+    },
+    {
+      "oldIndex": 16,
+      "symbol": "SOLUSD",
+      "direction": "long",
+      "oldDt": "2026-08-03 03:45",
+      "newDt": "NONE",
+      "status": "ELIMINATED_BY_DEDUP_OR_CLOSE_TIMING",
+      "oldNetB": -0.03966404761904746,
+      "newNetStruct": null,
+      "newNetProd": null
+    },
+    {
+      "oldIndex": 17,
+      "symbol": "BTCUSD",
+      "direction": "long",
+      "oldDt": "2026-08-09 00:30",
+      "newDt": "NONE",
+      "status": "ELIMINATED_BY_DEDUP_OR_CLOSE_TIMING",
+      "oldNetB": 1.848829456480767,
+      "newNetStruct": null,
+      "newNetProd": null
+    },
+    {
+      "oldIndex": 18,
+      "symbol": "BTCUSD",
+      "direction": "short",
+      "oldDt": "2026-08-13 04:30",
+      "newDt": "2026-08-13 01:30",
+      "status": "TIMING_SHIFTED_BAR_CLOSE",
+      "oldNetB": -0.07184187582106012,
+      "newNetStruct": -0.07310554070217354,
+      "newNetProd": 1.4419715091299918
+    },
+    {
+      "oldIndex": 19,
+      "symbol": "GBPUSD",
+      "direction": "short",
+      "oldDt": "2026-08-14 05:15",
+      "newDt": "NONE",
+      "status": "ELIMINATED_BY_DEDUP_OR_CLOSE_TIMING",
+      "oldNetB": -1.1745283018867825,
+      "newNetStruct": null,
+      "newNetProd": null
+    },
+    {
+      "oldIndex": 20,
+      "symbol": "XAUUSD",
+      "direction": "short",
+      "oldDt": "2026-08-17 00:15",
+      "newDt": "2026-08-17 00:15",
+      "status": "MATCHED_TIME_PARITY",
+      "oldNetB": -1.0292217469539597,
+      "newNetStruct": -1.0321440281038827,
+      "newNetProd": -1.103897543169432
+    },
+    {
+      "oldIndex": 21,
+      "symbol": "BTCUSD",
+      "direction": "long",
+      "oldDt": "2026-08-26 04:45",
+      "newDt": "2026-08-26 04:15",
+      "status": "TIMING_SHIFTED_BAR_CLOSE",
+      "oldNetB": -1.0981736671649214,
+      "newNetStruct": -1.1000917959438852,
+      "newNetProd": -0.7731509658918322
+    },
+    {
+      "oldIndex": 22,
+      "symbol": "SOLUSD",
+      "direction": "short",
+      "oldDt": "2026-09-24 14:15",
+      "newDt": "2026-09-24 14:30",
+      "status": "MATCHED_TIME_PARITY",
+      "oldNetB": -1.0425281645569622,
+      "newNetStruct": -1.044647508305648,
+      "newNetProd": -0.3952617647058784
+    },
+    {
+      "oldIndex": 23,
+      "symbol": "XAUUSD",
+      "direction": "short",
+      "oldDt": "2026-09-25 08:00",
+      "newDt": "2026-09-25 08:00",
+      "status": "MATCHED_TIME_PARITY",
+      "oldNetB": -0.11567275919372315,
+      "newNetStruct": -0.1807022087832763,
+      "newNetProd": -1.1127123218362516
+    }
+  ],
+  "trulyNewTrades": [
+    {
+      "symbol": "GBPUSD",
+      "direction": "short",
+      "poiType": "OB",
+      "signalDt": "2026-04-01 00:00",
+      "entryDt": "2026-04-01 00:15",
+      "netRProd": -0.36633663366322144,
+      "netRStruct": 1.8614232209737918
+    },
+    {
+      "symbol": "BTCUSD",
+      "direction": "long",
+      "poiType": "OB",
+      "signalDt": "2026-04-02 01:45",
+      "entryDt": "2026-04-02 02:00",
+      "netRProd": -0.2468118974621157,
+      "netRStruct": -0.09431759492297798
+    },
+    {
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "poiType": "OB",
+      "signalDt": "2026-04-02 01:45",
+      "entryDt": "2026-04-02 02:00",
+      "netRProd": -0.10604866219610076,
+      "netRStruct": -0.04701509027680501
+    },
+    {
+      "symbol": "ETHUSD",
+      "direction": "long",
+      "poiType": "OB",
+      "signalDt": "2026-04-05 03:15",
+      "entryDt": "2026-04-05 05:45",
+      "netRProd": -0.4021629581151661,
+      "netRStruct": -0.3254793432203215
+    },
+    {
+      "symbol": "GBPUSD",
+      "direction": "long",
+      "poiType": "OB",
+      "signalDt": "2026-04-23 02:00",
+      "entryDt": "2026-04-23 02:15",
+      "netRProd": -1.2151162790697467,
+      "netRStruct": -0.5138888888886919
+    },
+    {
+      "symbol": "BTCUSD",
+      "direction": "long",
+      "poiType": "OB",
+      "signalDt": "2026-04-24 13:30",
+      "entryDt": "2026-04-24 15:00",
+      "netRProd": -1.2270889280505763,
+      "netRStruct": -0.1847278926375886
+    },
+    {
+      "symbol": "SOLUSD",
+      "direction": "long",
+      "poiType": "OB",
+      "signalDt": "2026-05-04 06:30",
+      "entryDt": "2026-05-04 10:15",
+      "netRProd": -0.5493385714285803,
+      "netRStruct": -1.278650000000001
+    },
+    {
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "poiType": "OB",
+      "signalDt": "2026-05-13 10:15",
+      "entryDt": "2026-05-13 11:00",
+      "netRProd": -0.0835885104806133,
+      "netRStruct": -0.12806301838842477
+    },
+    {
+      "symbol": "XAUUSD",
+      "direction": "short",
+      "poiType": "FVG",
+      "signalDt": "2026-05-28 14:15",
+      "entryDt": "2026-05-28 14:45",
+      "netRProd": -0.06432706740046343,
+      "netRStruct": -1.0116575388137752
+    },
+    {
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "poiType": "FVG",
+      "signalDt": "2026-05-31 01:15",
+      "entryDt": "2026-05-31 01:15",
+      "netRProd": -1.0165436675619852,
+      "netRStruct": -1.018623499877085
+    },
+    {
+      "symbol": "XAUUSD",
+      "direction": "short",
+      "poiType": "OB",
+      "signalDt": "2026-06-08 15:00",
+      "entryDt": "2026-06-08 15:30",
+      "netRProd": -0.060921086209424144,
+      "netRStruct": -0.03009498981953179
+    },
+    {
+      "symbol": "ETHUSD",
+      "direction": "short",
+      "poiType": "OB",
+      "signalDt": "2026-06-11 16:15",
+      "entryDt": "2026-06-11 17:30",
+      "netRProd": -0.2221984902309105,
+      "netRStruct": -0.19157388973966388
+    },
+    {
+      "symbol": "XAUUSD",
+      "direction": "short",
+      "poiType": "OB",
+      "signalDt": "2026-06-11 17:45",
+      "entryDt": "2026-06-11 19:00",
+      "netRProd": -0.06757157519102282,
+      "netRStruct": -0.06757157519102282
+    },
+    {
+      "symbol": "BTCUSD",
+      "direction": "long",
+      "poiType": "OB",
+      "signalDt": "2026-06-17 03:15",
+      "entryDt": "2026-06-17 06:30",
+      "netRProd": -1.2587519739834605,
+      "netRStruct": -0.46684071065162086
+    },
+    {
+      "symbol": "XAUUSD",
+      "direction": "short",
+      "poiType": "FVG",
+      "signalDt": "2026-06-18 00:15",
+      "entryDt": "2026-06-18 00:30",
+      "netRProd": 1.993392122881845,
+      "netRStruct": 1.9941903032029118
+    },
+    {
+      "symbol": "XAUUSD",
+      "direction": "short",
+      "poiType": "OB",
+      "signalDt": "2026-06-22 00:15",
+      "entryDt": "2026-06-22 00:15",
+      "netRProd": -1.101650579521236,
+      "netRStruct": -1.4186633039032959
+    },
+    {
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "poiType": "OB",
+      "signalDt": "2026-06-22 13:45",
+      "entryDt": "2026-06-22 13:45",
+      "netRProd": -0.121487328871563,
+      "netRStruct": -0.08431892791292608
+    },
+    {
+      "symbol": "XAUUSD",
+      "direction": "short",
+      "poiType": "OB",
+      "signalDt": "2026-07-20 23:45",
+      "entryDt": "2026-07-21 01:15",
+      "netRProd": -1.0498170331078474,
+      "netRStruct": -1.0498170331078474
+    },
+    {
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "poiType": "OB",
+      "signalDt": "2026-08-03 13:00",
+      "entryDt": "2026-08-03 13:00",
+      "netRProd": -0.20568607733795077,
+      "netRStruct": -0.16852102206127278
+    },
+    {
+      "symbol": "XAUUSD",
+      "direction": "short",
+      "poiType": "OB",
+      "signalDt": "2026-08-19 10:30",
+      "entryDt": "2026-08-19 12:30",
+      "netRProd": -0.077495150095191,
+      "netRStruct": -0.077495150095191
+    },
+    {
+      "symbol": "BTCUSD",
+      "direction": "short",
+      "poiType": "OB",
+      "signalDt": "2026-09-14 01:00",
+      "entryDt": "2026-09-14 02:15",
+      "netRProd": -1.1281201793720501,
+      "netRStruct": -0.9386970149252712
+    },
+    {
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "poiType": "OB",
+      "signalDt": "2026-09-16 18:45",
+      "entryDt": "2026-09-16 18:45",
+      "netRProd": -0.10113223151639181,
+      "netRStruct": -0.046997192701019576
+    },
+    {
+      "symbol": "SOLUSD",
+      "direction": "long",
+      "poiType": "OB",
+      "signalDt": "2026-09-26 01:15",
+      "entryDt": "2026-09-26 03:00",
+      "netRProd": -0.6176011111110877,
+      "netRStruct": -1.2083499999999046
+    },
+    {
+      "symbol": "SOLUSD",
+      "direction": "short",
+      "poiType": "FVG",
+      "signalDt": "2026-09-29 18:15",
+      "entryDt": "2026-09-29 22:00",
+      "netRProd": -0.23711810344827655,
+      "netRStruct": -1.0625129545454548
+    }
+  ]
+}
